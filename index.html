@@ -665,9 +665,14 @@
     .track-label { font-size: 10px; min-width: 40px; }
     .tracking-section { gap: 8px; }
 
-    /* Bottom info bar */
-    .info-bar { flex-wrap: wrap; justify-content: center; gap: 6px; padding: 8px; font-size: 11px; }
-    .pill { font-size: 10px; }
+    /* Bottom bar */
+    .bottom-bar {
+      flex-direction: column; align-items: center; gap: 8px;
+      padding: 8px 10px 12px;
+    }
+    .bottom-bar > div { margin-left: 0 !important; width: 100%; justify-content: center; flex-wrap: wrap; }
+    .custody-strip { flex-wrap: wrap; justify-content: center; gap: 2px; }
+    .pill { font-size: 10px; padding: 5px 10px; }
 
     .login-box { width: 290px; padding: 24px; }
   }
