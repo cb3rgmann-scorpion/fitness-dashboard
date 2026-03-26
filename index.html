@@ -596,47 +596,92 @@
 
   /* ── Mobile (iPhone etc) ── */
   @media (max-width: 600px) {
-    body { width: 100vw; height: 100vh; overflow-y: auto; }
-    .main-content {
-      grid-template-columns: 1fr; gap: 8px;
-      overflow-y: auto; height: auto;
-      padding: 8px; max-height: none;
-    }
-    .nav-strip {
-      padding: 6px 8px; gap: 4px; flex-wrap: wrap;
+    body { width: 100vw; height: auto; min-height: 100vh; overflow-y: auto; }
+    .view { position: relative; inset: auto; height: auto; min-height: 100vh; }
+
+    /* Header: stack into 2 rows */
+    .overlay-header {
+      display: flex !important; flex-wrap: wrap;
+      padding: 8px 12px 6px; gap: 4px 8px;
       position: sticky; top: 0; z-index: 100;
       background: var(--bg); border-bottom: 1px solid var(--card-border);
     }
-    .nav-btn { font-size: 11px; padding: 5px 10px; }
-    .nav-arrow { font-size: 14px; padding: 5px 8px; }
-    .date-display { font-size: 12px; }
-    .time-display { font-size: 11px; }
-    .card { padding: 10px; }
+    .overlay-header > div:first-child {
+      display: flex; align-items: center; gap: 8px; flex: 1;
+    }
+    .day-name, .week-day-name, .month-title { font-size: 16px !important; }
+    .date-full { font-size: 11px !important; }
+    .time-display { font-size: 14px !important; font-weight: 700; }
+    .custody-badge { font-size: 9px !important; padding: 2px 8px !important; }
+    .nav-btns {
+      display: flex; gap: 4px; width: 100%;
+      justify-content: center; padding-top: 2px;
+    }
+    .nav-btn { font-size: 12px; padding: 6px 14px; flex: 0; }
+    .nav-btn.refresh { padding: 6px 8px; }
+
+    /* Cards: single column, scrollable */
+    .main-content {
+      grid-template-columns: 1fr; gap: 8px;
+      overflow-y: auto; height: auto;
+      padding: 8px 10px; max-height: none;
+    }
+    .card { padding: 12px; }
     .card-title { font-size: 12px; }
-    .check-row { padding: 6px 8px; }
-    .check-text { font-size: 11px; }
+    .check-row { padding: 8px 10px; }
+    .check-text { font-size: 13px; }
+    .meal-name { font-size: 13px; }
+    .meal-cal { font-size: 11px; }
+
+    /* Week view */
     .week-grid {
-      grid-template-columns: 1fr; gap: 6px;
+      grid-template-columns: 1fr 1fr; gap: 6px;
       overflow-y: auto; max-height: none; height: auto;
       padding: 8px;
     }
     .week-day { padding: 10px; }
     .week-summary { padding: 12px; }
+
+    /* Month view */
     .month-grid {
       overflow-y: auto; max-height: none; height: auto;
       padding: 4px;
     }
-    .month-cell { min-height: 50px; font-size: 10px; }
+    .month-cell { min-height: 44px; font-size: 9px; padding: 2px; }
+    .month-cell .mc-day { font-size: 11px; }
+
+    /* Popups */
     .exercise-list { grid-template-columns: 1fr; }
     .popup { width: 95vw; max-height: 85vh; }
     .popup-content { padding: 12px; }
-    .custody-strip { gap: 2px; }
-    .cs-box { width: 30px; height: 18px; font-size: 7px; }
-    .track-dot { width: 22px; height: 22px; font-size: 9px; }
+
+    /* Custody strip */
+    .custody-strip { gap: 1px; flex-wrap: wrap; justify-content: center; }
+    .cs-box { width: 24px; height: 16px; font-size: 6px; border-radius: 3px; }
+
+    /* Tracking dots — bigger for touch */
+    .track-dot { width: 24px; height: 24px; font-size: 10px; }
     .track-dots { gap: 3px; }
-    .track-label { font-size: 10px; min-width: 38px; }
+    .track-label { font-size: 10px; min-width: 40px; }
     .tracking-section { gap: 8px; }
-    .login-box { width: 280px; padding: 24px; }
+
+    /* Bottom info bar */
+    .info-bar { flex-wrap: wrap; justify-content: center; gap: 6px; padding: 8px; font-size: 11px; }
+    .pill { font-size: 10px; }
+
+    .login-box { width: 290px; padding: 24px; }
+  }
+
+  /* ── Landscape phone (short + wide) ── */
+  @media (max-height: 500px) and (max-width: 1000px) and (min-width: 601px) {
+    .overlay-header { padding: 4px 12px 2px; }
+    .time-display { font-size: 16px !important; }
+    .main-content {
+      grid-template-columns: 1fr 1fr 1fr; gap: 6px;
+      padding: 4px 8px; overflow-y: auto; height: auto;
+    }
+    .card { padding: 8px; }
+    .nav-btn { font-size: 10px; padding: 4px 10px; }
   }
 </style>
 </head>
