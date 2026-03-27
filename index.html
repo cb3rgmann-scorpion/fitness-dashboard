@@ -983,8 +983,6 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeDay(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
-      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
 
@@ -1034,8 +1032,6 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeWeek(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
-      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
   <div class="week-grid" id="week-grid"></div>
@@ -1055,8 +1051,6 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
-      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
   <div class="month-grid-wrap">
@@ -2119,6 +2113,7 @@ function renderDaily() {
         <span style="font-size:7px;color:var(--red)">▂ Stat holiday</span>
       </div>
       ${csHtml}
+      <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn">${THEME_ICONS[document.documentElement.getAttribute('data-theme') || 'dark']}</button>
     </div>
   `;
 }
