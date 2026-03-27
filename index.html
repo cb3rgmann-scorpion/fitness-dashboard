@@ -70,7 +70,10 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-  :root {
+  /* ═══════════════════════════════════
+     THEME: Dark (default)
+     ═══════════════════════════════════ */
+  :root, [data-theme="dark"] {
     --bg: #0b0d14;
     --bg-gradient: linear-gradient(145deg, #0f1219 0%, #0b0d14 50%, #10121c 100%);
     --card: #161923;
@@ -100,6 +103,263 @@
     --cyan-bg: rgba(34, 211, 238, 0.12);
     --red: #f87171;
     --red-bg: rgba(248, 113, 113, 0.12);
+    --check-done-bg: rgba(74, 222, 128, 0.08);
+    --overlay-bg: rgba(0,0,0,0.7);
+    --input-bg: rgba(255,255,255,0.05);
+    --input-border: rgba(255,255,255,0.08);
+    --divider: rgba(255,255,255,0.06);
+    --theme-icon: "🌙";
+  }
+
+  /* ═══════════════════════════════════
+     THEME: Light
+     ═══════════════════════════════════ */
+  [data-theme="light"] {
+    --bg: #f0f2f5;
+    --bg-gradient: linear-gradient(145deg, #f5f7fa 0%, #eef0f4 50%, #f0f2f5 100%);
+    --card: #ffffff;
+    --card-hover: #f8f9fb;
+    --card-border: #dde1e8;
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+    --card-shadow-hover: 0 4px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.06);
+    --text: #1a1d2a;
+    --text-dim: #5c6070;
+    --text-muted: #9499a8;
+    --green: #16a34a;
+    --green-bg: rgba(22, 163, 74, 0.10);
+    --green-border: rgba(22, 163, 74, 0.30);
+    --pink: #db2777;
+    --pink-bg: rgba(219, 39, 119, 0.08);
+    --pink-border: rgba(219, 39, 119, 0.25);
+    --blue: #2563eb;
+    --blue-bg: rgba(37, 99, 235, 0.08);
+    --blue-border: rgba(37, 99, 235, 0.20);
+    --orange: #ea580c;
+    --orange-bg: rgba(234, 88, 12, 0.08);
+    --orange-border: rgba(234, 88, 12, 0.20);
+    --purple: #7c3aed;
+    --purple-bg: rgba(124, 58, 237, 0.08);
+    --purple-border: rgba(124, 58, 237, 0.20);
+    --cyan: #0891b2;
+    --cyan-bg: rgba(8, 145, 178, 0.08);
+    --red: #dc2626;
+    --red-bg: rgba(220, 38, 38, 0.08);
+    --check-done-bg: rgba(22, 163, 74, 0.06);
+    --overlay-bg: rgba(0,0,0,0.4);
+    --input-bg: rgba(0,0,0,0.03);
+    --input-border: rgba(0,0,0,0.10);
+    --divider: rgba(0,0,0,0.06);
+    --theme-icon: "☀️";
+  }
+
+  /* ═══════════════════════════════════
+     THEME: Retro (Pip-Boy)
+     ═══════════════════════════════════ */
+  [data-theme="retro"] {
+    --bg: #0a1208;
+    --bg-gradient: linear-gradient(145deg, #0c1409 0%, #091107 50%, #0b130a 100%);
+    --card: #0f1a0c;
+    --card-hover: #142210;
+    --card-border: #1a3014;
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 6px rgba(0,255,65,0.04);
+    --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.7), 0 0 10px rgba(0,255,65,0.07);
+    --text: #00ff41;
+    --text-dim: #00b830;
+    --text-muted: #006e1e;
+    --green: #00ff41;
+    --green-bg: rgba(0, 255, 65, 0.10);
+    --green-border: rgba(0, 255, 65, 0.25);
+    --pink: #00ff41;
+    --pink-bg: rgba(0, 255, 65, 0.06);
+    --pink-border: rgba(0, 255, 65, 0.18);
+    --blue: #00ff41;
+    --blue-bg: rgba(0, 255, 65, 0.06);
+    --blue-border: rgba(0, 255, 65, 0.18);
+    --orange: #00ff41;
+    --orange-bg: rgba(0, 255, 65, 0.08);
+    --orange-border: rgba(0, 255, 65, 0.20);
+    --purple: #00ff41;
+    --purple-bg: rgba(0, 255, 65, 0.08);
+    --purple-border: rgba(0, 255, 65, 0.20);
+    --cyan: #00ff41;
+    --cyan-bg: rgba(0, 255, 65, 0.08);
+    --red: #ff3333;
+    --red-bg: rgba(255, 51, 51, 0.08);
+    --check-done-bg: rgba(0, 255, 65, 0.08);
+    --overlay-bg: rgba(0,0,0,0.85);
+    --input-bg: rgba(0,255,65,0.04);
+    --input-border: rgba(0,255,65,0.12);
+    --divider: rgba(0,255,65,0.08);
+    --theme-icon: "☢️";
+  }
+
+  /* Pip-Boy monospace font */
+  [data-theme="retro"] body,
+  [data-theme="retro"] * {
+    font-family: 'Courier New', 'Lucida Console', monospace !important;
+  }
+
+  /* Scanline overlay + CRT vignette */
+  [data-theme="retro"] body::before {
+    content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15) 0px,
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  [data-theme="retro"] body::after {
+    content: ''; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.5) 100%);
+  }
+
+  /* Green phosphor glow on text */
+  [data-theme="retro"] .overlay-title,
+  [data-theme="retro"] .day-name,
+  [data-theme="retro"] .card-title {
+    background: none !important; -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: var(--text) !important;
+    text-transform: uppercase; letter-spacing: 2px;
+    text-shadow: 0 0 8px rgba(0,255,65,0.5), 0 0 20px rgba(0,255,65,0.2);
+  }
+  [data-theme="retro"] .time-display {
+    text-shadow: 0 0 10px rgba(0,255,65,0.6), 0 0 25px rgba(0,255,65,0.3);
+  }
+
+  /* Industrial card styling — solid border, no radius */
+  [data-theme="retro"] .card {
+    border: 1px solid rgba(0,255,65,0.15);
+    border-radius: 0;
+    box-shadow: 0 0 8px rgba(0,255,65,0.03), inset 0 0 30px rgba(0,0,0,0.3);
+  }
+  [data-theme="retro"] .card:hover {
+    border-color: rgba(0,255,65,0.25);
+    box-shadow: 0 0 12px rgba(0,255,65,0.06), inset 0 0 30px rgba(0,0,0,0.3);
+  }
+
+  /* Pip-Boy nav buttons — blocky military look */
+  [data-theme="retro"] .nav-btn {
+    border: 1px solid rgba(0,255,65,0.20);
+    border-radius: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 4px rgba(0,255,65,0.3);
+  }
+  [data-theme="retro"] .nav-btn:hover {
+    background: rgba(0,255,65,0.10);
+    border-color: rgba(0,255,65,0.40);
+    box-shadow: 0 0 6px rgba(0,255,65,0.15);
+  }
+  [data-theme="retro"] .nav-btn.active {
+    background: rgba(0,255,65,0.15);
+    color: #00ff41;
+    border-color: rgba(0,255,65,0.50);
+    box-shadow: 0 0 8px rgba(0,255,65,0.2);
+  }
+
+  /* Square badges & checkboxes */
+  [data-theme="retro"] .custody-badge {
+    border-radius: 0;
+    border: 1px solid rgba(0,255,65,0.20);
+  }
+  [data-theme="retro"] .check-box {
+    border-radius: 0;
+  }
+  [data-theme="retro"] .track-dot {
+    border-radius: 0;
+  }
+  [data-theme="retro"] .supp-pill {
+    border-radius: 0;
+    border: 1px solid rgba(0,255,65,0.12);
+  }
+
+  /* Pip-Boy progress bars — blocky with glow */
+  [data-theme="retro"] .wd-progress-fill,
+  [data-theme="retro"] .ws-bar-fill,
+  [data-theme="retro"] .mc-progress-fill {
+    box-shadow: 0 0 4px rgba(0,255,65,0.4);
+    border-radius: 0;
+  }
+  [data-theme="retro"] .wd-progress-bar,
+  [data-theme="retro"] .ws-bar,
+  [data-theme="retro"] .mc-progress-bar {
+    border-radius: 0;
+    border: 1px solid rgba(0,255,65,0.10);
+  }
+
+  /* Login screen Pip-Boy style */
+  [data-theme="retro"] .login-box input {
+    border-radius: 0;
+    border: 1px solid rgba(0,255,65,0.25);
+    background: rgba(0,255,65,0.04);
+    color: #00ff41;
+  }
+  [data-theme="retro"] .login-box button {
+    border-radius: 0;
+    background: rgba(0,255,65,0.15);
+    border: 1px solid rgba(0,255,65,0.40);
+    color: #00ff41;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 4px rgba(0,255,65,0.3);
+  }
+  [data-theme="retro"] .login-box button:hover {
+    background: rgba(0,255,65,0.25);
+    box-shadow: 0 0 10px rgba(0,255,65,0.2);
+  }
+  [data-theme="retro"] .login-title {
+    text-shadow: 0 0 15px rgba(0,255,65,0.5), 0 0 30px rgba(0,255,65,0.2);
+  }
+
+  /* Popup styling */
+  [data-theme="retro"] .popup {
+    border-radius: 0;
+    border: 1px solid rgba(0,255,65,0.25);
+    background: #0a1208;
+    box-shadow: 0 0 20px rgba(0,255,65,0.08);
+  }
+
+  /* Week day cards */
+  [data-theme="retro"] .week-day-card {
+    border-radius: 0;
+  }
+
+  /* Month cells */
+  [data-theme="retro"] .mc-cell {
+    border-radius: 0;
+  }
+  [data-theme="retro"] .cs-box {
+    border-radius: 0;
+  }
+
+  /* Light mode overrides for elements with hardcoded rgba whites */
+  [data-theme="light"] .track-dot {
+    background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10);
+    color: var(--text-dim);
+  }
+  [data-theme="light"] .check-row.done {
+    background: var(--check-done-bg);
+  }
+  [data-theme="light"] .supp-pill {
+    background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.08);
+    color: var(--text-dim);
+  }
+  [data-theme="light"] .water-drop, [data-theme="light"] .coffee-icon {
+    filter: none; opacity: 0.3;
+  }
+  [data-theme="light"] .water-drop.filled, [data-theme="light"] .coffee-icon.filled {
+    opacity: 1;
+  }
+  [data-theme="light"] .pill {
+    background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.06);
+  }
+  [data-theme="light"] .cs-box.cs-unknown {
+    background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10);
+  }
+  [data-theme="light"] .popup {
+    background: #fff; border-color: var(--card-border);
   }
 
   body {
@@ -225,12 +485,12 @@
 
   .card-footer {
     margin-top: auto; padding-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
+    border-top: 1px solid var(--divider); flex-shrink: 0;
   }
   .supp-row { display: flex; gap: 5px; flex-wrap: wrap; padding: 2px 0; }
   .supp-pill {
     font-size: 9px; padding: 3px 7px; border-radius: 10px;
-    background: rgba(255,255,255,0.04); color: var(--text-dim); font-weight: 600;
+    background: var(--input-bg); color: var(--text-dim); font-weight: 600;
   }
   .water-tracker { display: flex; align-items: center; gap: 6px; padding: 6px 0 2px; }
   .water-tracker .water-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
@@ -253,7 +513,7 @@
   .sched-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
   .sched-text { font-size: 11.5px; line-height: 1.4; }
   .sched-sub { font-size: 10px; color: var(--text-muted); }
-  .sched-optional { font-size: 10px; color: var(--cyan); padding: 4px 0 2px; border-top: 1px dashed rgba(255,255,255,0.06); margin-top: 4px; }
+  .sched-optional { font-size: 10px; color: var(--cyan); padding: 4px 0 2px; border-top: 1px dashed var(--divider); margin-top: 4px; }
   .sched-alt { font-size: 10px; color: var(--purple); padding: 2px 0; }
   .options-divider { font-size: 9px; color: var(--text-muted); letter-spacing: 1px; padding: 6px 0 2px; text-transform: uppercase; opacity: 0.6; }
 
@@ -265,8 +525,8 @@
   .pill {
     display: flex; align-items: center; gap: 6px;
     font-size: 12px; color: var(--text-dim); font-weight: 500;
-    background: rgba(255,255,255,0.03); padding: 7px 14px; border-radius: 20px;
-    border: 1px solid rgba(255,255,255,0.04); white-space: nowrap;
+    background: var(--input-bg); padding: 7px 14px; border-radius: 20px;
+    border: 1px solid var(--input-border); white-space: nowrap;
   }
   .pill-val { font-weight: 700; }
   .pill-val.cyan { color: var(--cyan); }
@@ -281,7 +541,7 @@
   }
   .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
   .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); }
-  .cs-box.cs-unknown { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); }
+  .cs-box.cs-unknown { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--input-border); }
   .cs-box.cs-today { opacity: 1; box-shadow: 0 0 6px rgba(167,139,250,0.4); border-color: var(--purple); }
   .cs-box.cs-holiday { border-bottom: 3px solid var(--red); }
   .cs-box.cs-noschool { border-bottom: 3px solid var(--cyan); }
@@ -308,6 +568,7 @@
   .nav-btn.active { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border); }
   .nav-btn.refresh { padding: 6px 10px; font-size: 13px; }
   .nav-btn.refresh.spinning { animation: spin 0.6s ease; }
+  .nav-btn.theme { padding: 6px 10px; font-size: 13px; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
   /* Week grid — 2 rows: 4 + 3 */
@@ -345,7 +606,7 @@
   .wd-event { font-size: 11px; color: var(--purple); font-weight: 600; margin-bottom: 4px; line-height: 1.3; }
 
   .wd-progress { display: flex; align-items: center; gap: 5px; margin-top: 6px; }
-  .wd-progress-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .wd-progress-bar { flex: 1; height: 4px; background: var(--divider); border-radius: 2px; overflow: hidden; }
   .wd-progress-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
   .wd-progress-text { font-size: 11px; color: var(--text-muted); font-weight: 700; white-space: nowrap; }
 
@@ -353,7 +614,7 @@
   .wd-remain-item { display: inline; }
   .wd-remain-item::after { content: ' · '; opacity: 0.4; }
   .wd-remain-item:last-child::after { content: ''; }
-  .wd-done-list { font-size: 11px; color: var(--green); line-height: 1.6; margin-top: 5px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.06); opacity: 0.85; }
+  .wd-done-list { font-size: 11px; color: var(--green); line-height: 1.6; margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--divider); opacity: 0.85; }
   .wd-done-item { display: inline; }
   .wd-done-item::after { content: ' · '; color: var(--text-muted); }
   .wd-done-item:last-child::after { content: ''; }
@@ -369,7 +630,7 @@
   .ws-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
   .ws-label { font-size: 12px; color: var(--text-dim); font-weight: 600; }
   .ws-value { font-size: 13px; font-weight: 800; }
-  .ws-bar { flex: 1; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; margin: 0 10px; overflow: hidden; }
+  .ws-bar { flex: 1; height: 5px; background: var(--divider); border-radius: 3px; margin: 0 10px; overflow: hidden; }
   .ws-bar-fill { height: 100%; border-radius: 2px; }
 
   /* ══════════════════════════════════════
@@ -419,7 +680,7 @@
   .mc-stretch { font-size: 7px; color: var(--purple); font-weight: 600; }
 
   .mc-progress { display: flex; align-items: center; gap: 3px; margin-top: auto; }
-  .mc-progress-bar { flex: 1; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .mc-progress-bar { flex: 1; height: 3px; background: var(--divider); border-radius: 2px; overflow: hidden; }
   .mc-progress-fill { height: 100%; border-radius: 2px; }
   .mc-progress-text { font-size: 7px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
@@ -465,7 +726,7 @@
   }
   .popup-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 24px 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    padding: 16px 24px 12px; border-bottom: 1px solid var(--divider);
     position: sticky; top: 0; background: #1a1d2e; z-index: 1; border-radius: 16px 16px 0 0;
   }
   .popup-title { font-size: 18px; font-weight: 800; }
@@ -492,7 +753,7 @@
   .ex-link:hover { text-decoration: underline; color: #c4b5fd; }
 
   /* ── Notes ── */
-  .notes-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .notes-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--divider); }
   .notes-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
   .notes-input {
     width: 100%; background: var(--bg); border: 1px solid var(--card-border);
@@ -505,7 +766,7 @@
   /* ── Tracking Section (Mood/Energy/Sleep/Weight) ── */
   .tracking-section {
     margin-top: 10px; padding-top: 10px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid var(--divider);
     display: flex; flex-direction: column; gap: 5px;
   }
   .track-row {
@@ -522,7 +783,7 @@
     width: 18px; height: 18px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 8px; font-weight: 700; cursor: pointer;
-    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    background: var(--input-bg); border: 1px solid var(--input-border);
     color: var(--text-muted); transition: all 0.15s; flex-shrink: 0;
   }
   .track-dot.active { border-color: var(--purple); color: #fff; }
@@ -564,7 +825,7 @@
   .login-box h2 { color: var(--text); font-size: 18px; font-weight: 700; }
   .login-box input {
     width: 100%; padding: 10px 14px; border-radius: 8px;
-    border: 1px solid var(--card-border); background: rgba(255,255,255,0.05);
+    border: 1px solid var(--card-border); background: var(--input-bg);
     color: var(--text); font-size: 14px; font-family: Inter, sans-serif;
   }
   .login-box input:focus { outline: none; border-color: var(--purple-border); }
@@ -722,7 +983,8 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeDay(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule from CSV">🔄</button>
+      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
 
@@ -772,7 +1034,8 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeWeek(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule from CSV">🔄</button>
+      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
   <div class="week-grid" id="week-grid"></div>
@@ -792,7 +1055,8 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
-      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule from CSV">🔄</button>
+      <button class="nav-btn refresh" onclick="refreshData(this)" title="Reload schedule">🔄</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" id="theme-btn" title="Switch theme">🌙</button>
     </div>
   </div>
   <div class="month-grid-wrap">
@@ -843,6 +1107,28 @@ function initSupabase() {
     console.warn('Supabase init failed, using localStorage only', e);
     sbReady = false;
   }
+}
+
+// ── Theme ──
+const THEMES = ['dark', 'light', 'retro'];
+const THEME_ICONS = { dark: '🌙', light: '☀️', retro: '☢️' };
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.nav-btn.theme').forEach(btn => btn.textContent = THEME_ICONS[theme] || '🌙');
+  localStorage.setItem('dashboard_theme', theme);
+}
+
+function cycleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const idx = THEMES.indexOf(current);
+  const next = THEMES[(idx + 1) % THEMES.length];
+  applyTheme(next);
+}
+
+function loadTheme() {
+  const saved = localStorage.getItem('dashboard_theme') || 'dark';
+  applyTheme(saved);
 }
 
 // ── Auth ──
@@ -1971,7 +2257,7 @@ function renderWeek() {
           if (m) parts.push('<span style="color:' + (m>=7?'var(--green)':m>=4?'var(--orange)':'var(--red)') + '">😊' + m + '</span>');
           if (e) parts.push('<span style="color:' + (e>=7?'var(--cyan)':e>=4?'var(--orange)':'var(--red)') + '">⚡' + e + '</span>');
           if (s) parts.push('<span style="color:' + (s>=7?'var(--green)':s>=5.5?'var(--orange)':'var(--red)') + '">😴' + s + 'h</span>');
-          return '<div style="font-size:9px;display:flex;gap:6px;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,0.06)">' + parts.join('') + '</div>';
+          return '<div style="font-size:9px;display:flex;gap:6px;margin-top:4px;padding-top:4px;border-top:1px dashed var(--divider)">' + parts.join('') + '</div>';
         })()}
       </div>
     `;
@@ -2161,7 +2447,7 @@ function renderMonth() {
     <div class="month-cell" style="grid-column:span ${span};cursor:default;padding:6px 10px;flex-direction:row;align-items:center;gap:10px">
       <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">📊 ${monthNames[month]}</div>
       <div style="display:flex;flex-direction:column;flex:1;gap:3px">
-        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,0.06)">
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--divider)">
           <div style="width:${exPct}%;background:var(--cyan)" title="Exercise ${mWorkoutsDone}/${mWorkouts}"></div>
           <div style="width:${stPct}%;background:var(--purple)" title="Stretch ${mStretchesDone}/${mStretches}"></div>
           <div style="width:${moPct}%;background:var(--orange)" title="Morning ${mMorningsDone}/${mMornings}"></div>
@@ -2256,6 +2542,7 @@ async function refreshData(btn) {
 
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
+  loadTheme();
   initSupabase();
 
   // Check for existing session
