@@ -612,8 +612,8 @@
   .week-badge span { color: var(--purple); font-weight: 800; }
   .custody-strip { display: flex; gap: 3px; align-items: center; padding-bottom: 6px; }
   .cs-box {
-    width: 18px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
-    font-size: 9px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
+    width: 24px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
   }
   .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); border-bottom: 3px solid var(--green); }
   .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); border-bottom: 3px solid var(--pink); }
@@ -621,7 +621,7 @@
   .cs-box.cs-today { opacity: 1; box-shadow: 0 0 6px rgba(167,139,250,0.4); border-color: var(--purple); }
   .cs-box.cs-holiday { border-bottom: 4px solid #ff4444 !important; }
   .cs-box.cs-noschool { border-bottom: 3px solid var(--cyan); }
-  .cs-dow { font-size: 7px; color: var(--text-dim); text-align: center; white-space: nowrap; }
+  .cs-dow { font-size: 9px; color: var(--text-dim); text-align: center; white-space: nowrap; }
 
   /* ══════════════════════════════════════
      WEEK VIEW (overlay)
@@ -990,7 +990,7 @@
 
     /* Custody strip */
     .custody-strip { gap: 1px; flex-wrap: wrap; justify-content: center; }
-    .cs-box { width: 24px; height: 16px; font-size: 6px; border-radius: 3px; }
+    .cs-box { width: 28px; height: 20px; font-size: 8px; border-radius: 3px; }
 
     /* Tracking dots — bigger for touch */
     .track-dot { width: 24px; height: 24px; font-size: 10px; }
@@ -2525,7 +2525,6 @@ function renderDaily() {
   // Bottom bar — just custody strip, centered
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
-      <div class="pill">🍽️ Eating: <span class="pill-val cyan">12 PM – 9 PM</span></div>
       <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
       ${allo ? '<div class="pill">💊 <span class="pill-val red">Allo day</span></div>' : ''}
     </div>
