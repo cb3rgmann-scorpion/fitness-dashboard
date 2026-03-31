@@ -333,6 +333,12 @@
   [data-theme="retro"] .cs-box {
     border-radius: 0;
   }
+  [data-theme="retro"] .cs-box.cs-craig {
+    background: rgba(0,255,65,0.25); color: #00ff41; border-color: rgba(0,255,65,0.50);
+  }
+  [data-theme="retro"] .cs-box.cs-lisa {
+    background: rgba(255,51,51,0.20); color: #ff3333; border-color: rgba(255,51,51,0.40);
+  }
 
   /* Light mode overrides for elements with hardcoded rgba whites */
   [data-theme="light"] .track-dot {
@@ -361,6 +367,12 @@
   [data-theme="light"] .popup {
     background: #fff; border-color: var(--card-border);
   }
+  [data-theme="light"] .time-display {
+    color: #000;
+  }
+  [data-theme="light"] .track-input {
+    background: #fff; border-color: rgba(0,0,0,0.15); color: #1a1d2a;
+  }
 
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -368,12 +380,12 @@
     color: var(--text);
     width: 960px;
     height: 480px;
-    overflow: hidden;
+    overflow: auto;
     position: relative;
   }
 
   /* ── Transitions for view switching ── */
-  .view { position: absolute; inset: 0; display: none; flex-direction: column; }
+  .view { position: absolute; inset: 0; display: none; flex-direction: column; overflow: auto; }
   .view.active { display: flex; }
 
   /* ══════════════════════════════════════
@@ -407,7 +419,7 @@
     border-radius: 14px;
     padding: 14px 16px;
     display: flex; flex-direction: column;
-    overflow: hidden;
+    overflow: auto;
     box-shadow: var(--card-shadow);
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
@@ -438,7 +450,7 @@
   .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); }
   .card-tap-hint { font-size: 9px; color: var(--text-muted); margin-left: auto; font-weight: 500; letter-spacing: 0.5px; opacity: 0.7; }
 
-  .card-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; z-index: 1; }
+  .card-body { flex: 1; overflow: auto; display: flex; flex-direction: column; position: relative; z-index: 1; }
 
   /* Workout styles */
   .workout-type { font-size: 15px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
@@ -468,8 +480,69 @@
   .stretch-pip { width: 24px; height: 6px; border-radius: 3px; background: var(--card-border); transition: background 0.2s; }
   .stretch-pip.active { background: var(--purple); box-shadow: 0 0 6px rgba(167,139,250,0.4); }
 
+  /* Workout log section */
+  .wo-section-divider {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); padding: 8px 0 4px; border-top: 1px solid var(--divider); margin-top: 8px;
+  }
+  .wo-section-divider:first-child { border-top: none; margin-top: 0; }
+  .wo-section-header {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); padding: 6px 0 4px; cursor: pointer; display: flex;
+    align-items: center; justify-content: space-between; border-top: 1px solid var(--divider); margin-top: 6px;
+    user-select: none;
+  }
+  .wo-section-header:hover { color: var(--text); }
+  .wo-section-header .chevron { transition: transform 0.2s; font-size: 8px; }
+  .wo-section-header.open .chevron { transform: rotate(90deg); }
+  .wo-collapsible { display: none; }
+  .wo-collapsible.open { display: block; }
+
+  .wlog-row {
+    display: flex; align-items: center; gap: 4px; padding: 3px 0; font-size: 11px;
+  }
+  .wlog-row .check-box {
+    width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--input-border);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 10px; flex-shrink: 0; background: var(--input-bg); transition: all 0.15s;
+  }
+  .wlog-row .check-box.checked { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .wlog-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
+  .wlog-label { font-weight: 600; color: var(--text-dim); min-width: 60px; font-size: 10px; }
+  .wlog-input {
+    width: 44px; font-size: 10px; padding: 2px 3px; border-radius: 4px;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text);
+    text-align: center; font-family: inherit;
+  }
+  .wlog-input:focus { border-color: var(--cyan); outline: none; }
+  .wlog-unit { font-size: 9px; color: var(--text-muted); min-width: 14px; }
+  .wlog-row.done .wlog-label { color: var(--green); }
+  .wlog-types { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+  .wlog-type-pill {
+    font-size: 8px; padding: 1px 5px; border-radius: 3px; cursor: pointer;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; user-select: none;
+    transition: all 0.15s;
+  }
+  .wlog-type-pill:hover { border-color: var(--text-dim); color: var(--text-dim); }
+  .wlog-type-pill.active { background: var(--cyan-bg); border-color: var(--cyan); color: var(--cyan); }
+
+  /* Stretch tiers */
+  .stretch-tiers { display: flex; flex-direction: column; gap: 2px; }
+  .stretch-tier {
+    display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 6px;
+    font-size: 11px; color: var(--text-dim); cursor: pointer; transition: all 0.15s;
+    border: 1px solid transparent;
+  }
+  .stretch-tier:hover { background: var(--input-bg); color: var(--text); }
+  .stretch-tier.recommended {
+    background: var(--purple-bg); border-color: var(--purple-border); color: var(--purple); font-weight: 600;
+  }
+  .stretch-tier .tier-icon { font-size: 13px; }
+  .stretch-tier .tier-time { font-size: 9px; color: var(--text-muted); margin-left: auto; }
+
   .tomorrow-strip {
-    font-size: 10px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; padding-top: 4px;
+    font-size: 10px; color: var(--text-dim); display: flex; align-items: center; justify-content: center; gap: 6px; padding-top: 4px;
   }
   .tomorrow-strip .tmr-label { font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); font-size: 9px; }
 
@@ -534,16 +607,16 @@
   .pill-val.red { color: var(--red); }
   .week-badge { margin-left: auto; font-size: 10.5px; color: var(--text-muted); font-weight: 500; }
   .week-badge span { color: var(--purple); font-weight: 800; }
-  .custody-strip { display: flex; gap: 3px; align-items: center; }
+  .custody-strip { display: flex; gap: 3px; align-items: center; padding-bottom: 6px; }
   .cs-box {
     width: 18px; height: 16px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
-    font-size: 7px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
   }
   .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
   .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); }
   .cs-box.cs-unknown { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--input-border); }
   .cs-box.cs-today { opacity: 1; box-shadow: 0 0 6px rgba(167,139,250,0.4); border-color: var(--purple); }
-  .cs-box.cs-holiday { border-bottom: 3px solid var(--red); }
+  .cs-box.cs-holiday { border-bottom: 4px solid #ff4444; box-shadow: 0 2px 8px rgba(255,68,68,0.55), 0 0 4px rgba(255,68,68,0.3); position: relative; }
   .cs-box.cs-noschool { border-bottom: 3px solid var(--cyan); }
   .cs-dow { font-size: 7px; color: var(--text-dim); text-align: center; white-space: nowrap; }
 
@@ -573,23 +646,19 @@
 
   /* Week grid — 2 rows: 4 + 3 */
   .week-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 1fr; gap: 6px;
     padding: 2px 16px 8px; flex: 1; min-height: 0;
   }
   .week-day {
-    background: linear-gradient(165deg, var(--card) 0%, #12141e 100%);
+    background: var(--card);
     border: 1px solid var(--card-border); border-radius: 10px;
     padding: 8px 8px 6px; display: flex; flex-direction: column;
     box-shadow: var(--card-shadow); overflow: hidden; position: relative;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .week-day::before {
-    content: ''; position: absolute; inset: 0; border-radius: 12px;
-    background: linear-gradient(165deg, rgba(255,255,255,0.025) 0%, transparent 50%);
-    pointer-events: none;
-  }
-  .week-day.today { border-color: var(--purple-border); box-shadow: 0 0 20px rgba(167,139,250,0.15), var(--card-shadow); }
-  .week-day.craig-day { border: 1px solid var(--green); }
-  .week-day.lisa-day { border: 1px solid var(--pink); }
+  .week-day.today { border-color: var(--purple); box-shadow: 0 0 12px rgba(167,139,250,0.25); }
+  .week-day.craig-day { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.25); }
+  .week-day.lisa-day { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.25); }
 
   .wd-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .wd-dayname { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
@@ -649,7 +718,7 @@
   }
 
   .month-grid {
-    display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;
+    display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 3px;
     flex: 1; min-height: 0;
   }
   .month-cell {
@@ -662,8 +731,8 @@
   .month-cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .month-cell.empty:hover { border-color: transparent; box-shadow: none; }
   .month-cell.today { border-color: var(--purple); box-shadow: 0 0 12px rgba(167,139,250,0.25); }
-  .month-cell.craig { background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.15); }
-  .month-cell.lisa { background: rgba(244,114,182,0.06); border-color: rgba(244,114,182,0.15); }
+  .month-cell.craig { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.25); }
+  .month-cell.lisa { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.25); }
 
   .mc-top { display: flex; justify-content: space-between; align-items: center; }
   .mc-date { font-size: 12px; font-weight: 700; }
@@ -990,8 +1059,8 @@
     <!-- Workout Card -->
     <div class="card">
       <div class="card-header">
-        <div class="card-icon workout">💪</div>
-        <div class="card-title">Today's Workout</div>
+        <div class="card-icon workout" id="workout-icon">💪</div>
+        <div class="card-title" id="workout-title">Today's Workout</div>
       </div>
       <div class="card-body" id="workout-card"></div>
     </div>
@@ -1008,8 +1077,8 @@
     <!-- Schedule Card -->
     <div class="card" id="schedule-card-wrapper">
       <div class="card-header">
-        <div class="card-icon schedule">📅</div>
-        <div class="card-title">Today's Schedule</div>
+        <div class="card-icon schedule">✅</div>
+        <div class="card-title">Tasks</div>
       </div>
       <div class="card-body" id="schedule-card"></div>
     </div>
@@ -1090,6 +1159,7 @@ const DB_CACHE = {
   daily: {},      // dateStr -> {mood, energy, sleep, weight, water, coffee, notes}
   checkboxes: {}, // dateStr -> {key: true, ...}
   ratings: {},    // dateStr -> {exerciseKey: rating, ...}
+  workouts: {},   // dateStr -> {type: {done:bool, time:num, dist:num}, ...}
 };
 
 function initSupabase() {
@@ -1208,6 +1278,26 @@ async function loadTrackingData(startDate, endDate) {
       if (!DB_CACHE.ratings[row.date]) DB_CACHE.ratings[row.date] = {};
       DB_CACHE.ratings[row.date][row.exercise_key] = row.rating;
     });
+    // Load workout logs
+    const { data: wlogs } = await sb.from('workout_log').select('*')
+      .gte('log_date', startDate).lte('log_date', endDate);
+    if (wlogs) wlogs.forEach(row => {
+      if (!DB_CACHE.workouts[row.log_date]) DB_CACHE.workouts[row.log_date] = {};
+      // Map db type (e.g. 'row_steady') back to grouped id ('row') + subtype ('steady')
+      let woId = row.workout_type, subtype = '';
+      const parts = row.workout_type.split('_');
+      const baseItem = OTHER_WORKOUTS.find(w => w.id === parts[0] && w.types);
+      if (baseItem && parts.length > 1) {
+        woId = parts[0];
+        subtype = parts.slice(1).join('_');
+      }
+      const existing = DB_CACHE.workouts[row.log_date][woId];
+      DB_CACHE.workouts[row.log_date][woId] = {
+        done: true, time: (existing ? existing.time : 0) + (parseFloat(row.duration_min) || 0),
+        dist: (existing ? existing.dist : 0) + (parseFloat(row.distance_val) || 0),
+        unit: row.distance_unit || 'm', subtype: subtype || (existing ? existing.subtype : '')
+      };
+    });
     console.log('Tracking data loaded for ' + startDate + ' to ' + endDate);
   } catch(e) {
     console.warn('Supabase tracking load failed', e);
@@ -1266,6 +1356,80 @@ function dbSaveRating(dateStr, exerciseKey, rating) {
       { onConflict: 'date,exercise_key' })
       .then(({error}) => { if (error) console.warn('DB rating save error:', error); });
   }
+}
+
+// ── Workout Log persistence ──
+function getWorkoutLog(dateStr) {
+  if (DB_CACHE.workouts[dateStr]) return { ...DB_CACHE.workouts[dateStr] };
+  try { return JSON.parse(localStorage.getItem('wlog_' + dateStr)) || {}; } catch(e) { return {}; }
+}
+
+function setWorkoutLog(dateStr, woType, field, value) {
+  // Update cache
+  if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
+  if (!DB_CACHE.workouts[dateStr][woType]) DB_CACHE.workouts[dateStr][woType] = { done: false, time: 0, dist: 0, unit: 'm' };
+  DB_CACHE.workouts[dateStr][woType][field] = value;
+  // localStorage backup
+  localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
+  // Supabase
+  if (!sbReady) return;
+  const entry = DB_CACHE.workouts[dateStr][woType];
+  if (entry.done) {
+    const woMeta = OTHER_WORKOUTS.find(w => w.id === woType);
+    const dbType = entry.subtype ? woType + '_' + entry.subtype : woType;
+    sb.from('workout_log').upsert({
+      log_date: dateStr, workout_type: dbType,
+      duration_min: entry.time || 0, distance_val: entry.dist || 0,
+      distance_unit: woMeta ? woMeta.distUnit : 'm'
+    }, { onConflict: 'log_date,workout_type' })
+      .then(({error}) => { if (error) console.warn('DB workout save error:', error); });
+  } else {
+    // Delete any subtype variants for this group
+    const woMeta = OTHER_WORKOUTS.find(w => w.id === woType);
+    if (woMeta && woMeta.types) {
+      woMeta.types.forEach(t => {
+        sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType + '_' + t)
+          .then(({error}) => { if (error) console.warn('DB workout delete error:', error); });
+      });
+    } else {
+      sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType)
+        .then(({error}) => { if (error) console.warn('DB workout delete error:', error); });
+    }
+  }
+}
+
+function toggleWorkoutDone(dateStr, woId) {
+  const log = getWorkoutLog(dateStr);
+  const entry = log[woId] || {};
+  const isDone = !entry.done;
+  setWorkoutLog(dateStr, woId, 'done', isDone);
+  // For grouped items, default to first sub-type if none selected
+  const woMeta = OTHER_WORKOUTS.find(w => w.id === woId);
+  if (isDone && woMeta && woMeta.types && !entry.subtype) {
+    setWorkoutLog(dateStr, woId, 'subtype', woMeta.types[0]);
+  }
+  renderDaily();
+}
+
+function setWorkoutTime(dateStr, woId, val) {
+  setWorkoutLog(dateStr, woId, 'time', parseFloat(val) || 0);
+}
+
+function setWorkoutDist(dateStr, woId, val) {
+  setWorkoutLog(dateStr, woId, 'dist', parseFloat(val) || 0);
+}
+
+function setWorkoutSubtype(dateStr, woId, subtype) {
+  setWorkoutLog(dateStr, woId, 'subtype', subtype);
+  renderDaily();
+}
+
+// ── Section toggle ──
+function toggleWoSection(id) {
+  const el = document.getElementById(id);
+  const header = el.previousElementSibling;
+  el.classList.toggle('open');
+  header.classList.toggle('open');
 }
 
 // Migrate localStorage data to Supabase (runs once on first connect)
@@ -1565,6 +1729,33 @@ const SNACKS = [
   { name: "PB + banana + protein shake", cal: "~350", protein: "~35g" },
 ];
 
+// Alternative lunch options (quick, high-protein)
+const LUNCH_ALTS = [
+  { name: "Tuna salad wrap + fruit", cal: "~500" },
+  { name: "Chicken breast + rice + veg", cal: "~600" },
+  { name: "Deli turkey sandwich + side", cal: "~550" },
+  { name: "Big salad + grilled protein", cal: "~500" },
+];
+
+// Alternative evening snack options
+const EVE_SNACK_ALTS = [
+  { name: "Herbal tea + fruit or toast", cal: "~150" },
+  { name: "Casein shake + berries", cal: "~200" },
+  { name: "Rice cakes + PB", cal: "~180" },
+  { name: "Skip (intermittent fast)", cal: "0" },
+];
+
+// Get saved meal choice for a slot (returns index into alternatives array)
+function getMealChoice(dateStr, slot) {
+  try { return parseInt(localStorage.getItem('meal_' + dateStr + '_' + slot)) || 0; } catch(e) { return 0; }
+}
+function cycleMealChoice(dateStr, slot, totalOptions) {
+  const current = getMealChoice(dateStr, slot);
+  const next = (current + 1) % totalOptions;
+  localStorage.setItem('meal_' + dateStr + '_' + slot, next);
+  renderDaily();
+}
+
 function getMeals(dateStr, isKid) {
   const d = new Date(dateStr + 'T12:00:00');
   const dow = d.getDay();
@@ -1574,12 +1765,24 @@ function getMeals(dateStr, isKid) {
   const yd = new Date(d); yd.setDate(yd.getDate()-1);
   const ydow = yd.getDay();
   const yesterdayDinner = isKid ? DINNERS.kid[ydow] : DINNERS.craig[ydow];
+
+  // Build alternatives for each slot: [recommended, alt1, alt2, ...]
+  // Dinner alternatives: pick 2 from other days (not today's)
+  const dinnerPool = isKid ? DINNERS.kid : DINNERS.craig;
+  const dinnerAlts = dinnerPool.filter((_, i) => i !== dow).slice(0, 3);
+
+  // Snack alternatives: pick 2 others
+  const snackAlts = SNACKS.filter((_, i) => i !== dow).slice(0, 3);
+
   return [
-    { time: "AM", name: "Black coffee", cal: "~0" },
-    { time: "12P", name: "Leftovers: " + yesterdayDinner.name.split(' — ')[0].split(' (')[0], cal: yesterdayDinner.cal },
-    { time: "3P", name: snack.name, cal: snack.cal },
-    { time: "6P", name: dinner.name, cal: dinner.cal },
-    { time: "9P", name: "Light snack — herbal tea + fruit or toast", cal: "~150" },
+    { time: "AM", options: [{ name: "Black coffee" }, { name: "Coffee + splash of milk" }, { name: "Green tea" }] },
+    { time: "12P", options: [
+      { name: "Leftovers: " + yesterdayDinner.name.split(' — ')[0].split(' (')[0] },
+      ...LUNCH_ALTS.slice(0, 3)
+    ]},
+    { time: "3P", options: [snack, ...snackAlts] },
+    { time: "6P", options: [dinner, ...dinnerAlts] },
+    { time: "9P", options: EVE_SNACK_ALTS },
   ];
 }
 
@@ -1611,12 +1814,16 @@ const STRETCH_ROTATION = {
 // ──────────────────────────────────────────────
 const ROUTINES = {
   morning: {
-    title: "5-Min Morning Stretch",
+    title: "Morning Stretch — ~8 Min",
     exercises: [
       { name: "Standing Calf Raises", sets: "2×15", link: "https://www.youtube.com/watch?v=gwLzBJYoWlI", detail: "Slow up, 2-sec hold at top" },
       { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Seated or standing" },
       { name: "Standing Hip Circles", sets: "10 each direction", link: "https://www.youtube.com/watch?v=oU_oVMJL3-8", detail: "Hands on hips, slow circles" },
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Slow, full range" },
+      { name: "Wrist Circles", sets: "10 each direction", link: "https://www.youtube.com/watch?v=p3sOafGKbLM", detail: "Both wrists simultaneously, slow full circles" },
+      { name: "Prayer Stretch (Wrist Flexors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Palms together at chest, press hands down until stretch in forearms" },
+      { name: "Reverse Prayer (Wrist Extensors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Backs of hands together, press up gently" },
+      { name: "Finger Spreads + Fists", sets: "10 reps", link: "", detail: "Spread fingers wide, then squeeze tight fist. Repeat." },
       { name: "Cat-Cow Standing", sets: "8 reps", link: "https://www.youtube.com/watch?v=f4KnU-IRk38", detail: "Hands on thighs, round and arch" },
       { name: "Deep Breathing", sets: "5 breaths", link: "", detail: "4-count in, 7-count hold, 8-count out" },
     ]
@@ -1700,8 +1907,76 @@ const ROUTINES = {
       { name: "Alt: Yoga for Back Pain", sets: "20 min", link: "https://www.youtube.com/watch?v=XeXz8fIZDCE", detail: "Gentle, good for desk workers" },
       { name: "Alt: Morning Yoga", sets: "15 min", link: "https://www.youtube.com/watch?v=4pKly2JojMw", detail: "Energizing, good wake-up routine" },
     ]
+  },
+  bodyweight: {
+    title: "Bodyweight Workout",
+    exercises: [
+      { name: "Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Chest to floor, full extension", trackReps: true },
+      { name: "Squats", sets: "3×15", link: "https://www.youtube.com/watch?v=aclHkVaku9U", detail: "Bodyweight, below parallel", trackReps: true },
+      { name: "Lunges (each leg)", sets: "3×10", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Knee tracks over toes", trackReps: true },
+      { name: "Sit-ups / Crunches", sets: "3×15", link: "https://www.youtube.com/watch?v=jDwoBqPH0jk", detail: "Controlled, no neck pulling", trackReps: true },
+      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Keep hips level, brace core", trackReps: true },
+      { name: "Dead Bugs", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back to floor", trackReps: true },
+      { name: "Glute Bridges", sets: "3×12", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, hold 2s", trackReps: true },
+      { name: "Superman Hold", sets: "3×10", link: "https://www.youtube.com/watch?v=z6PJMT2y8GQ", detail: "Arms + legs up, hold 3s", trackReps: true },
+    ]
+  },
+  stretch_quick: {
+    title: "Quick Stretch — ~10 Minutes",
+    exercises: [
+      { name: "Cat-Cow", sets: "8 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, sync with breathing" },
+      { name: "Hip Flexor Stretch (half-kneel)", sets: "20s each side", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Squeeze glute on back leg" },
+      { name: "Seated Forward Fold", sets: "30s hold", link: "https://www.youtube.com/watch?v=1E-84p0itDs", detail: "Reach for toes, breathe" },
+      { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest" },
+      { name: "Standing Quad Stretch", sets: "20s each leg", link: "https://www.youtube.com/watch?v=aNXGOpP37CY", detail: "Hold wall for balance" },
+      { name: "Child's Pose", sets: "30s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, breathe deep" },
+    ]
+  },
+  stretch_deep: {
+    title: "Deep Session — 45-60 Minutes",
+    exercises: [
+      { name: "Cat-Cow Flow", sets: "2 min", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, full range, breathe deeply" },
+      { name: "Sun Salutation (modified)", sets: "5 rounds", link: "https://www.youtube.com/watch?v=73sjOu0g58M", detail: "Hold each pose 5-8s" },
+      { name: "Pigeon Pose (each side)", sets: "90s hold", link: "https://www.youtube.com/watch?v=1o7awuDGzag", detail: "Deep hip opener, breathe into it" },
+      { name: "Lying Hamstring Stretch", sets: "60s each leg", link: "https://www.youtube.com/watch?v=Il1L75v6gq0", detail: "Use strap, relax into it" },
+      { name: "Hip Flexor Stretch (half-kneel)", sets: "60s each", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Add overhead reach for deeper stretch" },
+      { name: "World's Greatest Stretch", sets: "8 each side", link: "https://www.youtube.com/watch?v=-CiWQ2IvY34", detail: "Lunge + rotate + reach. Full body." },
+      { name: "Figure-4 Stretch", sets: "60s each side", link: "https://www.youtube.com/watch?v=Xb5gHdYtHnk", detail: "Lying on back, ankle on knee" },
+      { name: "Doorway Chest Stretch", sets: "45s each side", link: "https://www.youtube.com/watch?v=B9uY01NoqBg", detail: "Arm at 90°, lean through" },
+      { name: "Thread the Needle", sets: "45s each side", link: "https://www.youtube.com/watch?v=MfUx9FCOb1E", detail: "Deep thoracic rotation" },
+      { name: "Scorpion Stretch", sets: "8 each side", link: "https://www.youtube.com/watch?v=NKmUc6KslDY", detail: "Face down, cross foot over" },
+      { name: "Seated Spinal Twist", sets: "45s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, deep rotation" },
+      { name: "Standing IT Band Stretch", sets: "45s each side", link: "https://www.youtube.com/watch?v=wzDoSQ8-GWY", detail: "Cross legs, side bend" },
+      { name: "Wrist & Forearm Stretches", sets: "30s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Flexors, extensors, circles" },
+      { name: "Neck Stretches (all directions)", sets: "20s each", link: "https://www.youtube.com/watch?v=54y0JAT46vE", detail: "Side, forward, rotation — gentle" },
+      { name: "Lying Glute Bridge", sets: "15 reps + 15s hold", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, activate glutes" },
+      { name: "Supine Full Body Stretch", sets: "60s hold", link: "", detail: "Arms overhead, toes pointed, lengthen" },
+      { name: "Child's Pose (wide knee)", sets: "90s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Final relaxation. Breathe. Let go." },
+    ]
   }
 };
+
+// ──────────────────────────────────────────────
+// OTHER WORKOUTS — Available workout types for logging
+// ──────────────────────────────────────────────
+const OTHER_WORKOUTS = [
+  { id: 'row', icon: '🚣', label: 'Row', hasTime: true, hasDist: true, distUnit: 'm', types: ['steady', 'intervals'] },
+  { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
+  { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
+  { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
+  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
+  { id: 'yoga_session', icon: '🧘', label: 'Yoga', hasTime: true, hasDist: false },
+];
+
+// ──────────────────────────────────────────────
+// STRETCH TIERS — expandable alternatives
+// ──────────────────────────────────────────────
+const STRETCH_TIERS = [
+  { id: 'quick', icon: '⚡', label: 'Quick Stretch', time: '~10 min', routineKey: 'stretch_quick' },
+  { id: 'standard', icon: '🧘', label: 'Standard', time: '~20 min', routineKey: null }, // uses A/B/C rotation
+  { id: 'yoga_stretch', icon: '🧘‍♂️', label: 'Yoga Flow', time: '20-30 min', routineKey: 'yoga' },
+  { id: 'deep', icon: '🔥', label: 'Deep Session', time: '45-60 min', routineKey: 'stretch_deep' },
+];
 
 // ──────────────────────────────────────────────
 // DATA PERSISTENCE — Supabase + localStorage cache
@@ -1757,6 +2032,10 @@ function getSleep(dateStr) { return _getDailyField(dateStr, 'sleep'); }
 function setSleep(dateStr, val) { dbSaveDaily(dateStr, 'sleep', val); renderDaily(); }
 function getWeight(dateStr) { return _getDailyField(dateStr, 'weight'); }
 function setWeight(dateStr, val) { dbSaveDaily(dateStr, 'weight', val); renderDaily(); }
+function getFirstMeal(dateStr) { return _getDailyField(dateStr, 'first_meal'); }
+function setFirstMeal(dateStr, val) { dbSaveDaily(dateStr, 'first_meal', val); renderDaily(); }
+function getLastMeal(dateStr) { return _getDailyField(dateStr, 'last_meal'); }
+function setLastMeal(dateStr, val) { dbSaveDaily(dateStr, 'last_meal', val); renderDaily(); }
 
 // Exercise ratings: -1 = frowny, 0 = neutral, 1 = smiley
 function getRatings(dateStr) {
@@ -1773,6 +2052,17 @@ function cycleRating(dateStr, exerciseKey) {
   dbSaveRating(dateStr, exerciseKey, next);
 }
 function ratingEmoji(val) { return val === 1 ? '😊' : val === 0 ? '😐' : val === -1 ? '😞' : '☆'; }
+
+// Exercise set data (reps/weight per exercise) — stored in localStorage keyed by date
+function getExSets(dateStr) {
+  try { return JSON.parse(localStorage.getItem('exsets_' + dateStr)) || {}; } catch(e) { return {}; }
+}
+function setExSet(dateStr, exKey, field, val) {
+  const sets = getExSets(dateStr);
+  if (!sets[exKey]) sets[exKey] = {};
+  sets[exKey][field] = val;
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
+}
 function toggleRating(dateStr, rKey, val, routineKey) {
   const ratings = getRatings(dateStr);
   const newVal = ratings[rKey] === val ? undefined : val;
@@ -1839,6 +2129,8 @@ function openRoutinePopup(routineKey, dateStr) {
   if (!routine) return;
   const checked = getChecked(dateStr);
   const prefix = 'r_' + routineKey + '_';
+  const isTrackable = routineKey === 'gym' || routineKey === 'bodyweight';
+  const exSets = isTrackable ? getExSets(dateStr) : {};
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
@@ -1849,6 +2141,11 @@ function openRoutinePopup(routineKey, dateStr) {
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
+      const exKey = routineKey + '_' + i;
+      const setData = exSets[exKey] || {};
+      // Show reps/weight for gym, reps for bodyweight
+      const showGymTrack = routineKey === 'gym' && ex.sets && !ex.name.toLowerCase().includes('cooldown');
+      const showBwTrack = ex.trackReps || (routineKey === 'bodyweight' && ex.sets);
       return `
         <div class="exercise-item ${done}">
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
@@ -1856,6 +2153,16 @@ function openRoutinePopup(routineKey, dateStr) {
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
+            ${showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
+              <input class="wlog-input" type="number" placeholder="reps" min="0" max="100" style="width:40px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
+              <span class="wlog-unit">reps</span>
+              <input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" style="width:44px" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)">
+              <span class="wlog-unit">lbs</span>
+            </div>` : ''}
+            ${showBwTrack && !showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
+              <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
+              <span class="wlog-unit">reps</span>
+            </div>` : ''}
           </div>
           <div style="display:flex;gap:2px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation()">
             <span class="rating-btn ${rating === -1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',-1,'${routineKey}')">😞</span>
@@ -1892,6 +2199,7 @@ function getRoutineKey(wo) {
   if (!wo) return null;
   if (wo.type === 'gym') return 'gym';
   if (wo.type === 'yoga') return 'yoga';
+  if (wo.type === 'bodyweight') return 'bodyweight';
   if (wo.type === 'row' && wo.label.includes('Interval')) return 'row_intervals';
   if (wo.type === 'row') return 'row_steady';
   return null;
@@ -1959,47 +2267,124 @@ function renderDaily() {
   const wc = document.getElementById('workout-card');
   const rKey = getRoutineKey(wo);
   const checked = getChecked(dateStr);
+  const wlog = getWorkoutLog(dateStr);
+
+  // Dynamic title — "Today" when there's an event/holiday, otherwise "Today's Workout"
+  const evForCard = getEvents(dateStr);
+  const noteForCard = CSV_NOTES[dateStr] || '';
+  const hasEvent = !!(evForCard || noteForCard);
+  document.getElementById('workout-title').textContent = hasEvent ? 'Today' : "Today's Workout";
+  document.getElementById('workout-icon').textContent = hasEvent ? '📋' : '💪';
+
+  // Event/holiday banner — injected into the card itself (before card-body) for full-width
+  const wcCard = wc.closest('.card');
+  const oldBanner = wcCard.querySelector('.event-banner');
+  if (oldBanner) oldBanner.remove();
+  if (evForCard || noteForCard) {
+    const banner = document.createElement('div');
+    banner.className = 'event-banner';
+    let bannerContent = '';
+    if (evForCard) {
+      const hol = isHoliday(dateStr);
+      bannerContent += `<div style="padding:8px 16px;margin:0 -16px;font-size:12px;font-weight:700;background:${hol ? 'var(--red-bg)' : 'var(--purple-bg)'};color:${hol ? 'var(--red)' : 'var(--purple)'};">${eventIcon(dateStr)} ${evForCard.replace('🍁 ','')}</div>`;
+    }
+    if (noteForCard) {
+      bannerContent += `<div style="padding:6px 16px;margin:0 -16px;font-size:11px;font-weight:600;background:var(--cyan-bg);color:var(--cyan)">📝 ${noteForCard}</div>`;
+    }
+    banner.innerHTML = bannerContent;
+    banner.style.marginBottom = '8px';
+    wcCard.insertBefore(banner, wc);
+  }
+
   // Morning routine — always shown, clickable for details
   const morningHtml = `
-    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ 5-Min Morning Stretch</div>`;
+    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>`;
 
+  // Recommended workout section
+  let recommendedHtml = '';
   if (wo) {
-    wc.innerHTML = morningHtml + `
+    recommendedHtml = `
+      <div class="wo-section-divider">Recommended</div>
       <div class="workout-type ${wo.type}" style="cursor:pointer" onclick="openRoutinePopup('${rKey}','${dateStr}')">${wIcon(wo.type)} ${wo.label}</div>
       <div class="workout-details">
         <div class="target">${wo.target}</div>
         <div>${wo.details}</div>
       </div>
-      <span class="workout-tag ${wo.timing}">${timingLabel(wo.timing)}</span>
-      <div class="stretch-indicator" onclick="openRoutinePopup('stretch_${strR}','${dateStr}')" style="cursor:pointer">
-        <span class="stretch-label" style="color:var(--purple);font-size:13px">🧘 Stretch ${strR}</span>
-        <span style="display:flex;gap:6px">${['A','B','C'].map(r=>`<div class="stretch-pip ${strR===r?'active':''}" title="Routine ${r}"></div>`).join('')}</span>
-      </div>
-      ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}
-    `;
+      <span class="workout-tag ${wo.timing}">${timingLabel(wo.timing)}</span>`;
   } else {
-    wc.innerHTML = morningHtml + `<div class="workout-type rest">😴 Rest Day</div><div class="workout-details">No workout scheduled. Recovery is part of the plan.</div>
-      <div class="stretch-indicator" onclick="openRoutinePopup('stretch_${strR}','${dateStr}')" style="cursor:pointer">
-        <span class="stretch-label" style="color:var(--purple);font-size:13px">🧘 Stretch ${strR}</span>
-        <span style="display:flex;gap:6px">${['A','B','C'].map(r=>`<div class="stretch-pip ${strR===r?'active':''}" title="Routine ${r}"></div>`).join('')}</span>
-      </div>
-      ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}`;
+    recommendedHtml = `
+      <div class="wo-section-divider">Recommended</div>
+      <div class="workout-type rest">😴 Rest Day</div>
+      <div class="workout-details">No workout scheduled. Recovery is part of the plan.</div>`;
   }
+
+  // Other workouts section — compressed with sub-type pills
+  const otherWoHtml = OTHER_WORKOUTS.map(w => {
+    const entry = wlog[w.id] || {};
+    const isDone = entry.done;
+    const subtype = entry.subtype || (w.types ? w.types[0] : '');
+    const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
+      `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
+    ).join('')}</div>` : '';
+    return `<div class="wlog-row ${isDone ? 'done' : ''}">
+      <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
+      <span class="wlog-icon">${w.icon}</span>
+      <span class="wlog-label">${w.label}</span>
+      ${w.hasTime ? `<input class="wlog-input" type="number" placeholder="min" min="0" max="999" value="${entry.time || ''}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
+      ${w.hasTime ? '<span class="wlog-unit">min</span>' : ''}
+      ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
+      ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
+      ${typePills}
+    </div>`;
+  }).join('');
+
+  // Stretch tiers section
+  const strKey = 'stretch_' + strR;
+  const stretchTiersHtml = STRETCH_TIERS.map(t => {
+    const isRec = t.id === 'standard';
+    const tierRoutineKey = t.routineKey || strKey;
+    return `<div class="stretch-tier ${isRec ? 'recommended' : ''}" onclick="openRoutinePopup('${tierRoutineKey}','${dateStr}')">
+      <span class="tier-icon">${t.icon}</span>
+      <span>${t.label}${isRec ? ' ' + strR : ''}</span>
+      ${isRec ? '<span style="font-size:8px;opacity:0.7">recommended</span>' : ''}
+      <span class="tier-time">${t.time}</span>
+    </div>`;
+  }).join('');
+
+  wc.innerHTML = morningHtml + recommendedHtml + `
+    <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
+      <span>Log Workout</span><span class="chevron">▸</span>
+    </div>
+    <div id="other-wo-${dateStr}" class="wo-collapsible">
+      ${otherWoHtml}
+    </div>
+    <div class="wo-section-header" onclick="toggleWoSection('stretch-tiers-${dateStr}')">
+      <span>🧘 Stretching — ${strR}</span><span class="chevron">▸</span>
+    </div>
+    <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
+      <div class="stretch-tiers">${stretchTiersHtml}</div>
+    </div>
+    ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}`;
 
   // Meals card
   const waterCount = getWater(dateStr);
   const coffeeCount = getCoffee(dateStr);
   document.getElementById('meals-card').innerHTML = meals.map((m,i) => {
     const mDone = checked['m_'+i] ? 'done' : '';
+    const choiceIdx = getMealChoice(dateStr, i);
+    const selected = m.options[choiceIdx] || m.options[0];
+    const hasAlts = m.options.length > 1;
     return `
-    <div class="check-row ${mDone}" onclick="toggleScheduleItem(this,'${dateStr}','m_${i}')">
+    <div class="check-row ${mDone}">
       <div class="meal-time">${m.time}</div>
-      <div class="check-box">${mDone ? '✓' : ''}</div>
-      <div class="check-text"><div class="meal-name">${m.name}</div><div class="meal-cal">${m.cal}</div></div>
+      <div class="check-box" onclick="toggleScheduleItem(this.parentElement,'${dateStr}','m_${i}')">${mDone ? '✓' : ''}</div>
+      <div class="check-text" ${hasAlts ? `onclick="cycleMealChoice('${dateStr}',${i},${m.options.length})" style="cursor:pointer"` : `onclick="toggleScheduleItem(this.parentElement,'${dateStr}','m_${i}')"`}>
+        <div class="meal-name">${selected.name}${hasAlts ? ' <span style="font-size:8px;color:var(--text-muted)">⟳ ' + (choiceIdx+1) + '/' + m.options.length + '</span>' : ''}</div>
+      </div>
     </div>`;
   }).join('') + `
     <div class="card-footer">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
         <div class="supp-row" style="flex:1;margin:0">
           <span class="supp-pill">💊 D3</span>
           <span class="supp-pill">🐟 Omega-3</span>
@@ -2016,19 +2401,53 @@ function renderDaily() {
             const pw = getWeight(ds(d));
             if (pw > 0) { prevWeight = pw; break; }
           }
-          const weightDelta = weight > 0 && prevWeight > 0 ? (weight - prevWeight).toFixed(1) : '';
+          // Show last known weight if none entered today
+          const displayWeight = weight || prevWeight;
+          const isCarryover = !weight && prevWeight > 0;
+          const weightDelta = displayWeight > 0 && prevWeight > 0 && !isCarryover ? (displayWeight - prevWeight).toFixed(1) : '';
           const weightColor = weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--text-dim)';
-          return `<div style="display:flex;align-items:center;gap:3px;flex-shrink:0">
-            <span style="font-size:10px">⚖️</span>
-            <input type="number" class="track-input" style="width:52px" placeholder="lbs" step="0.5" min="150" max="350"
-              value="${weight || ''}" onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
-            ${weightDelta ? `<span style="font-size:10px;font-weight:700;color:${weightColor}">${weightDelta > 0 ? '+' : ''}${weightDelta}</span>` : ''}
+          return `<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+            <span style="font-size:8px">⚖️</span>
+            <input type="number" class="track-input" style="width:58px;font-size:11px;padding:2px 4px;${isCarryover ? 'opacity:0.5' : ''}" placeholder="lbs" step="0.5" min="150" max="350"
+              value="${displayWeight || ''}" onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
+            ${weightDelta ? `<span style="font-size:9px;font-weight:700;color:${weightColor}">${weightDelta > 0 ? '+' : ''}${weightDelta}</span>` : ''}
           </div>`;
         })()}
       </div>
       <div class="water-tracker">
         ${[0,1,2,3,4,5,6,7].map(i => `<span class="water-drop ${i < waterCount ? 'filled' : ''}" onclick="toggleWater('${dateStr}',${i})">💧</span>`).join('')}
         ${[0,1].map(i => `<span class="coffee-icon ${i < coffeeCount ? 'filled' : ''}" onclick="toggleCoffee('${dateStr}',${i})">☕</span>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;padding-top:4px;border-top:1px solid var(--divider)">
+        ${(() => {
+          const fm = getFirstMeal(dateStr);
+          const lm = getLastMeal(dateStr);
+          const firstOpts = [8, 10, 12, 14];
+          const lastOpts  = [18, 19, 20, 21];
+          const recFirst = 10, recLast = 19;
+          const fmtHr = h => h <= 12 ? h + (h < 12 ? 'a' : 'p') : (h-12) + 'p';
+          const ew = fm && lm ? (lm - fm) + 'h' : '';
+          const pillStyle = (h, sel, selBg, selBorder, rec) => {
+            const isActive = sel === h;
+            const isRec = h === rec;
+            let s = 'font-size:9px;padding:2px 6px;border-radius:4px;cursor:pointer;font-weight:600;';
+            if (isActive) s += `background:${selBg};border:2px solid ${selBorder};color:#fff;`;
+            else if (isRec) s += 'background:transparent;border:2px solid var(--green);color:var(--text);';
+            else s += 'background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-muted);';
+            return s;
+          };
+          return `
+            <span style="font-size:9px;color:var(--text-muted);font-weight:600">🍽️</span>
+            <div style="display:flex;gap:3px">${firstOpts.map(h =>
+              `<div style="${pillStyle(h, fm, 'var(--green)', 'var(--green)', recFirst)}" onclick="setFirstMeal('${dateStr}',${fm===h?0:h})">${fmtHr(h)}</div>`
+            ).join('')}</div>
+            <span style="font-size:9px;color:var(--text-dim)">→</span>
+            <div style="display:flex;gap:3px">${lastOpts.map(h =>
+              `<div style="${pillStyle(h, lm, 'var(--orange)', 'var(--orange)', recLast)}" onclick="setLastMeal('${dateStr}',${lm===h?0:h})">${fmtHr(h)}</div>`
+            ).join('')}</div>
+            ${ew ? `<span style="font-size:9px;font-weight:700;color:var(--cyan)">${ew}</span>` : ''}
+          `;
+        })()}
       </div>
     </div>`;
 
@@ -2044,15 +2463,14 @@ function renderDaily() {
 
   let items = [];
   if (allo) items.push({k:"allo",t:"AM",txt:"💊 Allopurinol 100mg",sub:""});
-  items.push({k:"morning",t:"AM",txt:"☀️ 5-min morning stretch",sub:""});
+  items.push({k:"morning",t:"AM",txt:"☀️ Morning stretch (~8 min)",sub:""});
   if (wo && wo.timing==="morning") items.push({k:"workout",t:"AM",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
-  if (ev) items.push({k:"event",t:"",txt:eventIcon(dateStr)+" "+ev.replace('🍁 ',''),sub:""});
-  if (csvNote) items.push({k:"note",t:"",txt:"📝 "+csvNote,sub:""});
+  // Events/holidays now shown on the workout card instead
   // School pickup on kid days (C) weekdays — skip if NO_SCHOOL set or CSV notes flag it
   const noSchool = NO_SCHOOL.has(dateStr) || (csvNote && /break|holiday|no school|PD day/i.test(csvNote));
   if (todayC === 'C' && !noSchool && dow >= 1 && dow <= 4) items.push({k:"school",t:"2:30",txt:"🏫 School Pickup",sub:""});
   if (todayC === 'C' && !noSchool && dow === 5) items.push({k:"school",t:"12P",txt:"🏫 School Pickup (early Friday)",sub:""});
-  items.push({k:"work",t:"8–5",txt:"💻 Work",sub:""});
+  // Work removed from schedule — it's every day, no need to show it
   if (wo && wo.timing==="anytime") items.push({k:"workout",t:"🕐",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
   // Kids arrive: today is L (kid-free), tomorrow is C → kids come to you at 5pm tonight
   if (todayC === 'L' && nextC === 'C') items.push({k:"kids_arrive",t:"5P",txt:"👧 Kids Arrive",sub:""});
@@ -2094,7 +2512,8 @@ function renderDaily() {
     const isNoSchool = NO_SCHOOL.has(cdStr) || /break|holiday|PD day|convention/i.test(CSV_NOTES[cdStr] || '');
     const hlCls = isStatHoliday ? 'cs-holiday' : (isNoSchool ? 'cs-noschool' : '');
     csHtml += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px">`;
-    csHtml += `<div class="cs-dow">${dows[cd.getDay()]}${cd.getDate()}</div>`;
+    const isMon = cd.getDay() === 1;
+    csHtml += `<div class="cs-dow" ${isMon ? 'style="font-weight:900;color:var(--text)"' : ''}>${dows[cd.getDay()]}${cd.getDate()}</div>`;
     csHtml += `<div class="cs-box ${cls} ${isCur?'cs-today':''} ${hlCls}">${cc || '?'}</div>`;
     csHtml += `</div>`;
   }
@@ -2110,7 +2529,7 @@ function renderDaily() {
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
         <span style="font-size:7px;color:var(--cyan)">▂ No school</span>
-        <span style="font-size:7px;color:var(--red)">▂ Stat holiday</span>
+        <span style="font-size:7px;color:#ff4444">▂ Stat holiday</span>
       </div>
       ${csHtml}
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn">${THEME_ICONS[document.documentElement.getAttribute('data-theme') || 'dark']}</button>
@@ -2135,7 +2554,6 @@ function getDayProgress(dateStr) {
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
   if (cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false});
-  tasks.push({k:'work', label:'💻 Work', show:false});
   tasks.push({k:'stretch', label:'🧘 Stretch', show:true});
   if (wo && wo.optional) tasks.push({k:'optional', label:'⚡ Bonus', show:true});
   if (wo && wo.alt) tasks.push({k:'alt', label:'🔄 Alt workout', show:true});
@@ -2217,7 +2635,7 @@ function renderWeek() {
     // Holiday / no-school bottom highlight
     const isStatHoliday = (ev || '').includes('🍁');
     const isNoSchool = NO_SCHOOL.has(dStr) || /break|holiday|PD day|convention/i.test(csvNote);
-    const wkBottomBorder = isStatHoliday ? 'border-bottom:3px solid var(--red)' : (isNoSchool ? 'border-bottom:3px solid var(--cyan)' : '');
+    const wkBottomBorder = isStatHoliday ? 'border-bottom:4px solid #ff4444;box-shadow:0 2px 8px rgba(255,68,68,0.5)' : (isNoSchool ? 'border-bottom:3px solid var(--cyan)' : '');
 
     const remainHtml = prog.remaining.length > 0
       ? `<div class="wd-remaining"><div class="wd-section-label" style="color:var(--text-muted)">To do</div>${prog.remaining.map(c => `<span class="wd-remain-item">${c}</span>`).join('')}</div>`
@@ -2236,8 +2654,8 @@ function renderWeek() {
           ${badgeText ? `<div class="wd-badge ${badgeClass}">${badgeText}</div>` : ''}
         </div>
         <div style="min-height:18px">
-          ${ev ? `<div class="wd-event">${eventIcon(dStr)} ${ev.replace('🍁 ','')}</div>` : ''}
-          ${csvNote ? `<div class="wd-event" style="color:var(--cyan)">📝 ${csvNote}</div>` : ''}
+          ${ev ? `<div style="padding:4px 8px;margin:0 -8px 4px;font-size:10px;font-weight:700;background:${isHoliday(dStr) ? 'var(--red-bg)' : 'var(--purple-bg)'};color:${isHoliday(dStr) ? 'var(--red)' : 'var(--purple)'};">${eventIcon(dStr)} ${ev.replace('🍁 ','')}</div>` : ''}
+          ${csvNote && !ev ? `<div style="padding:4px 8px;margin:0 -8px 4px;font-size:10px;font-weight:600;background:var(--cyan-bg);color:var(--cyan)">📝 ${csvNote}</div>` : ''}
         </div>
         <div class="wd-progress">
           <div class="wd-progress-bar"><div class="wd-progress-fill" style="width:${pct}%;background:${pColor}"></div></div>
@@ -2288,7 +2706,7 @@ function renderWeek() {
   // Week legend with holiday indicators
   document.getElementById('week-legend').innerHTML = `
     <div class="legend-item"><span style="color:var(--cyan)">▂</span> No school</div>
-    <div class="legend-item"><span style="color:var(--red)">▂</span> Stat holiday</div>
+    <div class="legend-item"><span style="color:#ff4444">▂</span> Stat holiday</div>
   `;
 }
 
@@ -2323,6 +2741,10 @@ function renderMonth() {
   let mMoodSum = 0, mMoodCount = 0, mEnergySum = 0, mEnergyCount = 0;
   let mSleepSum = 0, mSleepCount = 0;
   let mWeightFirst = 0, mWeightLast = 0;
+  // Distance & time accumulators from workout log
+  let mRowDist = 0, mRowTime = 0;
+  let mWalkDist = 0, mWalkTime = 0;
+  let mSwimDist = 0, mSwimTime = 0;
 
   // Count trailing empty cells
   const trailingEmpty = totalCells - (firstDay + daysInMonth);
@@ -2364,6 +2786,11 @@ function renderMonth() {
       const daySleep = getSleep(dStr); if (daySleep) { mSleepSum += daySleep; mSleepCount++; }
       const dayWeight = getWeight(dStr);
       if (dayWeight > 0) { if (!mWeightFirst) mWeightFirst = dayWeight; mWeightLast = dayWeight; }
+      // Accumulate workout log distances & times
+      const dayWlog = getWorkoutLog(dStr);
+      if (dayWlog.row && dayWlog.row.done) { mRowDist += dayWlog.row.dist || 0; mRowTime += dayWlog.row.time || 0; }
+      if (dayWlog.walk && dayWlog.walk.done) { mWalkDist += dayWlog.walk.dist || 0; mWalkTime += dayWlog.walk.time || 0; }
+      if (dayWlog.swim && dayWlog.swim.done) { mSwimDist += dayWlog.swim.dist || 0; mSwimTime += dayWlog.swim.time || 0; }
       if (isPastOrToday) {
         const prog = getDayProgress(dStr);
         mTotalDone += prog.done;
@@ -2381,7 +2808,7 @@ function renderMonth() {
       const mcIsStatHoliday = (ev || '').includes('🍁');
       const mcCsvNote = CSV_NOTES[dStr] || '';
       const mcIsNoSchool = NO_SCHOOL.has(dStr) || /break|holiday|PD day|convention/i.test(mcCsvNote);
-      const mcBottomBorder = mcIsStatHoliday ? 'border-bottom:3px solid var(--red)' : (mcIsNoSchool ? 'border-bottom:3px solid var(--cyan)' : '');
+      const mcBottomBorder = mcIsStatHoliday ? 'border-bottom:4px solid #ff4444;box-shadow:0 2px 8px rgba(255,68,68,0.5)' : (mcIsNoSchool ? 'border-bottom:3px solid var(--cyan)' : '');
 
       let woHtml = '';
       if (wo) {
@@ -2393,10 +2820,11 @@ function renderMonth() {
       let evHtml = '';
       if (ev) {
         const evShort = ev.replace('🍁 ','').substring(0, 18);
-        evHtml = `<div class="mc-event">${eventIcon(dStr)} ${evShort}</div>`;
+        const mcHol = ev.includes('🍁');
+        evHtml = `<div style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:700;background:${mcHol ? 'var(--red-bg)' : 'var(--purple-bg)'};color:${mcHol ? 'var(--red)' : 'var(--purple)'};">${eventIcon(dStr)} ${evShort}</div>`;
       } else if (csvNote) {
         const noteShort = csvNote.substring(0, 16);
-        evHtml = `<div class="mc-event">📝 ${noteShort}</div>`;
+        evHtml = `<div style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:600;background:var(--cyan-bg);color:var(--cyan)">📝 ${noteShort}</div>`;
       }
 
       const strHtml = `<div class="mc-stretch">🧘 ${strR}</div>`;
@@ -2447,16 +2875,25 @@ function renderMonth() {
           <div style="width:${stPct}%;background:var(--purple)" title="Stretch ${mStretchesDone}/${mStretches}"></div>
           <div style="width:${moPct}%;background:var(--orange)" title="Morning ${mMorningsDone}/${mMornings}"></div>
         </div>
-        <div style="display:flex;gap:8px;font-size:10px;color:var(--text-dim)">
+        <div style="display:flex;gap:8px;font-size:10px;color:var(--text-dim);flex-wrap:wrap">
           <span style="color:var(--cyan)">🏋️ ${mWorkoutsDone}/${mWorkouts}</span>
           <span style="color:var(--purple)">🧘 ${mStretchesDone}/${mStretches}</span>
           <span style="color:var(--orange)">☀️ ${mMorningsDone}/${mMornings}</span>
           ${mMoodCount ? `<span>😊 ${(mMoodSum/mMoodCount).toFixed(1)}</span>` : ''}
           ${mEnergyCount ? `<span>⚡ ${(mEnergySum/mEnergyCount).toFixed(1)}</span>` : ''}
           ${mSleepCount ? `<span>😴 ${(mSleepSum/mSleepCount).toFixed(1)}h</span>` : ''}
-          ${mWeightFirst && mWeightLast ? `<span style="color:${mWeightLast<=mWeightFirst?'var(--green)':'var(--red)'}">⚖️ ${mWeightLast}lb</span>` : ''}
-          <span style="margin-left:auto"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span>/${daysInMonth}d (${daysInMonth > 0 ? Math.round(mCraigDays/daysInMonth*100) : 0}%)</span>
           <span>💧${mWater}</span>
+          <span style="margin-left:auto"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span>/${daysInMonth}d</span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);flex-wrap:wrap;padding-top:2px;border-top:1px solid var(--divider)">
+          ${mRowDist || mRowTime ? `<span style="color:var(--cyan)">🚣 ${mRowDist >= 1000 ? (mRowDist/1000).toFixed(1) + 'km' : Math.round(mRowDist) + 'm'} · ${mRowTime}min</span>` : '<span style="color:var(--text-muted)">🚣 —</span>'}
+          ${mWalkDist || mWalkTime ? `<span style="color:var(--green)">🚶 ${mWalkDist.toFixed(1)}km · ${mWalkTime}min</span>` : '<span style="color:var(--text-muted)">🚶 —</span>'}
+          ${mSwimDist || mSwimTime ? `<span style="color:var(--blue)">🏊 ${mSwimDist >= 1000 ? (mSwimDist/1000).toFixed(1) + 'km' : Math.round(mSwimDist) + 'm'} · ${mSwimTime}min</span>` : '<span style="color:var(--text-muted)">🏊 —</span>'}
+          ${mWeightFirst && mWeightLast ? (() => {
+            const wDelta = (mWeightLast - mWeightFirst).toFixed(1);
+            const wColor = wDelta <= 0 ? 'var(--green)' : 'var(--red)';
+            return `<span style="color:${wColor};margin-left:auto">⚖️ ${mWeightFirst}→${mWeightLast} (${wDelta > 0 ? '+' : ''}${wDelta})</span>`;
+          })() : ''}
         </div>
       </div>
       <div style="font-size:18px;font-weight:800;color:${overallColor};min-width:44px;text-align:right">${overallPct}%</div>
@@ -2470,7 +2907,7 @@ function renderMonth() {
     <div class="legend-item"><div class="legend-dot lisa"></div>Lisa (${mLisaDays}d)</div>
     <div class="legend-item">🚣 Row · 🏋️ Gym · 🧘 Yoga · 😴 Rest</div>
     <div class="legend-item"><span style="color:var(--cyan)">▂</span> No school</div>
-    <div class="legend-item"><span style="color:var(--red)">▂</span> Stat holiday</div>
+    <div class="legend-item"><span style="color:#ff4444">▂</span> Stat holiday</div>
   `;
 }
 
