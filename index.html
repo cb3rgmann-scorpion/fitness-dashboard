@@ -384,7 +384,73 @@
     background: #eef0f4; color: #1a1d2a;
   }
   [data-theme="light"] .time-display {
-    color: #000;
+    color: #1a1d2a;
+  }
+  /* Daily page title — dark gradient text won't show on white bg */
+  [data-theme="light"] .day-name,
+  [data-theme="light"] .overlay-title {
+    background: linear-gradient(135deg, #1a1d2a 0%, #4a4d5e 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  /* Cards — remove dark gradient, use clean white */
+  [data-theme="light"] .card {
+    background: #ffffff;
+    border-color: #dde1e8;
+  }
+  [data-theme="light"] .card:hover,
+  [data-theme="light"] .card.interactive:hover {
+    border-color: #c8cdd6;
+  }
+  /* Nav buttons */
+  [data-theme="light"] .nav-btn {
+    background: #ffffff; border-color: #dde1e8; color: #5c6070;
+  }
+  [data-theme="light"] .nav-btn:hover {
+    background: #f5f7fa; border-color: #c8cdd6; color: #1a1d2a;
+  }
+  [data-theme="light"] .nav-btn.active {
+    background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border);
+  }
+  /* Check rows */
+  [data-theme="light"] .check-row {
+    border-color: #eef0f4;
+  }
+  /* Card titles */
+  [data-theme="light"] .card-title {
+    color: #5c6070;
+  }
+  /* Schedule section headers */
+  [data-theme="light"] .wo-section-header {
+    color: #5c6070; border-color: #eef0f4;
+  }
+  /* Tomorrow strip at bottom of cards */
+  [data-theme="light"] .tomorrow-strip {
+    color: #5c6070;
+  }
+  [data-theme="light"] .card-footer {
+    border-color: #eef0f4;
+  }
+  /* Bottom bar custody boxes */
+  [data-theme="light"] .cs-box.cs-unknown {
+    background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); color: #9499a8;
+  }
+  /* Week view day cards */
+  [data-theme="light"] .week-day {
+    background: #ffffff; border-color: #dde1e8;
+  }
+  [data-theme="light"] .week-day.today {
+    border-color: var(--purple-border);
+  }
+  /* Month view cells */
+  [data-theme="light"] .month-cell {
+    background: #ffffff; border-color: #dde1e8;
+  }
+  [data-theme="light"] .month-cell.today {
+    border-color: var(--purple-border);
+  }
+  /* Exercise stat cards */
+  [data-theme="light"] .ex-stat-card {
+    background: #ffffff; border-color: #dde1e8;
   }
   [data-theme="light"] .track-input {
     background: #fff; border-color: rgba(0,0,0,0.15); color: #1a1d2a;
@@ -431,7 +497,7 @@
   .main-content { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding: 8px 24px 10px; flex: 1; min-height: 0; }
 
   .card {
-    background: linear-gradient(165deg, var(--card) 0%, #12141e 100%);
+    background: var(--card);
     border: 1px solid var(--card-border);
     border-radius: 14px;
     padding: 10px 12px;
@@ -709,7 +775,7 @@
   .wd-section-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
 
   .week-summary {
-    background: linear-gradient(165deg, var(--card) 0%, #12141e 100%);
+    background: var(--card);
     border: 1px solid var(--card-border); border-radius: 10px;
     padding: 10px 10px 8px; display: flex; flex-direction: column;
     box-shadow: var(--card-shadow); position: relative;
@@ -1461,9 +1527,26 @@ async function loadTrackingData(startDate, endDate) {
       DB_CACHE.daily[row.date] = {
         mood: row.mood || 0, energy: row.energy || 0,
         sleep: parseFloat(row.sleep) || 0, weight: parseFloat(row.weight) || 0,
-        water: row.water || 0, coffee: row.coffee || 0, notes: row.notes || ''
+        water: row.water || 0, coffee: row.coffee || 0, notes: row.notes || '',
+        first_meal: row.first_meal || 0, last_meal: row.last_meal || 0
       };
     });
+    // Merge localStorage daily fields into DB_CACHE (covers fields not yet in Supabase schema)
+    const dailyFields = ['mood','energy','sleep','weight','water','coffee','notes','first_meal','last_meal'];
+    const startD2 = new Date(startDate), endD2 = new Date(endDate);
+    for (let d = new Date(startD2); d <= endD2; d.setDate(d.getDate() + 1)) {
+      const dStr = ds(d);
+      if (!DB_CACHE.daily[dStr]) DB_CACHE.daily[dStr] = {};
+      dailyFields.forEach(field => {
+        if (DB_CACHE.daily[dStr][field]) return; // already have a value from Supabase
+        try {
+          const v = localStorage.getItem(field + '_' + dStr);
+          if (v !== null && v !== '' && v !== '0') {
+            DB_CACHE.daily[dStr][field] = field === 'notes' ? v : parseFloat(v) || 0;
+          }
+        } catch(e) {}
+      });
+    }
     // Load checkboxes
     const { data: cbs } = await sb.from('checkboxes').select('*')
       .gte('date', startDate).lte('date', endDate);
@@ -2644,8 +2727,8 @@ async function migrateLocalStorage() {
   for (let i = 0; i < localStorage.length; i++) {
     const k = localStorage.key(i);
     const v = localStorage.getItem(k);
-    // Daily fields: mood_DATE, energy_DATE, sleep_DATE, weight_DATE, water_DATE, coffee_DATE, notes_DATE
-    const dailyMatch = k.match(/^(mood|energy|sleep|weight|water|coffee|notes)_(\d{4}-\d{2}-\d{2})$/);
+    // Daily fields: mood_DATE, energy_DATE, sleep_DATE, weight_DATE, water_DATE, coffee_DATE, notes_DATE, first_meal_DATE, last_meal_DATE
+    const dailyMatch = k.match(/^(mood|energy|sleep|weight|water|coffee|notes|first_meal|last_meal)_(\d{4}-\d{2}-\d{2})$/);
     if (dailyMatch) {
       const [, field, dateStr] = dailyMatch;
       if (!dailyRows[dateStr]) dailyRows[dateStr] = { date: dateStr };
