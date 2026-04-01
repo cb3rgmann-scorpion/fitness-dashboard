@@ -716,10 +716,11 @@
     width: 24px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
   }
-  .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); border-bottom: 3px solid var(--green); }
-  .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); border-bottom: 3px solid var(--pink); }
+  .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); }
   .cs-box.cs-unknown { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--input-border); }
-  .cs-box.cs-today { opacity: 1; box-shadow: 0 0 6px rgba(167,139,250,0.4); border-color: var(--purple); }
+  .cs-box.cs-today { opacity: 1; border-bottom: 3px solid var(--purple); box-shadow: 0 0 6px rgba(167,139,250,0.4); }
+  .cs-box.cs-viewed { opacity: 0.9; box-shadow: 0 0 4px rgba(255,255,255,0.15); border-style: dashed; }
   .cs-box.cs-holiday { border-bottom: 4px solid #ff4444 !important; }
   .cs-box.cs-noschool { border-bottom: 3px solid var(--cyan); }
   .cs-dow { font-size: 9px; color: var(--text-dim); text-align: center; white-space: nowrap; }
@@ -4023,7 +4024,6 @@ function renderDaily() {
   if (todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
   if (wo && wo.timing==="evening") items.push({k:"workout",t:"PM",txt:"🌙 "+wo.label,sub:wo.target});
   items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Session",sub:"Any tier — quick, standard, yoga, or deep"});
-  items.push({k:"ifasting",t:"🍽️",txt:"Intermittent Fast (10a–7p)",sub:"Stayed within eating window"});
 
   // Optional/alt workout items — checkable, with divider
   if (wo && (wo.optional || wo.alt)) items.push({k:"_divider",t:"",txt:"— optional —",sub:"",divider:true});
@@ -4052,7 +4052,8 @@ function renderDaily() {
     cd.setDate(cd.getDate() + ci);
     const cdStr = ds(cd);
     const cc = custodyType(cdStr);
-    const isCur = ci === 0;
+    const isActualToday = ci === -currentDayOffset;
+    const isViewed = ci === 0;
     const cls = cc === 'C' ? 'cs-craig' : cc === 'L' ? 'cs-lisa' : 'cs-unknown';
     const isStatHoliday = (CSV_EVENTS[cdStr] || '').includes('🍁');
     const isNoSchool = NO_SCHOOL.has(cdStr) || /break|holiday|PD day|convention/i.test(CSV_NOTES[cdStr] || '');
@@ -4060,7 +4061,7 @@ function renderDaily() {
     csHtml += `<div style="display:flex;flex-direction:column;align-items:center;gap:1px">`;
     const isMon = cd.getDay() === 1;
     csHtml += `<div class="cs-dow" ${isMon ? 'style="font-weight:900;color:var(--text)"' : ''}>${dows[cd.getDay()]}${cd.getDate()}</div>`;
-    csHtml += `<div class="cs-box ${cls} ${isCur?'cs-today':''} ${hlCls}">${cc || '?'}</div>`;
+    csHtml += `<div class="cs-box ${cls} ${isActualToday?'cs-today':''} ${isViewed && !isActualToday?'cs-viewed':''} ${hlCls}">${cc || '?'}</div>`;
     csHtml += `</div>`;
   }
   csHtml += '</div>';
@@ -4101,7 +4102,6 @@ function getDayProgress(dateStr) {
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
   if (cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false, pct:false});
-  tasks.push({k:'ifasting', label:'🍽️ IF', show:true, pct:true});
   if (wo && wo.optional) tasks.push({k:'optional', label:'⚡ Bonus', show:true, pct:false});
   if (wo && wo.alt) tasks.push({k:'alt', label:'🔄 Alt workout', show:true, pct:false});
 
