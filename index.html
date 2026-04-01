@@ -1493,40 +1493,62 @@ function restoreOpenSections(dateStr) {
 // CONCEPT2 LOGBOOK INTEGRATION
 // ══════════════════════════════════════════════
 const C2_API = 'https://log.concept2.com/api';
+let _c2TokenCache = null; // in-memory only, never in localStorage
 
-function getC2Token() { return localStorage.getItem('c2_api_token') || ''; }
+async function getC2Token() {
+  if (_c2TokenCache) return _c2TokenCache;
+  if (!sbReady) return '';
+  try {
+    const { data } = await sb.from('user_settings').select('setting_value').eq('setting_key', 'c2_api_token').single();
+    if (data && data.setting_value) { _c2TokenCache = data.setting_value; return _c2TokenCache; }
+  } catch(e) { console.warn('Could not load C2 token from Supabase', e); }
+  return '';
+}
 
-function openSettings() {
-  document.getElementById('c2-token-input').value = getC2Token() ? '••••••••••••••••' : '';
+async function openSettings() {
+  const token = await getC2Token();
+  document.getElementById('c2-token-input').value = token ? '••••••••••••••••' : '';
   updateC2Status();
   loadC2Recent();
   document.getElementById('settings-backdrop').classList.add('open');
 }
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
 
-function saveC2Token() {
+async function saveC2Token() {
   const input = document.getElementById('c2-token-input');
   const val = input.value.trim();
-  if (val && !val.startsWith('••')) {
-    localStorage.setItem('c2_api_token', val);
+  if (!val || val.startsWith('••')) return;
+  const statusEl = document.getElementById('c2-status');
+  if (!sbReady) { statusEl.innerHTML = '<span style="color:var(--red)">Not logged in — log in first</span>'; return; }
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { statusEl.innerHTML = '<span style="color:var(--red)">Not logged in</span>'; return; }
+    const { error } = await sb.from('user_settings').upsert({
+      user_id: session.user.id, setting_key: 'c2_api_token', setting_value: val, updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,setting_key' });
+    if (error) throw error;
+    _c2TokenCache = val;
     input.value = '••••••••••••••••';
-    updateC2Status();
+    statusEl.innerHTML = '<span style="color:var(--green)">✓ Token saved to Supabase</span>';
     loadC2Recent();
+  } catch(e) {
+    console.error('Save C2 token error:', e);
+    statusEl.innerHTML = '<span style="color:var(--red)">Save failed: ' + (e.message || e) + '</span>';
   }
 }
 
-function updateC2Status() {
+async function updateC2Status() {
   const el = document.getElementById('c2-status');
-  const token = getC2Token();
+  const token = await getC2Token();
   if (token) {
-    el.innerHTML = '<span style="color:var(--green)">✓ Token saved</span>';
+    el.innerHTML = '<span style="color:var(--green)">✓ Token saved (syncs across devices)</span>';
   } else {
     el.innerHTML = '<span style="color:var(--text-muted)">No token set</span>';
   }
 }
 
 async function c2Fetch(endpoint) {
-  const token = getC2Token();
+  const token = await getC2Token();
   if (!token) return null;
   try {
     const resp = await fetch(C2_API + endpoint, {
@@ -1542,7 +1564,8 @@ async function c2Fetch(endpoint) {
 
 async function loadC2Recent() {
   const el = document.getElementById('c2-recent');
-  if (!getC2Token()) { el.textContent = 'Connect to see your rowing data'; return; }
+  const token = await getC2Token();
+  if (!token) { el.textContent = 'Connect to see your rowing data'; return; }
   el.innerHTML = '<span style="color:var(--text-muted)">Loading...</span>';
   const data = await c2Fetch('/users/me/results?type=rower&num=5');
   if (!data || !data.data) { el.innerHTML = '<span style="color:var(--red)">Could not fetch — check token</span>'; return; }
