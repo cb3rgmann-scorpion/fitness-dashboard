@@ -439,14 +439,14 @@
     background: #ffffff; border-color: #dde1e8;
   }
   [data-theme="light"] .week-day.today {
-    border-color: var(--purple-border);
+    border: 2px solid var(--purple); box-shadow: 0 0 10px rgba(139,92,246,0.2), inset 0 0 6px rgba(139,92,246,0.06);
   }
   /* Month view cells */
   [data-theme="light"] .month-cell {
     background: #ffffff; border-color: #dde1e8;
   }
   [data-theme="light"] .month-cell.today {
-    border-color: var(--purple-border);
+    border: 2px solid var(--purple) !important; box-shadow: 0 0 10px rgba(139,92,246,0.2), inset 0 0 6px rgba(139,92,246,0.06);
   }
   /* Exercise stat cards */
   [data-theme="light"] .ex-stat-card {
@@ -719,7 +719,7 @@
   .cs-box.cs-craig { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
   .cs-box.cs-lisa { background: var(--pink-bg); color: var(--pink); border: 1px solid var(--pink-border); }
   .cs-box.cs-unknown { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--input-border); }
-  .cs-box.cs-today { opacity: 1; border-bottom: 3px solid var(--purple); box-shadow: 0 0 6px rgba(167,139,250,0.4); }
+  .cs-box.cs-today { opacity: 1; border: 2px solid var(--purple) !important; box-shadow: 0 0 8px rgba(167,139,250,0.4); }
   .cs-box.cs-viewed { opacity: 0.9; box-shadow: 0 0 4px rgba(255,255,255,0.15); border-style: dashed; }
   .cs-box.cs-holiday { border-bottom: 4px solid #ff4444 !important; }
   .cs-box.cs-noschool { border-bottom: 3px solid var(--cyan); }
@@ -761,7 +761,7 @@
     box-shadow: var(--card-shadow); overflow: hidden; position: relative;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
-  .week-day.today { border-color: var(--purple); box-shadow: 0 0 12px rgba(167,139,250,0.25); }
+  .week-day.today { border: 2px solid var(--purple); box-shadow: 0 0 12px rgba(167,139,250,0.35), inset 0 0 8px rgba(167,139,250,0.08); }
   .week-day.craig-day { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.25); }
   .week-day.lisa-day { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.25); }
 
@@ -835,7 +835,7 @@
   .month-cell:hover { border-color: var(--purple); box-shadow: 0 0 8px rgba(167,139,250,0.15); }
   .month-cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .month-cell.empty:hover { border-color: transparent; box-shadow: none; }
-  .month-cell.today { border-color: var(--purple); box-shadow: 0 0 12px rgba(167,139,250,0.25); }
+  .month-cell.today { border: 2px solid var(--purple) !important; box-shadow: 0 0 12px rgba(167,139,250,0.35), inset 0 0 6px rgba(167,139,250,0.1); z-index: 1; }
   .month-cell.craig { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.25); }
   .month-cell.lisa { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.25); }
 
@@ -1295,9 +1295,9 @@
 
     <!-- Meals Card -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header" onclick="openRecipeLibrary()" style="cursor:pointer" title="Open recipe library">
         <div class="card-icon meals">🥗</div>
-        <div class="card-title">Meals & Supplements</div>
+        <div class="card-title">Meals & Supplements <span style="font-size:9px;color:var(--purple);font-weight:400">› recipes</span></div>
       </div>
       <div class="card-body" id="meals-card"></div>
     </div>
@@ -3249,6 +3249,124 @@ function getMeals(dateStr, isKid) {
 }
 
 const MACROS = { protein: 170, fat: 75, carbs: 235, calories: "2,300" };
+
+// ──────────────────────────────────────────────
+// RECIPE LIBRARY — curated links for each meal
+// ──────────────────────────────────────────────
+const RECIPE_LIBRARY = {
+  dinners_craig: [
+    { name: "Sheet pan chicken thighs + roasted veg", cal: "~750", protein: "~55g", prep: "25 min", url: "https://www.cookingclassy.com/sheet-pan-roasted-chicken-with-root-vegetables/" },
+    { name: "Ground beef tacos + beans + salsa", cal: "~700", protein: "~50g", prep: "15 min", url: "https://www.budgetbytes.com/baked-beef-black-bean-tacos/" },
+    { name: "Steak + baked potato + side salad", cal: "~800", protein: "~60g", prep: "20 min", url: "https://www.tasteofhome.com/recipes/steak-and-fries-salad/" },
+    { name: "Big omelette — peppers, spinach, onion, toast", cal: "~650", protein: "~45g", prep: "10 min", url: "https://www.saffrontrail.com/spinach-omelette/" },
+    { name: "Pork chops + rice + steamed broccoli", cal: "~750", protein: "~55g", prep: "20 min", url: "https://www.pillsbury.com/recipes/pork-chops-with-broccoli-and-rice/0265a5e1-e3ac-42af-849d-e08d26551792" },
+    { name: "Burger patties + veg", cal: "~750", protein: "~50g", prep: "15 min", url: "https://downshiftology.com/recipes/hamburger-patties/" },
+    { name: "Chicken stir fry + rice", cal: "~700", protein: "~50g", prep: "20 min", url: "https://www.cookingclassy.com/chicken-fried-rice/" },
+  ],
+  dinners_kid: [
+    { name: "Sheet pan chicken + veg (dairy-free)", cal: "~700", protein: "~50g", prep: "25 min", url: "https://wildlyorganic.com/blogs/recipes/easy-sheet-pan-chicken-and-vegetables-paleo-gluten-free-dairy-free" },
+    { name: "Ground turkey pasta + tomato sauce", cal: "~650", protein: "~45g", prep: "20 min", url: "https://www.fannetasticfood.com/tomato-garlic-pasta/" },
+    { name: "Taco night — ground beef, skip cheese", cal: "~700", protein: "~50g", prep: "15 min", url: "https://feelgoodfoodie.net/recipe/ground-beef-tacos-napa-cabbage-guacamole/" },
+    { name: "Scrambled eggs + toast + fruit", cal: "~550", protein: "~35g", prep: "10 min", url: "https://www.billyparisi.com/scrambled-egg-toast/" },
+    { name: "Steak bites + fries + salad", cal: "~750", protein: "~55g", prep: "25 min", url: "https://cookathomemom.com/garlic-butter-steak-bites-with-potatoes/" },
+    { name: "Homemade pizza (dairy-free option)", cal: "~700", protein: "~40g", prep: "30 min", url: "https://www.simplywhisked.com/dairy-free-pizza/" },
+    { name: "Chicken strips + rice + steamed veg", cal: "~650", protein: "~45g", prep: "20 min", url: "https://www.allrecipes.com/recipe/8805/crispy-fried-chicken/" },
+  ],
+  snacks: [
+    { name: "Protein shake + banana", cal: "~300", protein: "~35g", url: "https://www.asweetpeachef.com/banana-protein-shake/" },
+    { name: "Greek yogurt + berries + almonds", cal: "~250", protein: "~25g", url: "https://www.gittaskitchen.com/berry-and-greek-yogurt-parfait/" },
+    { name: "Protein bar + apple", cal: "~280", protein: "~25g", url: "" },
+    { name: "Hard-boiled eggs (3) + trail mix", cal: "~300", protein: "~25g", url: "https://www.eatingbirdfood.com/high-protein-trail-mix/" },
+    { name: "Beef jerky + mixed nuts", cal: "~270", protein: "~25g", url: "https://www.beefitswhatsfordinner.com/recipes/recipe/55673/beef-jerky-trail-mix" },
+    { name: "Cottage cheese + fruit", cal: "~250", protein: "~25g", url: "https://www.walderwellness.com/cottage-cheese-with-fruit/" },
+    { name: "PB + banana + protein shake", cal: "~350", protein: "~35g", url: "https://fitfoodiefinds.com/healthy-banana-shake/" },
+  ],
+  lunch_alts: [
+    { name: "Chicken breast + rice + veg", cal: "~600", url: "https://www.budgetbytes.com/one-pot-chicken-and-rice/" },
+    { name: "Deli turkey sandwich + side", cal: "~550", url: "https://www.thekitchn.com/turkey-sandwich-recipe-23581301" },
+    { name: "Big salad + grilled protein", cal: "~500", url: "https://downshiftology.com/best-high-protein-salad-recipes/" },
+  ],
+  evening: [
+    { name: "Herbal tea + fruit or toast", cal: "~150", url: "" },
+    { name: "Casein shake + berries", cal: "~200", url: "https://nakednutrition.com/blogs/recipes/casein-protein-recipes" },
+    { name: "Rice cakes + PB", cal: "~180", url: "https://kimabbagehart.com/rice-cakes-with-peanut-butter-easy-snack-ideas/" },
+  ]
+};
+
+function openRecipeLibrary() {
+  const popup = document.getElementById('popup-body');
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  function recipeRow(r, dayLabel) {
+    const link = r.url ? ' <a href="' + r.url + '" target="_blank" rel="noopener" style="color:var(--cyan);font-size:9px;text-decoration:none" onclick="event.stopPropagation()">recipe ↗</a>' : '';
+    const macros = [];
+    if (r.cal) macros.push(r.cal);
+    if (r.protein) macros.push(r.protein + ' protein');
+    if (r.prep) macros.push(r.prep);
+    const macroStr = macros.length > 0 ? '<div style="font-size:9px;color:var(--text-muted)">' + macros.join(' · ') + '</div>' : '';
+    const dayTag = dayLabel ? '<span style="font-size:8px;color:var(--purple);font-weight:700;min-width:28px">' + dayLabel + '</span> ' : '';
+    return '<div style="padding:4px 0;border-bottom:1px solid var(--divider);display:flex;align-items:center;gap:6px">' +
+      dayTag +
+      '<div style="flex:1"><div style="font-size:11px;font-weight:600;color:var(--text)">' + r.name + link + '</div>' + macroStr + '</div></div>';
+  }
+
+  function sectionHeader(icon, title) {
+    return '<div style="font-size:12px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;padding-bottom:3px;border-bottom:2px solid var(--purple-border)">' + icon + ' ' + title + '</div>';
+  }
+
+  let html = '<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Your meal rotation with recipe links. Click <span style="color:var(--cyan)">recipe ↗</span> to open in a new tab.</div>';
+
+  // Today's dinner highlight
+  const todayDow = new Date().getDay();
+  html += '<div style="padding:8px 10px;background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;margin-bottom:10px">' +
+    '<div style="font-size:10px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Tonight\'s Dinner (' + days[todayDow] + ')</div>' +
+    recipeRow(RECIPE_LIBRARY.dinners_craig[todayDow], '') +
+    '</div>';
+
+  // Craig dinners
+  html += sectionHeader('🍖', 'Dinner Rotation — Solo');
+  RECIPE_LIBRARY.dinners_craig.forEach(function(r, i) {
+    html += recipeRow(r, days[i].substring(0, 3));
+  });
+
+  // Kid dinners
+  html += sectionHeader('👧', 'Dinner Rotation — Kid Weeks');
+  RECIPE_LIBRARY.dinners_kid.forEach(function(r, i) {
+    html += recipeRow(r, days[i].substring(0, 3));
+  });
+
+  // Snacks
+  html += sectionHeader('🍎', 'Snack Rotation');
+  RECIPE_LIBRARY.snacks.forEach(function(r, i) {
+    html += recipeRow(r, days[i].substring(0, 3));
+  });
+
+  // Lunch alternatives
+  html += sectionHeader('🥪', 'Lunch Alternatives');
+  RECIPE_LIBRARY.lunch_alts.forEach(function(r) {
+    html += recipeRow(r, '');
+  });
+
+  // Evening snacks
+  html += sectionHeader('🌙', 'Evening Snacks');
+  RECIPE_LIBRARY.evening.forEach(function(r) {
+    html += recipeRow(r, '');
+  });
+
+  // Macro targets
+  html += '<div style="margin-top:12px;padding:8px 10px;background:var(--card);border:1px solid var(--card-border);border-radius:8px">' +
+    '<div style="font-size:10px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Daily Macro Targets</div>' +
+    '<div style="display:flex;gap:12px;font-size:11px;color:var(--text-dim)">' +
+      '<span>🔥 <span style="color:var(--text);font-weight:700">' + MACROS.calories + '</span> cal</span>' +
+      '<span>🥩 <span style="color:var(--text);font-weight:700">' + MACROS.protein + 'g</span> protein</span>' +
+      '<span>🧈 <span style="color:var(--text);font-weight:700">' + MACROS.fat + 'g</span> fat</span>' +
+      '<span>🍞 <span style="color:var(--text);font-weight:700">' + MACROS.carbs + 'g</span> carbs</span>' +
+    '</div></div>';
+
+  document.getElementById('popup-title').textContent = '🥗 Recipe Library';
+  popup.innerHTML = html;
+  document.getElementById('popup-backdrop').classList.add('open');
+}
 
 const STRETCH_ROTATION = {
   "2026-03-09": "A", "2026-03-10": "B", "2026-03-11": "C",
