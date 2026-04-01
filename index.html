@@ -611,6 +611,19 @@
   }
   .wlog-type-pill:hover { border-color: var(--text-dim); color: var(--text-dim); }
   .wlog-type-pill.active { background: var(--cyan-bg); border-color: var(--cyan); color: var(--cyan); }
+  .bw-exercises {
+    display: flex; gap: 6px; padding: 4px 0 2px 28px; flex-wrap: wrap;
+  }
+  .bw-ex {
+    display: flex; align-items: center; gap: 3px; font-size: 9px; color: var(--text-dim);
+  }
+  .bw-ex-input {
+    width: 36px; font-size: 10px; padding: 2px 4px; text-align: center;
+    background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 4px;
+    color: var(--text); font-weight: 600;
+  }
+  .bw-ex-input:focus { border-color: var(--cyan); outline: none; }
+  .bw-ex-label { font-weight: 600; }
 
   /* Stretch tiers */
   .stretch-tiers { display: flex; flex-direction: column; gap: 2px; }
@@ -649,7 +662,13 @@
   .supp-pill {
     font-size: 9px; padding: 3px 7px; border-radius: 10px;
     background: var(--input-bg); color: var(--text-dim); font-weight: 600;
+    cursor: pointer; transition: all 0.2s; user-select: none; border: 1px solid transparent;
   }
+  .supp-pill:hover { border-color: var(--text-muted); }
+  .supp-pill.taken {
+    background: var(--green-bg, rgba(34,197,94,0.15)); color: var(--green); border-color: var(--green);
+  }
+  .supp-pill .supp-qty { font-size: 7px; opacity: 0.7; margin-left: 2px; }
   .water-tracker { display: flex; align-items: center; gap: 6px; padding: 6px 0 2px; }
   .water-tracker .water-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
   .water-drops { display: flex; gap: 3px; }
@@ -715,18 +734,18 @@
   .overlay-title { font-size: 20px; font-weight: 800; letter-spacing: -0.3px; background: linear-gradient(135deg, #fff 0%, #c8c8d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
   .overlay-subtitle { font-size: 12px; color: var(--text-dim); font-weight: 400; margin-left: 12px; }
 
-  .nav-btns { display: flex; gap: 8px; justify-self: end; }
+  .nav-btns { display: flex; gap: 4px; justify-self: end; }
   .nav-btn {
     background: var(--card); border: 1px solid var(--card-border);
     color: var(--text-dim); font-size: 11px; font-weight: 600;
-    padding: 6px 16px; border-radius: 8px; cursor: pointer;
+    padding: 5px 10px; border-radius: 8px; cursor: pointer;
     transition: all 0.15s ease; font-family: inherit; letter-spacing: 0.3px;
   }
   .nav-btn:hover { background: var(--card-hover); color: var(--text); border-color: #404360; }
   .nav-btn.active { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border); }
-  .nav-btn.refresh { padding: 6px 10px; font-size: 13px; }
+  .nav-btn.refresh { padding: 5px 8px; font-size: 13px; }
   .nav-btn.refresh.spinning { animation: spin 0.6s ease; }
-  .nav-btn.theme { padding: 6px 10px; font-size: 13px; }
+  .nav-btn.theme { padding: 5px 8px; font-size: 13px; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
   /* Week grid — 2 rows: 4 + 3 */
@@ -1151,8 +1170,8 @@
       display: flex; gap: 4px; width: 100%;
       justify-content: center; padding-top: 2px;
     }
-    .nav-btn { font-size: 12px; padding: 6px 14px; flex: 0; }
-    .nav-btn.refresh { padding: 6px 8px; }
+    .nav-btn { font-size: 11px; padding: 5px 10px; flex: 0; }
+    .nav-btn.refresh { padding: 5px 8px; }
 
     /* Cards: single column, scrollable */
     .main-content {
@@ -1222,7 +1241,7 @@
       padding: 4px 8px; overflow-y: auto; height: auto;
     }
     .card { padding: 8px; }
-    .nav-btn { font-size: 10px; padding: 4px 10px; }
+    .nav-btn { font-size: 10px; padding: 4px 8px; }
   }
 </style>
 </head>
@@ -1338,7 +1357,6 @@
     <div class="month-dow-row" id="month-dow-row"></div>
     <div class="month-grid" id="month-grid"></div>
   </div>
-  <div class="ex-stats-panel" id="month-ex-stats"></div>
   <div class="month-legend" id="month-legend"></div>
 </div>
 
@@ -1393,7 +1411,8 @@
           <button class="stats-tab" onclick="changeStatsMonth(0)" style="font-size:10px;padding:4px 10px" title="Current month">This Month</button>
         </div>
         <div class="stats-tabs" id="stats-tabs">
-          <button class="stats-tab active" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
+          <button class="stats-tab active" data-tab="overview" onclick="switchStatsTab('overview')">📊 Overview</button>
+          <button class="stats-tab" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
           <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
           <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
         </div>
@@ -1528,7 +1547,8 @@ async function loadTrackingData(startDate, endDate) {
         mood: row.mood || 0, energy: row.energy || 0,
         sleep: parseFloat(row.sleep) || 0, weight: parseFloat(row.weight) || 0,
         water: row.water || 0, coffee: row.coffee || 0, notes: row.notes || '',
-        first_meal: row.first_meal || 0, last_meal: row.last_meal || 0
+        first_meal: row.first_meal || 0, last_meal: row.last_meal || 0,
+        supps: row.supps ? (typeof row.supps === 'string' ? JSON.parse(row.supps) : row.supps) : {}
       };
     });
     // Merge localStorage daily fields into DB_CACHE (covers fields not yet in Supabase schema)
@@ -1546,6 +1566,13 @@ async function loadTrackingData(startDate, endDate) {
           }
         } catch(e) {}
       });
+      // Merge supps from localStorage if not in Supabase yet
+      if (!DB_CACHE.daily[dStr].supps || Object.keys(DB_CACHE.daily[dStr].supps).length === 0) {
+        try {
+          const ls = JSON.parse(localStorage.getItem('supps_' + dStr));
+          if (ls && Object.keys(ls).length > 0) DB_CACHE.daily[dStr].supps = ls;
+        } catch(e) {}
+      }
     }
     // Load checkboxes
     const { data: cbs } = await sb.from('checkboxes').select('*')
@@ -1591,8 +1618,13 @@ async function loadTrackingData(startDate, endDate) {
         if (!lsData) continue;
         Object.keys(lsData).forEach(woId => {
           const lsEntry = lsData[woId];
-          if (!lsEntry || !lsEntry.done) return;
+          if (!lsEntry) return;
           if (!DB_CACHE.workouts[dStr]) DB_CACHE.workouts[dStr] = {};
+          // If localStorage says done=false, respect that (user unchecked locally)
+          if (!lsEntry.done) {
+            DB_CACHE.workouts[dStr][woId] = { done: false, time: 0, dist: 0, unit: 'm' };
+            return;
+          }
           const existing = DB_CACHE.workouts[dStr][woId] || {};
           // Merge: localStorage C2 fields take priority; Supabase provides the base done/dist/time
           DB_CACHE.workouts[dStr][woId] = {
@@ -1756,6 +1788,20 @@ function setWorkoutDist(dateStr, woId, val) {
 function setWorkoutSubtype(dateStr, woId, subtype) {
   setWorkoutLog(dateStr, woId, 'subtype', subtype);
   renderDaily();
+}
+
+function getBodyExReps(dateStr, exKey) {
+  const log = getWorkoutLog(dateStr);
+  const bw = log.bodyweight || {};
+  return (bw.exercises && bw.exercises[exKey]) || 0;
+}
+function setBodyExReps(dateStr, exKey, val) {
+  if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
+  if (!DB_CACHE.workouts[dateStr].bodyweight) DB_CACHE.workouts[dateStr].bodyweight = { done: false, time: 0, dist: 0, unit: 'm' };
+  if (!DB_CACHE.workouts[dateStr].bodyweight.exercises) DB_CACHE.workouts[dateStr].bodyweight.exercises = {};
+  DB_CACHE.workouts[dateStr].bodyweight.exercises[exKey] = parseInt(val) || 0;
+  localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
+  // Don't re-render — let the input keep focus
 }
 
 // ── Section toggle ──
@@ -1963,10 +2009,10 @@ let _statsRowData = []; // C2 row sessions for current month
 
 let _statsMonthOffset = 0; // relative to current month
 
-function openStats() {
+function openStats(defaultTab) {
   _statsMonthOffset = currentMonthOffset; // inherit from month view
-  _statsTab = 'rowing';
-  document.querySelectorAll('.stats-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'rowing'));
+  _statsTab = defaultTab || 'overview';
+  document.querySelectorAll('.stats-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === _statsTab));
   updateStatsMonth();
   document.getElementById('stats-backdrop').classList.add('open');
 }
@@ -2012,9 +2058,141 @@ function collectStatsData() {
 
 function renderStatsTab() {
   const body = document.getElementById('stats-body');
-  if (_statsTab === 'rowing') renderRowingStats(body);
+  if (_statsTab === 'overview') renderOverviewStats(body);
+  else if (_statsTab === 'rowing') renderRowingStats(body);
   else if (_statsTab === 'exercise') renderExerciseStats(body);
   else if (_statsTab === 'recovery') renderRecoveryStats(body);
+}
+
+// ── OVERVIEW STATS TAB (cover page with 3 summary cards) ──
+function renderOverviewStats(container) {
+  const { year, month } = _statsMonth;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = ds(new Date());
+
+  // Rowing stats
+  let mRowDist = 0, mRowTime = 0, mRowSessions = 0, mRowBestDist = 0, mRowBestDate = '';
+  const mRowWeekly = [0, 0, 0, 0, 0, 0];
+  // Exercise stats
+  let mWorkouts = 0, mWorkoutsDone = 0, mGym = 0, mGymSessions = 0, mRow = 0;
+  let mYoga = 0, mBodyweight = 0, mOutdoor = 0;
+  // Recovery stats
+  let mStretches = 0, mStretchesDone = 0, mMornings = 0, mMorningsDone = 0;
+  let mMoodSum = 0, mMoodCount = 0, mEnergySum = 0, mEnergyCount = 0;
+  let mSleepSum = 0, mSleepCount = 0, mWater = 0;
+  // Weight
+  let mWeightFirst = 0, mWeightLast = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = ds(new Date(year, month, d));
+    if (dStr > todayStr) break;
+    const wo = WORKOUT_PLANS[dStr];
+    const checked = getChecked(dStr);
+    const wlog = getWorkoutLog(dStr);
+
+    // Rowing
+    if (wlog.row && wlog.row.done) {
+      mRowSessions++;
+      const rd = wlog.row.dist || 0;
+      const rt = wlog.row.time || 0;
+      mRowDist += rd; mRowTime += rt;
+      if (rd > mRowBestDist) { mRowBestDist = rd; mRowBestDate = dStr.substring(5); }
+      const weekIdx = Math.min(Math.floor((d - 1) / 7), 5);
+      mRowWeekly[weekIdx] += rd;
+    }
+
+    // Exercise
+    if (wo) {
+      mWorkouts++;
+      const done = !!checked['s_workout'];
+      if (done) mWorkoutsDone++;
+      if (wo.type === 'gym') { mGym++; if (done) mGymSessions++; }
+      else if (wo.type === 'row') { mRow++; }
+      else if (wo.type === 'yoga') { if (done) mYoga++; }
+      else if (wo.type === 'bodyweight') { if (done) mBodyweight++; }
+      else if (wo.type === 'outdoor') { if (done) mOutdoor++; }
+    }
+
+    // Recovery
+    mStretches++; if (checked['s_stretch']) mStretchesDone++;
+    mMornings++; if (checked['s_morning']) mMorningsDone++;
+    const mood = getMood(dStr); if (mood) { mMoodSum += mood; mMoodCount++; }
+    const energy = getEnergy(dStr); if (energy) { mEnergySum += energy; mEnergyCount++; }
+    const sleep = getSleep(dStr); if (sleep) { mSleepSum += sleep; mSleepCount++; }
+    mWater += getWater(dStr);
+    const w = getWeight(dStr);
+    if (w > 0) { if (!mWeightFirst) mWeightFirst = w; mWeightLast = w; }
+  }
+
+  // Derived values
+  const rowAvgPace500 = (mRowDist > 0 && mRowTime > 0) ? ((mRowTime * 60) / (mRowDist / 500)) : 0;
+  const rowPaceStr = rowAvgPace500 > 0 ? Math.floor(rowAvgPace500 / 60) + ':' + String(Math.round(rowAvgPace500 % 60)).padStart(2, '0') + '/500m' : '—';
+  const rowDistKm = mRowDist >= 1000 ? (mRowDist / 1000).toFixed(1) + ' km' : Math.round(mRowDist) + ' m';
+  const rowTimeStr = mRowTime > 0 ? Math.floor(mRowTime) + ':' + String(Math.round((mRowTime % 1) * 60)).padStart(2, '0') : '0:00';
+  const rowBestStr = mRowBestDist > 0 ? (mRowBestDist >= 1000 ? (mRowBestDist / 1000).toFixed(1) + 'km' : mRowBestDist + 'm') : '—';
+  const maxWeekRow = Math.max(...mRowWeekly, 1);
+  const weekBarHtml = mRowWeekly.map(function(dist, i) {
+    const h = dist > 0 ? Math.max(4, Math.round(dist / maxWeekRow * 24)) : 0;
+    return '<div class="ex-stat-mini-bar" style="height:' + h + 'px;background:' + (dist > 0 ? 'var(--cyan)' : 'var(--divider)') + '" title="W' + (i+1) + ': ' + (dist >= 1000 ? (dist/1000).toFixed(1) + 'km' : Math.round(dist) + 'm') + '"></div>';
+  }).join('');
+
+  const woPct = mWorkouts > 0 ? Math.round(mWorkoutsDone / mWorkouts * 100) : 0;
+  const woColor = woPct === 100 ? 'var(--green)' : woPct > 50 ? 'var(--cyan)' : 'var(--orange)';
+  const stretchPct = mStretches > 0 ? Math.round(mStretchesDone / mStretches * 100) : 0;
+  const stretchColor = stretchPct === 100 ? 'var(--green)' : stretchPct > 50 ? 'var(--cyan)' : 'var(--orange)';
+
+  let weightHtml = '';
+  if (mWeightFirst && mWeightLast) {
+    const wDelta = (mWeightLast - mWeightFirst).toFixed(1);
+    const wColor = wDelta <= 0 ? 'var(--green)' : 'var(--red)';
+    weightHtml = '<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">' +
+      '<span>⚖️ <span class="val" style="color:' + wColor + '">' + mWeightFirst + ' → ' + mWeightLast + ' lbs</span></span>' +
+      '<span style="color:' + wColor + ';font-weight:700">' + (wDelta > 0 ? '+' : '') + wDelta + '</span></div>';
+  }
+
+  container.innerHTML = '<div class="ex-stats-panel" style="padding:0;margin-bottom:8px">' +
+    // ROWING CARD
+    '<div class="ex-stat-card rowing" style="cursor:pointer" onclick="switchStatsTab(\'rowing\')">' +
+      '<div class="ex-stat-header"><div class="ex-stat-title">🚣 Rowing</div>' +
+      '<div class="ex-stat-badge" style="background:var(--cyan-bg);color:var(--cyan)">' + mRowSessions + ' session' + (mRowSessions !== 1 ? 's' : '') + '</div></div>' +
+      '<div class="ex-stat-big" style="color:var(--cyan)">' + rowDistKm + '</div>' +
+      '<div class="ex-stat-row"><span>⏱️ <span class="val">' + rowTimeStr + '</span> total</span>' +
+      '<span>🏁 <span class="val">' + rowPaceStr + '</span></span></div>' +
+      (mRowBestDist > 0 ? '<div class="ex-stat-row"><span>🏆 Best: <span class="val">' + rowBestStr + '</span></span>' +
+      '<span style="color:var(--text-muted)">' + mRowBestDate + '</span></div>' : '') +
+      '<div style="margin-top:auto"><div class="ex-stat-sub" style="margin-bottom:2px">Weekly distance</div>' +
+      '<div class="ex-stat-mini-bars">' + weekBarHtml + '</div></div></div>' +
+    // EXERCISE CARD
+    '<div class="ex-stat-card strength" style="cursor:pointer" onclick="switchStatsTab(\'exercise\')">' +
+      '<div class="ex-stat-header"><div class="ex-stat-title">🏋️ Exercise</div>' +
+      '<div class="ex-stat-badge" style="background:var(--blue-bg);color:var(--blue)">' + woPct + '%</div></div>' +
+      '<div class="ex-stat-big" style="color:' + woColor + '">' + mWorkoutsDone + '<span style="font-size:13px;color:var(--text-dim)"> / ' + mWorkouts + '</span></div>' +
+      '<div class="ex-stat-sub">workouts completed</div>' +
+      '<div class="ex-stat-row"><span>🏋️ Gym: <span class="val">' + mGymSessions + '/' + mGym + '</span></span>' +
+      '<span>🚣 Row: <span class="val">' + mRowSessions + '/' + mRow + '</span></span></div>' +
+      '<div class="ex-stat-row">' +
+        (mYoga > 0 ? '<span>🧘 Yoga: <span class="val">' + mYoga + '</span></span>' : '') +
+        (mBodyweight > 0 ? '<span>💪 BW: <span class="val">' + mBodyweight + '</span></span>' : '') +
+        (mOutdoor > 0 ? '<span>🌳 Outdoor: <span class="val">' + mOutdoor + '</span></span>' : '') +
+      '</div>' + weightHtml + '</div>' +
+    // RECOVERY CARD
+    '<div class="ex-stat-card recovery" style="cursor:pointer" onclick="switchStatsTab(\'recovery\')">' +
+      '<div class="ex-stat-header"><div class="ex-stat-title">🧘 Recovery</div>' +
+      '<div class="ex-stat-badge" style="background:var(--purple-bg);color:var(--purple)">' + stretchPct + '%</div></div>' +
+      '<div class="ex-stat-big" style="color:' + stretchColor + '">' + mStretchesDone + '<span style="font-size:13px;color:var(--text-dim)"> / ' + mStretches + '</span></div>' +
+      '<div class="ex-stat-sub">stretch sessions</div>' +
+      '<div class="ex-stat-row"><span>☀️ Morning: <span class="val">' + mMorningsDone + '/' + mMornings + '</span></span></div>' +
+      (mMoodCount || mEnergyCount || mSleepCount ?
+        '<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">' +
+          (mMoodCount ? '<span>😊 Mood: <span class="val">' + (mMoodSum/mMoodCount).toFixed(1) + '</span></span>' : '') +
+          (mEnergyCount ? '<span>⚡ Energy: <span class="val">' + (mEnergySum/mEnergyCount).toFixed(1) + '</span></span>' : '') +
+        '</div><div class="ex-stat-row">' +
+          (mSleepCount ? '<span>😴 Sleep: <span class="val">' + (mSleepSum/mSleepCount).toFixed(1) + 'h</span> avg</span>' : '') +
+          '<span>💧 Water: <span class="val">' + mWater + '</span> total</span></div>'
+        : '<div class="ex-stat-row"><span>💧 Water: <span class="val">' + mWater + '</span> total</span></div>'
+      ) + '</div>' +
+  '</div>' +
+  '<div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:4px">Click a card for detailed stats & charts</div>';
 }
 
 // ── ROWING STATS TAB ──
@@ -3097,21 +3275,18 @@ const STRETCH_ROTATION = {
 // ──────────────────────────────────────────────
 const ROUTINES = {
   morning: {
-    title: "Morning Stretch — ~10 Min",
+    title: "Morning Stretch — ~10 Min (Egoscue-Inspired)",
     exercises: [
-      { name: "Standing Calf Raises", sets: "2×15", link: "https://www.youtube.com/watch?v=gwLzBJYoWlI", detail: "Slow up, 2-sec hold at top" },
-      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Seated or standing" },
-      { name: "Standing Hip Circles", sets: "10 each direction", link: "https://www.youtube.com/watch?v=oU_oVMJL3-8", detail: "Hands on hips, slow circles" },
+      { name: "Static Back (Egoscue)", sets: "3–5 min", link: "https://www.youtube.com/watch?v=It7Vs5Y6gDw", detail: "Legs on chair/bed, arms 45° palms up. Let gravity reset your spine." },
+      { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex." },
+      { name: "Standing Arm Circles (Egoscue)", sets: "25 forward + 25 back", link: "https://www.youtube.com/watch?v=K0M_Bi-OgJ0", detail: "Fists at temples, elbows tight circles. Resets shoulders." },
+      { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
+      { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace fingers overhead, palms up, lengthen and breathe." },
+      { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow." },
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Slow, full range" },
-      { name: "Wrist Circles", sets: "10 each direction", link: "https://www.youtube.com/watch?v=p3sOafGKbLM", detail: "Both wrists simultaneously, slow full circles" },
-      { name: "Prayer Stretch (Wrist Flexors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Palms together at chest, press hands down until stretch in forearms" },
-      { name: "Reverse Prayer (Wrist Extensors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Backs of hands together, press up gently" },
-      { name: "Finger Spreads + Fists", sets: "10 reps", link: "", detail: "Spread fingers wide, then squeeze tight fist. Repeat." },
-      { name: "Glute Bridge Hold", sets: "2×10", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze glutes + core at top, hold 3s" },
-      { name: "Deep Squat Hold", sets: "30s hold", link: "https://www.youtube.com/watch?v=MqxEsMKTsAk", detail: "Feet shoulder-width, sink deep, breathe and relax" },
-      { name: "Core Breathing + Hold", sets: "3×10", link: "", detail: "Inhale deep, engage and hold 5s, fully release 5s" },
-      { name: "Cat-Cow Standing", sets: "8 reps", link: "https://www.youtube.com/watch?v=f4KnU-IRk38", detail: "Hands on thighs, round and arch" },
-      { name: "Deep Breathing", sets: "5 breaths", link: "", detail: "4-count in, 7-count hold, 8-count out" },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Seated or standing — good for your ankle rehab" },
+      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Circles both directions, then palms together press down gently" },
+      { name: "Core Breathing (Diaphragmatic)", sets: "5 breaths", link: "https://www.youtube.com/watch?v=YauKps6MGIE", detail: "Hand on belly — inhale expand 4s, hold 4s, exhale slow 6s" },
     ]
   },
   stretch_A: {
@@ -3250,7 +3425,13 @@ const OTHER_WORKOUTS = [
   { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
   { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
   { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
-  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
+  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'],
+    exercises: [
+      { key: 'pushups', label: 'Push-ups', icon: '🫸' },
+      { key: 'situps', label: 'Sit-ups', icon: '🔄' },
+      { key: 'squats', label: 'Squats', icon: '🦵' },
+    ]
+  },
   { id: 'yoga_session', icon: '🧘', label: 'Yoga', hasTime: true, hasDist: false },
 ];
 
@@ -3322,6 +3503,74 @@ function getFirstMeal(dateStr) { return _getDailyField(dateStr, 'first_meal'); }
 function setFirstMeal(dateStr, val) { dbSaveDaily(dateStr, 'first_meal', val); renderDaily(); }
 function getLastMeal(dateStr) { return _getDailyField(dateStr, 'last_meal'); }
 function setLastMeal(dateStr, val) { dbSaveDaily(dateStr, 'last_meal', val); renderDaily(); }
+
+// ── SUPPLEMENT TRACKING ──
+const SUPPLEMENTS = [
+  { id: 'd3', icon: '💊', label: 'D3', quantities: ['1000 IU', '2000 IU', '5000 IU'] },
+  { id: 'omega3', icon: '🐟', label: 'Omega-3', quantities: ['1 cap', '2 caps'] },
+  { id: 'mag', icon: '🧲', label: 'Mag', quantities: ['200mg', '400mg'] },
+  { id: 'vitc', icon: '🍊', label: 'Vit C', quantities: ['500mg', '1000mg'] },
+  { id: 'creatine', icon: '💪', label: 'Creatine', quantities: ['3g', '5g'] },
+];
+
+function getSupps(dateStr) {
+  if (DB_CACHE.daily[dateStr] && DB_CACHE.daily[dateStr].supps) return DB_CACHE.daily[dateStr].supps;
+  try { return JSON.parse(localStorage.getItem('supps_' + dateStr)) || {}; } catch(e) { return {}; }
+}
+
+function setSupp(dateStr, suppId, qty) {
+  // qty = null means untaken, string means taken with that quantity
+  if (!DB_CACHE.daily[dateStr]) DB_CACHE.daily[dateStr] = {};
+  const supps = DB_CACHE.daily[dateStr].supps || {};
+  if (qty === null) delete supps[suppId];
+  else supps[suppId] = qty;
+  DB_CACHE.daily[dateStr].supps = supps;
+  localStorage.setItem('supps_' + dateStr, JSON.stringify(supps));
+  // Save to Supabase (supps stored as JSON string in daily_log.supps column)
+  if (sbReady) {
+    sb.from('daily_log').upsert({ date: dateStr, supps: JSON.stringify(supps) }, { onConflict: 'date' })
+      .then(({error}) => { if (error) console.warn('DB supp save error:', error); });
+  }
+  renderDaily();
+}
+
+function toggleSupp(dateStr, suppId) {
+  const supps = getSupps(dateStr);
+  if (supps[suppId]) {
+    // Already taken — untoggle it
+    setSupp(dateStr, suppId, null);
+  } else {
+    // Not taken — show quantity picker
+    const supp = SUPPLEMENTS.find(s => s.id === suppId);
+    if (!supp) return;
+    // Default to first quantity option
+    setSupp(dateStr, suppId, supp.quantities[0]);
+  }
+}
+
+function cycleSupp(dateStr, suppId) {
+  const supps = getSupps(dateStr);
+  const supp = SUPPLEMENTS.find(s => s.id === suppId);
+  if (!supp || !supps[suppId]) return;
+  const curIdx = supp.quantities.indexOf(supps[suppId]);
+  const nextIdx = (curIdx + 1) % supp.quantities.length;
+  setSupp(dateStr, suppId, supp.quantities[nextIdx]);
+}
+
+function buildSuppPills(dateStr) {
+  const supps = getSupps(dateStr);
+  return SUPPLEMENTS.map(s => {
+    const taken = supps[s.id];
+    const cls = taken ? 'supp-pill taken' : 'supp-pill';
+    const tip = taken ? taken + ' — click to remove, right-click to change dose' : 'Click to log ' + s.label;
+    const qtySpan = taken ? '<span class="supp-qty"> ' + taken + '</span>' : '';
+    return '<span class="' + cls + '"'
+      + ' onclick="toggleSupp(\'' + dateStr + '\',\'' + s.id + '\')"'
+      + ' oncontextmenu="event.preventDefault();cycleSupp(\'' + dateStr + '\',\'' + s.id + '\')"'
+      + ' title="' + tip + '"'
+      + '>' + s.icon + ' ' + s.label + qtySpan + '</span>';
+  }).join('');
+}
 
 // Exercise ratings: -1 = frowny, 0 = neutral, 1 = smiley
 function getRatings(dateStr) {
@@ -3612,6 +3861,21 @@ function renderDaily() {
     const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
       `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
     ).join('')}</div>` : '';
+    // Expandable bodyweight exercises
+    let bwExHtml = '';
+    if (w.exercises && isDone) {
+      const exData = (entry.exercises) || {};
+      bwExHtml = `<div class="bw-exercises">${w.exercises.map(ex =>
+        `<div class="bw-ex">
+          <span>${ex.icon}</span>
+          <span class="bw-ex-label">${ex.label}</span>
+          <input class="bw-ex-input" type="number" min="0" step="1" placeholder="0"
+            value="${exData[ex.key] || ''}"
+            onchange="setBodyExReps('${dateStr}','${ex.key}',this.value)"
+            onclick="event.stopPropagation()">
+        </div>`
+      ).join('')}</div>`;
+    }
     return `<div class="wlog-row ${isDone ? 'done' : ''}">
       <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
       <span class="wlog-icon">${w.icon}</span>
@@ -3620,7 +3884,7 @@ function renderDaily() {
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
       ${typePills}
-    </div>`;
+    </div>${bwExHtml}`;
   }).join('');
 
   // Stretch tiers section
@@ -3671,11 +3935,7 @@ function renderDaily() {
     <div class="card-footer">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
         <div class="supp-row" style="flex:1;margin:0">
-          <span class="supp-pill">💊 D3</span>
-          <span class="supp-pill">🐟 Omega-3</span>
-          <span class="supp-pill">🧲 Mag</span>
-          <span class="supp-pill">🍊 Vit C</span>
-          <span class="supp-pill">💪 Creatine</span>
+          ${buildSuppPills(dateStr)}
         </div>
         ${(() => {
           const weight = getWeight(dateStr);
@@ -3805,11 +4065,12 @@ function renderDaily() {
   }
   csHtml += '</div>';
 
-  // Bottom bar — just custody strip, centered
+  // Bottom bar — custody strip + month summary link
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
       <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
       ${allo ? '<div class="pill">💊 <span class="pill-val red">Allo day</span></div>' : ''}
+      <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
@@ -3975,7 +4236,7 @@ function renderWeek() {
   }
 
   const summaryCard = `
-    <div class="week-summary">
+    <div class="week-summary" style="cursor:pointer" onclick="openStats()" title="View stats summary">
       <div class="ws-title">📊 Week Summary</div>
       ${summaryRow('🏋️ Exercise', weekWorkoutsDone, weekWorkouts, 'var(--cyan)')}
       ${summaryRow('🧘 Stretch', weekStretchesDone, weekStretches, 'var(--purple)')}
@@ -4164,127 +4425,22 @@ function renderMonth() {
   const overallColor = overallPct === 100 ? 'var(--green)' : overallPct > 50 ? 'var(--cyan)' : 'var(--orange)';
 
   html += `
-    <div class="month-cell" style="grid-column:span ${span};cursor:pointer;padding:6px 10px;flex-direction:row;align-items:center;gap:10px" onclick="openStats()" title="Click for detailed stats">
-      <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">📊 ${monthNames[month]}</div>
-      <div style="display:flex;flex-direction:column;flex:1;gap:3px">
-        <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);flex-wrap:wrap">
-          <span style="color:var(--cyan)">🏋️ ${mWorkoutsDone}/${mWorkouts}</span>
-          <span style="color:var(--purple)">🧘 ${mStretchesDone}/${mStretches}</span>
-          <span style="color:var(--orange)">☀️ ${mMorningsDone}/${mMornings}</span>
-          ${mMoodCount ? `<span>😊 ${(mMoodSum/mMoodCount).toFixed(1)}</span>` : ''}
-          ${mEnergyCount ? `<span>⚡ ${(mEnergySum/mEnergyCount).toFixed(1)}</span>` : ''}
-          ${mSleepCount ? `<span>😴 ${(mSleepSum/mSleepCount).toFixed(1)}h</span>` : ''}
-          <span>💧${mWater}</span>
-          <span style="margin-left:auto"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span>/${daysInMonth}d</span>
-        </div>
+    <div class="month-cell" style="grid-column:span ${span};cursor:pointer;padding:3px 8px;flex-direction:row;align-items:center;gap:6px;min-height:0" onclick="openStats()" title="Click for detailed stats">
+      <div style="font-size:9px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap">📊 ${monthNames[month]}</div>
+      <div style="display:flex;align-items:center;flex:1;gap:6px;font-size:9px;color:var(--text-dim);flex-wrap:nowrap;overflow:hidden">
+        <span style="color:var(--cyan)">🏋️${mWorkoutsDone}/${mWorkouts}</span>
+        <span style="color:var(--purple)">🧘${mStretchesDone}/${mStretches}</span>
+        <span style="color:var(--orange)">☀️${mMorningsDone}/${mMornings}</span>
+        ${mMoodCount ? `<span>😊${(mMoodSum/mMoodCount).toFixed(1)}</span>` : ''}
+        ${mEnergyCount ? `<span>⚡${(mEnergySum/mEnergyCount).toFixed(1)}</span>` : ''}
+        ${mSleepCount ? `<span>😴${(mSleepSum/mSleepCount).toFixed(1)}h</span>` : ''}
+        <span>💧${mWater}</span>
+        <span style="margin-left:auto;white-space:nowrap"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span></span>
       </div>
-      <div style="font-size:18px;font-weight:800;color:${overallColor};min-width:44px;text-align:right">${overallPct}%</div>
+      <div style="font-size:14px;font-weight:800;color:${overallColor};min-width:36px;text-align:right">${overallPct}%</div>
     </div>`;
 
   document.getElementById('month-grid').innerHTML = html;
-
-  // ═══════════════════════════════════════════
-  // EXERCISE STATS PANEL — 3 cards below grid
-  // ═══════════════════════════════════════════
-
-  // Rowing avg pace (per 500m) in seconds
-  const rowAvgPace500 = (mRowDist > 0 && mRowTime > 0) ? ((mRowTime * 60) / (mRowDist / 500)) : 0;
-  const rowPaceStr = rowAvgPace500 > 0 ? Math.floor(rowAvgPace500 / 60) + ':' + String(Math.round(rowAvgPace500 % 60)).padStart(2,'0') + '/500m' : '—';
-  const rowDistKm = mRowDist >= 1000 ? (mRowDist / 1000).toFixed(1) + ' km' : Math.round(mRowDist) + ' m';
-  const rowTimeStr = mRowTime > 0 ? Math.floor(mRowTime) + ':' + String(Math.round((mRowTime % 1) * 60)).padStart(2,'0') : '0:00';
-  const rowBestStr = mRowBestDist > 0 ? (mRowBestDist >= 1000 ? (mRowBestDist / 1000).toFixed(1) + 'km' : mRowBestDist + 'm') : '—';
-
-  // Weekly rowing mini bars
-  const maxWeekRow = Math.max(...mRowWeekly, 1);
-  const weekBarHtml = mRowWeekly.map((d, i) => {
-    const h = d > 0 ? Math.max(4, Math.round(d / maxWeekRow * 24)) : 0;
-    return `<div class="ex-stat-mini-bar" style="height:${h}px;background:${d > 0 ? 'var(--cyan)' : 'var(--divider)'}" title="W${i+1}: ${d >= 1000 ? (d/1000).toFixed(1) + 'km' : Math.round(d) + 'm'}"></div>`;
-  }).join('');
-
-  // Strength stats
-  const gymPct = mGym > 0 ? Math.round(mGymSessions / mGym * 100) : 0;
-  const gymColor = gymPct === 100 ? 'var(--green)' : gymPct > 50 ? 'var(--cyan)' : 'var(--orange)';
-  const woPct = mWorkouts > 0 ? Math.round(mWorkoutsDone / mWorkouts * 100) : 0;
-  const woColor = woPct === 100 ? 'var(--green)' : woPct > 50 ? 'var(--cyan)' : 'var(--orange)';
-
-  // Recovery stats
-  const stretchPct = mStretches > 0 ? Math.round(mStretchesDone / mStretches * 100) : 0;
-  const stretchColor = stretchPct === 100 ? 'var(--green)' : stretchPct > 50 ? 'var(--cyan)' : 'var(--orange)';
-
-  // Weight trend
-  let weightHtml = '';
-  if (mWeightFirst && mWeightLast) {
-    const wDelta = (mWeightLast - mWeightFirst).toFixed(1);
-    const wColor = wDelta <= 0 ? 'var(--green)' : 'var(--red)';
-    weightHtml = `<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">
-      <span>⚖️ <span class="val" style="color:${wColor}">${mWeightFirst} → ${mWeightLast} lbs</span></span>
-      <span style="color:${wColor};font-weight:700">${wDelta > 0 ? '+' : ''}${wDelta}</span>
-    </div>`;
-  }
-
-  document.getElementById('month-ex-stats').innerHTML = `
-    <!-- ROWING CARD -->
-    <div class="ex-stat-card rowing" style="cursor:pointer" onclick="openStats();switchStatsTab('rowing')">
-      <div class="ex-stat-header">
-        <div class="ex-stat-title">🚣 Rowing</div>
-        <div class="ex-stat-badge" style="background:var(--cyan-bg);color:var(--cyan)">${mRowSessions} session${mRowSessions !== 1 ? 's' : ''}</div>
-      </div>
-      <div class="ex-stat-big" style="color:var(--cyan)">${rowDistKm}</div>
-      <div class="ex-stat-row">
-        <span>⏱️ <span class="val">${rowTimeStr}</span> total</span>
-        <span>🏁 <span class="val">${rowPaceStr}</span></span>
-      </div>
-      ${mRowBestDist > 0 ? `<div class="ex-stat-row">
-        <span>🏆 Best: <span class="val">${rowBestStr}</span></span>
-        <span style="color:var(--text-muted)">${mRowBestDate}</span>
-      </div>` : ''}
-      <div style="margin-top:auto">
-        <div class="ex-stat-sub" style="margin-bottom:2px">Weekly distance</div>
-        <div class="ex-stat-mini-bars">${weekBarHtml}</div>
-      </div>
-    </div>
-
-    <!-- STRENGTH & EXERCISE CARD -->
-    <div class="ex-stat-card strength" style="cursor:pointer" onclick="openStats();switchStatsTab('exercise')">
-      <div class="ex-stat-header">
-        <div class="ex-stat-title">🏋️ Exercise</div>
-        <div class="ex-stat-badge" style="background:var(--blue-bg);color:var(--blue)">${woPct}%</div>
-      </div>
-      <div class="ex-stat-big" style="color:${woColor}">${mWorkoutsDone}<span style="font-size:13px;color:var(--text-dim)"> / ${mWorkouts}</span></div>
-      <div class="ex-stat-sub">workouts completed</div>
-      <div class="ex-stat-row">
-        <span>🏋️ Gym: <span class="val">${mGymSessions}/${mGym}</span></span>
-        <span>🚣 Row: <span class="val">${mRowSessions}/${mRow}</span></span>
-      </div>
-      <div class="ex-stat-row">
-        ${mYoga > 0 ? `<span>🧘 Yoga: <span class="val">${mYoga}</span></span>` : ''}
-        ${mBodyweight > 0 ? `<span>💪 BW: <span class="val">${mBodyweight}</span></span>` : ''}
-        ${mOutdoor > 0 ? `<span>🌳 Outdoor: <span class="val">${mOutdoor}</span></span>` : ''}
-      </div>
-      ${weightHtml}
-    </div>
-
-    <!-- RECOVERY CARD -->
-    <div class="ex-stat-card recovery" style="cursor:pointer" onclick="openStats();switchStatsTab('recovery')">
-      <div class="ex-stat-header">
-        <div class="ex-stat-title">🧘 Recovery</div>
-        <div class="ex-stat-badge" style="background:var(--purple-bg);color:var(--purple)">${stretchPct}%</div>
-      </div>
-      <div class="ex-stat-big" style="color:${stretchColor}">${mStretchesDone}<span style="font-size:13px;color:var(--text-dim)"> / ${mStretches}</span></div>
-      <div class="ex-stat-sub">stretch sessions</div>
-      <div class="ex-stat-row">
-        <span>☀️ Morning: <span class="val">${mMorningsDone}/${mMornings}</span></span>
-      </div>
-      ${mMoodCount || mEnergyCount || mSleepCount ? `<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">
-        ${mMoodCount ? `<span>😊 Mood: <span class="val">${(mMoodSum/mMoodCount).toFixed(1)}</span></span>` : ''}
-        ${mEnergyCount ? `<span>⚡ Energy: <span class="val">${(mEnergySum/mEnergyCount).toFixed(1)}</span></span>` : ''}
-      </div>
-      <div class="ex-stat-row">
-        ${mSleepCount ? `<span>😴 Sleep: <span class="val">${(mSleepSum/mSleepCount).toFixed(1)}h</span> avg</span>` : ''}
-        <span>💧 Water: <span class="val">${mWater}</span> total</span>
-      </div>` : `<div class="ex-stat-row"><span>💧 Water: <span class="val">${mWater}</span> total</span></div>`}
-    </div>
-  `;
 
   // Legend
   document.getElementById('month-legend').innerHTML = `
