@@ -366,6 +366,22 @@
   }
   [data-theme="light"] .popup {
     background: #fff; border-color: var(--card-border);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.15), 0 4px 16px rgba(0,0,0,0.08);
+  }
+  [data-theme="light"] .popup-header {
+    background: #fff; border-bottom-color: #eef0f4;
+  }
+  [data-theme="light"] .stats-tab {
+    border-color: #dde1e8; color: #5c6070;
+  }
+  [data-theme="light"] .stats-tab:hover {
+    background: #f5f7fa; color: #1a1d2a;
+  }
+  [data-theme="light"] .popup-close {
+    background: #f5f7fa; border-color: #dde1e8; color: #5c6070;
+  }
+  [data-theme="light"] .popup-close:hover {
+    background: #eef0f4; color: #1a1d2a;
   }
   [data-theme="light"] .time-display {
     color: #000;
@@ -764,6 +780,55 @@
     display: flex; gap: 14px; padding: 4px 24px 8px; flex-shrink: 0; align-items: center; flex-wrap: wrap;
   }
   .legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--text-dim); }
+
+  /* ── Exercise Stats Panel (Month View) ── */
+  .ex-stats-panel {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+    padding: 0 16px 8px;
+  }
+  .ex-stat-card {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 10px;
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+    position: relative; overflow: hidden;
+  }
+  .ex-stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .ex-stat-card.rowing::before { background: var(--cyan); }
+  .ex-stat-card.strength::before { background: var(--blue); }
+  .ex-stat-card.recovery::before { background: var(--purple); }
+  .ex-stat-header {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .ex-stat-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+  .ex-stat-badge {
+    font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+  }
+  .ex-stat-big {
+    font-size: 22px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .ex-stat-sub {
+    font-size: 10px; color: var(--text-dim); font-weight: 500;
+  }
+  .ex-stat-row {
+    display: flex; gap: 12px; font-size: 11px; color: var(--text-dim); flex-wrap: wrap;
+  }
+  .ex-stat-row span { display: flex; align-items: center; gap: 3px; }
+  .ex-stat-row .val { color: var(--text); font-weight: 700; }
+  .ex-stat-mini-bars {
+    display: flex; gap: 2px; align-items: flex-end; height: 24px;
+  }
+  .ex-stat-mini-bar {
+    flex: 1; min-width: 0; border-radius: 2px 2px 0 0; transition: height 0.3s;
+  }
+  [data-theme="retro"] .ex-stat-card { border-radius: 0; border-color: rgba(0,255,65,0.15); }
+  [data-theme="retro"] .ex-stat-card::before { background: rgba(0,255,65,0.6); }
+  [data-theme="retro"] .ex-stat-card.rowing::before,
+  [data-theme="retro"] .ex-stat-card.strength::before,
+  [data-theme="retro"] .ex-stat-card.recovery::before { background: rgba(0,255,65,0.6); }
   .legend-dot { width: 8px; height: 8px; border-radius: 3px; }
   .legend-dot.craig { background: var(--green-bg); border: 1px solid var(--green-border); }
   .legend-dot.lisa { background: var(--pink-bg); border: 1px solid var(--pink-border); }
@@ -791,7 +856,7 @@
   }
   .popup-backdrop.open { display: flex; }
   .popup {
-    background: linear-gradient(165deg, #1a1d2e 0%, #12141e 100%);
+    background: var(--card);
     border: 1px solid var(--card-border); border-radius: 16px;
     width: 860px; max-height: 440px; overflow-y: auto;
     box-shadow: 0 24px 80px rgba(0,0,0,0.6); padding: 0;
@@ -799,7 +864,7 @@
   .popup-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px 24px 12px; border-bottom: 1px solid var(--divider);
-    position: sticky; top: 0; background: #1a1d2e; z-index: 1; border-radius: 16px 16px 0 0;
+    position: sticky; top: 0; background: var(--card); z-index: 1; border-radius: 16px 16px 0 0;
   }
   .popup-title { font-size: 18px; font-weight: 800; }
   .popup-close {
@@ -809,6 +874,76 @@
   }
   .popup-close:hover { background: var(--card-hover); color: var(--text); }
   .popup-body { padding: 16px 24px 20px; }
+
+  /* ── Stats popup tabs ── */
+  .stats-tabs { display: flex; gap: 4px; }
+  .stats-tab {
+    padding: 6px 14px; font-size: 11px; font-weight: 700; font-family: inherit;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: transparent; color: var(--text-dim); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .stats-tab:hover { background: var(--card-hover); color: var(--text); }
+  .stats-tab.active { background: var(--cyan-bg); color: var(--cyan); border-color: var(--cyan-border, var(--cyan)); }
+  .stats-tab[data-tab="exercise"].active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue-border, var(--blue)); }
+  .stats-tab[data-tab="recovery"].active { background: var(--purple-bg); color: var(--purple); border-color: var(--purple-border, var(--purple)); }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stats-chart-card {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .stats-chart-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); display: flex; align-items: center; justify-content: space-between;
+  }
+  .stats-chart-value { font-size: 20px; font-weight: 800; line-height: 1; }
+  .stats-chart-canvas { width: 100%; height: 80px; border-radius: 6px; }
+  .stats-kpi-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .stats-kpi {
+    flex: 1; min-width: 80px; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 10px; text-align: center;
+  }
+  .stats-kpi-val { font-size: 18px; font-weight: 800; }
+  .stats-kpi-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .stats-session-list {
+    display: flex; flex-direction: column; gap: 4px; max-height: 120px; overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .stats-session-list::-webkit-scrollbar { display: none; }
+  .stats-session-row {
+    display: flex; align-items: center; gap: 8px; padding: 4px 8px;
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 6px;
+    font-size: 11px;
+  }
+  .stats-session-row .date { color: var(--text-dim); min-width: 70px; font-weight: 600; }
+  .stats-session-row .val { color: var(--text); font-weight: 700; }
+  .stats-session-row .dim { color: var(--text-muted); }
+
+  [data-theme="retro"] .stats-tab { border-radius: 0; }
+  [data-theme="retro"] .stats-chart-card, [data-theme="retro"] .stats-kpi, [data-theme="retro"] .stats-session-row { border-radius: 0; border-color: rgba(0,255,65,0.15); }
+  [data-theme="retro"] .stats-tab.active { background: rgba(0,255,65,0.12); color: #00ff41; border-color: rgba(0,255,65,0.4); }
+
+  /* Chart tooltip */
+  .chart-tooltip {
+    position: absolute; pointer-events: none; z-index: 200;
+    background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 6px; padding: 6px 10px; font-size: 11px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    white-space: nowrap; display: none; transition: opacity 0.1s;
+  }
+  .chart-tooltip.visible { display: block; }
+  .chart-tooltip .tt-date { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  .chart-tooltip .tt-row { display: flex; align-items: center; gap: 6px; }
+  .chart-tooltip .tt-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .chart-tooltip .tt-label { color: var(--text-dim); }
+  .chart-tooltip .tt-val { font-weight: 700; }
+  .chart-wrap { position: relative; }
+  .chart-wrap canvas { display: block; }
+  .chart-crosshair { position: absolute; top: 0; width: 1px; background: var(--text-muted); opacity: 0.3; pointer-events: none; display: none; }
+  [data-theme="retro"] .chart-tooltip { border-radius: 0; border-color: rgba(0,255,65,0.25); background: #0a1208; }
   .exercise-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
   .exercise-item { display: flex; align-items: flex-start; gap: 10px; padding: 6px 0; }
   .exercise-item .check-box {
@@ -982,6 +1117,8 @@
     }
     .month-cell { min-height: 44px; font-size: 9px; padding: 2px; }
     .month-cell .mc-day { font-size: 11px; }
+    .ex-stats-panel { grid-template-columns: 1fr; gap: 6px; padding: 0 10px 8px; }
+    .ex-stat-big { font-size: 18px; }
 
     /* Popups */
     .exercise-list { grid-template-columns: 1fr; }
@@ -1055,6 +1192,8 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeDay(1)">›</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-daily" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
 
@@ -1104,6 +1243,8 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeWeek(1)">›</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-week" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
   <div class="week-grid" id="week-grid"></div>
@@ -1123,12 +1264,15 @@
       <button class="nav-btn" onclick="showWeekView()">Week</button>
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
+      <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-month" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
   <div class="month-grid-wrap">
     <div class="month-dow-row" id="month-dow-row"></div>
     <div class="month-grid" id="month-grid"></div>
   </div>
+  <div class="ex-stats-panel" id="month-ex-stats"></div>
   <div class="month-legend" id="month-legend"></div>
 </div>
 
@@ -1167,6 +1311,31 @@
       <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:12px">
         <button onclick="syncC2Data()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔄 Sync Rowing Data Now</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MONTH STATS POPUP ═══════════════ -->
+<div class="popup-backdrop" id="stats-backdrop" onclick="if(event.target===this)closeStats()">
+  <div class="popup" style="max-width:920px;max-height:92vh">
+    <div class="popup-header" style="padding:12px 24px 0;border-bottom:none">
+      <div style="display:flex;flex-direction:column;gap:4px;flex:1">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="stats-tab" onclick="changeStatsMonth(-1)" style="padding:4px 10px;font-size:14px" title="Previous month">‹</button>
+          <div class="popup-title" id="stats-title" style="min-width:180px;text-align:center">📊 April Stats</div>
+          <button class="stats-tab" onclick="changeStatsMonth(1)" style="padding:4px 10px;font-size:14px" title="Next month">›</button>
+          <button class="stats-tab" onclick="changeStatsMonth(0)" style="font-size:10px;padding:4px 10px" title="Current month">This Month</button>
+        </div>
+        <div class="stats-tabs" id="stats-tabs">
+          <button class="stats-tab active" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
+          <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
+          <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
+        </div>
+      </div>
+      <button class="popup-close" onclick="closeStats()" style="align-self:flex-start">✕ Close</button>
+    </div>
+    <div class="popup-body" id="stats-body" style="padding:12px 24px 20px">
+      <!-- Tab content injected by JS -->
     </div>
   </div>
 </div>
@@ -1329,6 +1498,40 @@ async function loadTrackingData(startDate, endDate) {
         unit: row.distance_unit || 'm', subtype: subtype || (existing ? existing.subtype : '')
       };
     });
+    // Merge localStorage workout logs to restore C2-specific fields (hrAvg, hrMax, pace500, spm, source, c2Sessions)
+    // that aren't stored in Supabase yet. localStorage is authoritative for these fields.
+    const startD = new Date(startDate), endD = new Date(endDate);
+    for (let d = new Date(startD); d <= endD; d.setDate(d.getDate() + 1)) {
+      const dStr = ds(d);
+      try {
+        const lsData = JSON.parse(localStorage.getItem('wlog_' + dStr));
+        if (!lsData) continue;
+        Object.keys(lsData).forEach(woId => {
+          const lsEntry = lsData[woId];
+          if (!lsEntry || !lsEntry.done) return;
+          if (!DB_CACHE.workouts[dStr]) DB_CACHE.workouts[dStr] = {};
+          const existing = DB_CACHE.workouts[dStr][woId] || {};
+          // Merge: localStorage C2 fields take priority; Supabase provides the base done/dist/time
+          DB_CACHE.workouts[dStr][woId] = {
+            done: true,
+            time: lsEntry.time || existing.time || 0,
+            dist: lsEntry.dist || existing.dist || 0,
+            unit: lsEntry.unit || existing.unit || 'm',
+            subtype: lsEntry.subtype || existing.subtype || '',
+            // C2-specific fields from localStorage
+            hrAvg: lsEntry.hrAvg || existing.hrAvg || 0,
+            hrMax: lsEntry.hrMax || existing.hrMax || 0,
+            spm: lsEntry.spm || existing.spm || 0,
+            pace500: lsEntry.pace500 || existing.pace500 || 0,
+            strokeCount: lsEntry.strokeCount || existing.strokeCount || 0,
+            cal: lsEntry.cal || existing.cal || 0,
+            dragFactor: lsEntry.dragFactor || existing.dragFactor || 0,
+            source: lsEntry.source || existing.source || '',
+            c2Sessions: lsEntry.c2Sessions || existing.c2Sessions || 0
+          };
+        });
+      } catch(e) {}
+    }
     console.log('Tracking data loaded for ' + startDate + ' to ' + endDate);
   } catch(e) {
     console.warn('Supabase tracking load failed', e);
@@ -1597,32 +1800,836 @@ async function syncC2Data() {
   btn.textContent = '⏳ Syncing...';
   const data = await c2Fetch('/users/me/results?type=rower&num=30');
   if (!data || !data.data) { btn.textContent = '❌ Sync failed — check token'; setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000); return; }
-  let imported = 0;
+
+  // Phase 1: group C2 results by date (handles multiple sessions per day)
+  // C2 API returns dates as "YYYY-MM-DD HH:MM:SS" — normalize to "YYYY-MM-DD"
+  const byDate = {};
   data.data.forEach(r => {
     if (!r.date || !r.distance) return;
-    const dateStr = r.date;
-    const distMeters = r.distance || 0;
-    const timeSec = r.time ? Math.floor(r.time / 10) : 0;
-    const timeMin = timeSec / 60;
-    // Write to workout log
+    const dateKey = String(r.date).substring(0, 10); // "2026-03-31 22:55:00" → "2026-03-31"
+    if (!byDate[dateKey]) byDate[dateKey] = [];
+    byDate[dateKey].push(r);
+  });
+
+  // Phase 2: for each date, merge C2 sessions and replace any manual entry
+  let imported = 0;
+  Object.keys(byDate).forEach(dateStr => {
+    const sessions = byDate[dateStr];
+    // Aggregate multiple sessions on the same day
+    let totalDist = 0, totalTimeSec = 0, totalStrokes = 0, totalCal = 0;
+    let hrAvgSum = 0, hrAvgCount = 0, hrMaxBest = 0;
+    let spmSum = 0, spmCount = 0, dragSum = 0, dragCount = 0;
+    let subtype = 'steady';
+
+    sessions.forEach(r => {
+      const distMeters = r.distance || 0;
+      const timeSec = r.time ? Math.floor(r.time / 10) : 0;
+      totalDist += distMeters;
+      totalTimeSec += timeSec;
+      totalStrokes += r.stroke_count || 0;
+      totalCal += r.calories_total || r.calories || 0;
+      if (r.heart_rate && r.heart_rate.average) { hrAvgSum += r.heart_rate.average; hrAvgCount++; }
+      if (r.heart_rate && r.heart_rate.max) hrMaxBest = Math.max(hrMaxBest, r.heart_rate.max);
+      const sr = r.stroke_data && r.stroke_data.average && r.stroke_data.average.stroke_rate ? r.stroke_data.average.stroke_rate : (r.stroke_rate || 0);
+      if (sr) { spmSum += sr; spmCount++; }
+      if (r.drag_factor) { dragSum += r.drag_factor; dragCount++; }
+      if (r.workout_type === 'FixedTimeInterval' || r.workout_type === 'FixedDistInterval') subtype = 'intervals';
+    });
+
+    const totalTimeMin = totalTimeSec / 60;
+    const pace500 = (totalDist > 0 && totalTimeSec > 0) ? (totalTimeSec / (totalDist / 500)) : 0;
+
     if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
+    // Preserve subtype from existing manual entry if it had one
     const existing = DB_CACHE.workouts[dateStr].row || {};
-    // Determine subtype from workout description or default to steady
-    const subtype = existing.subtype || (r.workout_type === 'FixedTimeInterval' || r.workout_type === 'FixedDistInterval' ? 'intervals' : 'steady');
+    if (existing.subtype && subtype === 'steady') subtype = existing.subtype;
+
     DB_CACHE.workouts[dateStr].row = {
-      done: true, time: timeMin, dist: distMeters, unit: 'm', subtype: subtype
+      done: true, time: totalTimeMin, dist: totalDist, unit: 'm', subtype,
+      hrAvg: hrAvgCount > 0 ? Math.round(hrAvgSum / hrAvgCount) : 0,
+      hrMax: hrMaxBest,
+      spm: spmCount > 0 ? Math.round(spmSum / spmCount) : 0,
+      pace500,
+      strokeCount: totalStrokes,
+      cal: totalCal,
+      dragFactor: dragCount > 0 ? Math.round(dragSum / dragCount) : 0,
+      source: 'c2', // mark as C2-sourced — authoritative for this date
+      c2Sessions: sessions.length
     };
-    // Also persist to localStorage
+
+    // Persist to localStorage (replaces any manual entry for this date)
     const lsKey = 'wlog_' + dateStr;
     const lsData = JSON.parse(localStorage.getItem(lsKey) || '{}');
     lsData.row = DB_CACHE.workouts[dateStr].row;
     localStorage.setItem(lsKey, JSON.stringify(lsData));
-    imported++;
+    imported += sessions.length;
   });
-  btn.textContent = `✅ Imported ${imported} rows`;
+
+  btn.textContent = `✅ ${imported} sessions → ${Object.keys(byDate).length} days`;
   setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000);
   loadC2Recent();
   renderDaily();
+}
+
+// ═══════════════════════════════════════════════
+// MONTH STATS POPUP
+// ═══════════════════════════════════════════════
+let _statsMonth = null; // { year, month }
+let _statsTab = 'rowing';
+let _statsRowData = []; // C2 row sessions for current month
+
+let _statsMonthOffset = 0; // relative to current month
+
+function openStats() {
+  _statsMonthOffset = currentMonthOffset; // inherit from month view
+  _statsTab = 'rowing';
+  document.querySelectorAll('.stats-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'rowing'));
+  updateStatsMonth();
+  document.getElementById('stats-backdrop').classList.add('open');
+}
+function closeStats() { document.getElementById('stats-backdrop').classList.remove('open'); }
+
+function changeStatsMonth(delta) {
+  if (delta === 0) { _statsMonthOffset = 0; } // "This Month" button
+  else { _statsMonthOffset += delta; }
+  updateStatsMonth();
+}
+
+function updateStatsMonth() {
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth() + _statsMonthOffset, 1);
+  _statsMonth = { year: viewDate.getFullYear(), month: viewDate.getMonth() };
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label = _statsMonthOffset === 0 ? 'This Month' : monthNames[_statsMonth.month] + ' ' + _statsMonth.year;
+  document.getElementById('stats-title').textContent = '📊 ' + label;
+  collectStatsData();
+}
+
+function switchStatsTab(tab) {
+  _statsTab = tab;
+  document.querySelectorAll('.stats-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  renderStatsTab();
+}
+
+function collectStatsData() {
+  // Collect all row workout log entries for the month
+  const { year, month } = _statsMonth;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  _statsRowData = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = ds(new Date(year, month, d));
+    const wlog = getWorkoutLog(dStr);
+    if (wlog.row && wlog.row.done) {
+      _statsRowData.push({ date: dStr, ...wlog.row });
+    }
+  }
+  _statsRowData.sort((a, b) => a.date.localeCompare(b.date));
+  renderStatsTab();
+}
+
+function renderStatsTab() {
+  const body = document.getElementById('stats-body');
+  if (_statsTab === 'rowing') renderRowingStats(body);
+  else if (_statsTab === 'exercise') renderExerciseStats(body);
+  else if (_statsTab === 'recovery') renderRecoveryStats(body);
+}
+
+// ── ROWING STATS TAB ──
+function renderRowingStats(container) {
+  const rows = _statsRowData;
+  const totalDist = rows.reduce((s, r) => s + (r.dist || 0), 0);
+  const totalTime = rows.reduce((s, r) => s + (r.time || 0), 0);
+  const avgPace500 = totalDist > 0 && totalTime > 0 ? ((totalTime * 60) / (totalDist / 500)) : 0;
+  const avgHR = rows.filter(r => r.hrAvg > 0);
+  const avgHRval = avgHR.length > 0 ? Math.round(avgHR.reduce((s, r) => s + r.hrAvg, 0) / avgHR.length) : 0;
+  const maxHRval = Math.max(...rows.map(r => r.hrMax || 0), 0);
+  const avgSPM = rows.filter(r => r.spm > 0);
+  const avgSPMval = avgSPM.length > 0 ? Math.round(avgSPM.reduce((s, r) => s + r.spm, 0) / avgSPM.length) : 0;
+  const totalCal = rows.reduce((s, r) => s + (r.cal || 0), 0);
+  const bestDist = rows.length > 0 ? rows.reduce((best, r) => (r.dist || 0) > (best.dist || 0) ? r : best, rows[0]) : null;
+
+  const distStr = totalDist >= 1000 ? (totalDist / 1000).toFixed(1) + ' km' : Math.round(totalDist) + ' m';
+  const paceStr = avgPace500 > 0 ? Math.floor(avgPace500 / 60) + ':' + String(Math.round(avgPace500 % 60)).padStart(2, '0') : '—';
+  const timeStr = totalTime > 0 ? Math.floor(totalTime) + ':' + String(Math.round((totalTime % 1) * 60)).padStart(2, '0') : '0:00';
+
+  container.innerHTML = `
+    <div class="stats-kpi-row" style="margin-bottom:12px">
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${rows.length}</div><div class="stats-kpi-label">Sessions</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${distStr}</div><div class="stats-kpi-label">Total Distance</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${timeStr}</div><div class="stats-kpi-label">Total Time</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">${paceStr}</div><div class="stats-kpi-label">Avg Pace /500m</div></div>
+      ${avgHRval ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--red)">${avgHRval}</div><div class="stats-kpi-label">Avg HR</div></div>` : ''}
+      ${maxHRval ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--red)">${maxHRval}</div><div class="stats-kpi-label">Max HR</div></div>` : ''}
+    </div>
+    <div class="stats-chart-card" style="margin-bottom:10px">
+      <div class="stats-chart-title">
+        <span><span style="color:var(--cyan)">━</span> Distance &nbsp; <span style="color:var(--orange)">┅</span> Pace /500m</span>
+        <span style="font-size:9px;color:var(--text-muted)">${rows.length} sessions · hover for details</span>
+      </div>
+      <div class="chart-wrap" id="chart-dual-wrap" style="height:140px">
+        <canvas id="chart-dual" style="width:100%;height:140px"></canvas>
+        <div class="chart-crosshair" id="chart-dual-cross"></div>
+        <div class="chart-tooltip" id="chart-dual-tip"></div>
+      </div>
+    </div>
+    <div class="stats-chart-card" style="margin-bottom:10px">
+      <div class="stats-chart-title">
+        <span><span style="color:var(--red)">━</span> Avg HR &nbsp; <span style="color:var(--red);opacity:0.6">┅</span> Max HR</span>
+        <span style="font-size:9px;color:var(--text-muted)">${avgHRval ? 'avg ' + avgHRval + ' · max ' + maxHRval + ' bpm' : 'no HR data yet'}</span>
+      </div>
+      <div class="chart-wrap" id="chart-hr-wrap" style="height:120px">
+        <canvas id="chart-hr-dual" style="width:100%;height:120px"></canvas>
+        <div class="chart-crosshair" id="chart-hr-cross"></div>
+        <div class="chart-tooltip" id="chart-hr-tip"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">Session Log</div>
+      <div class="stats-session-list">
+        ${rows.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);padding:8px">No rowing sessions this month. Sync your C2 data from Settings.</div>' :
+          rows.map(r => {
+            const d = r.dist >= 1000 ? (r.dist / 1000).toFixed(1) + 'km' : Math.round(r.dist) + 'm';
+            const t = r.time ? Math.floor(r.time) + ':' + String(Math.round((r.time % 1) * 60)).padStart(2, '0') : '';
+            const p = r.pace500 > 0 ? Math.floor(r.pace500 / 60) + ':' + String(Math.round(r.pace500 % 60)).padStart(2, '0') : '';
+            const hr = r.hrAvg ? r.hrAvg + ' bpm' : '';
+            const src = r.source === 'c2' ? (r.c2Sessions > 1 ? `<span class="dim" title="${r.c2Sessions} C2 sessions merged">C2×${r.c2Sessions}</span>` : '<span class="dim">C2</span>') : '<span class="dim">manual</span>';
+            return `<div class="stats-session-row">
+              <span class="date">${r.date.substring(5)}</span>
+              ${src}
+              <span class="val" style="color:var(--cyan);min-width:55px">${d}</span>
+              <span class="val" style="min-width:40px">${t}</span>
+              ${p ? `<span class="dim">/500m: ${p}</span>` : ''}
+              ${r.spm ? `<span class="dim">${r.spm} spm</span>` : ''}
+              ${hr ? `<span class="dim" style="margin-left:auto;color:var(--red)">${hr}</span>` : ''}
+            </div>`;
+          }).join('')}
+      </div>
+    </div>
+  `;
+
+  // Draw charts after DOM update — pass month info for full X axis
+  const { year: sYear, month: sMonth } = _statsMonth;
+  const sDaysInMonth = new Date(sYear, sMonth + 1, 0).getDate();
+  requestAnimationFrame(() => {
+    drawDualAxisChart('chart-dual', rows, sYear, sMonth, sDaysInMonth);
+    drawHRChart('chart-hr-dual', rows, sYear, sMonth, sDaysInMonth);
+  });
+}
+
+// ── EXERCISE STATS TAB ──
+function renderExerciseStats(container) {
+  const { year, month } = _statsMonth;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = ds(new Date());
+  let gym = 0, gymDone = 0, row = 0, rowDone = 0, bw = 0, bwDone = 0, yoga = 0, yogaDone = 0, outdoor = 0, outdoorDone = 0;
+  let totalWo = 0, totalWoDone = 0;
+  const dailyCompletion = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = ds(new Date(year, month, d));
+    const wo = WORKOUT_PLANS[dStr];
+    const checked = getChecked(dStr);
+    if (wo) {
+      totalWo++;
+      const done = !!checked['s_workout'];
+      if (done) totalWoDone++;
+      if (wo.type === 'gym') { gym++; if (done) gymDone++; }
+      else if (wo.type === 'row') { row++; if (done) rowDone++; }
+      else if (wo.type === 'bodyweight') { bw++; if (done) bwDone++; }
+      else if (wo.type === 'yoga') { yoga++; if (done) yogaDone++; }
+      else if (wo.type === 'outdoor') { outdoor++; if (done) outdoorDone++; }
+    }
+    if (dStr <= todayStr) {
+      const prog = getDayProgress(dStr);
+      dailyCompletion.push({ label: String(d), value: prog.total > 0 ? Math.round(prog.done / prog.total * 100) : 0 });
+    }
+  }
+
+  const pct = totalWo > 0 ? Math.round(totalWoDone / totalWo * 100) : 0;
+  const pctColor = pct === 100 ? 'var(--green)' : pct > 50 ? 'var(--cyan)' : 'var(--orange)';
+
+  // Weight trend
+  const weights = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = ds(new Date(year, month, d));
+    const w = getWeight(dStr);
+    if (w > 0) weights.push({ label: dStr.substring(5), value: w });
+  }
+
+  container.innerHTML = `
+    <div class="stats-kpi-row" style="margin-bottom:12px">
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:${pctColor}">${pct}%</div><div class="stats-kpi-label">Completion</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--blue)">${totalWoDone}/${totalWo}</div><div class="stats-kpi-label">Workouts</div></div>
+      ${gym ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--blue)">${gymDone}/${gym}</div><div class="stats-kpi-label">Gym</div></div>` : ''}
+      ${row ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${rowDone}/${row}</div><div class="stats-kpi-label">Row</div></div>` : ''}
+      ${bw ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">${bwDone}/${bw}</div><div class="stats-kpi-label">Bodyweight</div></div>` : ''}
+      ${yoga ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${yogaDone}/${yoga}</div><div class="stats-kpi-label">Yoga</div></div>` : ''}
+      ${outdoor ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${outdoorDone}/${outdoor}</div><div class="stats-kpi-label">Outdoor</div></div>` : ''}
+    </div>
+    <div class="stats-grid">
+      <div class="stats-chart-card">
+        <div class="stats-chart-title">Daily Completion %</div>
+        <canvas id="chart-completion" class="stats-chart-canvas" width="380" height="80"></canvas>
+      </div>
+      <div class="stats-chart-card">
+        <div class="stats-chart-title">Weight Trend ${weights.length === 0 ? '<span style="font-size:9px;color:var(--text-muted)">no data</span>' : ''}</div>
+        <canvas id="chart-weight" class="stats-chart-canvas" width="380" height="80"></canvas>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    drawBarChart('chart-completion', dailyCompletion, 'var(--cyan)');
+    if (weights.length > 0) drawLineChart('chart-weight', weights, 'var(--green)', 'lbs');
+  });
+}
+
+// ── RECOVERY STATS TAB ──
+function renderRecoveryStats(container) {
+  const { year, month } = _statsMonth;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayStr = ds(new Date());
+  let strTotal = 0, strDone = 0, morTotal = 0, morDone = 0;
+  const moodData = [], energyData = [], sleepData = [];
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dStr = ds(new Date(year, month, d));
+    if (dStr > todayStr) continue;
+    const checked = getChecked(dStr);
+    strTotal++; if (checked['s_stretch']) strDone++;
+    morTotal++; if (checked['s_morning']) morDone++;
+    const mood = getMood(dStr); if (mood) moodData.push({ label: String(d), value: mood });
+    const energy = getEnergy(dStr); if (energy) energyData.push({ label: String(d), value: energy });
+    const sleep = getSleep(dStr); if (sleep) sleepData.push({ label: String(d), value: sleep });
+  }
+
+  const strPct = strTotal > 0 ? Math.round(strDone / strTotal * 100) : 0;
+  const morPct = morTotal > 0 ? Math.round(morDone / morTotal * 100) : 0;
+  const avgMood = moodData.length > 0 ? (moodData.reduce((s, d) => s + d.value, 0) / moodData.length).toFixed(1) : '—';
+  const avgEnergy = energyData.length > 0 ? (energyData.reduce((s, d) => s + d.value, 0) / energyData.length).toFixed(1) : '—';
+  const avgSleep = sleepData.length > 0 ? (sleepData.reduce((s, d) => s + d.value, 0) / sleepData.length).toFixed(1) : '—';
+
+  container.innerHTML = `
+    <div class="stats-kpi-row" style="margin-bottom:12px">
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--purple)">${strPct}%</div><div class="stats-kpi-label">Stretch</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">${morPct}%</div><div class="stats-kpi-label">Morning</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${avgMood}</div><div class="stats-kpi-label">Avg Mood</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${avgEnergy}</div><div class="stats-kpi-label">Avg Energy</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--blue)">${avgSleep}h</div><div class="stats-kpi-label">Avg Sleep</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stats-chart-card">
+        <div class="stats-chart-title">Mood Trend</div>
+        <canvas id="chart-mood" class="stats-chart-canvas" width="380" height="80"></canvas>
+      </div>
+      <div class="stats-chart-card">
+        <div class="stats-chart-title">Energy Trend</div>
+        <canvas id="chart-energy" class="stats-chart-canvas" width="380" height="80"></canvas>
+      </div>
+      <div class="stats-chart-card">
+        <div class="stats-chart-title">Sleep Hours</div>
+        <canvas id="chart-sleep" class="stats-chart-canvas" width="380" height="80"></canvas>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    if (moodData.length > 0) drawLineChart('chart-mood', moodData, 'var(--green)', '', false, 1, 5);
+    if (energyData.length > 0) drawLineChart('chart-energy', energyData, 'var(--cyan)', '', false, 1, 5);
+    if (sleepData.length > 0) drawBarChart('chart-sleep', sleepData, 'var(--blue)');
+  });
+}
+
+// ── CHART RENDERERS ──
+function getComputedColor(varStr) {
+  // Resolve CSS variable to actual color
+  if (varStr.startsWith('var(')) {
+    const prop = varStr.slice(4, -1);
+    return getComputedStyle(document.documentElement).getPropertyValue(prop).trim() || '#4ade80';
+  }
+  return varStr;
+}
+
+// ── CHART SYNC: linked crosshairs across rowing charts ──
+const _chartSync = {}; // { chartId: { hoverByDate: fn, leave: fn } }
+function chartSyncBroadcast(sourceId, dateStr) {
+  Object.keys(_chartSync).forEach(id => {
+    if (id !== sourceId && _chartSync[id].hoverByDate) _chartSync[id].hoverByDate(dateStr);
+  });
+}
+function chartSyncLeave(sourceId) {
+  Object.keys(_chartSync).forEach(id => {
+    if (id !== sourceId && _chartSync[id].leave) _chartSync[id].leave();
+  });
+}
+
+// ── DUAL AXIS CHART: Distance (left Y, cyan) + Pace (right Y, orange) ──
+// Full month X axis — dots only on logged days, lines connect data days only
+// Full redraw on hover for clean dot rendering (no DPR ghost artifacts)
+function drawDualAxisChart(canvasId, rows, year, month, daysInMonth) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  const cyanColor = getComputedColor('var(--cyan)');
+  const orangeColor = getComputedColor('var(--orange)');
+  const dimColor = getComputedColor('var(--text-muted)');
+  const divColor = getComputedColor('var(--divider)');
+
+  const pad = { t: 12, b: 22, l: 44, r: 50 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+
+  const dataByDay = {};
+  rows.forEach(r => {
+    const day = parseInt(r.date.substring(8, 10), 10);
+    dataByDay[day] = { dist: (r.dist || 0) / 1000, pace: r.pace500 || 0, row: r };
+  });
+  const dataDays = Object.keys(dataByDay).map(Number).sort((a, b) => a - b);
+
+  if (dataDays.length === 0) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = dimColor; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('No rowing data this month', w / 2, h / 2);
+    return;
+  }
+
+  function xPos(day) { return pad.l + ((day - 1) / (daysInMonth - 1)) * cw; }
+
+  const distVals = dataDays.map(d => dataByDay[d].dist);
+  const paceVals = dataDays.map(d => dataByDay[d].pace).filter(p => p > 0);
+  const distMin = 0, distMax = Math.max(...distVals) * 1.15 || 1;
+  const paceMin = paceVals.length > 0 ? Math.min(...paceVals) * 0.9 : 0;
+  const paceMax = paceVals.length > 0 ? Math.max(...paceVals) * 1.1 : 300;
+  function distY(v) { return pad.t + ch - ((v - distMin) / (distMax - distMin) * ch); }
+  function paceY(v) { return pad.t + ch - ((v - paceMin) / (paceMax - paceMin) * ch); }
+  const paceDays = dataDays.filter(d => dataByDay[d].pace > 0);
+  const xLabelStep = daysInMonth > 20 ? 2 : 1;
+
+  // Full draw function — called on init and every hover change
+  function fullDraw(hoverDay) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Grid
+    ctx.strokeStyle = divColor; ctx.lineWidth = 0.5;
+    for (let i = 0; i <= 4; i++) { const y = pad.t + (ch * i / 4); ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke(); }
+
+    // Left Y labels (km)
+    ctx.fillStyle = cyanColor; ctx.font = '9px Inter, sans-serif'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) { ctx.fillText((distMin + (distMax - distMin) * (1 - i / 4)).toFixed(1), pad.l - 4, pad.t + (ch * i / 4) + 3); }
+    ctx.save(); ctx.translate(10, pad.t + ch / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.font = '8px Inter, sans-serif'; ctx.fillStyle = cyanColor;
+    ctx.fillText('km', 0, 0); ctx.restore();
+
+    // Right Y labels (pace)
+    ctx.fillStyle = orangeColor; ctx.textAlign = 'left'; ctx.font = '9px Inter, sans-serif';
+    for (let i = 0; i <= 4; i++) { const v = paceMin + (paceMax - paceMin) * (1 - i / 4); ctx.fillText(Math.floor(v / 60) + ':' + String(Math.round(v % 60)).padStart(2, '0'), w - pad.r + 4, pad.t + (ch * i / 4) + 3); }
+    ctx.save(); ctx.translate(w - 6, pad.t + ch / 2); ctx.rotate(Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.font = '8px Inter, sans-serif'; ctx.fillStyle = orangeColor;
+    ctx.fillText('/500m', 0, 0); ctx.restore();
+
+    // Distance line
+    ctx.strokeStyle = cyanColor; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+    dataDays.forEach((day, i) => { const x = xPos(day), y = distY(dataByDay[day].dist); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    if (dataDays.length > 1) {
+      ctx.lineTo(xPos(dataDays[dataDays.length - 1]), pad.t + ch); ctx.lineTo(xPos(dataDays[0]), pad.t + ch); ctx.closePath();
+      ctx.globalAlpha = 0.06; ctx.fillStyle = cyanColor; ctx.fill(); ctx.globalAlpha = 1;
+    }
+
+    // Pace line (dashed)
+    ctx.strokeStyle = orangeColor; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.beginPath();
+    paceDays.forEach((day, i) => { const x = xPos(day), y = paceY(dataByDay[day].pace); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke(); ctx.setLineDash([]);
+
+    // X labels
+    ctx.fillStyle = dimColor; ctx.font = '8px Inter, sans-serif'; ctx.textAlign = 'center';
+    for (let day = 1; day <= daysInMonth; day++) { if (day === 1 || day === daysInMonth || day % xLabelStep === 0) ctx.fillText(day, xPos(day), h - 4); }
+
+    // Dots
+    dataDays.forEach(day => {
+      const x = xPos(day), isH = day === hoverDay, d = dataByDay[day];
+      ctx.fillStyle = cyanColor; ctx.globalAlpha = isH ? 1 : 0.7;
+      ctx.beginPath(); ctx.arc(x, distY(d.dist), isH ? 5.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+      if (isH) { ctx.strokeStyle = cyanColor; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(x, distY(d.dist), 9, 0, Math.PI * 2); ctx.stroke(); }
+      if (d.pace > 0) {
+        ctx.fillStyle = orangeColor; ctx.globalAlpha = isH ? 1 : 0.7;
+        ctx.beginPath(); ctx.arc(x, paceY(d.pace), isH ? 5.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+        if (isH) { ctx.strokeStyle = orangeColor; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(x, paceY(d.pace), 9, 0, Math.PI * 2); ctx.stroke(); }
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+  fullDraw(-1);
+
+  // ── HOVER INTERACTION ──
+  const crosshair = document.getElementById('chart-dual-cross');
+  const tooltip = document.getElementById('chart-dual-tip');
+  if (!crosshair || !tooltip) return;
+  crosshair.style.height = ch + 'px'; crosshair.style.top = pad.t + 'px';
+
+  const _dualPoints = dataDays.map(day => ({
+    x: xPos(day), day, dist: dataByDay[day].dist, pace: dataByDay[day].pace,
+    label: String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0'),
+    row: dataByDay[day].row
+  }));
+
+  function handleMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX || (e.touches && e.touches[0].clientX) || 0) - rect.left;
+    let closest = null, closestDx = Infinity;
+    _dualPoints.forEach(p => { const dx = Math.abs(p.x - mx); if (dx < closestDx) { closestDx = dx; closest = p; } });
+    if (!closest || closestDx > 40) { crosshair.style.display = 'none'; tooltip.classList.remove('visible'); fullDraw(-1); return; }
+    crosshair.style.display = 'block'; crosshair.style.left = closest.x + 'px';
+
+    const pM = Math.floor(closest.pace / 60), pS = Math.round(closest.pace % 60);
+    const pStr = closest.pace > 0 ? pM + ':' + String(pS).padStart(2, '0') : '\u2014';
+    const dStr = closest.dist.toFixed(2) + ' km';
+    const r = closest.row;
+    const tStr = r.time ? Math.floor(r.time) + ':' + String(Math.round((r.time % 1) * 60)).padStart(2, '0') : '';
+    const hrStr = r.hrAvg ? r.hrAvg + ' bpm' : '';
+    const spmStr = r.spm ? r.spm + ' spm' : '';
+
+    tooltip.innerHTML = `
+      <div class="tt-date">${closest.label}</div>
+      <div class="tt-row"><span class="tt-dot" style="background:${cyanColor}"></span><span class="tt-label">Distance:</span> <span class="tt-val" style="color:${cyanColor}">${dStr}</span></div>
+      <div class="tt-row"><span class="tt-dot" style="background:${orangeColor}"></span><span class="tt-label">Pace /500m:</span> <span class="tt-val" style="color:${orangeColor}">${pStr}</span></div>
+      ${tStr ? `<div class="tt-row"><span class="tt-dot" style="background:var(--green)"></span><span class="tt-label">Time:</span> <span class="tt-val">${tStr}</span></div>` : ''}
+      ${hrStr ? `<div class="tt-row"><span class="tt-dot" style="background:var(--red)"></span><span class="tt-label">Avg HR:</span> <span class="tt-val" style="color:var(--red)">${hrStr}</span></div>` : ''}
+      ${spmStr ? `<div class="tt-row"><span class="tt-dot" style="background:var(--text-dim)"></span><span class="tt-label">Stroke rate:</span> <span class="tt-val">${spmStr}</span></div>` : ''}
+    `;
+    tooltip.classList.add('visible');
+    const tipW = tooltip.offsetWidth; let tipX = closest.x + 12;
+    if (tipX + tipW > w - 10) tipX = closest.x - tipW - 12;
+    tooltip.style.left = tipX + 'px'; tooltip.style.top = (pad.t + 4) + 'px';
+    fullDraw(closest.day);
+    chartSyncBroadcast(canvasId, closest.label);
+  }
+
+  function highlightByDate(dateStr) {
+    const pt = _dualPoints.find(p => p.label === dateStr);
+    if (!pt) { fullDraw(-1); crosshair.style.display = 'none'; return; }
+    crosshair.style.display = 'block'; crosshair.style.left = pt.x + 'px';
+    tooltip.classList.remove('visible'); fullDraw(pt.day);
+  }
+  function handleLeave() { crosshair.style.display = 'none'; tooltip.classList.remove('visible'); fullDraw(-1); chartSyncLeave(canvasId); }
+
+  canvas.onmousemove = handleMove; canvas.ontouchmove = handleMove;
+  canvas.onmouseleave = handleLeave; canvas.ontouchend = handleLeave;
+  _chartSync[canvasId] = { hoverByDate: highlightByDate, leave: handleLeave };
+}
+
+// ── HR ZONE CHART: Avg HR (solid) + Max HR (dashed) with colored zone bands ──
+// Zones based on age 44 → max HR ~176 (220-age formula)
+// Full redraw on hover for clean dot rendering (no DPR ghost artifacts)
+function drawHRChart(canvasId, rows, year, month, daysInMonth) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const wrap = canvas.parentElement;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = wrap.clientWidth;
+  const h = wrap.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+
+  const redColor = getComputedColor('var(--red)');
+  const maxRedColor = getComputedColor('var(--red)');
+  const dimColor = getComputedColor('var(--text-muted)');
+  const divColor = getComputedColor('var(--divider)');
+
+  const pad = { t: 12, b: 22, l: 36, r: 50 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+
+  const dataByDay = {};
+  rows.forEach(r => {
+    if ((r.hrAvg || 0) <= 0 && (r.hrMax || 0) <= 0) return;
+    const day = parseInt(r.date.substring(8, 10), 10);
+    dataByDay[day] = { avg: r.hrAvg || 0, max: r.hrMax || 0, row: r };
+  });
+  const dataDays = Object.keys(dataByDay).map(Number).sort((a, b) => a - b);
+
+  if (dataDays.length === 0) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = dimColor; ctx.font = '11px Inter, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('No heart rate data this month', w / 2, h / 2);
+    return;
+  }
+
+  function xPos(day) { return pad.l + ((day - 1) / (daysInMonth - 1)) * cw; }
+
+  // HR Zones (220 - age 44 = 176 max HR)
+  const maxHR = 176;
+  const zones = [
+    { name: 'Z1', label: 'Recovery', min: 0,   max: Math.round(maxHR * 0.6),  color: 'rgba(128,128,128,0.08)' },
+    { name: 'Z2', label: 'Aerobic',  min: Math.round(maxHR * 0.6),  max: Math.round(maxHR * 0.7),  color: 'rgba(0,160,255,0.08)' },
+    { name: 'Z3', label: 'Tempo',    min: Math.round(maxHR * 0.7),  max: Math.round(maxHR * 0.8),  color: 'rgba(0,200,100,0.10)' },
+    { name: 'Z4', label: 'Threshold',min: Math.round(maxHR * 0.8),  max: Math.round(maxHR * 0.9),  color: 'rgba(255,165,0,0.10)' },
+    { name: 'Z5', label: 'VO2 Max',  min: Math.round(maxHR * 0.9),  max: maxHR + 20,               color: 'rgba(255,50,50,0.12)' }
+  ];
+
+  const allVals = dataDays.flatMap(d => [dataByDay[d].avg, dataByDay[d].max]).filter(v => v > 0);
+  const dataMin = Math.min(...allVals), dataMax = Math.max(...allVals);
+  const lowestZone = zones.find(z => dataMin < z.max) || zones[0];
+  const highestZone = zones.find(z => dataMax <= z.max) || zones[zones.length - 1];
+  const yMin = Math.min(dataMin * 0.95, lowestZone.min > 0 ? lowestZone.min : dataMin * 0.9);
+  const yMax = Math.max(dataMax * 1.05, highestZone.max);
+  const yRange = yMax - yMin || 1;
+  function yPos(v) { return pad.t + ch - ((v - yMin) / yRange * ch); }
+
+  const avgDays = dataDays.filter(d => dataByDay[d].avg > 0);
+  const maxDays = dataDays.filter(d => dataByDay[d].max > 0);
+  const xLabelStep = daysInMonth > 20 ? 2 : 1;
+
+  // Full draw function — called on init and every hover change
+  function fullDraw(hoverDay) {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Zone bands (background)
+    zones.forEach(z => {
+      const bandTop = Math.max(yPos(z.max), pad.t), bandBot = Math.min(yPos(z.min), pad.t + ch);
+      if (bandBot <= bandTop) return;
+      ctx.fillStyle = z.color; ctx.fillRect(pad.l, bandTop, cw, bandBot - bandTop);
+    });
+
+    // Zone boundary lines
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 0.5;
+    zones.forEach(z => {
+      if (z.max >= yMin && z.max <= yMax && z.max < maxHR + 20) {
+        ctx.strokeStyle = dimColor; ctx.beginPath(); ctx.moveTo(pad.l, yPos(z.max)); ctx.lineTo(w - pad.r, yPos(z.max)); ctx.stroke();
+      }
+    });
+    ctx.setLineDash([]);
+
+    // Zone labels (right side)
+    ctx.font = '8px Inter, sans-serif'; ctx.textAlign = 'left';
+    zones.forEach(z => {
+      const midBpm = (z.min + Math.min(z.max, yMax)) / 2;
+      if (midBpm < yMin || midBpm > yMax) return;
+      const labelY = yPos(midBpm);
+      if (labelY < pad.t + 6 || labelY > pad.t + ch - 4) return;
+      ctx.fillStyle = dimColor; ctx.globalAlpha = 0.7; ctx.fillText(z.name, w - pad.r + 4, labelY + 3); ctx.globalAlpha = 1;
+    });
+
+    // Y axis labels (bpm)
+    ctx.fillStyle = redColor; ctx.font = '9px Inter, sans-serif'; ctx.textAlign = 'right';
+    for (let i = 0; i <= 4; i++) { ctx.fillText(Math.round(yMin + yRange * (1 - i / 4)), pad.l - 4, pad.t + (ch * i / 4) + 3); }
+
+    // Avg HR line (solid)
+    ctx.strokeStyle = redColor; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.beginPath();
+    avgDays.forEach((day, i) => { const x = xPos(day), y = yPos(dataByDay[day].avg); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke();
+    if (avgDays.length > 1) {
+      ctx.lineTo(xPos(avgDays[avgDays.length - 1]), pad.t + ch); ctx.lineTo(xPos(avgDays[0]), pad.t + ch); ctx.closePath();
+      ctx.globalAlpha = 0.06; ctx.fillStyle = redColor; ctx.fill(); ctx.globalAlpha = 1;
+    }
+
+    // Max HR line (dashed)
+    ctx.strokeStyle = maxRedColor; ctx.lineWidth = 2; ctx.setLineDash([6, 3]); ctx.globalAlpha = 0.6; ctx.beginPath();
+    maxDays.forEach((day, i) => { const x = xPos(day), y = yPos(dataByDay[day].max); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); });
+    ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+
+    // X labels
+    ctx.fillStyle = dimColor; ctx.font = '8px Inter, sans-serif'; ctx.textAlign = 'center';
+    for (let day = 1; day <= daysInMonth; day++) { if (day === 1 || day === daysInMonth || day % xLabelStep === 0) ctx.fillText(day, xPos(day), h - 4); }
+
+    // Dots
+    dataDays.forEach(day => {
+      const x = xPos(day), isH = day === hoverDay, d = dataByDay[day];
+      if (d.avg > 0) {
+        ctx.fillStyle = redColor; ctx.globalAlpha = isH ? 1 : 0.7;
+        ctx.beginPath(); ctx.arc(x, yPos(d.avg), isH ? 5.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+        if (isH) { ctx.strokeStyle = redColor; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(x, yPos(d.avg), 9, 0, Math.PI * 2); ctx.stroke(); }
+      }
+      if (d.max > 0) {
+        ctx.fillStyle = maxRedColor; ctx.globalAlpha = isH ? 0.9 : 0.5;
+        ctx.beginPath(); ctx.arc(x, yPos(d.max), isH ? 5.5 : 3.5, 0, Math.PI * 2); ctx.fill();
+        if (isH) { ctx.strokeStyle = maxRedColor; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.3; ctx.beginPath(); ctx.arc(x, yPos(d.max), 9, 0, Math.PI * 2); ctx.stroke(); }
+      }
+    });
+    ctx.globalAlpha = 1;
+  }
+  fullDraw(-1);
+
+  // ── HOVER ──
+  const crosshair = document.getElementById('chart-hr-cross');
+  const tooltip = document.getElementById('chart-hr-tip');
+  if (!crosshair || !tooltip) return;
+  crosshair.style.height = ch + 'px'; crosshair.style.top = pad.t + 'px';
+
+  const _hrPoints = dataDays.map(day => ({
+    x: xPos(day), day, avg: dataByDay[day].avg, max: dataByDay[day].max,
+    label: String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0'),
+    row: dataByDay[day].row
+  }));
+
+  function getZone(bpm) { return zones.find(z => bpm >= z.min && bpm < z.max) || zones[zones.length - 1]; }
+
+  function handleMove(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX || (e.touches && e.touches[0].clientX) || 0) - rect.left;
+    let closest = null, closestDx = Infinity;
+    _hrPoints.forEach(p => { const dx = Math.abs(p.x - mx); if (dx < closestDx) { closestDx = dx; closest = p; } });
+    if (!closest || closestDx > 40) { crosshair.style.display = 'none'; tooltip.classList.remove('visible'); fullDraw(-1); return; }
+
+    crosshair.style.display = 'block'; crosshair.style.left = closest.x + 'px';
+    const distKm = (closest.row.dist || 0) / 1000;
+    const avgZone = closest.avg > 0 ? getZone(closest.avg) : null;
+    const maxZone = closest.max > 0 ? getZone(closest.max) : null;
+    tooltip.innerHTML = `
+      <div class="tt-date">${closest.label}</div>
+      <div class="tt-row"><span class="tt-dot" style="background:${redColor}"></span><span class="tt-label">Avg HR:</span> <span class="tt-val" style="color:${redColor}">${closest.avg || '\u2014'} bpm</span>${avgZone ? ` <span style="opacity:0.6;font-size:9px">${avgZone.name}</span>` : ''}</div>
+      <div class="tt-row"><span class="tt-dot" style="background:${maxRedColor};opacity:0.6"></span><span class="tt-label">Max HR:</span> <span class="tt-val" style="color:${maxRedColor}">${closest.max || '\u2014'} bpm</span>${maxZone ? ` <span style="opacity:0.6;font-size:9px">${maxZone.name}</span>` : ''}</div>
+      ${distKm > 0 ? `<div class="tt-row"><span class="tt-dot" style="background:var(--cyan)"></span><span class="tt-label">Distance:</span> <span class="tt-val">${distKm.toFixed(2)} km</span></div>` : ''}
+    `;
+    tooltip.classList.add('visible');
+    const tipW = tooltip.offsetWidth; let tipX = closest.x + 12;
+    if (tipX + tipW > w - 10) tipX = closest.x - tipW - 12;
+    tooltip.style.left = tipX + 'px'; tooltip.style.top = (pad.t + 4) + 'px';
+    fullDraw(closest.day);
+    chartSyncBroadcast(canvasId, closest.label);
+  }
+
+  function highlightByDate(dateStr) {
+    const pt = _hrPoints.find(p => p.label === dateStr);
+    if (!pt) { fullDraw(-1); crosshair.style.display = 'none'; return; }
+    crosshair.style.display = 'block'; crosshair.style.left = pt.x + 'px';
+    tooltip.classList.remove('visible'); fullDraw(pt.day);
+  }
+  function handleLeave() { crosshair.style.display = 'none'; tooltip.classList.remove('visible'); fullDraw(-1); chartSyncLeave(canvasId); }
+
+  canvas.onmousemove = handleMove; canvas.ontouchmove = handleMove;
+  canvas.onmouseleave = handleLeave; canvas.ontouchend = handleLeave;
+  _chartSync[canvasId] = { hoverByDate: highlightByDate, leave: handleLeave };
+}
+
+function drawLineChart(canvasId, data, colorVar, unit, invertBetter, minY, maxY) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || data.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const color = getComputedColor(colorVar);
+  const pad = { t: 8, b: 16, l: 6, r: 6 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+
+  const vals = data.map(d => d.value);
+  const min = minY !== undefined ? minY : Math.min(...vals) * 0.9;
+  const max = maxY !== undefined ? maxY : Math.max(...vals) * 1.1 || 1;
+  const range = max - min || 1;
+
+  // Grid lines
+  ctx.strokeStyle = getComputedColor('var(--divider)');
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 3; i++) {
+    const y = pad.t + (ch * i / 3);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+  }
+
+  // Line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  data.forEach((d, i) => {
+    const x = pad.l + (data.length === 1 ? cw / 2 : (i / (data.length - 1)) * cw);
+    const y = pad.t + ch - ((d.value - min) / range * ch);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under line
+  const lastX = pad.l + (data.length === 1 ? cw / 2 : cw);
+  ctx.lineTo(lastX, pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch);
+  ctx.closePath();
+  ctx.globalAlpha = 0.08;
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Dots
+  ctx.fillStyle = color;
+  data.forEach((d, i) => {
+    const x = pad.l + (data.length === 1 ? cw / 2 : (i / (data.length - 1)) * cw);
+    const y = pad.t + ch - ((d.value - min) / range * ch);
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // X labels (show first, last, and a few in between)
+  ctx.fillStyle = getComputedColor('var(--text-muted)');
+  ctx.font = '8px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  const labelStep = Math.max(1, Math.floor(data.length / 5));
+  data.forEach((d, i) => {
+    if (i === 0 || i === data.length - 1 || i % labelStep === 0) {
+      const x = pad.l + (data.length === 1 ? cw / 2 : (i / (data.length - 1)) * cw);
+      ctx.fillText(d.label, x, h - 2);
+    }
+  });
+}
+
+function drawBarChart(canvasId, data, colorVar) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || data.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const color = getComputedColor(colorVar);
+  const pad = { t: 4, b: 14, l: 4, r: 4 };
+  const cw = w - pad.l - pad.r;
+  const ch = h - pad.t - pad.b;
+
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+  const barW = Math.max(2, (cw / data.length) - 1);
+  const gap = (cw - barW * data.length) / (data.length + 1);
+
+  data.forEach((d, i) => {
+    const x = pad.l + gap + i * (barW + gap);
+    const barH = (d.value / maxVal) * ch;
+    const y = pad.t + ch - barH;
+
+    ctx.fillStyle = color;
+    ctx.globalAlpha = d.value > 0 ? 0.7 : 0.15;
+    ctx.fillRect(x, y, barW, barH || 1);
+    ctx.globalAlpha = 1;
+  });
+
+  // Labels
+  ctx.fillStyle = getComputedColor('var(--text-muted)');
+  ctx.font = '7px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  const labelStep = Math.max(1, Math.floor(data.length / 8));
+  data.forEach((d, i) => {
+    if (i % labelStep === 0) {
+      const x = pad.l + gap + i * (barW + gap) + barW / 2;
+      ctx.fillText(d.label, x, h - 2);
+    }
+  });
 }
 
 // Migrate localStorage data to Supabase (runs once on first connect)
@@ -2626,7 +3633,7 @@ function renderDaily() {
             const isActive = sel === h;
             const isRec = h === rec;
             let s = 'font-size:8px;padding:1px 4px;border-radius:3px;cursor:pointer;font-weight:600;';
-            if (isActive) s += `background:${selBg};border:2px solid ${selBorder};color:#fff;`;
+            if (isActive) s += `background:${selBg};border:2px solid ${selBorder};color:#000;font-weight:800;`;
             else if (isRec) s += 'background:transparent;border:2px solid var(--green);color:var(--text);';
             else s += 'background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-muted);';
             return s;
@@ -2727,8 +3734,6 @@ function renderDaily() {
         <span style="font-size:7px;color:#ff4444">▂ Stat holiday</span>
       </div>
       ${csHtml}
-      <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn">${THEME_ICONS[document.documentElement.getAttribute('data-theme') || 'dark']}</button>
-      <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:14px">⚙️</button>
     </div>
   `;
   restoreOpenSections(dateStr);
@@ -2941,9 +3946,13 @@ function renderMonth() {
   let mSleepSum = 0, mSleepCount = 0;
   let mWeightFirst = 0, mWeightLast = 0;
   // Distance & time accumulators from workout log
-  let mRowDist = 0, mRowTime = 0;
+  let mRowDist = 0, mRowTime = 0, mRowSessions = 0;
   let mWalkDist = 0, mWalkTime = 0;
   let mSwimDist = 0, mSwimTime = 0;
+  let mRowBestDist = 0, mRowBestDate = '', mRowBestTime = 0;
+  // Per-week rowing distances (up to 6 weeks in a month)
+  const mRowWeekly = [0, 0, 0, 0, 0, 0];
+  let mGymSessions = 0, mStretchSessions = 0, mBodyweight = 0;
 
   // Count trailing empty cells
   const trailingEmpty = totalCells - (firstDay + daysInMonth);
@@ -2987,9 +3996,22 @@ function renderMonth() {
       if (dayWeight > 0) { if (!mWeightFirst) mWeightFirst = dayWeight; mWeightLast = dayWeight; }
       // Accumulate workout log distances & times
       const dayWlog = getWorkoutLog(dStr);
-      if (dayWlog.row && dayWlog.row.done) { mRowDist += dayWlog.row.dist || 0; mRowTime += dayWlog.row.time || 0; }
+      if (dayWlog.row && dayWlog.row.done) {
+        const rd = dayWlog.row.dist || 0, rt = dayWlog.row.time || 0;
+        mRowDist += rd; mRowTime += rt; mRowSessions++;
+        if (rd > mRowBestDist) { mRowBestDist = rd; mRowBestDate = dStr; mRowBestTime = rt; }
+        // Weekly bucket (which week of the month grid)
+        const weekIdx = Math.floor((firstDay + dayNum - 1) / 7);
+        mRowWeekly[weekIdx] += rd;
+      }
       if (dayWlog.walk && dayWlog.walk.done) { mWalkDist += dayWlog.walk.dist || 0; mWalkTime += dayWlog.walk.time || 0; }
       if (dayWlog.swim && dayWlog.swim.done) { mSwimDist += dayWlog.swim.dist || 0; mSwimTime += dayWlog.swim.time || 0; }
+      // Track session types from schedule
+      if (wo && checked['s_workout']) {
+        if (wo.type === 'gym') mGymSessions++;
+        else if (wo.type === 'bodyweight') mBodyweight++;
+      }
+      if (checked['s_stretch']) mStretchSessions++;
       if (isPastOrToday) {
         const prog = getDayProgress(dStr);
         mTotalDone += prog.done;
@@ -3053,28 +4075,16 @@ function renderMonth() {
     }
   }
 
-  // Monthly summary card in the trailing empty cells
+  // Monthly summary card in the trailing empty cells — compact overview
   const span = trailingEmpty > 0 ? trailingEmpty : 7;
   const overallPct = mTotalAll > 0 ? Math.round(mTotalDone / mTotalAll * 100) : 0;
   const overallColor = overallPct === 100 ? 'var(--green)' : overallPct > 50 ? 'var(--cyan)' : 'var(--orange)';
 
-  // Stacked bar segments (proportional widths based on done counts)
-  const totalDone = mWorkoutsDone + mStretchesDone + mMorningsDone;
-  const totalPossible = mWorkouts + mStretches + mMornings;
-  const exPct = totalPossible > 0 ? (mWorkoutsDone / totalPossible * 100) : 0;
-  const stPct = totalPossible > 0 ? (mStretchesDone / totalPossible * 100) : 0;
-  const moPct = totalPossible > 0 ? (mMorningsDone / totalPossible * 100) : 0;
-
   html += `
-    <div class="month-cell" style="grid-column:span ${span};cursor:default;padding:6px 10px;flex-direction:row;align-items:center;gap:10px">
+    <div class="month-cell" style="grid-column:span ${span};cursor:pointer;padding:6px 10px;flex-direction:row;align-items:center;gap:10px" onclick="openStats()" title="Click for detailed stats">
       <div style="font-size:11px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:1px;white-space:nowrap">📊 ${monthNames[month]}</div>
       <div style="display:flex;flex-direction:column;flex:1;gap:3px">
-        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--divider)">
-          <div style="width:${exPct}%;background:var(--cyan)" title="Exercise ${mWorkoutsDone}/${mWorkouts}"></div>
-          <div style="width:${stPct}%;background:var(--purple)" title="Stretch ${mStretchesDone}/${mStretches}"></div>
-          <div style="width:${moPct}%;background:var(--orange)" title="Morning ${mMorningsDone}/${mMornings}"></div>
-        </div>
-        <div style="display:flex;gap:8px;font-size:10px;color:var(--text-dim);flex-wrap:wrap">
+        <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);flex-wrap:wrap">
           <span style="color:var(--cyan)">🏋️ ${mWorkoutsDone}/${mWorkouts}</span>
           <span style="color:var(--purple)">🧘 ${mStretchesDone}/${mStretches}</span>
           <span style="color:var(--orange)">☀️ ${mMorningsDone}/${mMornings}</span>
@@ -3084,21 +4094,114 @@ function renderMonth() {
           <span>💧${mWater}</span>
           <span style="margin-left:auto"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span>/${daysInMonth}d</span>
         </div>
-        <div style="display:flex;gap:10px;font-size:10px;color:var(--text-dim);flex-wrap:wrap;padding-top:2px;border-top:1px solid var(--divider)">
-          ${mRowDist || mRowTime ? `<span style="color:var(--cyan)">🚣 ${mRowDist >= 1000 ? (mRowDist/1000).toFixed(1) + 'km' : Math.round(mRowDist) + 'm'} · ${mRowTime}min</span>` : '<span style="color:var(--text-muted)">🚣 —</span>'}
-          ${mWalkDist || mWalkTime ? `<span style="color:var(--green)">🚶 ${mWalkDist.toFixed(1)}km · ${mWalkTime}min</span>` : '<span style="color:var(--text-muted)">🚶 —</span>'}
-          ${mSwimDist || mSwimTime ? `<span style="color:var(--blue)">🏊 ${mSwimDist >= 1000 ? (mSwimDist/1000).toFixed(1) + 'km' : Math.round(mSwimDist) + 'm'} · ${mSwimTime}min</span>` : '<span style="color:var(--text-muted)">🏊 —</span>'}
-          ${mWeightFirst && mWeightLast ? (() => {
-            const wDelta = (mWeightLast - mWeightFirst).toFixed(1);
-            const wColor = wDelta <= 0 ? 'var(--green)' : 'var(--red)';
-            return `<span style="color:${wColor};margin-left:auto">⚖️ ${mWeightFirst}→${mWeightLast} (${wDelta > 0 ? '+' : ''}${wDelta})</span>`;
-          })() : ''}
-        </div>
       </div>
       <div style="font-size:18px;font-weight:800;color:${overallColor};min-width:44px;text-align:right">${overallPct}%</div>
     </div>`;
 
   document.getElementById('month-grid').innerHTML = html;
+
+  // ═══════════════════════════════════════════
+  // EXERCISE STATS PANEL — 3 cards below grid
+  // ═══════════════════════════════════════════
+
+  // Rowing avg pace (per 500m) in seconds
+  const rowAvgPace500 = (mRowDist > 0 && mRowTime > 0) ? ((mRowTime * 60) / (mRowDist / 500)) : 0;
+  const rowPaceStr = rowAvgPace500 > 0 ? Math.floor(rowAvgPace500 / 60) + ':' + String(Math.round(rowAvgPace500 % 60)).padStart(2,'0') + '/500m' : '—';
+  const rowDistKm = mRowDist >= 1000 ? (mRowDist / 1000).toFixed(1) + ' km' : Math.round(mRowDist) + ' m';
+  const rowTimeStr = mRowTime > 0 ? Math.floor(mRowTime) + ':' + String(Math.round((mRowTime % 1) * 60)).padStart(2,'0') : '0:00';
+  const rowBestStr = mRowBestDist > 0 ? (mRowBestDist >= 1000 ? (mRowBestDist / 1000).toFixed(1) + 'km' : mRowBestDist + 'm') : '—';
+
+  // Weekly rowing mini bars
+  const maxWeekRow = Math.max(...mRowWeekly, 1);
+  const weekBarHtml = mRowWeekly.map((d, i) => {
+    const h = d > 0 ? Math.max(4, Math.round(d / maxWeekRow * 24)) : 0;
+    return `<div class="ex-stat-mini-bar" style="height:${h}px;background:${d > 0 ? 'var(--cyan)' : 'var(--divider)'}" title="W${i+1}: ${d >= 1000 ? (d/1000).toFixed(1) + 'km' : Math.round(d) + 'm'}"></div>`;
+  }).join('');
+
+  // Strength stats
+  const gymPct = mGym > 0 ? Math.round(mGymSessions / mGym * 100) : 0;
+  const gymColor = gymPct === 100 ? 'var(--green)' : gymPct > 50 ? 'var(--cyan)' : 'var(--orange)';
+  const woPct = mWorkouts > 0 ? Math.round(mWorkoutsDone / mWorkouts * 100) : 0;
+  const woColor = woPct === 100 ? 'var(--green)' : woPct > 50 ? 'var(--cyan)' : 'var(--orange)';
+
+  // Recovery stats
+  const stretchPct = mStretches > 0 ? Math.round(mStretchesDone / mStretches * 100) : 0;
+  const stretchColor = stretchPct === 100 ? 'var(--green)' : stretchPct > 50 ? 'var(--cyan)' : 'var(--orange)';
+
+  // Weight trend
+  let weightHtml = '';
+  if (mWeightFirst && mWeightLast) {
+    const wDelta = (mWeightLast - mWeightFirst).toFixed(1);
+    const wColor = wDelta <= 0 ? 'var(--green)' : 'var(--red)';
+    weightHtml = `<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">
+      <span>⚖️ <span class="val" style="color:${wColor}">${mWeightFirst} → ${mWeightLast} lbs</span></span>
+      <span style="color:${wColor};font-weight:700">${wDelta > 0 ? '+' : ''}${wDelta}</span>
+    </div>`;
+  }
+
+  document.getElementById('month-ex-stats').innerHTML = `
+    <!-- ROWING CARD -->
+    <div class="ex-stat-card rowing" style="cursor:pointer" onclick="openStats();switchStatsTab('rowing')">
+      <div class="ex-stat-header">
+        <div class="ex-stat-title">🚣 Rowing</div>
+        <div class="ex-stat-badge" style="background:var(--cyan-bg);color:var(--cyan)">${mRowSessions} session${mRowSessions !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="ex-stat-big" style="color:var(--cyan)">${rowDistKm}</div>
+      <div class="ex-stat-row">
+        <span>⏱️ <span class="val">${rowTimeStr}</span> total</span>
+        <span>🏁 <span class="val">${rowPaceStr}</span></span>
+      </div>
+      ${mRowBestDist > 0 ? `<div class="ex-stat-row">
+        <span>🏆 Best: <span class="val">${rowBestStr}</span></span>
+        <span style="color:var(--text-muted)">${mRowBestDate}</span>
+      </div>` : ''}
+      <div style="margin-top:auto">
+        <div class="ex-stat-sub" style="margin-bottom:2px">Weekly distance</div>
+        <div class="ex-stat-mini-bars">${weekBarHtml}</div>
+      </div>
+    </div>
+
+    <!-- STRENGTH & EXERCISE CARD -->
+    <div class="ex-stat-card strength" style="cursor:pointer" onclick="openStats();switchStatsTab('exercise')">
+      <div class="ex-stat-header">
+        <div class="ex-stat-title">🏋️ Exercise</div>
+        <div class="ex-stat-badge" style="background:var(--blue-bg);color:var(--blue)">${woPct}%</div>
+      </div>
+      <div class="ex-stat-big" style="color:${woColor}">${mWorkoutsDone}<span style="font-size:13px;color:var(--text-dim)"> / ${mWorkouts}</span></div>
+      <div class="ex-stat-sub">workouts completed</div>
+      <div class="ex-stat-row">
+        <span>🏋️ Gym: <span class="val">${mGymSessions}/${mGym}</span></span>
+        <span>🚣 Row: <span class="val">${mRowSessions}/${mRow}</span></span>
+      </div>
+      <div class="ex-stat-row">
+        ${mYoga > 0 ? `<span>🧘 Yoga: <span class="val">${mYoga}</span></span>` : ''}
+        ${mBodyweight > 0 ? `<span>💪 BW: <span class="val">${mBodyweight}</span></span>` : ''}
+        ${mOutdoor > 0 ? `<span>🌳 Outdoor: <span class="val">${mOutdoor}</span></span>` : ''}
+      </div>
+      ${weightHtml}
+    </div>
+
+    <!-- RECOVERY CARD -->
+    <div class="ex-stat-card recovery" style="cursor:pointer" onclick="openStats();switchStatsTab('recovery')">
+      <div class="ex-stat-header">
+        <div class="ex-stat-title">🧘 Recovery</div>
+        <div class="ex-stat-badge" style="background:var(--purple-bg);color:var(--purple)">${stretchPct}%</div>
+      </div>
+      <div class="ex-stat-big" style="color:${stretchColor}">${mStretchesDone}<span style="font-size:13px;color:var(--text-dim)"> / ${mStretches}</span></div>
+      <div class="ex-stat-sub">stretch sessions</div>
+      <div class="ex-stat-row">
+        <span>☀️ Morning: <span class="val">${mMorningsDone}/${mMornings}</span></span>
+      </div>
+      ${mMoodCount || mEnergyCount || mSleepCount ? `<div class="ex-stat-row" style="border-top:1px solid var(--divider);padding-top:4px;margin-top:2px">
+        ${mMoodCount ? `<span>😊 Mood: <span class="val">${(mMoodSum/mMoodCount).toFixed(1)}</span></span>` : ''}
+        ${mEnergyCount ? `<span>⚡ Energy: <span class="val">${(mEnergySum/mEnergyCount).toFixed(1)}</span></span>` : ''}
+      </div>
+      <div class="ex-stat-row">
+        ${mSleepCount ? `<span>😴 Sleep: <span class="val">${(mSleepSum/mSleepCount).toFixed(1)}h</span> avg</span>` : ''}
+        <span>💧 Water: <span class="val">${mWater}</span> total</span>
+      </div>` : `<div class="ex-stat-row"><span>💧 Water: <span class="val">${mWater}</span> total</span></div>`}
+    </div>
+  `;
 
   // Legend
   document.getElementById('month-legend').innerHTML = `
