@@ -1143,6 +1143,34 @@
   </div>
 </div>
 
+<!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
+<div class="popup-backdrop" id="settings-backdrop" onclick="if(event.target===this)closeSettings()">
+  <div class="popup" style="max-width:440px">
+    <div class="popup-header">
+      <div class="popup-title">⚙️ Settings</div>
+      <button class="popup-close" onclick="closeSettings()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="settings-body">
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🚣 Concept2 Logbook</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Enter your API token from <a href="https://log.concept2.com/developers/keys" target="_blank" style="color:var(--cyan)">log.concept2.com/developers/keys</a>. Stored locally only — never sent anywhere except Concept2.</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="password" id="c2-token-input" placeholder="Paste your C2 API token" style="flex:1;padding:6px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:12px;font-family:inherit">
+          <button onclick="saveC2Token()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Save</button>
+        </div>
+        <div id="c2-status" style="font-size:10px;margin-top:6px;min-height:16px"></div>
+      </div>
+      <div style="border-top:1px solid var(--divider);padding-top:12px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🚣 Recent Rows (from C2 Logbook)</div>
+        <div id="c2-recent" style="font-size:11px;color:var(--text-muted)">Connect to see your rowing data</div>
+      </div>
+      <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:12px">
+        <button onclick="syncC2Data()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔄 Sync Rowing Data Now</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════
      DATA CONFIGURATION
      ════════════════════════════════════════════ -->
@@ -1414,8 +1442,25 @@ function toggleWorkoutDone(dateStr, woId) {
   renderDaily();
 }
 
+function parseTimeInput(val) {
+  // Accept mm:ss or just mm — stores as decimal minutes (e.g. 20:30 → 20.5)
+  if (!val) return 0;
+  const str = String(val).trim();
+  if (str.includes(':')) {
+    const [m, s] = str.split(':');
+    return (parseInt(m) || 0) + (parseInt(s) || 0) / 60;
+  }
+  return parseFloat(str) || 0;
+}
+function fmtTimeVal(decimalMin) {
+  // Formats decimal minutes to mm:ss for display
+  if (!decimalMin) return '';
+  const m = Math.floor(decimalMin);
+  const s = Math.round((decimalMin - m) * 60);
+  return s > 0 ? m + ':' + String(s).padStart(2, '0') : String(m);
+}
 function setWorkoutTime(dateStr, woId, val) {
-  setWorkoutLog(dateStr, woId, 'time', parseFloat(val) || 0);
+  setWorkoutLog(dateStr, woId, 'time', parseTimeInput(val));
 }
 
 function setWorkoutDist(dateStr, woId, val) {
@@ -1428,11 +1473,133 @@ function setWorkoutSubtype(dateStr, woId, subtype) {
 }
 
 // ── Section toggle ──
+const _openSections = new Set();
 function toggleWoSection(id) {
   const el = document.getElementById(id);
   const header = el.previousElementSibling;
   el.classList.toggle('open');
   header.classList.toggle('open');
+  if (el.classList.contains('open')) _openSections.add(id.replace(/-\d{4}-\d{2}-\d{2}$/, ''));
+  else _openSections.delete(id.replace(/-\d{4}-\d{2}-\d{2}$/, ''));
+}
+function restoreOpenSections(dateStr) {
+  _openSections.forEach(base => {
+    const el = document.getElementById(base + '-' + dateStr);
+    if (el) { el.classList.add('open'); el.previousElementSibling.classList.add('open'); }
+  });
+}
+
+// ══════════════════════════════════════════════
+// CONCEPT2 LOGBOOK INTEGRATION
+// ══════════════════════════════════════════════
+const C2_API = 'https://log.concept2.com/api';
+
+function getC2Token() { return localStorage.getItem('c2_api_token') || ''; }
+
+function openSettings() {
+  document.getElementById('c2-token-input').value = getC2Token() ? '••••••••••••••••' : '';
+  updateC2Status();
+  loadC2Recent();
+  document.getElementById('settings-backdrop').classList.add('open');
+}
+function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
+
+function saveC2Token() {
+  const input = document.getElementById('c2-token-input');
+  const val = input.value.trim();
+  if (val && !val.startsWith('••')) {
+    localStorage.setItem('c2_api_token', val);
+    input.value = '••••••••••••••••';
+    updateC2Status();
+    loadC2Recent();
+  }
+}
+
+function updateC2Status() {
+  const el = document.getElementById('c2-status');
+  const token = getC2Token();
+  if (token) {
+    el.innerHTML = '<span style="color:var(--green)">✓ Token saved</span>';
+  } else {
+    el.innerHTML = '<span style="color:var(--text-muted)">No token set</span>';
+  }
+}
+
+async function c2Fetch(endpoint) {
+  const token = getC2Token();
+  if (!token) return null;
+  try {
+    const resp = await fetch(C2_API + endpoint, {
+      headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+    });
+    if (!resp.ok) throw new Error('C2 API ' + resp.status);
+    return await resp.json();
+  } catch (e) {
+    console.error('C2 fetch error:', e);
+    return null;
+  }
+}
+
+async function loadC2Recent() {
+  const el = document.getElementById('c2-recent');
+  if (!getC2Token()) { el.textContent = 'Connect to see your rowing data'; return; }
+  el.innerHTML = '<span style="color:var(--text-muted)">Loading...</span>';
+  const data = await c2Fetch('/users/me/results?type=rower&num=5');
+  if (!data || !data.data) { el.innerHTML = '<span style="color:var(--red)">Could not fetch — check token</span>'; return; }
+  if (data.data.length === 0) { el.textContent = 'No recent rows found'; return; }
+  el.innerHTML = data.data.map(r => {
+    const d = r.date || '';
+    const dist = r.distance ? (r.distance >= 1000 ? (r.distance/1000).toFixed(1) + 'km' : r.distance + 'm') : '';
+    const time = r.time ? fmtC2Time(r.time) : '';
+    const pace = r.stroke_data && r.stroke_data.average ? r.stroke_data.average.split_time : '';
+    return `<div style="display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--divider)">
+      <span style="color:var(--text-dim);min-width:70px">${d}</span>
+      <span style="color:var(--cyan);min-width:50px">${dist}</span>
+      <span style="color:var(--green)">${time}</span>
+      ${pace ? `<span style="color:var(--text-muted);margin-left:auto">/500m: ${pace}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function fmtC2Time(tenths) {
+  // C2 API returns time in tenths of a second
+  const totalSec = Math.floor(tenths / 10);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  return min + ':' + String(sec).padStart(2, '0');
+}
+
+async function syncC2Data() {
+  const btn = event.target;
+  btn.textContent = '⏳ Syncing...';
+  const data = await c2Fetch('/users/me/results?type=rower&num=30');
+  if (!data || !data.data) { btn.textContent = '❌ Sync failed — check token'; setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000); return; }
+  let imported = 0;
+  data.data.forEach(r => {
+    if (!r.date || !r.distance) return;
+    const dateStr = r.date;
+    const distMeters = r.distance || 0;
+    const timeSec = r.time ? Math.floor(r.time / 10) : 0;
+    const timeMin = timeSec / 60;
+    // Write to workout log
+    if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
+    const existing = DB_CACHE.workouts[dateStr].row || {};
+    // Determine subtype from workout description or default to steady
+    const subtype = existing.subtype || (r.workout_type === 'FixedTimeInterval' || r.workout_type === 'FixedDistInterval' ? 'intervals' : 'steady');
+    DB_CACHE.workouts[dateStr].row = {
+      done: true, time: timeMin, dist: distMeters, unit: 'm', subtype: subtype
+    };
+    // Also persist to localStorage
+    const lsKey = 'wlog_' + dateStr;
+    const lsData = JSON.parse(localStorage.getItem(lsKey) || '{}');
+    lsData.row = DB_CACHE.workouts[dateStr].row;
+    localStorage.setItem(lsKey, JSON.stringify(lsData));
+    imported++;
+  });
+  btn.textContent = `✅ Imported ${imported} rows`;
+  setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000);
+  loadC2Recent();
+  renderDaily();
 }
 
 // Migrate localStorage data to Supabase (runs once on first connect)
@@ -1817,7 +1984,7 @@ const STRETCH_ROTATION = {
 // ──────────────────────────────────────────────
 const ROUTINES = {
   morning: {
-    title: "Morning Stretch — ~8 Min",
+    title: "Morning Stretch — ~10 Min",
     exercises: [
       { name: "Standing Calf Raises", sets: "2×15", link: "https://www.youtube.com/watch?v=gwLzBJYoWlI", detail: "Slow up, 2-sec hold at top" },
       { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Seated or standing" },
@@ -1827,6 +1994,9 @@ const ROUTINES = {
       { name: "Prayer Stretch (Wrist Flexors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Palms together at chest, press hands down until stretch in forearms" },
       { name: "Reverse Prayer (Wrist Extensors)", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Backs of hands together, press up gently" },
       { name: "Finger Spreads + Fists", sets: "10 reps", link: "", detail: "Spread fingers wide, then squeeze tight fist. Repeat." },
+      { name: "Glute Bridge Hold", sets: "2×10", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze glutes + core at top, hold 3s" },
+      { name: "Deep Squat Hold", sets: "30s hold", link: "https://www.youtube.com/watch?v=MqxEsMKTsAk", detail: "Feet shoulder-width, sink deep, breathe and relax" },
+      { name: "Core Breathing + Hold", sets: "3×10", link: "", detail: "Inhale deep, engage and hold 5s, fully release 5s" },
       { name: "Cat-Cow Standing", sets: "8 reps", link: "https://www.youtube.com/watch?v=f4KnU-IRk38", detail: "Hands on thighs, round and arch" },
       { name: "Deep Breathing", sets: "5 breaths", link: "", detail: "4-count in, 7-count hold, 8-count out" },
     ]
@@ -2236,7 +2406,7 @@ function isHoliday(dateStr) { return (CSV_EVENTS[dateStr] || '').includes('🍁'
 function eventIcon(dateStr) { return isHoliday(dateStr) ? '🍁' : '📅'; }
 function wIcon(t) { return {row:"🚣",gym:"🏋️",stretch:"🧘",bodyweight:"💪",yoga:"🧘",outdoor:"🌲",rest:"😴"}[t]||"💪"; }
 function timingLabel(t) { return {morning:"☀️ Before Work",evening:"🌙 After Bedtime",anytime:"🕐 Anytime"}[t]||t.toUpperCase(); }
-function isAlloDay(d) { const ref=new Date(2026,2,23); return Math.floor((d-ref)/(864e5))%2===0; }
+function isAlloDay(d) { const day = (d instanceof Date ? d : new Date(d + 'T12:00:00')).getDay(); return [0,1,3,5].includes(day); } // Sun, Mon, Wed, Fri
 
 // ── DAILY VIEW ──
 function renderDaily() {
@@ -2333,8 +2503,7 @@ function renderDaily() {
       <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
       <span class="wlog-icon">${w.icon}</span>
       <span class="wlog-label">${w.label}</span>
-      ${w.hasTime ? `<input class="wlog-input" type="number" placeholder="min" min="0" max="999" value="${entry.time || ''}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
-      ${w.hasTime ? '<span class="wlog-unit">min</span>' : ''}
+      ${w.hasTime ? `<input class="wlog-input" type="text" placeholder="m:ss" value="${fmtTimeVal(entry.time)}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()" style="width:36px">` : ''}
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
       ${typePills}
@@ -2367,7 +2536,7 @@ function renderDaily() {
     <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
       <div class="stretch-tiers">${stretchTiersHtml}</div>
     </div>
-    ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}`;
+    ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> <span style="color:var(--${tmrCust.cls === 'lisa' ? 'pink' : tmrCust.cls === 'craig' ? 'green' : 'text-dim'})">${tmrCust.text}</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}`;
 
   // Meals card
   const waterCount = getWater(dateStr);
@@ -2466,7 +2635,7 @@ function renderDaily() {
 
   let items = [];
   if (allo) items.push({k:"allo",t:"AM",txt:"💊 Allopurinol 100mg",sub:""});
-  items.push({k:"morning",t:"AM",txt:"☀️ Morning stretch (~8 min)",sub:""});
+  items.push({k:"morning",t:"AM",txt:"☀️ Morning stretch (~10 min)",sub:""});
   if (wo && wo.timing==="morning") items.push({k:"workout",t:"AM",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
   // Events/holidays now shown on the workout card instead
   // School pickup on kid days (C) weekdays — skip if NO_SCHOOL set or CSV notes flag it
@@ -2480,7 +2649,8 @@ function renderDaily() {
   // Kids leave: today is C (have kids), tomorrow is L → Lisa picks up at 5pm tonight
   if (todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
   if (wo && wo.timing==="evening") items.push({k:"workout",t:"PM",txt:"🌙 "+wo.label,sub:wo.target});
-  items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Routine "+strR,sub:""});
+  items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Session",sub:"Any tier — quick, standard, yoga, or deep"});
+  items.push({k:"ifasting",t:"🍽️",txt:"Intermittent Fast (10a–7p)",sub:"Stayed within eating window"});
 
   // Optional/alt workout items — checkable, with divider
   if (wo && (wo.optional || wo.alt)) items.push({k:"_divider",t:"",txt:"— optional —",sub:"",divider:true});
@@ -2499,7 +2669,7 @@ function renderDaily() {
         ${i.sub?`<div class="sched-sub">${i.sub}</div>`:''}
       </div>
     </div>`;
-  }).join('') + buildTrackingSection(dateStr) + `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> ${tmrCust.text}</div></div>`;
+  }).join('') + buildTrackingSection(dateStr) + `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> <span style="color:var(--${tmrCust.cls === 'lisa' ? 'pink' : tmrCust.cls === 'craig' ? 'green' : 'text-dim'})">${tmrCust.text}</span></div></div>`;
 
   // Custody strip — 14 days, today is day 3 (index 2)
   const dows = ['S','M','T','W','T','F','S'];
@@ -2535,8 +2705,10 @@ function renderDaily() {
       </div>
       ${csHtml}
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn">${THEME_ICONS[document.documentElement.getAttribute('data-theme') || 'dark']}</button>
+      <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:14px">⚙️</button>
     </div>
   `;
+  restoreOpenSections(dateStr);
 }
 
 // ── WEEK VIEW ──
@@ -2548,34 +2720,36 @@ function getDayProgress(dateStr) {
   const dow = d.getDay();
 
   // Build labelled task list — 'show' flag controls week view visibility
-  // Fitness-relevant items show on week view; routine life stuff doesn't
+  // 'pct' flag controls which items count toward the daily % (only core 3)
   const tasks = [];
-  tasks.push({k:'morning', label:'☀️ Morning Stretch', show:true});
-  if (isAlloDay(dateStr)) tasks.push({k:'allo', label:'💊 Allopurinol', show:true});
-  if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true});
+  tasks.push({k:'morning', label:'☀️ Morning Stretch', show:true, pct:false});
+  tasks.push({k:'stretch', label:'🧘 Stretch Session', show:true, pct:true});
+  if (isAlloDay(dateStr)) tasks.push({k:'allo', label:'💊 Allopurinol', show:true, pct:false});
+  if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true, pct:true});
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
-  if (cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false});
-  tasks.push({k:'stretch', label:'🧘 Stretch', show:true});
-  if (wo && wo.optional) tasks.push({k:'optional', label:'⚡ Bonus', show:true});
-  if (wo && wo.alt) tasks.push({k:'alt', label:'🔄 Alt workout', show:true});
+  if (cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false, pct:false});
+  tasks.push({k:'ifasting', label:'🍽️ IF', show:true, pct:true});
+  if (wo && wo.optional) tasks.push({k:'optional', label:'⚡ Bonus', show:true, pct:false});
+  if (wo && wo.alt) tasks.push({k:'alt', label:'🔄 Alt workout', show:true, pct:false});
 
   const prev = new Date(d); prev.setDate(prev.getDate()-1);
   const next = new Date(d); next.setDate(next.getDate()+1);
-  if (cust === 'L' && custodyType(ds(next)) === 'C') tasks.push({k:'kids_arrive', label:'👧 Kids arrive', show:false});
-  if (cust === 'C' && custodyType(ds(next)) === 'L') tasks.push({k:'kids_leave', label:'👋 Kids leave', show:false});
+  if (cust === 'L' && custodyType(ds(next)) === 'C') tasks.push({k:'kids_arrive', label:'👧 Kids arrive', show:false, pct:false});
+  if (cust === 'C' && custodyType(ds(next)) === 'L') tasks.push({k:'kids_leave', label:'👋 Kids leave', show:false, pct:false});
 
-  for (let i = 0; i < 5; i++) tasks.push({k:'m_'+i, label:['☕ Coffee','🍽️ Lunch','🍎 Snack','🍖 Dinner','🌙 Evening'][i], show:false});
+  for (let i = 0; i < 5; i++) tasks.push({k:'m_'+i, label:['☕ Coffee','🍽️ Lunch','🍎 Snack','🍖 Dinner','🌙 Evening'][i], show:false, pct:false});
 
-  let done = 0;
+  let done = 0, pctDone = 0, pctTotal = 0;
   const completed = [];
   const remaining = [];
   tasks.forEach(t => {
     const isDone = t.k.startsWith('m_') ? checked[t.k] : checked['s_' + t.k];
+    if (t.pct) { pctTotal++; if (isDone) pctDone++; }
     if (isDone) { done++; if (t.show) completed.push(t.label); }
     else { if (t.show) remaining.push(t.label); }
   });
-  return { done, total: tasks.length, completed, remaining, wo };
+  return { done: pctDone, total: pctTotal, completed, remaining, wo };
 }
 
 function renderWeek() {
