@@ -1404,6 +1404,19 @@
       <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:12px">
         <button onclick="syncC2Data()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔄 Sync Rowing Data Now</button>
       </div>
+      <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px"> Apple Health Sync</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">
+          Run the <strong style="color:var(--green)">Sync Health Data</strong> shortcut on your iPhone to push steps, heart rate, sleep, and workout data here.
+          Walk/run/cycle/swim workouts auto-fill your daily log — no double entry needed.
+        </div>
+        <div id="health-sync-status" style="font-size:10px;margin-bottom:8px;min-height:16px"></div>
+        <div id="health-sync-recent" style="font-size:10px;color:var(--text-muted);margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="refreshHealthStatus()" style="flex:1;padding:8px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Check Sync Status</button>
+          <button onclick="showHealthSetup()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--card-border);background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📋 Setup Guide</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1425,6 +1438,7 @@
           <button class="stats-tab" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
           <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
           <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
+          <button class="stats-tab" data-tab="health" onclick="switchStatsTab('health')"> Health</button>
         </div>
       </div>
       <button class="popup-close" onclick="closeStats()" style="align-self:flex-start">✕ Close</button>
@@ -1455,6 +1469,9 @@ const DB_CACHE = {
   checkboxes: {}, // dateStr -> {key: true, ...}
   ratings: {},    // dateStr -> {exerciseKey: rating, ...}
   workouts: {},   // dateStr -> {type: {done:bool, time:num, dist:num}, ...}
+  health: {},     // dateStr -> {steps, active_cal, resting_hr, sleep_hours}
+  healthWorkouts: {}, // dateStr -> [{type, duration_min, distance_m, active_cal, avg_hr, max_hr, start_time}]
+  healthLastSync: null, // ISO timestamp of most recent sync
 };
 
 function initSupabase() {
@@ -1657,6 +1674,94 @@ async function loadTrackingData(startDate, endDate) {
         });
       } catch(e) {}
     }
+    // Load Apple Health daily metrics
+    const { data: healthRows } = await sb.from('health_sync').select('*')
+      .gte('sync_date', startDate).lte('sync_date', endDate).order('sync_date');
+    if (healthRows) healthRows.forEach(row => {
+      DB_CACHE.health[row.sync_date] = {
+        steps: row.steps || 0, active_cal: row.active_cal || 0,
+        resting_hr: row.resting_hr || 0, sleep_hours: parseFloat(row.sleep_hours) || 0
+      };
+      if (row.synced_at && (!DB_CACHE.healthLastSync || row.synced_at > DB_CACHE.healthLastSync)) {
+        DB_CACHE.healthLastSync = row.synced_at;
+      }
+    });
+
+    // Load Apple Health workouts and auto-fill workout log
+    const { data: hWorkouts } = await sb.from('health_workouts').select('*')
+      .gte('workout_date', startDate).lte('workout_date', endDate).order('workout_date');
+    if (hWorkouts) hWorkouts.forEach(row => {
+      const dStr = row.workout_date;
+      if (!DB_CACHE.healthWorkouts[dStr]) DB_CACHE.healthWorkouts[dStr] = [];
+      DB_CACHE.healthWorkouts[dStr].push({
+        type: row.workout_type, duration_min: parseFloat(row.duration_min) || 0,
+        distance_m: parseFloat(row.distance_m) || 0, active_cal: row.active_cal || 0,
+        avg_hr: row.avg_hr || 0, max_hr: row.max_hr || 0, start_time: row.start_time
+      });
+
+      // Auto-fill workout log from health data (only if not manually entered)
+      if (!DB_CACHE.workouts[dStr]) DB_CACHE.workouts[dStr] = {};
+      const existing = DB_CACHE.workouts[dStr];
+      const distM = parseFloat(row.distance_m) || 0;
+      const durMin = parseFloat(row.duration_min) || 0;
+
+      if (row.workout_type === 'walking' || row.workout_type === 'running') {
+        // Map to 'walk' workout log — aggregate if multiple sessions
+        const cur = existing.walk || { done: false, time: 0, dist: 0, unit: 'km', source: '' };
+        if (cur.source !== 'manual') {
+          existing.walk = {
+            done: true, time: cur.time + durMin,
+            dist: cur.dist + (distM / 1000), // store in km
+            unit: 'km', source: 'apple_health',
+            subtype: row.workout_type,
+            hrAvg: row.avg_hr || cur.hrAvg || 0,
+            hrMax: row.max_hr || cur.hrMax || 0
+          };
+        }
+      } else if (row.workout_type === 'swimming') {
+        const cur = existing.swim || { done: false, time: 0, dist: 0, unit: 'm', source: '' };
+        if (cur.source !== 'manual') {
+          existing.swim = {
+            done: true, time: cur.time + durMin,
+            dist: cur.dist + distM, unit: 'm', source: 'apple_health'
+          };
+        }
+      } else if (row.workout_type === 'cycling') {
+        // Map to gym cardio bike via exSets
+        var bikeKey = 'gymcardio_bike';
+        var bikeSets = getExSets(dStr);
+        if (!bikeSets[bikeKey] || !bikeSets[bikeKey].source || bikeSets[bikeKey].source !== 'manual') {
+          bikeSets[bikeKey] = {
+            time: (bikeSets[bikeKey]?.time || 0) + durMin,
+            dist: (bikeSets[bikeKey]?.dist || 0) + (distM / 1000), // km
+            distUnit: 'km', source: 'apple_health'
+          };
+          localStorage.setItem('exsets_' + dStr, JSON.stringify(bikeSets));
+        }
+      } else if (row.workout_type === 'elliptical') {
+        var ellKey = 'gymcardio_elliptical';
+        var ellSets = getExSets(dStr);
+        if (!ellSets[ellKey] || ellSets[ellKey].source !== 'manual') {
+          ellSets[ellKey] = {
+            time: (ellSets[ellKey]?.time || 0) + durMin,
+            source: 'apple_health'
+          };
+          localStorage.setItem('exsets_' + dStr, JSON.stringify(ellSets));
+        }
+      } else if (row.workout_type === 'stair_climbing') {
+        var stairKey = 'gymcardio_stairmaster';
+        var stairSets = getExSets(dStr);
+        if (!stairSets[stairKey] || stairSets[stairKey].source !== 'manual') {
+          stairSets[stairKey] = {
+            time: (stairSets[stairKey]?.time || 0) + durMin,
+            source: 'apple_health'
+          };
+          localStorage.setItem('exsets_' + dStr, JSON.stringify(stairSets));
+        }
+      }
+      // Note: 'rowing' is intentionally skipped — C2 API data is more detailed
+    });
+
     console.log('Tracking data loaded for ' + startDate + ' to ' + endDate);
   } catch(e) {
     console.warn('Supabase tracking load failed', e);
@@ -1852,9 +1957,76 @@ async function openSettings() {
   document.getElementById('c2-token-input').value = token ? '••••••••••••••••' : '';
   updateC2Status();
   loadC2Recent();
+  refreshHealthStatus();
   document.getElementById('settings-backdrop').classList.add('open');
 }
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
+
+// ── Apple Health Sync functions ──
+function getHealthData(dateStr) {
+  return DB_CACHE.health[dateStr] || { steps: 0, active_cal: 0, resting_hr: 0, sleep_hours: 0 };
+}
+function getHealthWorkouts(dateStr) {
+  return DB_CACHE.healthWorkouts[dateStr] || [];
+}
+
+async function refreshHealthStatus() {
+  var el = document.getElementById('health-sync-status');
+  var recentEl = document.getElementById('health-sync-recent');
+  if (!sbReady) { el.innerHTML = '<span style="color:var(--red)">Not logged in</span>'; return; }
+  el.innerHTML = '<span style="color:var(--text-muted)">Checking...</span>';
+  try {
+    // Get most recent sync
+    var { data } = await sb.from('health_sync').select('sync_date,synced_at,steps,resting_hr')
+      .order('synced_at', { ascending: false }).limit(1);
+    if (data && data.length > 0) {
+      var row = data[0];
+      var ago = Math.round((Date.now() - new Date(row.synced_at).getTime()) / 3600000);
+      var agoStr = ago < 1 ? 'just now' : ago < 24 ? ago + 'h ago' : Math.round(ago / 24) + 'd ago';
+      el.innerHTML = '<span style="color:var(--green)">✓ Last sync: ' + agoStr + '</span> <span style="color:var(--text-muted)">(data through ' + row.sync_date + ')</span>';
+      DB_CACHE.healthLastSync = row.synced_at;
+    } else {
+      el.innerHTML = '<span style="color:var(--orange)">No health data synced yet — run the Shortcut on your iPhone</span>';
+    }
+    // Show recent days summary
+    var { data: recent } = await sb.from('health_sync').select('sync_date,steps,resting_hr,active_cal,sleep_hours')
+      .order('sync_date', { ascending: false }).limit(5);
+    if (recent && recent.length > 0) {
+      var html = '<div style="font-size:10px;font-weight:600;color:var(--text-dim);margin-bottom:3px">Recent Days:</div>';
+      recent.forEach(function(r) {
+        html += '<div style="display:flex;gap:8px;padding:2px 0;color:var(--text-muted)">' +
+          '<span style="min-width:70px">' + r.sync_date.substring(5) + '</span>' +
+          '<span>👟 ' + (r.steps || 0).toLocaleString() + '</span>' +
+          '<span>❤️ ' + (r.resting_hr || '—') + '</span>' +
+          '<span>🔥 ' + (r.active_cal || 0) + '</span>' +
+          '<span>😴 ' + (r.sleep_hours || '—') + 'h</span>' +
+        '</div>';
+      });
+      recentEl.innerHTML = html;
+    }
+  } catch(e) {
+    el.innerHTML = '<span style="color:var(--red)">Error: ' + e.message + '</span>';
+  }
+}
+
+function showHealthSetup() {
+  var body = document.getElementById('health-sync-recent');
+  body.innerHTML =
+    '<div style="background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:10px;margin-top:6px;font-size:10px;line-height:1.6">' +
+      '<div style="font-weight:700;color:var(--green);margin-bottom:4px">📱 iPhone Shortcut Setup:</div>' +
+      '<div style="color:var(--text)">1. Open <strong>Shortcuts</strong> app on your iPhone</div>' +
+      '<div style="color:var(--text)">2. Create a new shortcut named <strong style="color:var(--green)">Sync Health Data</strong></div>' +
+      '<div style="color:var(--text)">3. Add <strong>Find Health Samples</strong> actions for: Steps, Resting HR, Active Calories, Sleep</div>' +
+      '<div style="color:var(--text)">4. Add <strong>Find Workouts</strong> to get walk/run/cycle sessions</div>' +
+      '<div style="color:var(--text)">5. Format as JSON and POST to your Supabase REST API</div>' +
+      '<div style="color:var(--text);margin-top:4px">6. Add to Home Screen for one-tap sync</div>' +
+      '<div style="border-top:1px solid var(--divider);margin-top:6px;padding-top:6px">' +
+        '<div style="font-weight:600;color:var(--text-dim)">Supabase URL:</div>' +
+        '<div style="color:var(--cyan);word-break:break-all">' + SUPABASE_URL + '/rest/v1/</div>' +
+        '<div style="font-weight:600;color:var(--text-dim);margin-top:4px">Tables: health_sync, health_workouts</div>' +
+      '</div>' +
+    '</div>';
+}
 
 async function saveC2Token() {
   const input = document.getElementById('c2-token-input');
@@ -2120,6 +2292,7 @@ function renderStatsTab() {
   else if (_statsTab === 'rowing') renderRowingStats(body);
   else if (_statsTab === 'exercise') renderExerciseStats(body);
   else if (_statsTab === 'recovery') renderRecoveryStats(body);
+  else if (_statsTab === 'health') renderHealthStats(body);
 }
 
 // ── OVERVIEW STATS TAB (cover page with 3 summary cards) ──
@@ -2553,6 +2726,139 @@ function renderRecoveryStats(container) {
     if (moodData.length > 0) drawLineChart('chart-mood', moodData, 'var(--green)', '', false, 1, 5);
     if (energyData.length > 0) drawLineChart('chart-energy', energyData, 'var(--cyan)', '', false, 1, 5);
     if (sleepData.length > 0) drawBarChart('chart-sleep', sleepData, 'var(--blue)');
+  });
+}
+
+// ── HEALTH STATS TAB (Apple Health data) ──
+function renderHealthStats(container) {
+  var days = _statsDayList;
+  var isYear = _statsMode === 'year';
+  var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Collect daily health data
+  var totalSteps = 0, totalActiveCal = 0, stepDays = 0;
+  var hrSum = 0, hrCount = 0, hrMin = 999, hrMax = 0;
+  var sleepSum = 0, sleepCount = 0;
+  var stepsData = [], hrData = [], calData = [], sleepHData = [];
+  var healthWoCount = 0, healthWoTypes = {};
+
+  // For year mode: monthly aggregation
+  var monthAgg = {};
+
+  for (var i = 0; i < days.length; i++) {
+    var dStr = days[i];
+    var h = getHealthData(dStr);
+    var dDate = new Date(dStr + 'T12:00:00');
+    var hw = getHealthWorkouts(dStr);
+
+    if (h.steps > 0 || h.resting_hr > 0 || h.active_cal > 0 || h.sleep_hours > 0) {
+      if (h.steps > 0) { totalSteps += h.steps; stepDays++; }
+      if (h.active_cal > 0) totalActiveCal += h.active_cal;
+      if (h.resting_hr > 0) { hrSum += h.resting_hr; hrCount++; if (h.resting_hr < hrMin) hrMin = h.resting_hr; if (h.resting_hr > hrMax) hrMax = h.resting_hr; }
+      if (h.sleep_hours > 0) { sleepSum += h.sleep_hours; sleepCount++; }
+
+      if (isYear) {
+        var mk = dDate.getMonth();
+        if (!monthAgg[mk]) monthAgg[mk] = { steps: 0, stepDays: 0, cal: 0, hrSum: 0, hrCount: 0, sleepSum: 0, sleepCount: 0 };
+        if (h.steps > 0) { monthAgg[mk].steps += h.steps; monthAgg[mk].stepDays++; }
+        monthAgg[mk].cal += h.active_cal || 0;
+        if (h.resting_hr > 0) { monthAgg[mk].hrSum += h.resting_hr; monthAgg[mk].hrCount++; }
+        if (h.sleep_hours > 0) { monthAgg[mk].sleepSum += h.sleep_hours; monthAgg[mk].sleepCount++; }
+      } else {
+        var dayLabel = String(dDate.getDate());
+        if (h.steps > 0) stepsData.push({ label: dayLabel, value: h.steps });
+        if (h.resting_hr > 0) hrData.push({ label: dayLabel, value: h.resting_hr });
+        if (h.active_cal > 0) calData.push({ label: dayLabel, value: h.active_cal });
+        if (h.sleep_hours > 0) sleepHData.push({ label: dayLabel, value: h.sleep_hours });
+      }
+    }
+
+    // Count health-sourced workouts
+    hw.forEach(function(w) {
+      healthWoCount++;
+      healthWoTypes[w.type] = (healthWoTypes[w.type] || 0) + 1;
+    });
+  }
+
+  // Build monthly chart data for year mode
+  if (isYear) {
+    for (var m = 0; m < 12; m++) {
+      var a = monthAgg[m];
+      if (a) {
+        if (a.stepDays > 0) stepsData.push({ label: mNames[m], value: Math.round(a.steps / a.stepDays) });
+        if (a.hrCount > 0) hrData.push({ label: mNames[m], value: Math.round(a.hrSum / a.hrCount) });
+        if (a.stepDays > 0) calData.push({ label: mNames[m], value: Math.round(a.cal / a.stepDays) });
+        if (a.sleepCount > 0) sleepHData.push({ label: mNames[m], value: parseFloat((a.sleepSum / a.sleepCount).toFixed(1)) });
+      }
+    }
+  }
+
+  var avgSteps = stepDays > 0 ? Math.round(totalSteps / stepDays) : 0;
+  var avgHr = hrCount > 0 ? Math.round(hrSum / hrCount) : 0;
+  var avgSleep = sleepCount > 0 ? (sleepSum / sleepCount).toFixed(1) : '—';
+  var avgCal = stepDays > 0 ? Math.round(totalActiveCal / stepDays) : 0;
+  var stepsColor = avgSteps >= 10000 ? 'var(--green)' : avgSteps >= 7000 ? 'var(--cyan)' : 'var(--orange)';
+  var hrColor = avgHr > 0 ? (avgHr < 65 ? 'var(--green)' : avgHr < 75 ? 'var(--cyan)' : 'var(--orange)') : 'var(--text-muted)';
+
+  // Workout type summary
+  var woTypeHtml = '';
+  var typeLabels = { running: '🏃 Run', walking: '🚶 Walk', cycling: '🚴 Cycle', swimming: '🏊 Swim', elliptical: '🔄 Elliptical', stair_climbing: '🪜 Stairs' };
+  Object.keys(healthWoTypes).forEach(function(t) {
+    woTypeHtml += '<span>' + (typeLabels[t] || t) + ': <span class="val">' + healthWoTypes[t] + '</span></span> ';
+  });
+
+  var noData = stepDays === 0 && hrCount === 0;
+  if (noData) {
+    container.innerHTML =
+      '<div style="text-align:center;padding:40px 20px">' +
+        '<div style="font-size:40px;margin-bottom:12px"></div>' +
+        '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">No Apple Health Data Yet</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);max-width:360px;margin:0 auto;line-height:1.6">' +
+          'Run the <strong style="color:var(--green)">Sync Health Data</strong> shortcut on your iPhone to import steps, heart rate, sleep, and workout data.' +
+          '<br><br>Go to <strong>⚙️ Settings</strong> for setup instructions.' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  container.innerHTML =
+    '<div class="stats-kpi-row" style="margin-bottom:12px">' +
+      '<div class="stats-kpi"><div class="stats-kpi-val" style="color:' + stepsColor + '">' + avgSteps.toLocaleString() + '</div><div class="stats-kpi-label">Avg Steps</div></div>' +
+      '<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">' + avgCal + '</div><div class="stats-kpi-label">Avg Active Cal</div></div>' +
+      '<div class="stats-kpi"><div class="stats-kpi-val" style="color:' + hrColor + '">' + (avgHr || '—') + '</div><div class="stats-kpi-label">Avg Resting HR</div></div>' +
+      '<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--blue)">' + avgSleep + 'h</div><div class="stats-kpi-label">Avg Sleep</div></div>' +
+      '<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--purple)">' + stepDays + '</div><div class="stats-kpi-label">Days Synced</div></div>' +
+    '</div>' +
+    (healthWoCount > 0 ?
+      '<div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;padding:6px 10px;background:var(--input-bg);border-radius:6px">' +
+        '<span style="color:var(--green);font-weight:700"> ' + healthWoCount + ' workouts synced</span> — ' + woTypeHtml +
+      '</div>' : '') +
+    '<div class="stats-grid">' +
+      '<div class="stats-chart-card">' +
+        '<div class="stats-chart-title">' + (isYear ? 'Avg Daily Steps (Monthly)' : 'Daily Steps') + '</div>' +
+        '<canvas id="chart-health-steps" class="stats-chart-canvas" width="380" height="80"></canvas>' +
+      '</div>' +
+      '<div class="stats-chart-card">' +
+        '<div class="stats-chart-title">' + (isYear ? 'Avg Resting HR (Monthly)' : 'Resting Heart Rate') + '</div>' +
+        '<canvas id="chart-health-hr" class="stats-chart-canvas" width="380" height="80"></canvas>' +
+      '</div>' +
+      '<div class="stats-chart-card">' +
+        '<div class="stats-chart-title">' + (isYear ? 'Avg Active Calories (Monthly)' : 'Active Calories') + '</div>' +
+        '<canvas id="chart-health-cal" class="stats-chart-canvas" width="380" height="80"></canvas>' +
+      '</div>' +
+      '<div class="stats-chart-card">' +
+        '<div class="stats-chart-title">' + (isYear ? 'Avg Sleep (Monthly)' : 'Sleep Hours') + '</div>' +
+        '<canvas id="chart-health-sleep" class="stats-chart-canvas" width="380" height="80"></canvas>' +
+      '</div>' +
+    '</div>' +
+    (DB_CACHE.healthLastSync ?
+      '<div style="text-align:center;font-size:9px;color:var(--text-muted);margin-top:8px">Last synced: ' + new Date(DB_CACHE.healthLastSync).toLocaleDateString() + '</div>' : '');
+
+  requestAnimationFrame(function() {
+    if (stepsData.length > 0) drawBarChart('chart-health-steps', stepsData, 'var(--green)');
+    if (hrData.length > 0) drawLineChart('chart-health-hr', hrData, 'var(--red)', 'bpm', false, 40, 100);
+    if (calData.length > 0) drawBarChart('chart-health-cal', calData, 'var(--orange)');
+    if (sleepHData.length > 0) drawBarChart('chart-health-sleep', sleepHData, 'var(--blue)');
   });
 }
 
@@ -4310,10 +4616,12 @@ function renderDaily() {
         </div>`
       ).join('')}</div>`;
     }
+    const fromHealth = entry.source === 'apple_health';
+    const healthBadge = fromHealth ? '<span title="From Apple Health" style="font-size:8px;opacity:0.7;margin-left:2px">⌚</span>' : '';
     return `<div class="wlog-row ${isDone ? 'done' : ''}">
       <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
       <span class="wlog-icon">${w.icon}</span>
-      <span class="wlog-label">${w.label}</span>
+      <span class="wlog-label">${w.label}${healthBadge}</span>
       ${w.hasTime ? `<input class="wlog-input" type="text" placeholder="m:ss" value="${fmtTimeVal(entry.time)}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()" style="width:36px">` : ''}
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
@@ -4347,6 +4655,17 @@ function renderDaily() {
     <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
       <div class="stretch-tiers">${stretchTiersHtml}</div>
     </div>
+    ${(() => {
+      const hd = getHealthData(dateStr);
+      const hasHealth = hd.steps > 0 || hd.resting_hr > 0 || hd.active_cal > 0;
+      if (!hasHealth) return '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:4px 8px;margin:4px 0 0;border-top:1px solid var(--divider);font-size:9px;color:var(--text-muted)">' +
+        '<span style="opacity:0.6">⌚</span>' +
+        (hd.steps > 0 ? '<span>👟 <span style="color:var(--green);font-weight:700">' + hd.steps.toLocaleString() + '</span> steps</span>' : '') +
+        (hd.resting_hr > 0 ? '<span>❤️ <span style="color:var(--red);font-weight:700">' + hd.resting_hr + '</span> bpm</span>' : '') +
+        (hd.active_cal > 0 ? '<span>🔥 <span style="color:var(--orange);font-weight:700">' + hd.active_cal + '</span> cal</span>' : '') +
+      '</div>';
+    })()}
     ${tmrWo ? `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> <span style="color:var(--${tmrCust.cls === 'lisa' ? 'pink' : tmrCust.cls === 'craig' ? 'green' : 'text-dim'})">${tmrCust.text}</span> ${wIcon(tmrWo.type)} ${tmrWo.label}</div></div>` : ''}`;
 
   // Meals card
