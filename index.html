@@ -1089,7 +1089,24 @@
   }
   .track-dot.active { border-color: var(--purple); color: #fff; }
   .track-dot.mood-active { background: var(--purple); border-color: var(--purple); color: #fff; }
+  .track-dot.mood-pm-active { background: transparent; border: 2px solid var(--purple); color: var(--purple); font-weight: 900; }
+  .track-dot.mood-both { background: var(--purple); border: 2px solid #fff; color: #fff; box-shadow: 0 0 0 1px var(--purple); }
   .track-dot.energy-active { background: var(--cyan); border-color: var(--cyan); color: #fff; }
+  .track-dot.energy-pm-active { background: transparent; border: 2px solid var(--cyan); color: var(--cyan); font-weight: 900; }
+  .track-dot.energy-both { background: var(--cyan); border: 2px solid #fff; color: #fff; box-shadow: 0 0 0 1px var(--cyan); }
+  [data-theme="light"] .track-dot.mood-both { border-color: var(--bg); box-shadow: 0 0 0 1px var(--purple); }
+  [data-theme="light"] .track-dot.energy-both { border-color: var(--bg); box-shadow: 0 0 0 1px var(--cyan); }
+  [data-theme="retro"] .track-dot.mood-both { border-color: #0a0a0a; box-shadow: 0 0 0 1px var(--purple); }
+  [data-theme="retro"] .track-dot.energy-both { border-color: #0a0a0a; box-shadow: 0 0 0 1px var(--cyan); }
+  .track-period { font-size: 7px; color: var(--text-muted); min-width: 18px; text-align: center; letter-spacing: 0; opacity: 0.7; }
+  .low-energy-banner {
+    margin-top: 8px; padding: 8px 12px; border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,107,107,0.15), rgba(255,165,0,0.15));
+    border: 1px solid var(--orange-border);
+    font-size: 11px; color: var(--orange); display: flex; align-items: center; gap: 8px;
+  }
+  .low-energy-banner .banner-icon { font-size: 18px; }
+  .low-energy-banner .banner-text { flex: 1; line-height: 1.4; }
   .track-val {
     font-size: 12px; font-weight: 700; min-width: 20px; text-align: right;
   }
@@ -1402,20 +1419,38 @@
         <div id="c2-recent" style="font-size:11px;color:var(--text-muted)">Connect to see your rowing data</div>
       </div>
       <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:12px">
-        <button onclick="syncC2Data()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔄 Sync Rowing Data Now</button>
+        <button onclick="syncC2Data()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔄 Sync All Rowing Data</button>
       </div>
       <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px"> Apple Health Sync</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">⌚ Apple Health Import</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">
-          Run the <strong style="color:var(--green)">Sync Health Data</strong> shortcut on your iPhone to push steps, heart rate, sleep, and workout data here.
-          Walk/run/cycle/swim workouts auto-fill your daily log — no double entry needed.
+          Export your data from iPhone: <strong>Settings → Health → Export All Health Data</strong>.
+          Upload the ZIP here to import steps, heart rate, sleep, and workouts.
+          Walk/run/cycle/swim auto-fill your daily log — no double entry.
         </div>
         <div id="health-sync-status" style="font-size:10px;margin-bottom:8px;min-height:16px"></div>
-        <div id="health-sync-recent" style="font-size:10px;color:var(--text-muted);margin-bottom:8px"></div>
-        <div style="display:flex;gap:6px">
-          <button onclick="refreshHealthStatus()" style="flex:1;padding:8px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Check Sync Status</button>
-          <button onclick="showHealthSetup()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--card-border);background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">📋 Setup Guide</button>
+        <div style="display:flex;gap:6px;margin-bottom:8px;align-items:center">
+          <label style="flex:1;font-size:10px;color:var(--text-dim)">From:
+            <input type="date" id="health-import-from" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
+          </label>
+          <label style="flex:1;font-size:10px;color:var(--text-dim)">To:
+            <input type="date" id="health-import-to" style="width:100%;padding:4px 6px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
+          </label>
         </div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <label style="flex:1;padding:8px 12px;border-radius:6px;border:1px dashed var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center">
+            📤 Choose Health Export ZIP
+            <input type="file" id="health-file-input" accept=".zip" style="display:none" onchange="handleHealthFileSelect(this)">
+          </label>
+          <button onclick="refreshHealthStatus()" style="padding:8px 12px;border-radius:6px;border:1px solid var(--card-border);background:transparent;color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">🔄 Status</button>
+        </div>
+        <div id="health-import-progress" style="display:none;margin-top:6px">
+          <div style="height:4px;background:var(--divider);border-radius:2px;overflow:hidden">
+            <div id="health-progress-bar" style="height:100%;width:0%;background:var(--green);transition:width 0.3s"></div>
+          </div>
+          <div id="health-progress-text" style="font-size:9px;color:var(--text-muted);margin-top:3px"></div>
+        </div>
+        <div id="health-sync-recent" style="font-size:10px;color:var(--text-muted);margin-top:6px"></div>
       </div>
     </div>
   </div>
@@ -1423,25 +1458,28 @@
 
 <!-- ═══════════════ MONTH STATS POPUP ═══════════════ -->
 <div class="popup-backdrop" id="stats-backdrop" onclick="if(event.target===this)closeStats()">
-  <div class="popup" style="max-width:920px;max-height:92vh">
-    <div class="popup-header" style="padding:12px 24px 0;border-bottom:none">
-      <div style="display:flex;flex-direction:column;gap:4px;flex:1">
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="stats-tab" onclick="changeStatsPeriod(-1)" style="padding:4px 10px;font-size:14px" title="Previous">‹</button>
-          <div class="popup-title" id="stats-title" style="min-width:180px;text-align:center">📊 April Stats</div>
-          <button class="stats-tab" onclick="changeStatsPeriod(1)" style="padding:4px 10px;font-size:14px" title="Next">›</button>
-          <button class="stats-tab" id="stats-mode-month" onclick="setStatsMode('month')" style="font-size:10px;padding:4px 10px;background:var(--purple-bg);color:var(--purple);border-color:var(--purple-border)" title="Monthly view">This Month</button>
-          <button class="stats-tab" id="stats-mode-year" onclick="setStatsMode('year')" style="font-size:10px;padding:4px 10px" title="Yearly view">This Year</button>
+  <div class="popup" style="max-width:920px;max-height:92vh;overflow-x:hidden">
+    <div class="popup-header" style="padding:12px 16px 0;border-bottom:none;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:0;width:100%">
+        <div style="display:flex;align-items:center;gap:4px;flex:1;min-width:0">
+          <button class="stats-tab" onclick="changeStatsPeriod(-1)" style="padding:4px 8px;font-size:14px;flex-shrink:0" title="Previous">‹</button>
+          <div class="popup-title" id="stats-title" style="text-align:center;flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">📊 April Stats</div>
+          <button class="stats-tab" onclick="changeStatsPeriod(1)" style="padding:4px 8px;font-size:14px;flex-shrink:0" title="Next">›</button>
         </div>
-        <div class="stats-tabs" id="stats-tabs">
-          <button class="stats-tab active" data-tab="overview" onclick="switchStatsTab('overview')">📊 Overview</button>
-          <button class="stats-tab" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
-          <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
-          <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
-          <button class="stats-tab" data-tab="health" onclick="switchStatsTab('health')"> Health</button>
+        <div style="display:flex;gap:3px;margin-left:6px;flex-shrink:0">
+          <button class="stats-tab" id="stats-mode-month" onclick="setStatsMode('month')" style="font-size:9px;padding:3px 7px;background:var(--purple-bg);color:var(--purple);border-color:var(--purple-border)" title="Monthly view">Mo</button>
+          <button class="stats-tab" id="stats-mode-year" onclick="setStatsMode('year')" style="font-size:9px;padding:3px 7px" title="Yearly view">Yr</button>
         </div>
+        <button class="popup-close" onclick="closeStats()" style="flex-shrink:0;margin-left:6px;font-size:11px;padding:4px 8px">✕</button>
       </div>
-      <button class="popup-close" onclick="closeStats()" style="align-self:flex-start">✕ Close</button>
+      <div class="stats-tabs" id="stats-tabs" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <button class="stats-tab active" data-tab="overview" onclick="switchStatsTab('overview')">📊 Overview</button>
+        <button class="stats-tab" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
+        <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
+        <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
+        <button class="stats-tab" data-tab="cardio" onclick="switchStatsTab('cardio')">🏃 Cardio</button>
+        <button class="stats-tab" data-tab="health" onclick="switchStatsTab('health')"> Health</button>
+      </div>
     </div>
     <div class="popup-body" id="stats-body" style="padding:12px 24px 20px">
       <!-- Tab content injected by JS -->
@@ -1453,6 +1491,7 @@
      DATA CONFIGURATION
      ════════════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
 
 // ──────────────────────────────────────────────
@@ -1572,6 +1611,8 @@ async function loadTrackingData(startDate, endDate) {
     if (daily) daily.forEach(row => {
       DB_CACHE.daily[row.date] = {
         mood: row.mood || 0, energy: row.energy || 0,
+        mood_am: row.mood_am || 0, mood_pm: row.mood_pm || 0,
+        energy_am: row.energy_am || 0, energy_pm: row.energy_pm || 0,
         sleep: parseFloat(row.sleep) || 0, weight: parseFloat(row.weight) || 0,
         water: row.water || 0, coffee: row.coffee || 0, notes: row.notes || '',
         first_meal: row.first_meal || 0, last_meal: row.last_meal || 0,
@@ -1579,7 +1620,7 @@ async function loadTrackingData(startDate, endDate) {
       };
     });
     // Merge localStorage daily fields into DB_CACHE (covers fields not yet in Supabase schema)
-    const dailyFields = ['mood','energy','sleep','weight','water','coffee','notes','first_meal','last_meal'];
+    const dailyFields = ['mood','energy','mood_am','mood_pm','energy_am','energy_pm','sleep','weight','water','coffee','notes','first_meal','last_meal'];
     const startD2 = new Date(startDate), endD2 = new Date(endDate);
     for (let d = new Date(startD2); d <= endD2; d.setDate(d.getDate() + 1)) {
       const dStr = ds(d);
@@ -1771,7 +1812,7 @@ async function loadTrackingData(startDate, endDate) {
 // Upsert a daily_log field to Supabase (fire-and-forget)
 function dbSaveDaily(dateStr, field, value) {
   // Update cache
-  if (!DB_CACHE.daily[dateStr]) DB_CACHE.daily[dateStr] = {mood:0,energy:0,sleep:0,weight:0,water:0,coffee:0,notes:''};
+  if (!DB_CACHE.daily[dateStr]) DB_CACHE.daily[dateStr] = {mood:0,energy:0,mood_am:0,mood_pm:0,energy_am:0,energy_pm:0,sleep:0,weight:0,water:0,coffee:0,notes:''};
   DB_CACHE.daily[dateStr][field] = value;
   // Also save to localStorage as backup
   localStorage.setItem(field + '_' + dateStr, value);
@@ -1957,6 +1998,7 @@ async function openSettings() {
   document.getElementById('c2-token-input').value = token ? '••••••••••••••••' : '';
   updateC2Status();
   loadC2Recent();
+  initHealthDateRange();
   refreshHealthStatus();
   document.getElementById('settings-backdrop').classList.add('open');
 }
@@ -2009,23 +2051,245 @@ async function refreshHealthStatus() {
   }
 }
 
-function showHealthSetup() {
-  var body = document.getElementById('health-sync-recent');
-  body.innerHTML =
-    '<div style="background:var(--input-bg);border:1px solid var(--input-border);border-radius:8px;padding:10px;margin-top:6px;font-size:10px;line-height:1.6">' +
-      '<div style="font-weight:700;color:var(--green);margin-bottom:4px">📱 iPhone Shortcut Setup:</div>' +
-      '<div style="color:var(--text)">1. Open <strong>Shortcuts</strong> app on your iPhone</div>' +
-      '<div style="color:var(--text)">2. Create a new shortcut named <strong style="color:var(--green)">Sync Health Data</strong></div>' +
-      '<div style="color:var(--text)">3. Add <strong>Find Health Samples</strong> actions for: Steps, Resting HR, Active Calories, Sleep</div>' +
-      '<div style="color:var(--text)">4. Add <strong>Find Workouts</strong> to get walk/run/cycle sessions</div>' +
-      '<div style="color:var(--text)">5. Format as JSON and POST to your Supabase REST API</div>' +
-      '<div style="color:var(--text);margin-top:4px">6. Add to Home Screen for one-tap sync</div>' +
-      '<div style="border-top:1px solid var(--divider);margin-top:6px;padding-top:6px">' +
-        '<div style="font-weight:600;color:var(--text-dim)">Supabase URL:</div>' +
-        '<div style="color:var(--cyan);word-break:break-all">' + SUPABASE_URL + '/rest/v1/</div>' +
-        '<div style="font-weight:600;color:var(--text-dim);margin-top:4px">Tables: health_sync, health_workouts</div>' +
-      '</div>' +
-    '</div>';
+// ── Apple Health Import: file handling + XML parser ──
+function initHealthDateRange() {
+  var now = new Date();
+  var from = new Date(now.getFullYear(), now.getMonth() - 1, 1); // 1 month ago
+  document.getElementById('health-import-from').value = ds(from);
+  document.getElementById('health-import-to').value = ds(now);
+}
+
+function handleHealthFileSelect(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  if (!file.name.endsWith('.zip')) {
+    document.getElementById('health-sync-status').innerHTML = '<span style="color:var(--red)">Please select a .zip file (Apple Health export)</span>';
+    return;
+  }
+  if (!sbReady) {
+    document.getElementById('health-sync-status').innerHTML = '<span style="color:var(--red)">Not logged in — log in first</span>';
+    return;
+  }
+  var fromDate = document.getElementById('health-import-from').value;
+  var toDate = document.getElementById('health-import-to').value;
+  if (!fromDate || !toDate) {
+    document.getElementById('health-sync-status').innerHTML = '<span style="color:var(--orange)">Set a date range first</span>';
+    return;
+  }
+  parseHealthExport(file, fromDate, toDate);
+}
+
+async function parseHealthExport(file, fromDate, toDate) {
+  var statusEl = document.getElementById('health-sync-status');
+  var progressEl = document.getElementById('health-import-progress');
+  var barEl = document.getElementById('health-progress-bar');
+  var textEl = document.getElementById('health-progress-text');
+  progressEl.style.display = 'block';
+  barEl.style.width = '5%';
+  statusEl.innerHTML = '<span style="color:var(--cyan)">Reading ZIP file...</span>';
+  textEl.textContent = 'Extracting export.xml from ZIP...';
+
+  try {
+    var zip = await JSZip.loadAsync(file);
+    barEl.style.width = '15%';
+
+    // Find export.xml (might be in apple_health_export/ subfolder)
+    var xmlFile = zip.file('export.xml') || zip.file('apple_health_export/export.xml');
+    if (!xmlFile) {
+      // Search for it
+      var found = null;
+      zip.forEach(function(path, entry) { if (path.endsWith('export.xml')) found = entry; });
+      xmlFile = found;
+    }
+    if (!xmlFile) {
+      statusEl.innerHTML = '<span style="color:var(--red)">Could not find export.xml in ZIP</span>';
+      progressEl.style.display = 'none';
+      return;
+    }
+
+    textEl.textContent = 'Reading XML (this may take a moment for large exports)...';
+    barEl.style.width = '25%';
+    var xmlText = await xmlFile.async('string');
+    barEl.style.width = '40%';
+    textEl.textContent = 'Parsing health records (' + Math.round(xmlText.length / 1048576) + ' MB)...';
+
+    // Parse line by line using regex (much faster than DOMParser for huge files)
+    var lines = xmlText.split('\n');
+    xmlText = null; // free memory
+
+    var dailyData = {}; // dateStr -> {steps, active_cal, resting_hr_sum, resting_hr_count, sleep_min}
+    var workouts = []; // [{date, type, duration_min, distance_m, active_cal, start_time}]
+
+    // Record type patterns
+    var recordRx = /^.*<Record type="([^"]+)"[^>]*startDate="([^"]+)"[^>]*value="([^"]+)"/;
+    var workoutRx = /^.*<Workout workoutActivityType="([^"]+)"[^>]*duration="([^"]*)"[^>]*totalDistance="([^"]*)"[^>]*totalEnergyBurned="([^"]*)"[^>]*startDate="([^"]+)"/;
+    // Alternate workout pattern (attributes may be in different order)
+    var workoutRx2 = /^.*<Workout[^>]*workoutActivityType="([^"]+)"[^>]*startDate="([^"]+)"/;
+
+    var typesWeCareAbout = {
+      'HKQuantityTypeIdentifierStepCount': 'steps',
+      'HKQuantityTypeIdentifierActiveEnergyBurned': 'active_cal',
+      'HKQuantityTypeIdentifierRestingHeartRate': 'resting_hr',
+      'HKCategoryTypeIdentifierSleepAnalysis': 'sleep'
+    };
+    var workoutTypeMap = {
+      'HKWorkoutActivityTypeRunning': 'running',
+      'HKWorkoutActivityTypeWalking': 'walking',
+      'HKWorkoutActivityTypeCycling': 'cycling',
+      'HKWorkoutActivityTypeSwimming': 'swimming',
+      'HKWorkoutActivityTypeElliptical': 'elliptical',
+      'HKWorkoutActivityTypeStairClimbing': 'stair_climbing'
+    };
+
+    var totalLines = lines.length;
+    var recordCount = 0, workoutCount = 0;
+
+    for (var i = 0; i < totalLines; i++) {
+      // Progress every 100k lines
+      if (i % 100000 === 0) {
+        var pct = 40 + Math.round((i / totalLines) * 45);
+        barEl.style.width = pct + '%';
+        textEl.textContent = 'Scanning line ' + i.toLocaleString() + ' / ' + totalLines.toLocaleString() + ' (' + recordCount + ' records, ' + workoutCount + ' workouts)';
+        await new Promise(function(r) { setTimeout(r, 0); }); // yield to UI
+      }
+
+      var line = lines[i];
+      if (!line) continue;
+
+      // Try Record match
+      if (line.indexOf('<Record') !== -1) {
+        var rm = line.match(recordRx);
+        if (rm) {
+          var rType = typesWeCareAbout[rm[1]];
+          if (!rType) continue;
+          // Parse date — format: "2026-03-15 10:30:00 -0600"
+          var dateStr = rm[2].substring(0, 10);
+          if (dateStr < fromDate || dateStr > toDate) continue;
+          if (!dailyData[dateStr]) dailyData[dateStr] = { steps: 0, active_cal: 0, resting_hr_sum: 0, resting_hr_count: 0, sleep_min: 0 };
+          var val = parseFloat(rm[3]) || 0;
+          if (rType === 'steps') dailyData[dateStr].steps += Math.round(val);
+          else if (rType === 'active_cal') dailyData[dateStr].active_cal += Math.round(val);
+          else if (rType === 'resting_hr') { dailyData[dateStr].resting_hr_sum += val; dailyData[dateStr].resting_hr_count++; }
+          else if (rType === 'sleep') {
+            // Sleep records: need to calculate duration from startDate/endDate
+            var sleepEndMatch = line.match(/endDate="([^"]+)"/);
+            if (sleepEndMatch) {
+              var sStart = new Date(rm[2].replace(' ', 'T').replace(/ ([+-]\d{4})/, '$1'));
+              var sEnd = new Date(sleepEndMatch[1].replace(' ', 'T').replace(/ ([+-]\d{4})/, '$1'));
+              if (!isNaN(sStart) && !isNaN(sEnd)) {
+                dailyData[dateStr].sleep_min += (sEnd - sStart) / 60000;
+              }
+            }
+          }
+          recordCount++;
+        }
+        continue;
+      }
+
+      // Try Workout match
+      if (line.indexOf('<Workout') !== -1) {
+        // Extract attributes individually for flexibility
+        var woTypeMatch = line.match(/workoutActivityType="([^"]+)"/);
+        if (!woTypeMatch) continue;
+        var mappedType = workoutTypeMap[woTypeMatch[1]];
+        if (!mappedType) continue; // skip rowing and other types
+
+        var woStartMatch = line.match(/startDate="([^"]+)"/);
+        if (!woStartMatch) continue;
+        var woDateStr = woStartMatch[1].substring(0, 10);
+        if (woDateStr < fromDate || woDateStr > toDate) continue;
+
+        var woDurMatch = line.match(/duration="([^"]*)"/);
+        var woDistMatch = line.match(/totalDistance="([^"]*)"/);
+        var woCalMatch = line.match(/totalEnergyBurned="([^"]*)"/);
+        var woDistUnitMatch = line.match(/totalDistanceUnit="([^"]*)"/);
+
+        var woDur = woDurMatch ? parseFloat(woDurMatch[1]) || 0 : 0;
+        var woDist = woDistMatch ? parseFloat(woDistMatch[1]) || 0 : 0;
+        var woDistUnit = woDistUnitMatch ? woDistUnitMatch[1] : 'km';
+        var woCal = woCalMatch ? Math.round(parseFloat(woCalMatch[1]) || 0) : 0;
+
+        // Convert distance to meters
+        var distM = woDist;
+        if (woDistUnit === 'km') distM = woDist * 1000;
+        else if (woDistUnit === 'mi') distM = woDist * 1609.34;
+
+        // Parse start time to ISO
+        var startISO = woStartMatch[1].replace(' ', 'T').replace(/ ([+-]\d{4})/, '$1');
+
+        workouts.push({
+          date: woDateStr, type: mappedType,
+          duration_min: Math.round(woDur * 10) / 10,
+          distance_m: Math.round(distM),
+          active_cal: woCal,
+          start_time: startISO
+        });
+        workoutCount++;
+        continue;
+      }
+    }
+    lines = null; // free memory
+
+    barEl.style.width = '85%';
+    textEl.textContent = 'Uploading to Supabase (' + Object.keys(dailyData).length + ' days, ' + workouts.length + ' workouts)...';
+
+    // Batch upsert daily data
+    var dailyRows = [];
+    Object.keys(dailyData).forEach(function(d) {
+      var dd = dailyData[d];
+      dailyRows.push({
+        sync_date: d,
+        steps: dd.steps,
+        active_cal: dd.active_cal,
+        resting_hr: dd.resting_hr_count > 0 ? Math.round(dd.resting_hr_sum / dd.resting_hr_count) : 0,
+        sleep_hours: dd.sleep_min > 0 ? Math.round(dd.sleep_min / 60 * 10) / 10 : 0
+      });
+    });
+
+    // Upsert in batches of 50
+    for (var b = 0; b < dailyRows.length; b += 50) {
+      var batch = dailyRows.slice(b, b + 50);
+      var { error } = await sb.from('health_sync').upsert(batch, { onConflict: 'sync_date' });
+      if (error) console.warn('health_sync upsert error:', error);
+      var syncPct = 85 + Math.round((b / dailyRows.length) * 7);
+      barEl.style.width = syncPct + '%';
+    }
+
+    // Upsert workouts in batches of 50
+    for (var b = 0; b < workouts.length; b += 50) {
+      var batch = workouts.slice(b, b + 50).map(function(w) {
+        return {
+          workout_date: w.date, workout_type: w.type,
+          duration_min: w.duration_min, distance_m: w.distance_m,
+          active_cal: w.active_cal, start_time: w.start_time,
+          source: 'apple_health'
+        };
+      });
+      var { error } = await sb.from('health_workouts').upsert(batch, { onConflict: 'workout_date,workout_type,start_time' });
+      if (error) console.warn('health_workouts upsert error:', error);
+      var woPct = 92 + Math.round((b / Math.max(workouts.length, 1)) * 7);
+      barEl.style.width = woPct + '%';
+    }
+
+    barEl.style.width = '100%';
+    statusEl.innerHTML = '<span style="color:var(--green)">✓ Import complete!</span> ' +
+      '<span style="color:var(--text-muted)">' + dailyRows.length + ' days, ' + workouts.length + ' workouts</span>';
+    textEl.textContent = 'Done! Reload the page to see your data.';
+
+    // Update cache
+    dailyRows.forEach(function(r) {
+      DB_CACHE.health[r.sync_date] = { steps: r.steps, active_cal: r.active_cal, resting_hr: r.resting_hr, sleep_hours: r.sleep_hours };
+    });
+    DB_CACHE.healthLastSync = new Date().toISOString();
+
+    // Refresh recent display
+    refreshHealthStatus();
+
+  } catch(e) {
+    console.error('Health import error:', e);
+    statusEl.innerHTML = '<span style="color:var(--red)">Import failed: ' + (e.message || e) + '</span>';
+    progressEl.style.display = 'none';
+  }
 }
 
 async function saveC2Token() {
@@ -2108,16 +2372,50 @@ function fmtC2Time(tenths) {
 
 async function syncC2Data() {
   const btn = event.target;
-  btn.textContent = '⏳ Syncing...';
-  const data = await c2Fetch('/users/me/results?type=rower&num=30');
-  if (!data || !data.data) { btn.textContent = '❌ Sync failed — check token'; setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000); return; }
+  btn.textContent = '⏳ Syncing page 1...';
+  const cutoffDate = '2024-12-01'; // fetch back to Dec 2024
+
+  // Paginate through all C2 results until we reach the cutoff
+  const allResults = [];
+  let page = 1;
+  let nextUrl = '/users/me/results?type=rower&num=50';
+  let reachedCutoff = false;
+
+  while (nextUrl && !reachedCutoff) {
+    btn.textContent = `⏳ Syncing page ${page}...`;
+    const data = await c2Fetch(nextUrl);
+    if (!data || !data.data) break;
+
+    for (const r of data.data) {
+      const dateKey = r.date ? String(r.date).substring(0, 10) : '';
+      if (dateKey < cutoffDate) { reachedCutoff = true; break; }
+      allResults.push(r);
+    }
+
+    // Check for next page in API response
+    const nextLink = data.meta && data.meta.pagination && data.meta.pagination.links && data.meta.pagination.links.next;
+    if (nextLink && !reachedCutoff) {
+      // nextLink is a full URL — extract the path+query
+      try {
+        const u = new URL(nextLink);
+        nextUrl = u.pathname.replace('/api', '') + u.search;
+      } catch(e) {
+        nextUrl = null;
+      }
+      page++;
+    } else {
+      nextUrl = null;
+    }
+  }
+
+  if (allResults.length === 0) { btn.textContent = '❌ No data found — check token'; setTimeout(() => btn.textContent = '🔄 Sync All Rowing Data', 3000); return; }
 
   // Phase 1: group C2 results by date (handles multiple sessions per day)
   // C2 API returns dates as "YYYY-MM-DD HH:MM:SS" — normalize to "YYYY-MM-DD"
   const byDate = {};
-  data.data.forEach(r => {
+  allResults.forEach(r => {
     if (!r.date || !r.distance) return;
-    const dateKey = String(r.date).substring(0, 10); // "2026-03-31 22:55:00" → "2026-03-31"
+    const dateKey = String(r.date).substring(0, 10);
     if (!byDate[dateKey]) byDate[dateKey] = [];
     byDate[dateKey].push(r);
   });
@@ -2176,8 +2474,9 @@ async function syncC2Data() {
     imported += sessions.length;
   });
 
-  btn.textContent = `✅ ${imported} sessions → ${Object.keys(byDate).length} days`;
-  setTimeout(() => btn.textContent = '🔄 Sync Rowing Data Now', 3000);
+  const oldest = Object.keys(byDate).sort()[0] || '?';
+  btn.textContent = `✅ ${imported} sessions → ${Object.keys(byDate).length} days (from ${oldest})`;
+  setTimeout(() => btn.textContent = '🔄 Sync All Rowing Data', 4000);
   loadC2Recent();
   renderDaily();
 }
@@ -2290,6 +2589,7 @@ function renderStatsTab() {
   const body = document.getElementById('stats-body');
   if (_statsTab === 'overview') renderOverviewStats(body);
   else if (_statsTab === 'rowing') renderRowingStats(body);
+  else if (_statsTab === 'cardio') renderCardioStats(body);
   else if (_statsTab === 'exercise') renderExerciseStats(body);
   else if (_statsTab === 'recovery') renderRecoveryStats(body);
   else if (_statsTab === 'health') renderHealthStats(body);
@@ -2566,6 +2866,204 @@ function renderRowingStats(container) {
   });
 }
 
+// ── CARDIO STATS TAB ──
+function renderCardioStats(container) {
+  const days = _statsDayList;
+  const isYear = _statsMode === 'year';
+
+  // Collect all cardio sessions from workout logs + health workouts
+  const sessions = []; // {date, type, time, distKm, hrAvg, hrMax, source}
+  const typeTotals = {}; // type -> {sessions, time, distKm, hrSum, hrCount, hrMax}
+
+  for (var i = 0; i < days.length; i++) {
+    var dStr = days[i];
+    var wlog = getWorkoutLog(dStr);
+
+    // Walk/jog/run/hike
+    if (wlog.walk && wlog.walk.done) {
+      var w = wlog.walk;
+      var sub = w.subtype || 'walk';
+      sessions.push({ date: dStr, type: sub, time: w.time || 0, distKm: w.dist || 0, hrAvg: w.hrAvg || 0, hrMax: w.hrMax || 0, source: w.source || 'manual' });
+    }
+
+    // Swim
+    if (wlog.swim && wlog.swim.done) {
+      var s = wlog.swim;
+      sessions.push({ date: dStr, type: 'swim', time: s.time || 0, distKm: (s.dist || 0) / 1000, hrAvg: 0, hrMax: 0, source: s.source || 'manual' });
+    }
+
+    // Cycling from exSets
+    var exS = getExSets(dStr);
+    if (exS.gymcardio_bike && (exS.gymcardio_bike.time > 0 || exS.gymcardio_bike.dist > 0)) {
+      var b = exS.gymcardio_bike;
+      sessions.push({ date: dStr, type: 'cycling', time: b.time || 0, distKm: b.dist || 0, hrAvg: 0, hrMax: 0, source: b.source || 'manual' });
+    }
+
+    // Elliptical from exSets
+    if (exS.gymcardio_elliptical && exS.gymcardio_elliptical.time > 0) {
+      var e = exS.gymcardio_elliptical;
+      sessions.push({ date: dStr, type: 'elliptical', time: e.time || 0, distKm: 0, hrAvg: 0, hrMax: 0, source: e.source || 'manual' });
+    }
+
+    // Stairmaster from exSets
+    if (exS.gymcardio_stairmaster && exS.gymcardio_stairmaster.time > 0) {
+      var sm = exS.gymcardio_stairmaster;
+      sessions.push({ date: dStr, type: 'stairs', time: sm.time || 0, distKm: 0, hrAvg: 0, hrMax: 0, source: sm.source || 'manual' });
+    }
+  }
+
+  // Aggregate by type
+  sessions.forEach(function(s) {
+    if (!typeTotals[s.type]) typeTotals[s.type] = { sessions: 0, time: 0, distKm: 0, hrSum: 0, hrCount: 0, hrMax: 0 };
+    var t = typeTotals[s.type];
+    t.sessions++;
+    t.time += s.time;
+    t.distKm += s.distKm;
+    if (s.hrAvg > 0) { t.hrSum += s.hrAvg; t.hrCount++; }
+    if (s.hrMax > t.hrMax) t.hrMax = s.hrMax;
+  });
+
+  // Overall totals
+  var totalSessions = sessions.length;
+  var totalDistKm = sessions.reduce(function(s, r) { return s + r.distKm; }, 0);
+  var totalTime = sessions.reduce(function(s, r) { return s + r.time; }, 0);
+  var hrSessions = sessions.filter(function(r) { return r.hrAvg > 0; });
+  var avgHR = hrSessions.length > 0 ? Math.round(hrSessions.reduce(function(s, r) { return s + r.hrAvg; }, 0) / hrSessions.length) : 0;
+  var maxHR = sessions.reduce(function(best, r) { return r.hrMax > best ? r.hrMax : best; }, 0);
+
+  var distStr = totalDistKm >= 1 ? totalDistKm.toFixed(1) + ' km' : Math.round(totalDistKm * 1000) + ' m';
+  var timeStr = totalTime > 0 ? Math.floor(totalTime / 60) + 'h ' + Math.round(totalTime % 60) + 'm' : '0';
+  var avgPaceMinKm = totalDistKm > 0 && totalTime > 0 ? totalTime / totalDistKm : 0;
+  var paceStr = avgPaceMinKm > 0 ? Math.floor(avgPaceMinKm) + ':' + String(Math.round((avgPaceMinKm % 1) * 60)).padStart(2, '0') + ' /km' : '—';
+
+  // Type icons & labels
+  var typeInfo = {
+    walk: { icon: '🚶', label: 'Walk', color: 'var(--green)' },
+    jog: { icon: '🏃', label: 'Jog', color: 'var(--orange)' },
+    run: { icon: '🏃‍♂️', label: 'Run', color: 'var(--red)' },
+    running: { icon: '🏃‍♂️', label: 'Run', color: 'var(--red)' },
+    walking: { icon: '🚶', label: 'Walk', color: 'var(--green)' },
+    hike: { icon: '🥾', label: 'Hike', color: 'var(--green)' },
+    swim: { icon: '🏊', label: 'Swim', color: 'var(--blue)' },
+    cycling: { icon: '🚴', label: 'Cycle', color: 'var(--cyan)' },
+    elliptical: { icon: '🏃', label: 'Elliptical', color: 'var(--purple)' },
+    stairs: { icon: '🪜', label: 'Stairs', color: 'var(--orange)' }
+  };
+
+  // Type breakdown pills
+  var typeKeys = Object.keys(typeTotals).sort(function(a, b) { return typeTotals[b].distKm - typeTotals[a].distKm; });
+  var breakdownHtml = typeKeys.map(function(tk) {
+    var t = typeTotals[tk];
+    var inf = typeInfo[tk] || { icon: '🏃', label: tk, color: 'var(--text)' };
+    var d = t.distKm >= 1 ? t.distKm.toFixed(1) + 'km' : Math.round(t.distKm * 1000) + 'm';
+    var tm = t.time > 0 ? Math.round(t.time) + 'min' : '';
+    var hr = t.hrCount > 0 ? Math.round(t.hrSum / t.hrCount) + 'bpm' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--divider)">' +
+      '<span style="font-size:18px">' + inf.icon + '</span>' +
+      '<span style="font-weight:700;color:' + inf.color + ';min-width:65px">' + inf.label + '</span>' +
+      '<span class="dim" style="min-width:30px">' + t.sessions + 'x</span>' +
+      (t.distKm > 0 ? '<span style="color:var(--cyan);font-weight:600;min-width:55px">' + d + '</span>' : '') +
+      (tm ? '<span class="dim" style="min-width:45px">' + tm + '</span>' : '') +
+      (hr ? '<span style="color:var(--red);min-width:50px">' + hr + '</span>' : '') +
+      '</div>';
+  }).join('');
+
+  // Distance chart — daily or monthly
+  var distChartData = [];
+  var hrChartData = [];
+  if (isYear) {
+    var mAgg = {};
+    var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    sessions.forEach(function(s) {
+      var mk = parseInt(s.date.substring(5, 7)) - 1;
+      if (!mAgg[mk]) mAgg[mk] = { dist: 0, hr: 0, hrc: 0 };
+      mAgg[mk].dist += s.distKm;
+      if (s.hrAvg > 0) { mAgg[mk].hr += s.hrAvg; mAgg[mk].hrc++; }
+    });
+    for (var m = 0; m < 12; m++) {
+      if (mAgg[m]) {
+        distChartData.push({ label: mNames[m], value: parseFloat(mAgg[m].dist.toFixed(1)) });
+        if (mAgg[m].hrc > 0) hrChartData.push({ label: mNames[m], value: Math.round(mAgg[m].hr / mAgg[m].hrc) });
+      }
+    }
+  } else {
+    // Daily aggregation
+    var dayAgg = {};
+    sessions.forEach(function(s) {
+      var d = parseInt(s.date.substring(8));
+      if (!dayAgg[d]) dayAgg[d] = { dist: 0, hr: 0, hrc: 0 };
+      dayAgg[d].dist += s.distKm;
+      if (s.hrAvg > 0) { dayAgg[d].hr += s.hrAvg; dayAgg[d].hrc++; }
+    });
+    Object.keys(dayAgg).sort(function(a, b) { return a - b; }).forEach(function(d) {
+      distChartData.push({ label: String(d), value: parseFloat(dayAgg[d].dist.toFixed(1)) });
+      if (dayAgg[d].hrc > 0) hrChartData.push({ label: String(d), value: Math.round(dayAgg[d].hr / dayAgg[d].hrc) });
+    });
+  }
+
+  // Session log — most recent first
+  var logRows = sessions.slice().reverse();
+
+  container.innerHTML = `
+    <div class="stats-kpi-row" style="margin-bottom:12px">
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${totalSessions}</div><div class="stats-kpi-label">Sessions</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${distStr}</div><div class="stats-kpi-label">Total Distance</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">${timeStr}</div><div class="stats-kpi-label">Total Time</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--purple)">${paceStr}</div><div class="stats-kpi-label">Avg Pace</div></div>
+      ${avgHR ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--red)">${avgHR}</div><div class="stats-kpi-label">Avg HR</div></div>` : ''}
+      ${maxHR ? `<div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--red)">${maxHR}</div><div class="stats-kpi-label">Max HR</div></div>` : ''}
+    </div>
+
+    <div style="margin-bottom:12px;padding:8px 12px;background:var(--card-bg);border-radius:8px;border:1px solid var(--card-border)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">By Activity</div>
+      ${breakdownHtml || '<div style="font-size:11px;color:var(--text-muted)">No cardio sessions logged yet.</div>'}
+    </div>
+
+    ${distChartData.length > 0 ? `
+    <div class="stats-chart-card" style="margin-bottom:10px">
+      <div class="stats-chart-title">Distance (km) ${isYear ? '(Monthly Total)' : ''}</div>
+      <canvas id="chart-cardio-dist" class="stats-chart-canvas" width="380" height="80"></canvas>
+    </div>` : ''}
+
+    ${hrChartData.length > 0 ? `
+    <div class="stats-chart-card" style="margin-bottom:10px">
+      <div class="stats-chart-title"><span style="color:var(--red)">━</span> Avg Heart Rate ${isYear ? '(Monthly Avg)' : ''}</div>
+      <canvas id="chart-cardio-hr" class="stats-chart-canvas" width="380" height="80"></canvas>
+    </div>` : ''}
+
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">Session Log</div>
+      <div class="stats-session-list">
+        ${logRows.length === 0 ? '<div style="font-size:11px;color:var(--text-muted);padding:8px">No cardio sessions this period. Walk, run, cycle, or swim data will appear here.</div>' :
+          logRows.slice(0, 30).map(function(r) {
+            var inf = typeInfo[r.type] || { icon: '🏃', label: r.type, color: 'var(--text)' };
+            var d = r.distKm >= 1 ? r.distKm.toFixed(1) + 'km' : Math.round(r.distKm * 1000) + 'm';
+            var t = r.time > 0 ? Math.round(r.time) + 'min' : '';
+            var hr = r.hrAvg ? r.hrAvg + 'bpm' : '';
+            var pace = r.distKm > 0 && r.time > 0 ? (r.time / r.distKm) : 0;
+            var pStr = pace > 0 ? Math.floor(pace) + ':' + String(Math.round((pace % 1) * 60)).padStart(2, '0') + '/km' : '';
+            var src = r.source === 'apple_health' ? '<span class="dim">⌚</span>' : '<span class="dim">✏️</span>';
+            return '<div class="stats-session-row">' +
+              '<span class="date">' + r.date.substring(5) + '</span>' +
+              '<span style="font-size:12px">' + inf.icon + '</span>' +
+              src +
+              (r.distKm > 0 ? '<span class="val" style="color:var(--cyan);min-width:50px">' + d + '</span>' : '') +
+              (t ? '<span class="val" style="min-width:40px">' + t + '</span>' : '') +
+              (pStr ? '<span class="dim">' + pStr + '</span>' : '') +
+              (hr ? '<span class="dim" style="margin-left:auto;color:var(--red)">' + hr + '</span>' : '') +
+              '</div>';
+          }).join('')}
+        ${logRows.length > 30 ? '<div style="font-size:10px;color:var(--text-muted);padding:4px;text-align:center">Showing 30 of ' + logRows.length + ' sessions</div>' : ''}
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(function() {
+    if (distChartData.length > 0) drawBarChart('chart-cardio-dist', distChartData, 'var(--cyan)');
+    if (hrChartData.length > 0) drawLineChart('chart-cardio-hr', hrChartData, 'var(--red)', 'bpm', false, 40, 200);
+  });
+}
+
 // ── EXERCISE STATS TAB ──
 function renderExerciseStats(container) {
   const days = _statsDayList;
@@ -2658,6 +3156,7 @@ function renderRecoveryStats(container) {
   const isYear = _statsMode === 'year';
   let strTotal = 0, strDone = 0, morTotal = 0, morDone = 0;
   const moodData = [], energyData = [], sleepData = [];
+  let moodPMSum = 0, moodPMCount = 0, energyPMSum = 0, energyPMCount = 0;
   // For year mode: aggregate by month
   var moodMonthAgg = {}, energyMonthAgg = {}, sleepMonthAgg = {};
   var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2671,6 +3170,8 @@ function renderRecoveryStats(container) {
     var mood = getMood(dStr);
     var energy = getEnergy(dStr);
     var sleep = getSleep(dStr);
+    var mPM = getMoodPM(dStr); if (mPM) { moodPMSum += mPM; moodPMCount++; }
+    var ePM = getEnergyPM(dStr); if (ePM) { energyPMSum += ePM; energyPMCount++; }
     if (isYear) {
       var mk = dDate.getMonth();
       if (mood) { if (!moodMonthAgg[mk]) moodMonthAgg[mk] = {s:0,c:0}; moodMonthAgg[mk].s += mood; moodMonthAgg[mk].c++; }
@@ -2702,8 +3203,8 @@ function renderRecoveryStats(container) {
     <div class="stats-kpi-row" style="margin-bottom:12px">
       <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--purple)">${strPct}%</div><div class="stats-kpi-label">Stretch</div></div>
       <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--orange)">${morPct}%</div><div class="stats-kpi-label">Morning</div></div>
-      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${avgMood}</div><div class="stats-kpi-label">Avg Mood</div></div>
-      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${avgEnergy}</div><div class="stats-kpi-label">Avg Energy</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--green)">${avgMood}</div><div class="stats-kpi-label">Mood ☀️${moodPMCount ? '<br><span style="font-size:10px;opacity:0.7">🌙' + (moodPMSum/moodPMCount).toFixed(1) + '</span>' : ''}</div></div>
+      <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--cyan)">${avgEnergy}</div><div class="stats-kpi-label">Energy ☀️${energyPMCount ? '<br><span style="font-size:10px;opacity:0.7">🌙' + (energyPMSum/energyPMCount).toFixed(1) + '</span>' : ''}</div></div>
       <div class="stats-kpi"><div class="stats-kpi-val" style="color:var(--blue)">${avgSleep}h</div><div class="stats-kpi-label">Avg Sleep</div></div>
     </div>
     <div class="stats-grid">
@@ -4161,10 +4662,26 @@ function toggleCoffee(dateStr, idx) {
 }
 
 // Mood (1-10), Energy (1-10), Sleep (hours), Weight (lbs)
-function getMood(dateStr) { return _getDailyField(dateStr, 'mood'); }
-function setMood(dateStr, val) { dbSaveDaily(dateStr, 'mood', val); renderDaily(); }
-function getEnergy(dateStr) { return _getDailyField(dateStr, 'energy'); }
-function setEnergy(dateStr, val) { dbSaveDaily(dateStr, 'energy', val); renderDaily(); }
+// Legacy single-value getters (return AM value, or legacy 'mood'/'energy' for old data)
+function getMood(dateStr) { return _getDailyField(dateStr, 'mood_am') || _getDailyField(dateStr, 'mood'); }
+function getEnergy(dateStr) { return _getDailyField(dateStr, 'energy_am') || _getDailyField(dateStr, 'energy'); }
+// AM/PM getters
+function getMoodAM(dateStr) { return _getDailyField(dateStr, 'mood_am') || _getDailyField(dateStr, 'mood'); }
+function getMoodPM(dateStr) { return _getDailyField(dateStr, 'mood_pm'); }
+function getEnergyAM(dateStr) { return _getDailyField(dateStr, 'energy_am') || _getDailyField(dateStr, 'energy'); }
+function getEnergyPM(dateStr) { return _getDailyField(dateStr, 'energy_pm'); }
+// AM/PM setters
+function setMoodAM(dateStr, val) { dbSaveDaily(dateStr, 'mood_am', val); dbSaveDaily(dateStr, 'mood', val); renderDaily(); }
+function setMoodPM(dateStr, val) { dbSaveDaily(dateStr, 'mood_pm', val); renderDaily(); }
+function setEnergyAM(dateStr, val) { dbSaveDaily(dateStr, 'energy_am', val); dbSaveDaily(dateStr, 'energy', val); renderDaily(); }
+function setEnergyPM(dateStr, val) {
+  dbSaveDaily(dateStr, 'energy_pm', val);
+  renderDaily();
+  // Low energy check happens in buildTrackingSection via banner
+}
+// Legacy setters (map to AM)
+function setMood(dateStr, val) { setMoodAM(dateStr, val); }
+function setEnergy(dateStr, val) { setEnergyAM(dateStr, val); }
 function getSleep(dateStr) { return _getDailyField(dateStr, 'sleep'); }
 function setSleep(dateStr, val) { dbSaveDaily(dateStr, 'sleep', val); renderDaily(); }
 function getWeight(dateStr) { return _getDailyField(dateStr, 'weight'); }
@@ -4278,26 +4795,101 @@ function toggleRating(dateStr, rKey, val, routineKey) {
 // ══════════════════════════════════════════════
 // TRACKING SECTION (Mood/Energy/Sleep/Weight)
 // ══════════════════════════════════════════════
+
+// Two-tap AM/PM system for mood & energy:
+//   Tap 1 on a number → sets AM (filled dot)
+//   Tap 2 on the SAME number → sets PM (outlined ring), AM stays
+//   Tap 3 on the same → clears both AM and PM
+//   Tap on a DIFFERENT number:
+//     - If no PM yet: changes AM to new number
+//     - If AM is set and PM is not for that number: sets PM to new number
+function tapMood(dateStr, i) {
+  const am = getMoodAM(dateStr);
+  const pm = getMoodPM(dateStr);
+  if (am === i && pm === i) {
+    // 3rd tap on same: clear both
+    setMoodAM(dateStr, 0); setMoodPM(dateStr, 0);
+  } else if (am === i && !pm) {
+    // 2nd tap on AM: set PM
+    setMoodPM(dateStr, i);
+  } else if (am && pm && pm !== i) {
+    // PM exists, tapping different number: change PM
+    setMoodPM(dateStr, i);
+  } else if (am && !pm && am !== i) {
+    // AM set, no PM, different number: this becomes PM
+    setMoodPM(dateStr, i);
+  } else if (pm === i) {
+    // Tapping on a PM-active dot: clear PM
+    setMoodPM(dateStr, 0);
+  } else {
+    // No AM or fresh: set AM
+    setMoodAM(dateStr, i);
+  }
+}
+
+function tapEnergy(dateStr, i) {
+  const am = getEnergyAM(dateStr);
+  const pm = getEnergyPM(dateStr);
+  if (am === i && pm === i) {
+    setEnergyAM(dateStr, 0); setEnergyPM(dateStr, 0);
+  } else if (am === i && !pm) {
+    setEnergyPM(dateStr, i);
+  } else if (am && pm && pm !== i) {
+    setEnergyPM(dateStr, i);
+  } else if (am && !pm && am !== i) {
+    setEnergyPM(dateStr, i);
+  } else if (pm === i) {
+    setEnergyPM(dateStr, 0);
+  } else {
+    setEnergyAM(dateStr, i);
+  }
+}
+
 function buildTrackingSection(dateStr) {
-  const mood = getMood(dateStr);
-  const energy = getEnergy(dateStr);
+  const moodAM = getMoodAM(dateStr);
+  const moodPM = getMoodPM(dateStr);
+  const energyAM = getEnergyAM(dateStr);
+  const energyPM = getEnergyPM(dateStr);
   const sleep = getSleep(dateStr);
 
-  // Mood dots (1-10)
-  const moodColor = mood >= 7 ? 'var(--green)' : mood >= 4 ? 'var(--orange)' : mood > 0 ? 'var(--red)' : 'var(--text-muted)';
+  // Mood color based on best of AM/PM
+  const moodBest = Math.max(moodAM || 0, moodPM || 0);
+  const moodColor = moodBest >= 7 ? 'var(--green)' : moodBest >= 4 ? 'var(--orange)' : moodBest > 0 ? 'var(--red)' : 'var(--text-muted)';
+
   let moodDots = '';
   for (let i = 1; i <= 10; i++) {
-    const active = mood === i;
-    moodDots += `<div class="track-dot ${active ? 'mood-active' : ''}" onclick="setMood('${dateStr}',${mood === i ? 0 : i})">${i}</div>`;
+    const isAM = moodAM === i;
+    const isPM = moodPM === i;
+    let cls = '';
+    if (isAM && isPM) cls = 'mood-both';
+    else if (isAM) cls = 'mood-active';
+    else if (isPM) cls = 'mood-pm-active';
+    moodDots += `<div class="track-dot ${cls}" onclick="tapMood('${dateStr}',${i})">${i}</div>`;
   }
 
-  // Energy dots (1-10)
-  const energyColor = energy >= 7 ? 'var(--cyan)' : energy >= 4 ? 'var(--orange)' : energy > 0 ? 'var(--red)' : 'var(--text-muted)';
+  // Mood AM/PM labels
+  const moodLabel = (moodAM && moodPM) ? `Mood <span style="font-size:7px;opacity:0.6">☀️${moodAM} 🌙${moodPM}</span>` :
+    moodAM ? `Mood <span style="font-size:7px;opacity:0.6">☀️${moodAM}</span>` :
+    moodPM ? `Mood <span style="font-size:7px;opacity:0.6">🌙${moodPM}</span>` : 'Mood';
+
+  // Energy color based on best
+  const energyBest = Math.max(energyAM || 0, energyPM || 0);
+  const energyColor = energyBest >= 7 ? 'var(--cyan)' : energyBest >= 4 ? 'var(--orange)' : energyBest > 0 ? 'var(--red)' : 'var(--text-muted)';
+
   let energyDots = '';
   for (let i = 1; i <= 10; i++) {
-    const active = energy === i;
-    energyDots += `<div class="track-dot ${active ? 'energy-active' : ''}" onclick="setEnergy('${dateStr}',${energy === i ? 0 : i})">${i}</div>`;
+    const isAM = energyAM === i;
+    const isPM = energyPM === i;
+    let cls = '';
+    if (isAM && isPM) cls = 'energy-both';
+    else if (isAM) cls = 'energy-active';
+    else if (isPM) cls = 'energy-pm-active';
+    energyDots += `<div class="track-dot ${cls}" onclick="tapEnergy('${dateStr}',${i})">${i}</div>`;
   }
+
+  const energyLabel = (energyAM && energyPM) ? `Energy <span style="font-size:7px;opacity:0.6">☀️${energyAM} 🌙${energyPM}</span>` :
+    energyAM ? `Energy <span style="font-size:7px;opacity:0.6">☀️${energyAM}</span>` :
+    energyPM ? `Energy <span style="font-size:7px;opacity:0.6">🌙${energyPM}</span>` : 'Energy';
 
   // Sleep — tappable half-hour increments 4h-10h
   const sleepOptions = [4,5,5.5,6,6.5,7,7.5,8,9,10];
@@ -4309,20 +4901,32 @@ function buildTrackingSection(dateStr) {
     sleepDots += `<div class="track-dot ${active ? 'active' : ''}" style="${active ? 'background:'+sleepColor+';border-color:'+sleepColor : ''}" onclick="setSleep('${dateStr}',${sleep === h ? 0 : h})">${label}</div>`;
   });
 
+  // Low PM energy banner
+  let energyBanner = '';
+  if (energyPM && energyPM < 6) {
+    const custody = custodyType(dateStr);
+    const isGymDay = custody === 'L'; // L = Lisa has kids = Craig is free
+    const bannerMsg = isGymDay
+      ? "Your PM energy is low — hit the gym and turn it around! 💪"
+      : "Your PM energy is low — get moving! A walk, bodyweight circuit, or play with the kids will boost it. 🏃";
+    energyBanner = `<div class="low-energy-banner"><span class="banner-icon">⚡</span><span class="banner-text">${bannerMsg}</span></div>`;
+  }
+
   return `
     <div class="tracking-section">
       <div class="track-row">
-        <span class="track-label" style="color:${moodColor}">Mood</span>
+        <span class="track-label" style="color:${moodColor}">${moodLabel}</span>
         <div class="track-dots">${moodDots}</div>
       </div>
       <div class="track-row">
-        <span class="track-label" style="color:${energyColor}">Energy</span>
+        <span class="track-label" style="color:${energyColor}">${energyLabel}</span>
         <div class="track-dots">${energyDots}</div>
       </div>
       <div class="track-row">
         <span class="track-label" style="color:${sleepColor}">Sleep</span>
         <div class="track-dots">${sleepDots}</div>
       </div>
+      ${energyBanner}
     </div>`;
 }
 
@@ -4330,6 +4934,28 @@ function buildTrackingSection(dateStr) {
 // POPUP SYSTEM
 // ══════════════════════════════════════════════
 function openRoutinePopup(routineKey, dateStr) {
+  // Handle combined stretch + bodyweight days
+  if (routineKey === 'stretch_bodyweight' || routineKey === 'stretch_day') {
+    const strR = STRETCH_ROTATION[dateStr] || 'A';
+    const stretchKey = 'stretch_' + strR;
+    const stretchRoutine = ROUTINES[stretchKey];
+    if (routineKey === 'stretch_bodyweight' && stretchRoutine) {
+      const bwRoutine = ROUTINES['bodyweight'];
+      // Build combined routine on the fly
+      const combined = {
+        title: '🧘 Stretch ' + strR + ' + 💪 Bodyweight',
+        exercises: [
+          ...stretchRoutine.exercises.map(e => ({ ...e, _section: 'stretch' })),
+          { name: '── Bodyweight Circuit ──', sets: '', detail: 'Complete after stretching', _divider: true },
+          ...bwRoutine.exercises.map(e => ({ ...e, _section: 'bodyweight' }))
+        ]
+      };
+      return openRoutinePopupWithData('stretch_bodyweight', combined, dateStr, true);
+    }
+    // Plain stretch day — open the stretch routine
+    if (stretchRoutine) return openRoutinePopup(stretchKey, dateStr);
+    return;
+  }
   const routine = ROUTINES[routineKey];
   if (!routine) return;
   const checked = getChecked(dateStr);
@@ -4380,6 +5006,53 @@ function openRoutinePopup(routineKey, dateStr) {
     }).join('') +
     '</div>' +
     (routineKey === 'gym' ? buildGymExtras(dateStr, exSets) : '') +
+    '<div class="notes-section">' +
+      '<div class="notes-label">Notes for ' + dateStr + '</div>' +
+      '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
+    '</div>';
+  document.getElementById('popup-backdrop').classList.add('open');
+}
+
+function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
+  const checked = getChecked(dateStr);
+  const prefix = 'r_' + routineKey + '_';
+  const exSets = isTrackable ? getExSets(dateStr) : {};
+
+  document.getElementById('popup-title').textContent = routine.title;
+  const ratings = getRatings(dateStr);
+  document.getElementById('popup-body').innerHTML =
+    '<div class="exercise-list">' +
+    routine.exercises.map((ex, i) => {
+      if (ex._divider) {
+        return `<div style="margin:12px 0 6px;padding:8px 0 4px;border-top:2px solid var(--purple-border);font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px">${ex.name}</div>`;
+      }
+      const key = prefix + i;
+      const done = checked[key] ? 'done' : '';
+      const rKey = routineKey + '_' + i;
+      const rating = ratings[rKey];
+      const exKey = routineKey + '_' + i;
+      const setData = exSets[exKey] || {};
+      const showBwTrack = ex.trackReps;
+      return `
+        <div class="exercise-item ${done}">
+          <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
+          <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
+            <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
+            <div class="ex-detail">${ex.detail}</div>
+            ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
+            ${showBwTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
+              <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
+              <span class="wlog-unit">reps</span>
+            </div>` : ''}
+          </div>
+          <div style="display:flex;gap:2px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation()">
+            <span class="rating-btn ${rating === -1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',-1,'${routineKey}')">😞</span>
+            <span class="rating-btn ${rating === 0 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',0,'${routineKey}')">😐</span>
+            <span class="rating-btn ${rating === 1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',1,'${routineKey}')">😊</span>
+          </div>
+        </div>`;
+    }).join('') +
+    '</div>' +
     '<div class="notes-section">' +
       '<div class="notes-label">Notes for ' + dateStr + '</div>' +
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
@@ -4477,6 +5150,8 @@ function getRoutineKey(wo) {
   if (wo.type === 'bodyweight') return 'bodyweight';
   if (wo.type === 'row' && wo.label.includes('Interval')) return 'row_intervals';
   if (wo.type === 'row') return 'row_steady';
+  if (wo.type === 'stretch' && wo.label && wo.label.toLowerCase().includes('bodyweight')) return 'stretch_bodyweight';
+  if (wo.type === 'stretch') return 'stretch_day';
   return null;
 }
 
