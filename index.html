@@ -1107,7 +1107,7 @@
   }
   .low-energy-banner .banner-icon { font-size: 18px; }
   .low-energy-banner .banner-text { flex: 1; line-height: 1.4; }
-  /* Countdown timer for timed exercises */
+  /* Countdown timer — inline button */
   .ex-timer-btn {
     display: inline-flex; align-items: center; justify-content: center;
     width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
@@ -1116,26 +1116,48 @@
     margin-right: 6px;
   }
   .ex-timer-btn:hover { background: var(--cyan); color: var(--bg); }
-  .ex-timer-btn.running {
-    background: var(--green-bg); border-color: var(--green); color: var(--green);
-    animation: timer-pulse 1s ease-in-out infinite;
+  .ex-timer-btn.running { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+
+  /* Full-screen timer overlay */
+  .timer-overlay {
+    position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.95);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; user-select: none; -webkit-user-select: none;
+    opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
   }
-  .ex-timer-btn.done {
-    background: var(--orange-bg); border-color: var(--orange); color: var(--orange);
-    animation: timer-flash 0.4s ease-in-out 3;
+  .timer-overlay.open { opacity: 1; visibility: visible; }
+  .timer-overlay .timer-exercise-name {
+    font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.7);
+    margin-bottom: 12px; text-align: center; padding: 0 20px;
+    max-width: 90vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
-  .ex-timer-countdown {
-    font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    min-width: 36px; text-align: center; color: var(--green);
-    margin-right: 4px; flex-shrink: 0;
+  .timer-overlay .timer-big-number {
+    font-size: min(40vw, 200px); font-weight: 900; line-height: 1;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+    color: var(--green, #22c55e); transition: color 0.3s;
   }
-  .ex-timer-countdown.warning { color: var(--orange); }
-  .ex-timer-countdown.critical { color: var(--red); animation: timer-flash 0.5s ease-in-out infinite; }
-  .ex-timer-bar {
-    height: 3px; border-radius: 2px; background: var(--green); transition: width 0.3s linear;
-    margin-top: 2px;
+  .timer-overlay .timer-big-number.leadin { color: rgba(255,255,255,0.6); }
+  .timer-overlay .timer-big-number.warning { color: var(--orange, #f59e0b); }
+  .timer-overlay .timer-big-number.critical { color: var(--red, #ef4444); animation: timer-flash 0.5s ease-in-out infinite; }
+  .timer-overlay .timer-big-number.done { color: var(--green, #22c55e); animation: timer-flash 0.4s ease-in-out 3; }
+  .timer-overlay .timer-label {
+    font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5);
+    margin-top: 16px; text-transform: uppercase; letter-spacing: 2px;
   }
-  @keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .timer-overlay .timer-progress-ring {
+    position: absolute; width: min(70vw, 340px); height: min(70vw, 340px);
+  }
+  .timer-overlay .timer-progress-ring circle {
+    fill: none; stroke-width: 6; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: center;
+  }
+  .timer-overlay .timer-progress-ring .ring-bg { stroke: rgba(255,255,255,0.08); }
+  .timer-overlay .timer-progress-ring .ring-fg { stroke: var(--green, #22c55e); transition: stroke-dashoffset 0.3s linear, stroke 0.3s; }
+  .timer-overlay .timer-cancel {
+    position: absolute; bottom: max(40px, env(safe-area-inset-bottom, 20px));
+    font-size: 14px; color: rgba(255,255,255,0.4); font-weight: 600;
+  }
   @keyframes timer-flash { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
   .row-adjust-banner {
     margin-top: 6px; margin-bottom: 4px; padding: 8px 12px; border-radius: 8px;
@@ -1426,6 +1448,16 @@
 </div>
 
 <!-- ═══════════════ POPUP OVERLAY ═══════════════ -->
+<div class="timer-overlay" id="timer-overlay" onclick="stopExTimer()">
+  <svg class="timer-progress-ring" viewBox="0 0 200 200">
+    <circle class="ring-bg" cx="100" cy="100" r="90"/>
+    <circle class="ring-fg" id="timer-ring" cx="100" cy="100" r="90" stroke-dasharray="565.5" stroke-dashoffset="0"/>
+  </svg>
+  <div class="timer-exercise-name" id="timer-ex-name"></div>
+  <div class="timer-big-number" id="timer-big">45</div>
+  <div class="timer-label" id="timer-label">GET READY</div>
+  <div class="timer-cancel">tap anywhere to cancel</div>
+</div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
   <div class="popup">
     <div class="popup-header">
@@ -1616,6 +1648,50 @@ async function doLogout() {
 async function startDashboard() {
   await migrateLocalStorage();
   await refreshData();
+}
+
+// Load routines/exercises from Supabase → overwrite hardcoded ROUTINES
+async function loadRoutinesFromDB() {
+  if (!sbReady) return false;
+  try {
+    const { data: routines, error: rErr } = await sb.from('routines').select('*').order('sort_order');
+    if (rErr) throw rErr;
+    if (!routines || routines.length === 0) return false;
+
+    const { data: exercises, error: eErr } = await sb.from('routine_exercises').select('*').order('sort_order');
+    if (eErr) throw eErr;
+
+    // Group exercises by routine_id
+    const byRoutine = {};
+    (exercises || []).forEach(ex => {
+      if (!byRoutine[ex.routine_id]) byRoutine[ex.routine_id] = [];
+      byRoutine[ex.routine_id].push({
+        name: ex.name,
+        sets: ex.sets || '',
+        detail: ex.detail || '',
+        link: ex.link || '',
+        _divider: ex.is_divider || false,
+        _optional: ex.is_optional || false,
+        trackReps: ex.track_reps || false
+      });
+    });
+
+    // Overwrite ROUTINES entries
+    routines.forEach(r => {
+      if (byRoutine[r.id]) {
+        ROUTINES[r.id] = {
+          title: r.title,
+          exercises: byRoutine[r.id]
+        };
+      }
+    });
+
+    console.log('Routines loaded from Supabase: ' + routines.length + ' routines, ' + (exercises || []).length + ' exercises');
+    return true;
+  } catch(e) {
+    console.warn('Supabase routines load failed, using hardcoded', e);
+    return false;
+  }
 }
 
 // Load all schedule data from Supabase (replaces CSV loading)
@@ -4431,7 +4507,7 @@ const ROUTINES = {
       { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex. Wakes up the ankles." },
       // — ALL FOURS (roll over, transition through hands & knees) —
       { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow, sync with breath." },
-      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "While on all fours — circles both directions, then palms together press down gently." },
+      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arms out, rotate wrists 10 each way. Then palms together prayer position, slowly lower hands toward waist, hold 20s." },
       // — STANDING (rise up, open the upper body) —
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall. Slow, full range. Loosens up after sleeping." },
       { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
@@ -4451,6 +4527,10 @@ const ROUTINES = {
       { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
       { name: "Cat-Cow on Floor", sets: "10 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, breathe with movement" },
       { name: "Child's Pose", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, forehead to floor" },
+      { name: "── Optional ──", sets: "", detail: "", _divider: true },
+      { name: "Wrist Circles + Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Rotate wrists both ways, then palms together prayer position, lower toward waist", _optional: true },
+      { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest — opens up after floor work", _optional: true },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
   },
   stretch_B: {
@@ -4464,6 +4544,10 @@ const ROUTINES = {
       { name: "Wrist Flexor/Extensor Stretch", sets: "20s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arm straight, pull fingers back/forward" },
       { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
       { name: "Child's Pose (wide knee)", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Knees wide, reach long" },
+      { name: "── Optional ──", sets: "", detail: "", _divider: true },
+      { name: "Wrist Flexor/Extensor Stretch", sets: "20s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arm straight, pull fingers back then forward", _optional: true },
+      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Slow, full range — nice cool-down for upper body day", _optional: true },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
   },
   stretch_C: {
@@ -4477,6 +4561,10 @@ const ROUTINES = {
       { name: "Scorpion Stretch", sets: "5 each side", link: "https://www.youtube.com/watch?v=NKmUc6KslDY", detail: "Face down, cross foot over" },
       { name: "Seated Butterfly", sets: "45s hold", link: "https://www.youtube.com/watch?v=4xweyzS7Rno", detail: "Soles together, lean forward" },
       { name: "Supine Full Body Stretch", sets: "30s hold", link: "", detail: "Arms overhead, toes pointed, lengthen" },
+      { name: "── Optional ──", sets: "", detail: "", _divider: true },
+      { name: "Wrist Circles + Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Rotate wrists both ways, then palms together prayer position, lower toward waist", _optional: true },
+      { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest — finishes off the upper body", _optional: true },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
   },
   gym: {
@@ -5007,49 +5095,73 @@ function parseTimerSeconds(setsStr) {
   return 0;
 }
 
+const _timerOverlay = () => document.getElementById('timer-overlay');
+const _timerBig = () => document.getElementById('timer-big');
+const _timerLabel = () => document.getElementById('timer-label');
+const _timerRing = () => document.getElementById('timer-ring');
+const _timerExName = () => document.getElementById('timer-ex-name');
+const RING_CIRCUMFERENCE = 2 * Math.PI * 90; // ~565.5
+
 function startExTimer(seconds, btnEl) {
-  // If already running on this button, stop it
-  if (_activeTimer && _activeTimer.btnEl === btnEl) {
-    stopExTimer();
-    return;
-  }
-  // Stop any other running timer
-  if (_activeTimer) stopExTimer();
+  // If already running, stop
+  if (_activeTimer) { stopExTimer(); return; }
 
-  const countdownEl = btnEl.parentElement.querySelector('.ex-timer-countdown');
-  const barEl = btnEl.parentElement.querySelector('.ex-timer-bar');
+  // Get the exercise name from the row
+  const exItem = btnEl.closest('.exercise-item');
+  const exNameEl = exItem ? exItem.querySelector('.ex-name') : null;
+  const exName = exNameEl ? exNameEl.textContent.split(/\d+s|\d+\s*min/)[0].trim() : '';
+
   btnEl.classList.add('running');
-  countdownEl.style.display = '';
 
-  // 5-second lead-in countdown
+  // Open full-screen overlay
+  const overlay = _timerOverlay();
+  const big = _timerBig();
+  const label = _timerLabel();
+  const ring = _timerRing();
+  const nameEl = _timerExName();
+
+  nameEl.textContent = exName;
+  big.className = 'timer-big-number leadin';
+  label.textContent = 'GET READY';
+  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ring.style.strokeDashoffset = '0';
+  ring.style.stroke = 'rgba(255,255,255,0.2)';
+  overlay.classList.add('open');
+
+  // Keep screen awake if possible
+  let wakeLock = null;
+  if (navigator.wakeLock) {
+    navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+  }
+
+  // 5-second lead-in
   let leadIn = 5;
-  countdownEl.textContent = leadIn + '…';
-  countdownEl.className = 'ex-timer-countdown warning';
-  btnEl.textContent = leadIn;
+  big.textContent = leadIn;
 
   const leadInterval = setInterval(() => {
     leadIn--;
     if (leadIn > 0) {
-      countdownEl.textContent = leadIn + '…';
-      btnEl.textContent = leadIn;
-      // Short vibrate tick each second
+      big.textContent = leadIn;
       if (navigator.vibrate) navigator.vibrate(50);
     } else {
       clearInterval(leadInterval);
-      // Double vibrate to signal GO
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      _runExTimer(seconds, btnEl, countdownEl, barEl);
+      _runExTimer(seconds, btnEl, wakeLock);
     }
   }, 1000);
 
-  // Store lead-in so stopExTimer can clear it
-  _activeTimer = { interval: leadInterval, btnEl, countdownEl, barEl, total: seconds, isLeadIn: true };
+  _activeTimer = { interval: leadInterval, btnEl, total: seconds, isLeadIn: true, wakeLock };
 }
 
-function _runExTimer(seconds, btnEl, countdownEl, barEl) {
+function _runExTimer(seconds, btnEl, wakeLock) {
   const total = seconds;
-  btnEl.textContent = '⏸';
-  if (barEl) barEl.style.display = '';
+  const big = _timerBig();
+  const label = _timerLabel();
+  const ring = _timerRing();
+
+  big.className = 'timer-big-number';
+  label.textContent = 'HOLD';
+  ring.style.stroke = 'var(--green, #22c55e)';
 
   const startTime = Date.now();
   const endTime = startTime + total * 1000;
@@ -5058,69 +5170,81 @@ function _runExTimer(seconds, btnEl, countdownEl, barEl) {
     const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
     const mins = Math.floor(remaining / 60);
     const secs = remaining % 60;
-    countdownEl.textContent = mins > 0 ? mins + ':' + String(secs).padStart(2, '0') : remaining + 's';
-    countdownEl.className = 'ex-timer-countdown' +
+
+    big.textContent = mins > 0 ? mins + ':' + String(secs).padStart(2, '0') : remaining;
+    big.className = 'timer-big-number' +
       (remaining <= 3 ? ' critical' : remaining <= 10 ? ' warning' : '');
-    if (barEl) {
-      const pct = Math.max(0, remaining / total * 100);
-      barEl.style.width = pct + '%';
-      barEl.style.background = remaining <= 3 ? 'var(--red)' : remaining <= 10 ? 'var(--orange)' : 'var(--green)';
-    }
+
+    // Progress ring
+    const pct = remaining / total;
+    ring.style.strokeDashoffset = (1 - pct) * RING_CIRCUMFERENCE;
+    ring.style.stroke = remaining <= 3 ? 'var(--red, #ef4444)' : remaining <= 10 ? 'var(--orange, #f59e0b)' : 'var(--green, #22c55e)';
+
+    // Label updates
+    if (remaining <= 3 && remaining > 0) label.textContent = 'ALMOST';
+    else if (remaining <= 10) label.textContent = 'KEEP GOING';
+
     if (remaining <= 0) {
-      timerDone(btnEl, countdownEl, barEl);
+      timerDone(btnEl, wakeLock);
     }
   }
 
   tick();
   const interval = setInterval(tick, 250);
-  _activeTimer = { interval, endTime, btnEl, countdownEl, barEl, total, isLeadIn: false };
+  _activeTimer = { interval, endTime, btnEl, total, isLeadIn: false, wakeLock };
 }
 
 function stopExTimer() {
   if (!_activeTimer) return;
   clearInterval(_activeTimer.interval);
-  const { btnEl, countdownEl, barEl } = _activeTimer;
-  btnEl.classList.remove('running');
-  btnEl.textContent = '⏱';
-  countdownEl.style.display = 'none';
-  if (barEl) barEl.style.display = 'none';
+  if (_activeTimer.wakeLock) { try { _activeTimer.wakeLock.release(); } catch(e) {} }
+  _activeTimer.btnEl.classList.remove('running');
+  _activeTimer.btnEl.textContent = '⏱';
+  _timerOverlay().classList.remove('open');
   _activeTimer = null;
 }
 
-function timerDone(btnEl, countdownEl, barEl) {
+function timerDone(btnEl, wakeLock) {
   if (_activeTimer) clearInterval(_activeTimer.interval);
+  const big = _timerBig();
+  const label = _timerLabel();
+  const ring = _timerRing();
+
+  big.textContent = '✓';
+  big.className = 'timer-big-number done';
+  label.textContent = 'DONE';
+  ring.style.strokeDashoffset = RING_CIRCUMFERENCE;
+  ring.style.stroke = 'var(--green, #22c55e)';
+
   btnEl.classList.remove('running');
-  btnEl.classList.add('done');
   btnEl.textContent = '✓';
-  countdownEl.textContent = 'Done!';
-  countdownEl.className = 'ex-timer-countdown';
-  countdownEl.style.color = 'var(--green)';
-  if (barEl) { barEl.style.width = '0%'; }
-  // Vibrate on mobile if available
+
+  // Vibrate
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
-  // Play a tone if AudioContext is available
+  // Audio beep
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.25, 0.5].forEach(delay => {
+    [0, 0.3, 0.6].forEach(delay => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       osc.frequency.value = 880;
       osc.type = 'sine';
-      gain.gain.value = 0.15;
+      gain.gain.value = 0.2;
       osc.start(ctx.currentTime + delay);
-      osc.stop(ctx.currentTime + delay + 0.15);
+      osc.stop(ctx.currentTime + delay + 0.2);
     });
   } catch(e) {}
-  // Reset after 3 seconds
+
+  // Close overlay after 2 seconds, reset button after 3
   setTimeout(() => {
-    btnEl.classList.remove('done');
+    _timerOverlay().classList.remove('open');
+  }, 2000);
+  setTimeout(() => {
     btnEl.textContent = '⏱';
-    countdownEl.style.display = 'none';
-    countdownEl.style.color = '';
+    if (wakeLock) { try { wakeLock.release(); } catch(e) {} }
     _activeTimer = null;
   }, 3000);
-  _activeTimer = null;
 }
 
 // ══════════════════════════════════════════════
@@ -5161,6 +5285,9 @@ function openRoutinePopup(routineKey, dateStr) {
   document.getElementById('popup-body').innerHTML =
     '<div class="exercise-list">' +
     routine.exercises.map((ex, i) => {
+      if (ex._divider) {
+        return `<div style="margin:12px 0 6px;padding:8px 0 4px;border-top:2px solid var(--purple-border);font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px">${ex.name}</div>`;
+      }
       const key = prefix + i;
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
@@ -5171,7 +5298,7 @@ function openRoutinePopup(routineKey, dateStr) {
       const showGymTrack = routineKey === 'gym' && ex.sets && !ex.name.toLowerCase().includes('cooldown');
       const showBwTrack = ex.trackReps || (routineKey === 'bodyweight' && ex.sets);
       const timerSecs = parseTimerSeconds(ex.sets);
-      const timerHtml = timerSecs > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs},this)">⏱</div><div class="ex-timer-countdown" style="display:none"></div></div>` : '';
+      const timerHtml = timerSecs > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs},this)">⏱</div></div>` : '';
       return `
         <div class="exercise-item ${done}">
           ${timerHtml}
@@ -5180,7 +5307,6 @@ function openRoutinePopup(routineKey, dateStr) {
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
-            ${timerSecs > 0 ? '<div class="ex-timer-bar" style="display:none;width:100%"></div>' : ''}
             ${showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
               <input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" style="width:44px" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)">
               <span class="wlog-unit">lbs</span>
@@ -5231,7 +5357,7 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       const setData = exSets[exKey] || {};
       const showBwTrack = ex.trackReps;
       const timerSecs2 = parseTimerSeconds(ex.sets);
-      const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div><div class="ex-timer-countdown" style="display:none"></div></div>` : '';
+      const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div></div>` : '';
       return `
         <div class="exercise-item ${done}">
           ${timerHtml2}
@@ -5240,7 +5366,6 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
-            ${timerSecs2 > 0 ? '<div class="ex-timer-bar" style="display:none;width:100%"></div>' : ''}
             ${showBwTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
               <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
               <span class="wlog-unit">reps</span>
@@ -6214,6 +6339,8 @@ function changeMonth(delta) { currentMonthOffset += delta; renderMonth(); update
 // ── Refresh ──
 async function refreshData(btn) {
   if (btn) { btn.classList.add('spinning'); }
+  // Load exercises from Supabase (falls back to hardcoded ROUTINES)
+  await loadRoutinesFromDB();
   // Try Supabase first, then CSV, then fallback
   const dbLoaded = await loadScheduleFromDB();
   if (!dbLoaded) {
