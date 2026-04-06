@@ -1107,6 +1107,45 @@
   }
   .low-energy-banner .banner-icon { font-size: 18px; }
   .low-energy-banner .banner-text { flex: 1; line-height: 1.4; }
+  /* Countdown timer for timed exercises */
+  .ex-timer-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: var(--cyan-bg); border: 1px solid var(--cyan-border, var(--input-border));
+    color: var(--cyan); font-size: 12px; cursor: pointer; transition: all 0.2s;
+    margin-right: 6px;
+  }
+  .ex-timer-btn:hover { background: var(--cyan); color: var(--bg); }
+  .ex-timer-btn.running {
+    background: var(--green-bg); border-color: var(--green); color: var(--green);
+    animation: timer-pulse 1s ease-in-out infinite;
+  }
+  .ex-timer-btn.done {
+    background: var(--orange-bg); border-color: var(--orange); color: var(--orange);
+    animation: timer-flash 0.4s ease-in-out 3;
+  }
+  .ex-timer-countdown {
+    font-size: 13px; font-weight: 800; font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    min-width: 36px; text-align: center; color: var(--green);
+    margin-right: 4px; flex-shrink: 0;
+  }
+  .ex-timer-countdown.warning { color: var(--orange); }
+  .ex-timer-countdown.critical { color: var(--red); animation: timer-flash 0.5s ease-in-out infinite; }
+  .ex-timer-bar {
+    height: 3px; border-radius: 2px; background: var(--green); transition: width 0.3s linear;
+    margin-top: 2px;
+  }
+  @keyframes timer-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
+  @keyframes timer-flash { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .row-adjust-banner {
+    margin-top: 6px; margin-bottom: 4px; padding: 8px 12px; border-radius: 8px;
+    background: linear-gradient(135deg, rgba(255,165,0,0.12), rgba(255,220,100,0.12));
+    border: 1px solid var(--orange-border);
+    font-size: 11px; color: var(--orange); display: flex; align-items: flex-start; gap: 8px;
+  }
+  .row-adjust-banner .banner-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .row-adjust-banner .banner-text { flex: 1; line-height: 1.4; }
+  .row-adjust-banner .original-plan { font-size: 9px; color: var(--text-muted); margin-top: 3px; font-style: italic; }
   .track-val {
     font-size: 12px; font-weight: 700; min-width: 20px; text-align: right;
   }
@@ -1475,9 +1514,9 @@
       <div class="stats-tabs" id="stats-tabs" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch">
         <button class="stats-tab active" data-tab="overview" onclick="switchStatsTab('overview')">📊 Overview</button>
         <button class="stats-tab" data-tab="rowing" onclick="switchStatsTab('rowing')">🚣 Rowing</button>
+        <button class="stats-tab" data-tab="cardio" onclick="switchStatsTab('cardio')">🏃 Cardio</button>
         <button class="stats-tab" data-tab="exercise" onclick="switchStatsTab('exercise')">🏋️ Exercise</button>
         <button class="stats-tab" data-tab="recovery" onclick="switchStatsTab('recovery')">🧘 Recovery</button>
-        <button class="stats-tab" data-tab="cardio" onclick="switchStatsTab('cardio')">🏃 Cardio</button>
         <button class="stats-tab" data-tab="health" onclick="switchStatsTab('health')"> Health</button>
       </div>
     </div>
@@ -4386,16 +4425,19 @@ const ROUTINES = {
   morning: {
     title: "Morning Stretch — ~10 Min (Egoscue-Inspired)",
     exercises: [
+      // — LYING (start on your back, wake up the nervous system) —
+      { name: "Core Breathing (Diaphragmatic)", sets: "5 breaths", link: "https://www.youtube.com/watch?v=YauKps6MGIE", detail: "Hand on belly — inhale expand 4s, hold 4s, exhale slow 6s. Ease into the day." },
       { name: "Static Back (Egoscue)", sets: "3–5 min", link: "https://www.youtube.com/watch?v=It7Vs5Y6gDw", detail: "Legs on chair/bed, arms 45° palms up. Let gravity reset your spine." },
-      { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex." },
-      { name: "Standing Arm Circles (Egoscue)", sets: "25 forward + 25 back", link: "https://www.youtube.com/watch?v=K0M_Bi-OgJ0", detail: "Fists at temples, elbows tight circles. Resets shoulders." },
+      { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex. Wakes up the ankles." },
+      // — ALL FOURS (roll over, transition through hands & knees) —
+      { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow, sync with breath." },
+      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "While on all fours — circles both directions, then palms together press down gently." },
+      // — STANDING (rise up, open the upper body) —
+      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall. Slow, full range. Loosens up after sleeping." },
       { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
-      { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace fingers overhead, palms up, lengthen and breathe." },
-      { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow." },
-      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Slow, full range" },
-      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Seated or standing — good for your ankle rehab" },
-      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Circles both directions, then palms together press down gently" },
-      { name: "Core Breathing (Diaphragmatic)", sets: "5 breaths", link: "https://www.youtube.com/watch?v=YauKps6MGIE", detail: "Hand on belly — inhale expand 4s, hold 4s, exhale slow 6s" },
+      { name: "Standing Arm Circles (Egoscue)", sets: "25 forward + 25 back", link: "https://www.youtube.com/watch?v=K0M_Bi-OgJ0", detail: "Arms straight out at shoulder height, palms down. Small circles, gradually bigger. Resets shoulder girdle." },
+      { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace fingers overhead, palms up, lengthen and breathe. Big stretch to finish." },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Hand on wall for balance — good for your ankle rehab. Last move before you go." },
     ]
   },
   stretch_A: {
@@ -4459,6 +4501,15 @@ const ROUTINES = {
       { name: "Steady State Row", sets: "See daily target", link: "https://www.youtube.com/watch?v=zQ82RYIFLN8", detail: "Keep pace 2:30-2:40/500m, smooth strokes" },
       { name: "Focus: Drive sequence", sets: "", link: "https://www.youtube.com/watch?v=4zWu1yuJ0_g", detail: "Legs → lean back → pull arms" },
       { name: "Cool-down", sets: "1 min easy", link: "", detail: "Slow strokes, let HR come down" },
+    ]
+  },
+  row_maintenance: {
+    title: "Row — Maintenance (Auto-Adjusted)",
+    exercises: [
+      { name: "Easy warm-up row", sets: "2 min", link: "https://www.youtube.com/watch?v=zQ82RYIFLN8", detail: "Very light pressure. Wake up the movement pattern." },
+      { name: "Maintenance Row", sets: "8–12 min easy", link: "https://www.youtube.com/watch?v=zQ82RYIFLN8", detail: "Stay at 2:30–2:45/500m. Conversational pace. This is active recovery." },
+      { name: "Focus: Recovery form", sets: "", link: "https://www.youtube.com/watch?v=4zWu1yuJ0_g", detail: "Smooth strokes, relaxed grip, let the legs do the work. No grinding." },
+      { name: "Cool-down", sets: "1 min easy", link: "", detail: "Slow it right down, let HR settle." },
     ]
   },
   row_intervals: {
@@ -4931,6 +4982,148 @@ function buildTrackingSection(dateStr) {
 }
 
 // ══════════════════════════════════════════════
+// EXERCISE COUNTDOWN TIMER
+// ══════════════════════════════════════════════
+let _activeTimer = null; // { interval, endTime, elId }
+
+// Parse exercise sets string for timer-able seconds
+// "45s hold" → 45, "30s each side" → 30, "1 min hold" → 60, "2 min" → 120,
+// "90s hold" → 90, "20s each" → 20, "3–5 min" → 180 (uses lower bound)
+function parseTimerSeconds(setsStr) {
+  if (!setsStr) return 0;
+  const s = setsStr.toLowerCase();
+  // Skip rep-based: "3×12", "10 reps", "25 forward", "5 rounds", "8 each side" (no s/min)
+  if (/^\d+[×x]/.test(s)) return 0;
+  if (/\d+\s*(reps|forward|back|rounds|each way|circles)/.test(s) && !/min|sec|s\b/.test(s)) return 0;
+  // "Xs hold" or "Xs each" or just "Xs"
+  let m = s.match(/(\d+)\s*s\b/);
+  if (m) return parseInt(m[1]);
+  // "X–Y min" — use lower bound (check before single-number)
+  m = s.match(/(\d+)[–-](\d+)\s*min/);
+  if (m) return parseInt(m[1]) * 60;
+  // "X min hold" or "X min"
+  m = s.match(/(\d+)\s*min/);
+  if (m) return parseInt(m[1]) * 60;
+  return 0;
+}
+
+function startExTimer(seconds, btnEl) {
+  // If already running on this button, stop it
+  if (_activeTimer && _activeTimer.btnEl === btnEl) {
+    stopExTimer();
+    return;
+  }
+  // Stop any other running timer
+  if (_activeTimer) stopExTimer();
+
+  const countdownEl = btnEl.parentElement.querySelector('.ex-timer-countdown');
+  const barEl = btnEl.parentElement.querySelector('.ex-timer-bar');
+  btnEl.classList.add('running');
+  countdownEl.style.display = '';
+
+  // 5-second lead-in countdown
+  let leadIn = 5;
+  countdownEl.textContent = leadIn + '…';
+  countdownEl.className = 'ex-timer-countdown warning';
+  btnEl.textContent = leadIn;
+
+  const leadInterval = setInterval(() => {
+    leadIn--;
+    if (leadIn > 0) {
+      countdownEl.textContent = leadIn + '…';
+      btnEl.textContent = leadIn;
+      // Short vibrate tick each second
+      if (navigator.vibrate) navigator.vibrate(50);
+    } else {
+      clearInterval(leadInterval);
+      // Double vibrate to signal GO
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      _runExTimer(seconds, btnEl, countdownEl, barEl);
+    }
+  }, 1000);
+
+  // Store lead-in so stopExTimer can clear it
+  _activeTimer = { interval: leadInterval, btnEl, countdownEl, barEl, total: seconds, isLeadIn: true };
+}
+
+function _runExTimer(seconds, btnEl, countdownEl, barEl) {
+  const total = seconds;
+  btnEl.textContent = '⏸';
+  if (barEl) barEl.style.display = '';
+
+  const startTime = Date.now();
+  const endTime = startTime + total * 1000;
+
+  function tick() {
+    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    const mins = Math.floor(remaining / 60);
+    const secs = remaining % 60;
+    countdownEl.textContent = mins > 0 ? mins + ':' + String(secs).padStart(2, '0') : remaining + 's';
+    countdownEl.className = 'ex-timer-countdown' +
+      (remaining <= 3 ? ' critical' : remaining <= 10 ? ' warning' : '');
+    if (barEl) {
+      const pct = Math.max(0, remaining / total * 100);
+      barEl.style.width = pct + '%';
+      barEl.style.background = remaining <= 3 ? 'var(--red)' : remaining <= 10 ? 'var(--orange)' : 'var(--green)';
+    }
+    if (remaining <= 0) {
+      timerDone(btnEl, countdownEl, barEl);
+    }
+  }
+
+  tick();
+  const interval = setInterval(tick, 250);
+  _activeTimer = { interval, endTime, btnEl, countdownEl, barEl, total, isLeadIn: false };
+}
+
+function stopExTimer() {
+  if (!_activeTimer) return;
+  clearInterval(_activeTimer.interval);
+  const { btnEl, countdownEl, barEl } = _activeTimer;
+  btnEl.classList.remove('running');
+  btnEl.textContent = '⏱';
+  countdownEl.style.display = 'none';
+  if (barEl) barEl.style.display = 'none';
+  _activeTimer = null;
+}
+
+function timerDone(btnEl, countdownEl, barEl) {
+  if (_activeTimer) clearInterval(_activeTimer.interval);
+  btnEl.classList.remove('running');
+  btnEl.classList.add('done');
+  btnEl.textContent = '✓';
+  countdownEl.textContent = 'Done!';
+  countdownEl.className = 'ex-timer-countdown';
+  countdownEl.style.color = 'var(--green)';
+  if (barEl) { barEl.style.width = '0%'; }
+  // Vibrate on mobile if available
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  // Play a tone if AudioContext is available
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.25, 0.5].forEach(delay => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = 'sine';
+      gain.gain.value = 0.15;
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.15);
+    });
+  } catch(e) {}
+  // Reset after 3 seconds
+  setTimeout(() => {
+    btnEl.classList.remove('done');
+    btnEl.textContent = '⏱';
+    countdownEl.style.display = 'none';
+    countdownEl.style.color = '';
+    _activeTimer = null;
+  }, 3000);
+  _activeTimer = null;
+}
+
+// ══════════════════════════════════════════════
 // POPUP SYSTEM
 // ══════════════════════════════════════════════
 function openRoutinePopup(routineKey, dateStr) {
@@ -4977,13 +5170,17 @@ function openRoutinePopup(routineKey, dateStr) {
       // Show reps/weight for gym, reps for bodyweight
       const showGymTrack = routineKey === 'gym' && ex.sets && !ex.name.toLowerCase().includes('cooldown');
       const showBwTrack = ex.trackReps || (routineKey === 'bodyweight' && ex.sets);
+      const timerSecs = parseTimerSeconds(ex.sets);
+      const timerHtml = timerSecs > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs},this)">⏱</div><div class="ex-timer-countdown" style="display:none"></div></div>` : '';
       return `
         <div class="exercise-item ${done}">
+          ${timerHtml}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
+            ${timerSecs > 0 ? '<div class="ex-timer-bar" style="display:none;width:100%"></div>' : ''}
             ${showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
               <input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" style="width:44px" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)">
               <span class="wlog-unit">lbs</span>
@@ -5033,13 +5230,17 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       const exKey = routineKey + '_' + i;
       const setData = exSets[exKey] || {};
       const showBwTrack = ex.trackReps;
+      const timerSecs2 = parseTimerSeconds(ex.sets);
+      const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div><div class="ex-timer-countdown" style="display:none"></div></div>` : '';
       return `
         <div class="exercise-item ${done}">
+          ${timerHtml2}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
+            ${timerSecs2 > 0 ? '<div class="ex-timer-bar" style="display:none;width:100%"></div>' : ''}
             ${showBwTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
               <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
               <span class="wlog-unit">reps</span>
@@ -5128,6 +5329,7 @@ function buildGymExtras(dateStr, exSets) {
 }
 
 function closePopup() {
+  stopExTimer(); // kill any running countdown
   document.getElementById('popup-backdrop').classList.remove('open');
 }
 
@@ -5143,11 +5345,96 @@ function toggleScheduleItem(el, dateStr, key) {
   setChecked(dateStr, key, isDone);
 }
 
+// ── Row Auto-Adjustment ──
+// Scans recent rowing history and downgrades today's row if recovery is needed.
+// Returns { adjusted: true/false, wo: adjustedWorkoutObj, reason: string, recentRow: {date,time,dist} }
+function adjustRowWorkout(wo, dateStr) {
+  if (!wo || wo.type !== 'row') return { adjusted: false, wo };
+
+  const isEndurance = wo.label.includes('Endurance');
+  const isIntervals = wo.label.includes('Interval');
+  const isSteady = !isEndurance && !isIntervals;
+
+  // Scan back up to 4 days for any rowing activity
+  const d = new Date(dateStr + 'T12:00:00');
+  let recentRows = [];
+  for (let i = 1; i <= 4; i++) {
+    const prev = new Date(d); prev.setDate(prev.getDate() - i);
+    const pStr = ds(prev);
+    const wlog = DB_CACHE.workouts[pStr];
+    if (wlog && wlog.row && wlog.row.done && wlog.row.time > 0) {
+      recentRows.push({ date: pStr, daysAgo: i, time: wlog.row.time, dist: wlog.row.dist || 0, subtype: wlog.row.subtype || '' });
+    }
+  }
+
+  if (recentRows.length === 0) return { adjusted: false, wo };
+
+  const closest = recentRows[0]; // most recent row
+
+  // Recovery rules (from a trainer/physio perspective):
+  // 1. Rowed ≥15 min within last 2 days → endurance/intervals downgrade to maintenance
+  // 2. Rowed ≥10 min yesterday → any row downgrades to maintenance
+  // 3. Rowed ≥20 min within last 2 days → even steady state drops to maintenance
+  // 4. Shorter recent rows (< 10 min) within 1 day → only endurance downgrades
+
+  let shouldAdjust = false;
+  let reason = '';
+  const dayWord = closest.daysAgo === 1 ? 'yesterday' : closest.daysAgo + ' days ago';
+  const fmtMin = v => Number.isInteger(v) ? v : v.toFixed(1);
+  const timeStr = fmtMin(closest.time) + ' min';
+
+  if (closest.daysAgo <= 1 && closest.time >= 10) {
+    // Rowed yesterday, 10+ min — downgrade anything
+    shouldAdjust = true;
+    reason = `You rowed ${timeStr} ${dayWord}. Your body needs recovery — light maintenance only.`;
+  } else if (closest.daysAgo <= 2 && closest.time >= 15 && (isEndurance || isIntervals)) {
+    // Rowed within 2 days, 15+ min — downgrade hard sessions
+    shouldAdjust = true;
+    reason = `You rowed ${timeStr} ${dayWord}. Too soon for another ${isEndurance ? 'endurance' : 'interval'} session.`;
+  } else if (closest.daysAgo <= 2 && closest.time >= 20) {
+    // Long row within 2 days — downgrade everything
+    shouldAdjust = true;
+    reason = `You did a ${timeStr} row ${dayWord}. Give your body time to adapt — easy row today.`;
+  } else if (closest.daysAgo <= 3 && closest.time >= 20 && isEndurance) {
+    // Very long row within 3 days — only endurance downgrades
+    shouldAdjust = true;
+    reason = `You did a ${timeStr} row ${closest.daysAgo} days ago. Space your endurance sessions — maintenance today.`;
+  }
+
+  // Check for multiple rows in recent days (accumulated fatigue)
+  if (!shouldAdjust && recentRows.length >= 2) {
+    const totalTime = recentRows.reduce((s, r) => s + r.time, 0);
+    if (totalTime >= 25 && (isEndurance || isIntervals)) {
+      shouldAdjust = true;
+      reason = `You've rowed ${fmtMin(totalTime)} min over the last ${recentRows.length} sessions recently. Dial it back today.`;
+    }
+  }
+
+  if (!shouldAdjust) return { adjusted: false, wo };
+
+  // Build adjusted workout object
+  const adjWo = {
+    ...wo,
+    _originalLabel: wo.label,
+    _originalTarget: wo.target,
+    label: "Row — Maintenance",
+    target: "8–12 min easy @ 2:30–2:45/500m",
+    details: "Active recovery row. Smooth strokes, no pushing.",
+    optional: "",
+    alt: "",
+    _adjustReason: reason,
+    _recentRow: closest
+  };
+
+  return { adjusted: true, wo: adjWo, reason, recentRow: closest };
+}
+
 function getRoutineKey(wo) {
   if (!wo) return null;
   if (wo.type === 'gym') return 'gym';
   if (wo.type === 'yoga') return 'yoga';
   if (wo.type === 'bodyweight') return 'bodyweight';
+  if (wo.type === 'row' && wo._adjustReason) return 'row_maintenance';
   if (wo.type === 'row' && wo.label.includes('Interval')) return 'row_intervals';
   if (wo.type === 'row') return 'row_steady';
   if (wo.type === 'stretch' && wo.label && wo.label.toLowerCase().includes('bodyweight')) return 'stretch_bodyweight';
@@ -5191,7 +5478,9 @@ function renderDaily() {
   now.setDate(now.getDate() + currentDayOffset);
   const dateStr = ds(now);
   const cust = custodyInfo(dateStr);
-  const wo = WORKOUT_PLANS[dateStr];
+  const woRaw = WORKOUT_PLANS[dateStr];
+  const rowAdj = adjustRowWorkout(woRaw, dateStr);
+  const wo = rowAdj.adjusted ? rowAdj.wo : woRaw;
   const meals = getMeals(dateStr, isKidDay(dateStr));
   const strR = STRETCH_ROTATION[dateStr] || "A";
   const allo = isAlloDay(now);
@@ -5253,8 +5542,16 @@ function renderDaily() {
   // Recommended workout section
   let recommendedHtml = '';
   if (wo) {
+    const adjBanner = rowAdj.adjusted ? `
+      <div class="row-adjust-banner">
+        <span class="banner-icon">🔄</span>
+        <span class="banner-text">
+          <strong>Auto-adjusted:</strong> ${rowAdj.reason}
+          <div class="original-plan">Scheduled: ${wo._originalLabel} — ${wo._originalTarget}</div>
+        </span>
+      </div>` : '';
     recommendedHtml = `
-      <div class="wo-section-divider">Recommended</div>
+      <div class="wo-section-divider">Recommended</div>${adjBanner}
       <div class="workout-type ${wo.type}" style="cursor:pointer" onclick="openRoutinePopup('${rKey}','${dateStr}')">${wIcon(wo.type)} ${wo.label}</div>
       <div class="workout-details">
         <div class="target">${wo.target}</div>
