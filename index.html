@@ -1523,6 +1523,12 @@
         </div>
         <div id="health-sync-recent" style="font-size:10px;color:var(--text-muted);margin-top:6px"></div>
       </div>
+      <div style="border-top:1px solid var(--divider);padding-top:12px;margin-top:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">💪 Recover Bodyweight Reps</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Scans this device's local storage for any bodyweight rep data (push-ups, sit-ups, squats, crunches, oblique crunches) and saves it to the database. Run this once on each device where you previously tracked reps.</div>
+        <div id="bw-migrate-status" style="font-size:10px;margin-bottom:8px;min-height:16px"></div>
+        <button onclick="migrateLocalBwToSupabase()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--orange-border,var(--input-border));background:var(--orange-bg,var(--input-bg));color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">📤 Migrate Local Reps → Database</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1776,6 +1782,14 @@ async function loadTrackingData(startDate, endDate) {
       .gte('log_date', startDate).lte('log_date', endDate);
     if (wlogs) wlogs.forEach(row => {
       if (!DB_CACHE.workouts[row.log_date]) DB_CACHE.workouts[row.log_date] = {};
+      // Bodyweight exercise reps stored as bw_<key> rows (e.g. bw_pushups, bw_situps)
+      if (row.workout_type.startsWith('bw_')) {
+        const exKey = row.workout_type.slice(3);
+        if (!DB_CACHE.workouts[row.log_date].bodyweight) DB_CACHE.workouts[row.log_date].bodyweight = { done: true, time: 0, dist: 0, unit: 'm' };
+        if (!DB_CACHE.workouts[row.log_date].bodyweight.exercises) DB_CACHE.workouts[row.log_date].bodyweight.exercises = {};
+        DB_CACHE.workouts[row.log_date].bodyweight.exercises[exKey] = parseFloat(row.duration_min) || 0;
+        return;
+      }
       // Map db type (e.g. 'row_steady') back to grouped id ('row') + subtype ('steady')
       let woId = row.workout_type, subtype = '';
       const parts = row.workout_type.split('_');
@@ -1788,7 +1802,8 @@ async function loadTrackingData(startDate, endDate) {
       DB_CACHE.workouts[row.log_date][woId] = {
         done: true, time: (existing ? existing.time : 0) + (parseFloat(row.duration_min) || 0),
         dist: (existing ? existing.dist : 0) + (parseFloat(row.distance_val) || 0),
-        unit: row.distance_unit || 'm', subtype: subtype || (existing ? existing.subtype : '')
+        unit: row.distance_unit || 'm', subtype: subtype || (existing ? existing.subtype : ''),
+        exercises: existing ? existing.exercises : undefined
       };
     });
     // Merge localStorage workout logs to restore C2-specific fields (hrAvg, hrMax, pace500, spm, source, c2Sessions)
@@ -1803,12 +1818,14 @@ async function loadTrackingData(startDate, endDate) {
           const lsEntry = lsData[woId];
           if (!lsEntry) return;
           if (!DB_CACHE.workouts[dStr]) DB_CACHE.workouts[dStr] = {};
+          const existing = DB_CACHE.workouts[dStr][woId] || {};
           // If localStorage says done=false, respect that (user unchecked locally)
+          // Preserve exercises even when done=false so reps aren't lost
           if (!lsEntry.done) {
-            DB_CACHE.workouts[dStr][woId] = { done: false, time: 0, dist: 0, unit: 'm' };
+            DB_CACHE.workouts[dStr][woId] = { done: false, time: 0, dist: 0, unit: 'm',
+              exercises: lsEntry.exercises || existing.exercises };
             return;
           }
-          const existing = DB_CACHE.workouts[dStr][woId] || {};
           // Merge: localStorage C2 fields take priority; Supabase provides the base done/dist/time
           DB_CACHE.workouts[dStr][woId] = {
             done: true,
@@ -1816,6 +1833,7 @@ async function loadTrackingData(startDate, endDate) {
             dist: lsEntry.dist || existing.dist || 0,
             unit: lsEntry.unit || existing.unit || 'm',
             subtype: lsEntry.subtype || existing.subtype || '',
+            exercises: lsEntry.exercises || existing.exercises,
             // C2-specific fields from localStorage
             hrAvg: lsEntry.hrAvg || existing.hrAvg || 0,
             hrMax: lsEntry.hrMax || existing.hrMax || 0,
@@ -2070,9 +2088,21 @@ function setBodyExReps(dateStr, exKey, val) {
   if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
   if (!DB_CACHE.workouts[dateStr].bodyweight) DB_CACHE.workouts[dateStr].bodyweight = { done: false, time: 0, dist: 0, unit: 'm' };
   if (!DB_CACHE.workouts[dateStr].bodyweight.exercises) DB_CACHE.workouts[dateStr].bodyweight.exercises = {};
-  DB_CACHE.workouts[dateStr].bodyweight.exercises[exKey] = parseInt(val) || 0;
+  const reps = parseInt(val) || 0;
+  DB_CACHE.workouts[dateStr].bodyweight.exercises[exKey] = reps;
   localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
-  // Don't re-render — let the input keep focus
+  // Save to Supabase — each exercise stored as a bw_<key> row; duration_min holds rep count
+  if (!sbReady) return;
+  const woType = 'bw_' + exKey;
+  if (reps > 0) {
+    sb.from('workout_log').upsert({
+      log_date: dateStr, workout_type: woType, duration_min: reps, distance_val: 0, distance_unit: 'reps'
+    }, { onConflict: 'log_date,workout_type' })
+      .then(({error}) => { if (error) console.warn('DB bw exercise save error:', error); });
+  } else {
+    sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType)
+      .then(({error}) => { if (error) console.warn('DB bw exercise delete error:', error); });
+  }
 }
 
 // ── Section toggle ──
@@ -2118,6 +2148,54 @@ async function openSettings() {
   document.getElementById('settings-backdrop').classList.add('open');
 }
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
+
+async function migrateLocalBwToSupabase() {
+  const statusEl = document.getElementById('bw-migrate-status');
+  if (!sbReady) { statusEl.innerHTML = '<span style="color:var(--red)">Not logged in — log in first</span>'; return; }
+  statusEl.innerHTML = '<span style="color:var(--text-muted)">Scanning local storage...</span>';
+
+  const BW_KEYS = ['pushups', 'situps', 'squats', 'crunches', 'oblique_crunches'];
+  const toUpsert = [];
+
+  Object.keys(localStorage)
+    .filter(k => k.startsWith('wlog_'))
+    .forEach(k => {
+      const dateStr = k.replace('wlog_', '');
+      try {
+        const data = JSON.parse(localStorage.getItem(k));
+        const ex = data && data.bodyweight && data.bodyweight.exercises;
+        if (!ex) return;
+        BW_KEYS.forEach(key => {
+          const reps = parseInt(ex[key]) || 0;
+          if (reps > 0) toUpsert.push({ log_date: dateStr, workout_type: 'bw_' + key, duration_min: reps, distance_val: 0, distance_unit: 'reps' });
+        });
+      } catch(e) {}
+    });
+
+  if (toUpsert.length === 0) {
+    statusEl.innerHTML = '<span style="color:var(--text-muted)">No bodyweight rep data found in local storage on this device.</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<span style="color:var(--cyan)">Found ' + toUpsert.length + ' entries — saving to database...</span>';
+
+  // Upsert in batches of 50
+  let saved = 0, failed = 0;
+  for (let i = 0; i < toUpsert.length; i += 50) {
+    const batch = toUpsert.slice(i, i + 50);
+    const { error } = await sb.from('workout_log').upsert(batch, { onConflict: 'log_date,workout_type' });
+    if (error) { failed += batch.length; console.warn('bw migrate error:', error); }
+    else saved += batch.length;
+  }
+
+  const dates = [...new Set(toUpsert.map(r => r.log_date))].sort();
+  const summary = dates.length + ' day' + (dates.length !== 1 ? 's' : '') + ' (' + dates[0].substring(5) + ' → ' + dates[dates.length-1].substring(5) + ')';
+  if (failed === 0) {
+    statusEl.innerHTML = '<span style="color:var(--green)">✓ Saved ' + saved + ' exercise entries across ' + summary + '</span>';
+  } else {
+    statusEl.innerHTML = '<span style="color:var(--orange)">Saved ' + saved + ', failed ' + failed + ' — check console for details</span>';
+  }
+}
 
 // ── Apple Health Sync functions ──
 function getHealthData(dateStr) {
@@ -2725,12 +2803,14 @@ function renderOverviewStats(container) {
   // Exercise stats
   let mWorkouts = 0, mWorkoutsDone = 0, mGym = 0, mGymSessions = 0, mRow = 0;
   let mYoga = 0, mBodyweight = 0, mOutdoor = 0;
+  // Bodyweight exercise rep totals
+  let mBwPushups = 0, mBwSitups = 0, mBwSquats = 0, mBwCrunches = 0, mBwOblique = 0, mBwSessions = 0;
   // Recovery stats
   let mStretches = 0, mStretchesDone = 0, mMornings = 0, mMorningsDone = 0;
   let mMoodSum = 0, mMoodCount = 0, mEnergySum = 0, mEnergyCount = 0;
   let mSleepSum = 0, mSleepCount = 0, mWater = 0;
   // Weight
-  let mWeightFirst = 0, mWeightLast = 0;
+  let mWeightFirst = 0, mWeightLast = 0, mWeightPoints = [];
 
   for (var i = 0; i < days.length; i++) {
     var dStr = days[i];
@@ -2795,6 +2875,20 @@ function renderOverviewStats(container) {
       else if (wo.type === 'outdoor') { if (done) mOutdoor++; }
     }
 
+    // Bodyweight exercise reps (tracked regardless of scheduled workout type)
+    var bwEx = wlog.bodyweight && wlog.bodyweight.exercises;
+    if (bwEx) {
+      var dayBwTotal = (bwEx.pushups||0)+(bwEx.situps||0)+(bwEx.squats||0)+(bwEx.crunches||0)+(bwEx.oblique_crunches||0);
+      if (dayBwTotal > 0) {
+        mBwSessions++;
+        mBwPushups += bwEx.pushups || 0;
+        mBwSitups += bwEx.situps || 0;
+        mBwSquats += bwEx.squats || 0;
+        mBwCrunches += bwEx.crunches || 0;
+        mBwOblique += bwEx.oblique_crunches || 0;
+      }
+    }
+
     // Recovery
     mStretches++; if (checked['s_stretch']) mStretchesDone++;
     mMornings++; if (checked['s_morning']) mMorningsDone++;
@@ -2803,7 +2897,7 @@ function renderOverviewStats(container) {
     var sleep = getSleep(dStr); if (sleep) { mSleepSum += sleep; mSleepCount++; }
     mWater += getWater(dStr);
     var w = getWeight(dStr);
-    if (w > 0) { if (!mWeightFirst) mWeightFirst = w; mWeightLast = w; }
+    if (w > 0) { if (!mWeightFirst) mWeightFirst = w; mWeightLast = w; mWeightPoints.push({ date: dStr, value: w }); }
   }
 
   // Derived values
@@ -2896,7 +2990,40 @@ function renderOverviewStats(container) {
         : '<div class="ex-stat-row"><span>💧 Water: <span class="val">' + mWater + '</span> total</span></div>'
       ) + '</div>' +
   '</div>' +
+  // WEIGHT CHART (only shown when there are at least 2 data points)
+  (mWeightPoints.length >= 2 ?
+    '<div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:10px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--green)">⚖️ Weight — ' + mWeightFirst + ' → ' + mWeightLast + ' lbs' +
+          '<span style="font-weight:800;color:' + (mWeightLast <= mWeightFirst ? 'var(--green)' : 'var(--red)') + ';margin-left:4px">' +
+          (mWeightLast - mWeightFirst > 0 ? '+' : '') + (mWeightLast - mWeightFirst).toFixed(1) + '</span></div>' +
+        '<div style="font-size:8px;color:var(--text-muted)"><span style="color:var(--orange)">━</span> −1.5/wk &nbsp;<span style="color:var(--red)">━</span> −2/wk</div>' +
+      '</div>' +
+      '<canvas id="chart-weight-overview" style="width:100%;height:120px;display:block"></canvas>' +
+    '</div>'
+  : '') +
+  // BODYWEIGHT REPS CARD (only shown when there is data)
+  (mBwSessions > 0 ?
+    '<div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:10px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--orange)">💪 Bodyweight Reps</div>' +
+        '<div style="font-size:9px;font-weight:700;background:var(--orange-bg);color:var(--orange);padding:2px 7px;border-radius:10px">' + mBwSessions + ' session' + (mBwSessions !== 1 ? 's' : '') + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
+        (mBwPushups > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--cyan)">' + mBwPushups.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🫸 Push-ups</div></div>' : '') +
+        (mBwSitups > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--green)">' + mBwSitups.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🔄 Sit-ups</div></div>' : '') +
+        (mBwSquats > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--orange)">' + mBwSquats.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🦵 Squats</div></div>' : '') +
+        (mBwCrunches > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--purple)">' + mBwCrunches.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🎯 Crunches</div></div>' : '') +
+        (mBwOblique > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--red)">' + mBwOblique.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">↔️ Oblique</div></div>' : '') +
+        '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--text-dim)">' + (mBwPushups+mBwSitups+mBwSquats+mBwCrunches+mBwOblique).toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">Total Reps</div></div>' +
+      '</div>' +
+    '</div>'
+  : '') +
   '<div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:4px">Click a card for detailed stats & charts</div>';
+
+  if (mWeightPoints.length >= 2) {
+    requestAnimationFrame(() => drawWeightProjectionChart('chart-weight-overview', mWeightPoints));
+  }
 }
 
 // ── ROWING STATS TAB ──
@@ -3230,11 +3357,11 @@ function renderExerciseStats(container) {
   var pct = totalWo > 0 ? Math.round(totalWoDone / totalWo * 100) : 0;
   var pctColor = pct === 100 ? 'var(--green)' : pct > 50 ? 'var(--cyan)' : 'var(--orange)';
 
-  // Weight trend
+  // Weight trend (include date for projection chart)
   var weights = [];
   for (var i = 0; i < days.length; i++) {
     var w = getWeight(days[i]);
-    if (w > 0) weights.push({ label: days[i].substring(5), value: w });
+    if (w > 0) weights.push({ label: days[i].substring(5), date: days[i], value: w });
   }
 
   container.innerHTML = `
@@ -3252,16 +3379,27 @@ function renderExerciseStats(container) {
         <div class="stats-chart-title">${isYear ? 'Monthly Avg' : 'Daily'} Completion %</div>
         <canvas id="chart-completion" class="stats-chart-canvas" width="380" height="80"></canvas>
       </div>
-      <div class="stats-chart-card">
-        <div class="stats-chart-title">Weight Trend ${weights.length === 0 ? '<span style="font-size:9px;color:var(--text-muted)">no data</span>' : ''}</div>
-        <canvas id="chart-weight" class="stats-chart-canvas" width="380" height="80"></canvas>
-      </div>
     </div>
+    ${weights.length > 0 ? `
+    <div class="stats-chart-card" style="margin-top:8px">
+      <div class="stats-chart-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>⚖️ Weight — ${weights[0].value} → ${weights[weights.length-1].value} lbs
+          <span style="color:${weights[weights.length-1].value < weights[0].value ? 'var(--green)' : 'var(--red)'};font-weight:800">
+            (${(weights[weights.length-1].value - weights[0].value).toFixed(1)})
+          </span>
+        </span>
+        <span style="font-size:8px;color:var(--text-muted)">
+          <span style="color:var(--orange)">━</span> target &nbsp;
+          <span style="color:var(--red)">━</span> too fast
+        </span>
+      </div>
+      <canvas id="chart-weight" style="width:100%;height:130px;display:block"></canvas>
+    </div>` : ''}
   `;
 
   requestAnimationFrame(() => {
     drawBarChart('chart-completion', dailyCompletion, 'var(--cyan)');
-    if (weights.length > 0) drawLineChart('chart-weight', weights, 'var(--green)', 'lbs');
+    if (weights.length > 0) drawWeightProjectionChart('chart-weight', weights);
   });
 }
 
@@ -3923,6 +4061,98 @@ function drawLineChart(canvasId, data, colorVar, unit, invertBetter, minY, maxY)
       const x = pad.l + (data.length === 1 ? cw / 2 : (i / (data.length - 1)) * cw);
       ctx.fillText(d.label, x, h - 2);
     }
+  });
+}
+
+function drawWeightProjectionChart(canvasId, weights) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || weights.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+
+  const pad = { t: 10, b: 20, l: 36, r: 8 };
+  const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
+
+  // Build projection from first weight entry
+  const startW = weights[0].value;
+  const startDate = new Date(weights[0].date + 'T12:00:00');
+  const endDate = new Date(weights[weights.length - 1].date + 'T12:00:00');
+  const totalDays = Math.max(1, (endDate - startDate) / 86400000);
+
+  // Project lines: target = -1.5 lbs/week, caution = -2 lbs/week
+  const targetRate = 1.5 / 7, cautionRate = 2 / 7;
+  const targetEnd = startW - cautionRate * totalDays; // lowest possible (caution)
+  const allVals = weights.map(d => d.value).concat([startW, startW - targetRate * totalDays, targetEnd]);
+  const minY = Math.min(...allVals) - 1, maxY = Math.max(...allVals) + 1;
+  const range = maxY - minY || 1;
+
+  const toX = date => pad.l + ((new Date(date + 'T12:00:00') - startDate) / 86400000 / totalDays) * cw;
+  const toY = val => pad.t + ch - ((val - minY) / range * ch);
+
+  // Grid + Y labels
+  ctx.strokeStyle = getComputedColor('var(--divider)'); ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (ch * i / 4);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    const labelVal = maxY - (range * i / 4);
+    ctx.fillStyle = getComputedColor('var(--text-muted)');
+    ctx.font = '8px Inter,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(labelVal.toFixed(0), pad.l - 2, y + 3);
+  }
+
+  // Caution band (below caution rate line — losing too fast)
+  const cautionY = toY(startW - cautionRate * totalDays);
+  ctx.fillStyle = 'rgba(239,68,68,0.06)';
+  ctx.fillRect(pad.l, cautionY, cw, pad.t + ch - cautionY);
+
+  // Target line (−1.5 lbs/week) — orange dashed
+  ctx.strokeStyle = getComputedColor('var(--orange)');
+  ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(pad.l, toY(startW));
+  ctx.lineTo(pad.l + cw, toY(startW - targetRate * totalDays));
+  ctx.stroke();
+
+  // Caution line (−2 lbs/week) — red dashed
+  ctx.strokeStyle = getComputedColor('var(--red)');
+  ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.l, toY(startW));
+  ctx.lineTo(pad.l + cw, toY(startW - cautionRate * totalDays));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Actual weight line — green
+  ctx.strokeStyle = getComputedColor('var(--green)');
+  ctx.lineWidth = 2; ctx.lineJoin = 'round';
+  ctx.beginPath();
+  weights.forEach((d, i) => {
+    const x = toX(d.date), y = toY(d.value);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Fill under actual line
+  ctx.lineTo(toX(weights[weights.length-1].date), pad.t + ch);
+  ctx.lineTo(pad.l, pad.t + ch); ctx.closePath();
+  ctx.globalAlpha = 0.07; ctx.fillStyle = getComputedColor('var(--green)'); ctx.fill(); ctx.globalAlpha = 1;
+
+  // Dots on actual
+  ctx.fillStyle = getComputedColor('var(--green)');
+  weights.forEach(d => {
+    ctx.beginPath(); ctx.arc(toX(d.date), toY(d.value), 2.5, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // X labels
+  ctx.fillStyle = getComputedColor('var(--text-muted)');
+  ctx.font = '8px Inter,sans-serif'; ctx.textAlign = 'center';
+  const step = Math.max(1, Math.floor(weights.length / 5));
+  weights.forEach((d, i) => {
+    if (i === 0 || i === weights.length - 1 || i % step === 0)
+      ctx.fillText(d.date.substring(5), toX(d.date), h - 2);
   });
 }
 
@@ -4735,11 +4965,13 @@ const OTHER_WORKOUTS = [
   { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
   { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
   { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
-  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'],
+  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['upper', 'lower', 'full'],
     exercises: [
       { key: 'pushups', label: 'Push-ups', icon: '🫸' },
       { key: 'situps', label: 'Sit-ups', icon: '🔄' },
       { key: 'squats', label: 'Squats', icon: '🦵' },
+      { key: 'crunches', label: 'Crunches', icon: '🎯' },
+      { key: 'oblique_crunches', label: 'Oblique Crunches', icon: '↔️' },
     ]
   },
   { id: 'yoga_session', icon: '🧘', label: 'Yoga', hasTime: true, hasDist: false },
@@ -5334,6 +5566,8 @@ function openRoutinePopup(routineKey, dateStr) {
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
     '</div>';
   document.getElementById('popup-backdrop').classList.add('open');
+  // iOS Safari caches textarea.value across innerHTML replacements — force reset
+  document.querySelectorAll('#popup-body textarea').forEach(ta => { ta.value = ta.defaultValue; });
 }
 
 function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
@@ -5384,6 +5618,8 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
     '</div>';
   document.getElementById('popup-backdrop').classList.add('open');
+  // iOS Safari caches textarea.value across innerHTML replacements — force reset
+  document.querySelectorAll('#popup-body textarea').forEach(ta => { ta.value = ta.defaultValue; });
 }
 
 function buildGymExtras(dateStr, exSets) {
@@ -5739,7 +5975,21 @@ function renderDaily() {
     </div>`;
   }).join('');
 
-  wc.innerHTML = morningHtml + recommendedHtml + `
+  // Custody-aware quick-log chips
+  const custT = custodyType(dateStr);
+  const isKidDay2 = custT === 'C';
+  const quickPicks = isKidDay2
+    ? [{ id:'walk', label:'🚶 Walk', sub:'walk' }, { id:'bodyweight', label:'💪 Body', sub:'upper' }, { id:'yoga_session', label:'🧘 Yoga', sub:'' }]
+    : [{ id:'gym', label:'🏋️ Gym', sub:'full' }, { id:'row', label:'🚣 Row', sub:'steady' }, { id:'walk', label:'🚶 Walk', sub:'walk' }];
+  const quickPickHtml = `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:4px 0 6px">
+    <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${isKidDay2 ? '👧 Kids:' : '🆓 Free:'}</span>
+    ${quickPicks.map(p => {
+      const done = (wlog[p.id] || {}).done;
+      return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="toggleWorkoutDone('${dateStr}','${p.id}');renderDaily()">${done ? '✓ ' : ''}${p.label}</span>`;
+    }).join('')}
+  </div>`;
+
+  wc.innerHTML = morningHtml + recommendedHtml + quickPickHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
     </div>
@@ -5796,15 +6046,17 @@ function renderDaily() {
             const pw = getWeight(ds(d));
             if (pw > 0) { prevWeight = pw; break; }
           }
-          // Show last known weight if none entered today
-          const displayWeight = weight || prevWeight;
           const isCarryover = !weight && prevWeight > 0;
-          const weightDelta = displayWeight > 0 && prevWeight > 0 && !isCarryover ? (displayWeight - prevWeight).toFixed(1) : '';
+          const weightDelta = weight > 0 && prevWeight > 0 ? (weight - prevWeight).toFixed(1) : '';
           const weightColor = weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--text-dim)';
+          // Carryover → show as placeholder (field empty, greyed hint); today's entry → auto-select on focus
           return `<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
             <span style="font-size:8px">⚖️</span>
-            <input type="number" class="track-input" style="width:58px;font-size:11px;padding:2px 4px;${isCarryover ? 'opacity:0.5' : ''}" placeholder="lbs" step="0.5" min="150" max="350"
-              value="${displayWeight || ''}" onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
+            <input type="number" class="track-input" style="width:58px;font-size:11px;padding:2px 4px" step="0.5" min="150" max="350"
+              placeholder="${isCarryover ? prevWeight : 'lbs'}"
+              value="${weight || ''}"
+              onfocus="this.select()"
+              onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
             ${weightDelta ? `<span style="font-size:9px;font-weight:700;color:${weightColor}">${weightDelta > 0 ? '+' : ''}${weightDelta}</span>` : ''}
           </div>`;
         })()}
