@@ -1448,15 +1448,17 @@
 </div>
 
 <!-- ═══════════════ POPUP OVERLAY ═══════════════ -->
-<div class="timer-overlay" id="timer-overlay" onclick="stopExTimer()">
+<div class="timer-overlay" id="timer-overlay" onclick="handleTimerTap(event)">
+  <div id="timer-position" style="position:absolute;top:max(20px,env(safe-area-inset-top,16px));font-size:13px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px"></div>
   <svg class="timer-progress-ring" viewBox="0 0 200 200">
     <circle class="ring-bg" cx="100" cy="100" r="90"/>
     <circle class="ring-fg" id="timer-ring" cx="100" cy="100" r="90" stroke-dasharray="565.5" stroke-dashoffset="0"/>
   </svg>
   <div class="timer-exercise-name" id="timer-ex-name"></div>
+  <div id="timer-side-label" style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:4px;min-height:20px"></div>
   <div class="timer-big-number" id="timer-big">45</div>
   <div class="timer-label" id="timer-label">GET READY</div>
-  <div class="timer-cancel">tap anywhere to cancel</div>
+  <div class="timer-cancel" id="timer-hint">tap to skip · hold to cancel</div>
 </div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
   <div class="popup">
@@ -1790,6 +1792,14 @@ async function loadTrackingData(startDate, endDate) {
         DB_CACHE.workouts[row.log_date].bodyweight.exercises[exKey] = parseFloat(row.duration_min) || 0;
         return;
       }
+      // Kettlebell exercise reps stored as kb_<key> rows (e.g. kb_swings, kb_goblet_squat)
+      if (row.workout_type.startsWith('kb_')) {
+        const exKey = row.workout_type.slice(3);
+        if (!DB_CACHE.workouts[row.log_date].kettlebell) DB_CACHE.workouts[row.log_date].kettlebell = { done: true, time: 0, dist: 0, unit: 'm' };
+        if (!DB_CACHE.workouts[row.log_date].kettlebell.exercises) DB_CACHE.workouts[row.log_date].kettlebell.exercises = {};
+        DB_CACHE.workouts[row.log_date].kettlebell.exercises[exKey] = parseFloat(row.duration_min) || 0;
+        return;
+      }
       // Map db type (e.g. 'row_steady') back to grouped id ('row') + subtype ('steady')
       let woId = row.workout_type, subtype = '';
       const parts = row.workout_type.split('_');
@@ -2046,6 +2056,8 @@ function toggleWorkoutDone(dateStr, woId) {
   if (isDone && woMeta && woMeta.types && !entry.subtype) {
     setWorkoutLog(dateStr, woId, 'subtype', woMeta.types[0]);
   }
+  // Auto-check the alt workout task when any workout is logged
+  if (isDone) setChecked(dateStr, 's_alt', true);
   renderDaily();
 }
 
@@ -2084,26 +2096,30 @@ function getBodyExReps(dateStr, exKey) {
   const bw = log.bodyweight || {};
   return (bw.exercises && bw.exercises[exKey]) || 0;
 }
-function setBodyExReps(dateStr, exKey, val) {
+// Generic: set reps for any exercise-tracking workout (bodyweight → bw_, kettlebell → kb_)
+const EX_PREFIXES = { bodyweight: 'bw_', kettlebell: 'kb_' };
+function setExReps(dateStr, woId, exKey, val) {
+  const prefix = EX_PREFIXES[woId];
+  if (!prefix) return;
   if (!DB_CACHE.workouts[dateStr]) DB_CACHE.workouts[dateStr] = {};
-  if (!DB_CACHE.workouts[dateStr].bodyweight) DB_CACHE.workouts[dateStr].bodyweight = { done: false, time: 0, dist: 0, unit: 'm' };
-  if (!DB_CACHE.workouts[dateStr].bodyweight.exercises) DB_CACHE.workouts[dateStr].bodyweight.exercises = {};
+  if (!DB_CACHE.workouts[dateStr][woId]) DB_CACHE.workouts[dateStr][woId] = { done: false, time: 0, dist: 0, unit: 'm' };
+  if (!DB_CACHE.workouts[dateStr][woId].exercises) DB_CACHE.workouts[dateStr][woId].exercises = {};
   const reps = parseInt(val) || 0;
-  DB_CACHE.workouts[dateStr].bodyweight.exercises[exKey] = reps;
+  DB_CACHE.workouts[dateStr][woId].exercises[exKey] = reps;
   localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
-  // Save to Supabase — each exercise stored as a bw_<key> row; duration_min holds rep count
   if (!sbReady) return;
-  const woType = 'bw_' + exKey;
+  const woType = prefix + exKey;
   if (reps > 0) {
     sb.from('workout_log').upsert({
       log_date: dateStr, workout_type: woType, duration_min: reps, distance_val: 0, distance_unit: 'reps'
     }, { onConflict: 'log_date,workout_type' })
-      .then(({error}) => { if (error) console.warn('DB bw exercise save error:', error); });
+      .then(({error}) => { if (error) console.warn('DB exercise save error:', error); });
   } else {
     sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType)
-      .then(({error}) => { if (error) console.warn('DB bw exercise delete error:', error); });
+      .then(({error}) => { if (error) console.warn('DB exercise delete error:', error); });
   }
 }
+function setBodyExReps(dateStr, exKey, val) { setExReps(dateStr, 'bodyweight', exKey, val); }
 
 // ── Section toggle ──
 const _openSections = new Set();
@@ -2114,6 +2130,13 @@ function toggleWoSection(id) {
   header.classList.toggle('open');
   if (el.classList.contains('open')) _openSections.add(id.replace(/-\d{4}-\d{2}-\d{2}$/, ''));
   else _openSections.delete(id.replace(/-\d{4}-\d{2}-\d{2}$/, ''));
+}
+function closeWoSection(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  if (el.previousElementSibling) el.previousElementSibling.classList.remove('open');
+  _openSections.delete(id.replace(/-\d{4}-\d{2}-\d{2}$/, ''));
 }
 function restoreOpenSections(dateStr) {
   _openSections.forEach(base => {
@@ -2805,6 +2828,8 @@ function renderOverviewStats(container) {
   let mYoga = 0, mBodyweight = 0, mOutdoor = 0;
   // Bodyweight exercise rep totals
   let mBwPushups = 0, mBwSitups = 0, mBwSquats = 0, mBwCrunches = 0, mBwOblique = 0, mBwSessions = 0;
+  // Kettlebell exercise rep totals
+  let mKbSwings = 0, mKbGoblet = 0, mKbRdl = 0, mKbClean = 0, mKbRow = 0, mKbSessions = 0;
   // Recovery stats
   let mStretches = 0, mStretchesDone = 0, mMornings = 0, mMorningsDone = 0;
   let mMoodSum = 0, mMoodCount = 0, mEnergySum = 0, mEnergyCount = 0;
@@ -2886,6 +2911,19 @@ function renderOverviewStats(container) {
         mBwSquats += bwEx.squats || 0;
         mBwCrunches += bwEx.crunches || 0;
         mBwOblique += bwEx.oblique_crunches || 0;
+      }
+    }
+    // Kettlebell exercise reps
+    var kbEx = wlog.kettlebell && wlog.kettlebell.exercises;
+    if (kbEx) {
+      var dayKbTotal = (kbEx.swings||0)+(kbEx.goblet_squat||0)+(kbEx.rdl||0)+(kbEx.clean_press||0)+(kbEx.bent_row||0);
+      if (dayKbTotal > 0) {
+        mKbSessions++;
+        mKbSwings += kbEx.swings || 0;
+        mKbGoblet += kbEx.goblet_squat || 0;
+        mKbRdl += kbEx.rdl || 0;
+        mKbClean += kbEx.clean_press || 0;
+        mKbRow += kbEx.bent_row || 0;
       }
     }
 
@@ -3016,6 +3054,23 @@ function renderOverviewStats(container) {
         (mBwCrunches > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--purple)">' + mBwCrunches.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🎯 Crunches</div></div>' : '') +
         (mBwOblique > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--red)">' + mBwOblique.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">↔️ Oblique</div></div>' : '') +
         '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--text-dim)">' + (mBwPushups+mBwSitups+mBwSquats+mBwCrunches+mBwOblique).toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">Total Reps</div></div>' +
+      '</div>' +
+    '</div>'
+  : '') +
+  // KETTLEBELL REPS CARD
+  (mKbSessions > 0 ?
+    '<div style="background:var(--card);border:1px solid var(--card-border);border-radius:10px;padding:10px 14px;margin-bottom:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+        '<div style="font-size:11px;font-weight:700;color:var(--blue)">🫙 Kettlebell Reps</div>' +
+        '<div style="font-size:9px;font-weight:700;background:var(--blue-bg);color:var(--blue);padding:2px 7px;border-radius:10px">' + mKbSessions + ' session' + (mKbSessions !== 1 ? 's' : '') + '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' +
+        (mKbSwings > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--cyan)">' + mKbSwings.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🔄 Swings</div></div>' : '') +
+        (mKbGoblet > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--orange)">' + mKbGoblet.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🦵 Goblet Squat</div></div>' : '') +
+        (mKbRdl > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--green)">' + mKbRdl.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🏋️ RDL</div></div>' : '') +
+        (mKbClean > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--purple)">' + mKbClean.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🦾 Clean & Press</div></div>' : '') +
+        (mKbRow > 0 ? '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--red)">' + mKbRow.toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">🔙 Bent-Over Row</div></div>' : '') +
+        '<div style="text-align:center;background:var(--bg-secondary);border-radius:6px;padding:6px 4px"><div style="font-size:18px;font-weight:800;color:var(--text-dim)">' + (mKbSwings+mKbGoblet+mKbRdl+mKbClean+mKbRow).toLocaleString() + '</div><div style="font-size:8px;color:var(--text-muted);margin-top:1px">Total Reps</div></div>' +
       '</div>' +
     '</div>'
   : '') +
@@ -4109,21 +4164,30 @@ function drawWeightProjectionChart(canvasId, weights) {
   ctx.fillRect(pad.l, cautionY, cw, pad.t + ch - cautionY);
 
   // Target line (−1.5 lbs/week) — orange dashed
+  const targetEndY = toY(startW - targetRate * totalDays);
   ctx.strokeStyle = getComputedColor('var(--orange)');
   ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
   ctx.beginPath();
   ctx.moveTo(pad.l, toY(startW));
-  ctx.lineTo(pad.l + cw, toY(startW - targetRate * totalDays));
+  ctx.lineTo(pad.l + cw, targetEndY);
   ctx.stroke();
 
   // Caution line (−2 lbs/week) — red dashed
+  const cautionEndY = toY(startW - cautionRate * totalDays);
   ctx.strokeStyle = getComputedColor('var(--red)');
   ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
   ctx.beginPath();
   ctx.moveTo(pad.l, toY(startW));
-  ctx.lineTo(pad.l + cw, toY(startW - cautionRate * totalDays));
+  ctx.lineTo(pad.l + cw, cautionEndY);
   ctx.stroke();
   ctx.setLineDash([]);
+
+  // Line labels at right edge
+  ctx.font = 'bold 7px Inter,sans-serif'; ctx.textAlign = 'right';
+  ctx.fillStyle = getComputedColor('var(--orange)');
+  ctx.fillText('−1.5/wk', pad.l + cw - 2, targetEndY - 3);
+  ctx.fillStyle = getComputedColor('var(--red)');
+  ctx.fillText('−2/wk', pad.l + cw - 2, cautionEndY + 9);
 
   // Actual weight line — green
   ctx.strokeStyle = getComputedColor('var(--green)');
@@ -4737,7 +4801,7 @@ const ROUTINES = {
       { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex. Wakes up the ankles." },
       // — ALL FOURS (roll over, transition through hands & knees) —
       { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow, sync with breath." },
-      { name: "Wrist Circles + Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arms out, rotate wrists 10 each way. Then palms together prayer position, slowly lower hands toward waist, hold 20s." },
+      { name: "Wrist Circles + Reverse Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arms out, rotate wrists 10 each way. Then reverse prayer: backs of hands together behind your back, fingers pointing DOWN, slowly slide hands up your spine, hold 20s." },
       // — STANDING (rise up, open the upper body) —
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall. Slow, full range. Loosens up after sleeping." },
       { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
@@ -4972,6 +5036,15 @@ const OTHER_WORKOUTS = [
       { key: 'squats', label: 'Squats', icon: '🦵' },
       { key: 'crunches', label: 'Crunches', icon: '🎯' },
       { key: 'oblique_crunches', label: 'Oblique Crunches', icon: '↔️' },
+    ]
+  },
+  { id: 'kettlebell', icon: '🫙', label: 'Kettlebell', hasTime: false, hasDist: false, types: ['circuits', 'strength'],
+    exercises: [
+      { key: 'swings', label: 'Swings', icon: '🔄' },
+      { key: 'goblet_squat', label: 'Goblet Squat', icon: '🦵' },
+      { key: 'rdl', label: 'Romanian Deadlift', icon: '🏋️' },
+      { key: 'clean_press', label: 'Clean & Press', icon: '🦾' },
+      { key: 'bent_row', label: 'Bent-Over Row', icon: '🔙' },
     ]
   },
   { id: 'yoga_session', icon: '🧘', label: 'Yoga', hasTime: true, hasDist: false },
@@ -5304,27 +5377,30 @@ function buildTrackingSection(dateStr) {
 // ══════════════════════════════════════════════
 // EXERCISE COUNTDOWN TIMER
 // ══════════════════════════════════════════════
-let _activeTimer = null; // { interval, endTime, elId }
+let _activeTimer = null;
+// Queue state for full-routine timer mode
+let _timerQueue = null; // { exercises:[{name,secs,bothSides,checkKey}], idx, dateStr, routineKey, wakeLock }
 
 // Parse exercise sets string for timer-able seconds
-// "45s hold" → 45, "30s each side" → 30, "1 min hold" → 60, "2 min" → 120,
-// "90s hold" → 90, "20s each" → 20, "3–5 min" → 180 (uses lower bound)
+// "45s hold" → 45, "30s each side" → 30, "1 min hold" → 60, "2 min" → 120
 function parseTimerSeconds(setsStr) {
   if (!setsStr) return 0;
   const s = setsStr.toLowerCase();
-  // Skip rep-based: "3×12", "10 reps", "25 forward", "5 rounds", "8 each side" (no s/min)
   if (/^\d+[×x]/.test(s)) return 0;
   if (/\d+\s*(reps|forward|back|rounds|each way|circles)/.test(s) && !/min|sec|s\b/.test(s)) return 0;
-  // "Xs hold" or "Xs each" or just "Xs"
   let m = s.match(/(\d+)\s*s\b/);
   if (m) return parseInt(m[1]);
-  // "X–Y min" — use lower bound (check before single-number)
   m = s.match(/(\d+)[–-](\d+)\s*min/);
   if (m) return parseInt(m[1]) * 60;
-  // "X min hold" or "X min"
   m = s.match(/(\d+)\s*min/);
   if (m) return parseInt(m[1]) * 60;
   return 0;
+}
+
+// Detect if an exercise requires both sides (left then right)
+function exHasBothSides(ex) {
+  const text = ((ex.name || '') + ' ' + (ex.sets || '')).toLowerCase();
+  return /each side|each leg|each arm|per side|l\/r/.test(text);
 }
 
 const _timerOverlay = () => document.getElementById('timer-overlay');
@@ -5332,150 +5408,259 @@ const _timerBig = () => document.getElementById('timer-big');
 const _timerLabel = () => document.getElementById('timer-label');
 const _timerRing = () => document.getElementById('timer-ring');
 const _timerExName = () => document.getElementById('timer-ex-name');
-const RING_CIRCUMFERENCE = 2 * Math.PI * 90; // ~565.5
+const _timerPos = () => document.getElementById('timer-position');
+const _timerSide = () => document.getElementById('timer-side-label');
+const RING_CIRCUMFERENCE = 2 * Math.PI * 90;
 
-function startExTimer(seconds, btnEl) {
-  // If already running, stop
-  if (_activeTimer) { stopExTimer(); return; }
-
-  // Get the exercise name from the row
-  const exItem = btnEl.closest('.exercise-item');
-  const exNameEl = exItem ? exItem.querySelector('.ex-name') : null;
-  const exName = exNameEl ? exNameEl.textContent.split(/\d+s|\d+\s*min/)[0].trim() : '';
-
-  btnEl.classList.add('running');
-
-  // Open full-screen overlay
-  const overlay = _timerOverlay();
-  const big = _timerBig();
-  const label = _timerLabel();
-  const ring = _timerRing();
-  const nameEl = _timerExName();
-
-  nameEl.textContent = exName;
-  big.className = 'timer-big-number leadin';
-  label.textContent = 'GET READY';
-  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
-  ring.style.strokeDashoffset = '0';
-  ring.style.stroke = 'rgba(255,255,255,0.2)';
-  overlay.classList.add('open');
-
-  // Keep screen awake if possible
-  let wakeLock = null;
-  if (navigator.wakeLock) {
-    navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
-  }
-
-  // 5-second lead-in
-  let leadIn = 5;
-  big.textContent = leadIn;
-
-  const leadInterval = setInterval(() => {
-    leadIn--;
-    if (leadIn > 0) {
-      big.textContent = leadIn;
-      if (navigator.vibrate) navigator.vibrate(50);
-    } else {
-      clearInterval(leadInterval);
-      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-      _runExTimer(seconds, btnEl, wakeLock);
-    }
-  }, 1000);
-
-  _activeTimer = { interval: leadInterval, btnEl, total: seconds, isLeadIn: true, wakeLock };
-}
-
-function _runExTimer(seconds, btnEl, wakeLock) {
-  const total = seconds;
-  const big = _timerBig();
-  const label = _timerLabel();
-  const ring = _timerRing();
-
-  big.className = 'timer-big-number';
-  label.textContent = 'HOLD';
-  ring.style.stroke = 'var(--green, #22c55e)';
-
-  const startTime = Date.now();
-  const endTime = startTime + total * 1000;
-
-  function tick() {
-    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
-    const mins = Math.floor(remaining / 60);
-    const secs = remaining % 60;
-
-    big.textContent = mins > 0 ? mins + ':' + String(secs).padStart(2, '0') : remaining;
-    big.className = 'timer-big-number' +
-      (remaining <= 3 ? ' critical' : remaining <= 10 ? ' warning' : '');
-
-    // Progress ring
-    const pct = remaining / total;
-    ring.style.strokeDashoffset = (1 - pct) * RING_CIRCUMFERENCE;
-    ring.style.stroke = remaining <= 3 ? 'var(--red, #ef4444)' : remaining <= 10 ? 'var(--orange, #f59e0b)' : 'var(--green, #22c55e)';
-
-    // Label updates
-    if (remaining <= 3 && remaining > 0) label.textContent = 'ALMOST';
-    else if (remaining <= 10) label.textContent = 'KEEP GOING';
-
-    if (remaining <= 0) {
-      timerDone(btnEl, wakeLock);
-    }
-  }
-
-  tick();
-  const interval = setInterval(tick, 250);
-  _activeTimer = { interval, endTime, btnEl, total, isLeadIn: false, wakeLock };
-}
-
-function stopExTimer() {
+// Single tap on overlay: skip to next (queue) or cancel (solo)
+// Long press / hold would be complex — keep tap = skip/cancel
+function handleTimerTap(e) {
   if (!_activeTimer) return;
-  clearInterval(_activeTimer.interval);
-  if (_activeTimer.wakeLock) { try { _activeTimer.wakeLock.release(); } catch(e) {} }
-  _activeTimer.btnEl.classList.remove('running');
-  _activeTimer.btnEl.textContent = '⏱';
-  _timerOverlay().classList.remove('open');
-  _activeTimer = null;
+  if (_timerQueue) {
+    // In queue mode: tap skips to next exercise
+    _advanceQueue();
+  } else {
+    stopExTimer();
+  }
 }
 
-function timerDone(btnEl, wakeLock) {
-  if (_activeTimer) clearInterval(_activeTimer.interval);
-  const big = _timerBig();
-  const label = _timerLabel();
-  const ring = _timerRing();
-
-  big.textContent = '✓';
-  big.className = 'timer-big-number done';
-  label.textContent = 'DONE';
-  ring.style.strokeDashoffset = RING_CIRCUMFERENCE;
-  ring.style.stroke = 'var(--green, #22c55e)';
-
-  btnEl.classList.remove('running');
-  btnEl.textContent = '✓';
-
-  // Vibrate
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
-  // Audio beep
+function _beep(freqs) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 0.3, 0.6].forEach(delay => {
+    freqs.forEach(([freq, delay]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      osc.type = 'sine';
-      gain.gain.value = 0.2;
+      osc.frequency.value = freq; osc.type = 'sine'; gain.gain.value = 0.2;
       osc.start(ctx.currentTime + delay);
       osc.stop(ctx.currentTime + delay + 0.2);
     });
   } catch(e) {}
+}
 
-  // Close overlay after 2 seconds, reset button after 3
+function _startLeadIn(seconds, label, sideLabel, onDone) {
+  const big = _timerBig(), lbl = _timerLabel(), ring = _timerRing(), side = _timerSide();
+  big.className = 'timer-big-number leadin';
+  lbl.textContent = 'GET READY';
+  side.textContent = sideLabel || '';
+  ring.style.strokeDasharray = RING_CIRCUMFERENCE;
+  ring.style.strokeDashoffset = '0';
+  ring.style.stroke = 'rgba(255,255,255,0.2)';
+  document.getElementById('timer-ex-name').textContent = label;
+  let leadIn = 3;
+  big.textContent = leadIn;
+  const iv = setInterval(() => {
+    leadIn--;
+    if (leadIn > 0) {
+      big.textContent = leadIn;
+      if (navigator.vibrate) navigator.vibrate(40);
+    } else {
+      clearInterval(iv);
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+      onDone();
+    }
+  }, 1000);
+  return iv;
+}
+
+function _runCountdown(seconds, sideLabel, onDone) {
+  const big = _timerBig(), lbl = _timerLabel(), ring = _timerRing(), side = _timerSide();
+  big.className = 'timer-big-number';
+  lbl.textContent = 'HOLD';
+  side.textContent = sideLabel || '';
+  const endTime = Date.now() + seconds * 1000;
+
+  function tick() {
+    const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    const mins = Math.floor(remaining / 60);
+    big.textContent = mins > 0 ? mins + ':' + String(remaining % 60).padStart(2, '0') : remaining;
+    big.className = 'timer-big-number' + (remaining <= 3 ? ' critical' : remaining <= 10 ? ' warning' : '');
+    ring.style.strokeDashoffset = (1 - remaining / seconds) * RING_CIRCUMFERENCE;
+    ring.style.stroke = remaining <= 3 ? 'var(--red,#ef4444)' : remaining <= 10 ? 'var(--orange,#f59e0b)' : 'var(--green,#22c55e)';
+    if (remaining <= 3 && remaining > 0) lbl.textContent = 'ALMOST';
+    else if (remaining <= 10) lbl.textContent = 'KEEP GOING';
+    if (remaining <= 0) { clearInterval(iv); onDone(); }
+  }
+  tick();
+  const iv = setInterval(tick, 250);
+  return { interval: iv, endTime };
+}
+
+// ── Single exercise timer (called from popup timer buttons) ──
+function startExTimer(seconds, btnEl) {
+  if (_activeTimer) { stopExTimer(); return; }
+  const exItem = btnEl.closest('.exercise-item');
+  const exNameEl = exItem ? exItem.querySelector('.ex-name') : null;
+  const exName = exNameEl ? exNameEl.textContent.split(/\d+s|\d+\s*min/)[0].trim() : '';
+  const bothSides = exItem ? exHasBothSides({ name: exName, sets: (exNameEl ? exNameEl.textContent : '') }) : false;
+
+  btnEl.classList.add('running');
+  _timerPos().textContent = '';
+  _timerOverlay().classList.add('open');
+
+  let wakeLock = null;
+  if (navigator.wakeLock) navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+
+  function runPhase(sideLabel, onPhaseDone) {
+    const iv = _startLeadIn(seconds, exName, sideLabel, () => {
+      const { interval } = _runCountdown(seconds, sideLabel, onPhaseDone);
+      _activeTimer = { interval, btnEl, total: seconds, isLeadIn: false, wakeLock };
+    });
+    _activeTimer = { interval: iv, btnEl, total: seconds, isLeadIn: true, wakeLock };
+  }
+
+  if (bothSides) {
+    runPhase('← Left Side', () => {
+      // Pause between sides
+      _timerBig().textContent = '↔';
+      _timerBig().className = 'timer-big-number leadin';
+      _timerLabel().textContent = 'FLIP SIDES';
+      if (navigator.vibrate) navigator.vibrate([150, 100, 150]);
+      _beep([[660, 0], [880, 0.25]]);
+      setTimeout(() => runPhase('→ Right Side', () => _timerFinishSolo(btnEl, wakeLock)), 2000);
+    });
+  } else {
+    runPhase('', () => _timerFinishSolo(btnEl, wakeLock));
+  }
+}
+
+function _timerFinishSolo(btnEl, wakeLock) {
+  if (_activeTimer) clearInterval(_activeTimer.interval);
+  _activeTimer = null;
+  _showDone();
+  btnEl.classList.remove('running');
+  btnEl.textContent = '✓';
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
+  _beep([[880,0],[880,0.3],[880,0.6]]);
+  setTimeout(() => { _timerOverlay().classList.remove('open'); }, 2000);
+  setTimeout(() => { btnEl.textContent = '⏱'; if (wakeLock) try { wakeLock.release(); } catch(e) {} }, 3000);
+}
+
+function _showDone() {
+  _timerBig().textContent = '✓';
+  _timerBig().className = 'timer-big-number done';
+  _timerLabel().textContent = 'DONE';
+  _timerSide().textContent = '';
+  _timerRing().style.strokeDashoffset = RING_CIRCUMFERENCE;
+  _timerRing().style.stroke = 'var(--green,#22c55e)';
+}
+
+function stopExTimer() {
+  if (_timerQueue) { _stopQueue(); return; }
+  if (!_activeTimer) return;
+  clearInterval(_activeTimer.interval);
+  if (_activeTimer.wakeLock) try { _activeTimer.wakeLock.release(); } catch(e) {}
+  if (_activeTimer.btnEl) { _activeTimer.btnEl.classList.remove('running'); _activeTimer.btnEl.textContent = '⏱'; }
+  _timerOverlay().classList.remove('open');
+  _activeTimer = null;
+}
+
+// ── Full-routine timer queue mode ──
+function startRoutineTimer(routineKey, dateStr) {
+  const routine = ROUTINES[routineKey];
+  if (!routine) return;
+  const prefix = 'r_' + routineKey + '_';
+
+  const exercises = routine.exercises
+    .map((ex, i) => ({ ex, i }))
+    .filter(({ ex }) => !ex._divider && parseTimerSeconds(ex.sets) > 0)
+    .map(({ ex, i }) => ({
+      name: ex.name,
+      secs: parseTimerSeconds(ex.sets),
+      bothSides: exHasBothSides(ex),
+      checkKey: prefix + i
+    }));
+
+  if (exercises.length === 0) return;
+
+  let wakeLock = null;
+  if (navigator.wakeLock) navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+
+  // Close any open popup so the timer overlay gets full screen
+  closePopup();
+
+  _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock };
+  _timerOverlay().classList.add('open');
+  document.getElementById('timer-hint').textContent = 'tap to skip · hold cancel';
+  _runQueueStep();
+}
+
+function _runQueueStep() {
+  if (!_timerQueue) return;
+  const { exercises, idx, dateStr } = _timerQueue;
+  if (idx >= exercises.length) { _queueComplete(); return; }
+
+  const ex = exercises[idx];
+  _timerPos().textContent = (idx + 1) + ' / ' + exercises.length;
+
+  function afterPhases() {
+    // Auto-check the exercise
+    setChecked(dateStr, ex.checkKey, true);
+    // Also auto-check morning/stretch task if >50% done
+    const routine = ROUTINES[_timerQueue.routineKey];
+    if (routine) {
+      const total = routine.exercises.filter(e => !e._divider).length;
+      const checked = getChecked(dateStr);
+      const doneCount = Object.keys(checked).filter(k => k.startsWith('r_' + _timerQueue.routineKey + '_') && checked[k]).length;
+      const taskKey = _timerQueue.routineKey === 'morning' ? 's_morning'
+        : _timerQueue.routineKey.startsWith('stretch_') ? 's_stretch' : null;
+      if (taskKey && doneCount > total / 2) setChecked(dateStr, taskKey, true);
+    }
+    // Short done flash then advance
+    _showDone();
+    if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+    _beep([[880, 0], [880, 0.25]]);
+    setTimeout(() => {
+      if (_timerQueue) { _timerQueue.idx++; _runQueueStep(); }
+    }, 1200);
+  }
+
+  function runPhase(sideLabel, onDone) {
+    const iv = _startLeadIn(ex.secs, ex.name, sideLabel, () => {
+      const { interval } = _runCountdown(ex.secs, sideLabel, onDone);
+      _activeTimer = { interval, btnEl: null, total: ex.secs, isLeadIn: false, wakeLock: _timerQueue.wakeLock };
+    });
+    _activeTimer = { interval: iv, btnEl: null, total: ex.secs, isLeadIn: true, wakeLock: _timerQueue.wakeLock };
+  }
+
+  if (ex.bothSides) {
+    runPhase('← Left Side', () => {
+      _timerBig().textContent = '↔';
+      _timerBig().className = 'timer-big-number leadin';
+      _timerLabel().textContent = 'FLIP SIDES';
+      if (navigator.vibrate) navigator.vibrate([100, 80, 100]);
+      setTimeout(() => { if (_timerQueue) runPhase('→ Right Side', afterPhases); }, 2000);
+    });
+  } else {
+    runPhase('', afterPhases);
+  }
+}
+
+function _advanceQueue() {
+  if (!_timerQueue) return;
+  if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
+  _timerQueue.idx++;
+  _runQueueStep();
+}
+
+function _stopQueue() {
+  if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
+  if (_timerQueue && _timerQueue.wakeLock) try { _timerQueue.wakeLock.release(); } catch(e) {}
+  _timerQueue = null;
+  _timerOverlay().classList.remove('open');
+}
+
+function _queueComplete() {
+  if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
+  _timerPos().textContent = 'Complete!';
+  _showDone();
+  _timerLabel().textContent = 'ROUTINE DONE';
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+  _beep([[880,0],[1100,0.3],[1320,0.6]]);
   setTimeout(() => {
+    if (_timerQueue && _timerQueue.wakeLock) try { _timerQueue.wakeLock.release(); } catch(e) {}
+    _timerQueue = null;
     _timerOverlay().classList.remove('open');
-  }, 2000);
-  setTimeout(() => {
-    btnEl.textContent = '⏱';
-    if (wakeLock) { try { wakeLock.release(); } catch(e) {} }
-    _activeTimer = null;
   }, 3000);
 }
 
@@ -5485,7 +5670,7 @@ function timerDone(btnEl, wakeLock) {
 function openRoutinePopup(routineKey, dateStr) {
   // Handle combined stretch + bodyweight days
   if (routineKey === 'stretch_bodyweight' || routineKey === 'stretch_day') {
-    const strR = STRETCH_ROTATION[dateStr] || 'A';
+    const strR = getStretchRotation(dateStr);
     const stretchKey = 'stretch_' + strR;
     const stretchRoutine = ROUTINES[stretchKey];
     if (routineKey === 'stretch_bodyweight' && stretchRoutine) {
@@ -5561,6 +5746,10 @@ function openRoutinePopup(routineKey, dateStr) {
     }).join('') +
     '</div>' +
     (routineKey === 'gym' ? buildGymExtras(dateStr, exSets) : '') +
+    // Full routine timer button — only for routines that have timed exercises
+    (routine.exercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0)
+      ? `<div style="padding:10px 0 4px;text-align:center"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px">▶ Start Full Routine Timer</button></div>`
+      : '') +
     '<div class="notes-section">' +
       '<div class="notes-label">Notes for ' + dateStr + '</div>' +
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
@@ -5698,12 +5887,33 @@ function toggleExercise(el, dateStr, key) {
   const isDone = el.classList.toggle('done');
   el.querySelector('.check-box').textContent = isDone ? '✓' : '';
   setChecked(dateStr, key, isDone);
+  // Auto-check morning/stretch task when >50% of exercises are done
+  // key format: r_<routineKey>_<index>
+  const parts = key.split('_');
+  if (parts.length >= 3 && parts[0] === 'r') {
+    const routineKey = parts.slice(1, -1).join('_');
+    const routine = ROUTINES[routineKey];
+    if (routine && routine.exercises) {
+      const total = routine.exercises.filter(e => !e._divider).length;
+      const prefix = 'r_' + routineKey + '_';
+      const checked = getChecked(dateStr);
+      const done = Object.keys(checked).filter(k => k.startsWith(prefix) && checked[k]).length;
+      const taskKey = routineKey === 'morning' ? 's_morning'
+        : routineKey.startsWith('stretch_') ? 's_stretch' : null;
+      if (taskKey && done > total / 2) setChecked(dateStr, taskKey, true);
+    }
+  }
 }
 
 function toggleScheduleItem(el, dateStr, key) {
   const isDone = el.classList.toggle('done');
   el.querySelector('.check-box').textContent = isDone ? '✓' : '';
   setChecked(dateStr, key, isDone);
+}
+function toggleAlloTask(dateStr) {
+  const cur = getChecked(dateStr)['s_allo'];
+  setChecked(dateStr, 's_allo', !cur);
+  renderDaily();
 }
 
 // ── Row Auto-Adjustment ──
@@ -5833,6 +6043,17 @@ function wIcon(t) { return {row:"🚣",gym:"🏋️",stretch:"🧘",bodyweight:"
 function timingLabel(t) { return {morning:"☀️ Before Work",evening:"🌙 After Bedtime",anytime:"🕐 Anytime"}[t]||t.toUpperCase(); }
 function isAlloDay(d) { const day = (d instanceof Date ? d : new Date(d + 'T12:00:00')).getDay(); return [0,1,3,5].includes(day); } // Sun, Mon, Wed, Fri
 
+// Stretch rotation — reads localStorage override first, then hardcoded schedule
+function getStretchRotation(dateStr) {
+  return localStorage.getItem('str_rot_' + dateStr) || STRETCH_ROTATION[dateStr] || 'A';
+}
+function cycleStretchRotation(dateStr) {
+  const cur = getStretchRotation(dateStr);
+  const next = { A: 'B', B: 'C', C: 'A' }[cur] || 'A';
+  localStorage.setItem('str_rot_' + dateStr, next);
+  renderDaily();
+}
+
 // ── DAILY VIEW ──
 function renderDaily() {
   const now = new Date();
@@ -5843,7 +6064,7 @@ function renderDaily() {
   const rowAdj = adjustRowWorkout(woRaw, dateStr);
   const wo = rowAdj.adjusted ? rowAdj.wo : woRaw;
   const meals = getMeals(dateStr, isKidDay(dateStr));
-  const strR = STRETCH_ROTATION[dateStr] || "A";
+  const strR = getStretchRotation(dateStr);
   const allo = isAlloDay(now);
 
   const tmr = new Date(now); tmr.setDate(tmr.getDate()+1);
@@ -5944,7 +6165,7 @@ function renderDaily() {
           <span class="bw-ex-label">${ex.label}</span>
           <input class="bw-ex-input" type="number" min="0" step="1" placeholder="0"
             value="${exData[ex.key] || ''}"
-            onchange="setBodyExReps('${dateStr}','${ex.key}',this.value)"
+            onchange="setExReps('${dateStr}','${w.id}','${ex.key}',this.value)"
             onclick="event.stopPropagation()">
         </div>`
       ).join('')}</div>`;
@@ -5967,7 +6188,7 @@ function renderDaily() {
   const stretchTiersHtml = STRETCH_TIERS.map(t => {
     const isRec = t.id === 'standard';
     const tierRoutineKey = t.routineKey || strKey;
-    return `<div class="stretch-tier ${isRec ? 'recommended' : ''}" onclick="openRoutinePopup('${tierRoutineKey}','${dateStr}')">
+    return `<div class="stretch-tier ${isRec ? 'recommended' : ''}" onclick="closeWoSection('other-wo-${dateStr}');openRoutinePopup('${tierRoutineKey}','${dateStr}')">
       <span class="tier-icon">${t.icon}</span>
       <span>${t.label}${isRec ? ' ' + strR : ''}</span>
       ${isRec ? '<span style="font-size:8px;opacity:0.7">recommended</span>' : ''}
@@ -5997,7 +6218,9 @@ function renderDaily() {
       ${otherWoHtml}
     </div>
     <div class="wo-section-header" onclick="toggleWoSection('stretch-tiers-${dateStr}')">
-      <span>🧘 Stretching — ${strR}</span><span class="chevron">▸</span>
+      <span>🧘 Stretching — ${strR}</span>
+      <span onclick="event.stopPropagation();cycleStretchRotation('${dateStr}')" style="font-size:15px;padding:0 6px;cursor:pointer;opacity:0.7" title="Cycle A→B→C">↻</span>
+      <span class="chevron">▸</span>
     </div>
     <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
       <div class="stretch-tiers">${stretchTiersHtml}</div>
@@ -6171,7 +6394,7 @@ function renderDaily() {
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
       <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
-      ${allo ? '<div class="pill">💊 <span class="pill-val red">Allo day</span></div>' : ''}
+      ${allo ? `<div class="pill" style="cursor:pointer" onclick="toggleAlloTask('${dateStr}')" title="Tap to check off medication">💊 <span class="pill-val red">Allo day</span></div>` : ''}
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
@@ -6279,7 +6502,7 @@ function renderWeek() {
     const dayClass = cc === 'C' ? 'craig-day' : cc === 'L' ? 'lisa-day' : '';
     const badgeClass = cc === 'C' ? 'craig' : cc === 'L' ? 'lisa' : '';
     const badgeText = cc || '';
-    const strR = STRETCH_ROTATION[dStr] || 'A';
+    const strR = getStretchRotation(dStr);
 
     // Holiday / no-school bottom highlight
     const isStatHoliday = (ev || '').includes('🍁');
@@ -6417,7 +6640,7 @@ function renderMonth() {
       const wo = WORKOUT_PLANS[dStr];
       const ev = getEvents(dStr);
       const isToday = dStr === todayStr;
-      const strR = STRETCH_ROTATION[dStr] || 'A';
+      const strR = getStretchRotation(dStr);
       const isPastOrToday = dStr <= todayStr;
       const checked = getChecked(dStr);
 
