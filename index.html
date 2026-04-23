@@ -1498,6 +1498,7 @@
 
 <!-- ═══════════════ POPUP OVERLAY ═══════════════ -->
 <div class="timer-overlay" id="timer-overlay">
+  <div onclick="stopExTimer()" style="position:absolute;top:max(16px,env(safe-area-inset-top,12px));right:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,0.1);font-size:18px;color:rgba(255,255,255,0.7);cursor:pointer;z-index:1;font-weight:700">✕</div>
   <div id="timer-position" class="timer-pos-badge"></div>
   <div class="timer-exercise-name" id="timer-ex-name"></div>
   <div class="timer-ring-wrap">
@@ -1525,7 +1526,7 @@
     </div>
     <a id="timer-video-link" class="timer-video-link" target="_blank" style="display:none">▶ Watch Video</a>
   </div>
-  <div class="timer-cancel" id="timer-hint">tap ring to skip · pause for video</div>
+  <div class="timer-cancel" id="timer-hint">tap ring to skip</div>
 </div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
   <div class="popup">
