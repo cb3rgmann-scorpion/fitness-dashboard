@@ -1123,40 +1123,75 @@
     position: fixed; inset: 0; z-index: 10000;
     background: rgba(0,0,0,0.95);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer; user-select: none; -webkit-user-select: none;
+    gap: 0; padding: 20px 0;
+    user-select: none; -webkit-user-select: none;
     opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s;
   }
   .timer-overlay.open { opacity: 1; visibility: visible; }
+  .timer-pos-badge {
+    font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.35);
+    letter-spacing: 1px; min-height: 18px; margin-bottom: 6px;
+  }
   .timer-overlay .timer-exercise-name {
-    font-size: 18px; font-weight: 700; color: rgba(255,255,255,0.7);
-    margin-bottom: 12px; text-align: center; padding: 0 20px;
-    max-width: 90vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-size: 20px; font-weight: 700; color: rgba(255,255,255,0.85);
+    text-align: center; padding: 0 24px; max-width: 90vw;
+    word-break: break-word; white-space: normal; line-height: 1.25;
+    margin-bottom: 16px;
   }
-  .timer-overlay .timer-big-number {
-    font-size: min(40vw, 200px); font-weight: 900; line-height: 1;
-    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
-    color: var(--green, #22c55e); transition: color 0.3s;
-  }
-  .timer-overlay .timer-big-number.leadin { color: rgba(255,255,255,0.6); }
-  .timer-overlay .timer-big-number.warning { color: var(--orange, #f59e0b); }
-  .timer-overlay .timer-big-number.critical { color: var(--red, #ef4444); animation: timer-flash 0.5s ease-in-out infinite; }
-  .timer-overlay .timer-big-number.done { color: var(--green, #22c55e); animation: timer-flash 0.4s ease-in-out 3; }
-  .timer-overlay .timer-label {
-    font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.5);
-    margin-top: 16px; text-transform: uppercase; letter-spacing: 2px;
+  /* Ring container: SVG behind, content centered on top */
+  .timer-ring-wrap {
+    position: relative;
+    width: min(68vw, 300px); height: min(68vw, 300px);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
   .timer-overlay .timer-progress-ring {
-    position: absolute; width: min(70vw, 340px); height: min(70vw, 340px);
+    position: absolute; inset: 0; width: 100%; height: 100%;
   }
   .timer-overlay .timer-progress-ring circle {
     fill: none; stroke-width: 6; stroke-linecap: round;
     transform: rotate(-90deg); transform-origin: center;
   }
   .timer-overlay .timer-progress-ring .ring-bg { stroke: rgba(255,255,255,0.08); }
-  .timer-overlay .timer-progress-ring .ring-fg { stroke: var(--green, #22c55e); transition: stroke-dashoffset 0.3s linear, stroke 0.3s; }
+  .timer-overlay .timer-progress-ring .ring-fg { stroke: var(--green,#22c55e); transition: stroke-dashoffset 0.3s linear, stroke 0.3s; }
+  /* Content layered inside the ring */
+  .timer-ring-content {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; cursor: pointer;
+  }
+  .timer-side {
+    font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.55);
+    min-height: 20px; text-align: center;
+  }
+  .timer-overlay .timer-big-number {
+    font-size: min(36vw, 160px); font-weight: 900; line-height: 1;
+    font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
+    color: var(--green,#22c55e); transition: color 0.3s;
+  }
+  .timer-overlay .timer-big-number.leadin { color: rgba(255,255,255,0.6); }
+  .timer-overlay .timer-big-number.warning { color: var(--orange,#f59e0b); }
+  .timer-overlay .timer-big-number.critical { color: var(--red,#ef4444); animation: timer-flash 0.5s ease-in-out infinite; }
+  .timer-overlay .timer-big-number.done { color: var(--green,#22c55e); animation: timer-flash 0.4s ease-in-out 3; }
+  .timer-overlay .timer-label {
+    font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.45);
+    margin-top: 6px; text-transform: uppercase; letter-spacing: 2px;
+  }
+  .timer-pause-btn {
+    margin-top: 20px; padding: 10px 28px; border-radius: 24px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7);
+    cursor: pointer; letter-spacing: 0.5px;
+  }
+  .timer-video-link {
+    margin-top: 12px; padding: 8px 22px; border-radius: 20px;
+    background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+    font-size: 13px; font-weight: 700; color: #a5b4fc;
+    text-decoration: none; cursor: pointer;
+  }
   .timer-overlay .timer-cancel {
-    position: absolute; bottom: max(40px, env(safe-area-inset-bottom, 20px));
-    font-size: 14px; color: rgba(255,255,255,0.4); font-weight: 600;
+    position: absolute; bottom: max(32px, env(safe-area-inset-bottom,16px));
+    font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 500;
   }
   @keyframes timer-flash { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
   .row-adjust-banner {
@@ -1448,17 +1483,23 @@
 </div>
 
 <!-- ═══════════════ POPUP OVERLAY ═══════════════ -->
-<div class="timer-overlay" id="timer-overlay" onclick="handleTimerTap(event)">
-  <div id="timer-position" style="position:absolute;top:max(20px,env(safe-area-inset-top,16px));font-size:13px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px"></div>
-  <svg class="timer-progress-ring" viewBox="0 0 200 200">
-    <circle class="ring-bg" cx="100" cy="100" r="90"/>
-    <circle class="ring-fg" id="timer-ring" cx="100" cy="100" r="90" stroke-dasharray="565.5" stroke-dashoffset="0"/>
-  </svg>
+<div class="timer-overlay" id="timer-overlay">
+  <div id="timer-position" class="timer-pos-badge"></div>
   <div class="timer-exercise-name" id="timer-ex-name"></div>
-  <div id="timer-side-label" style="font-size:14px;font-weight:700;color:rgba(255,255,255,0.5);margin-bottom:4px;min-height:20px"></div>
-  <div class="timer-big-number" id="timer-big">45</div>
-  <div class="timer-label" id="timer-label">GET READY</div>
-  <div class="timer-cancel" id="timer-hint">tap to skip · hold to cancel</div>
+  <div class="timer-ring-wrap">
+    <svg class="timer-progress-ring" viewBox="0 0 200 200">
+      <circle class="ring-bg" cx="100" cy="100" r="90"/>
+      <circle class="ring-fg" id="timer-ring" cx="100" cy="100" r="90" stroke-dasharray="565.5" stroke-dashoffset="0"/>
+    </svg>
+    <div class="timer-ring-content" onclick="handleTimerTap(event)">
+      <div id="timer-side-label" class="timer-side"></div>
+      <div class="timer-big-number" id="timer-big">45</div>
+      <div class="timer-label" id="timer-label">GET READY</div>
+    </div>
+  </div>
+  <div id="timer-pause-btn" class="timer-pause-btn" onclick="toggleTimerPause()">⏸ Pause</div>
+  <a id="timer-video-link" class="timer-video-link" target="_blank" style="display:none">▶ Watch Video</a>
+  <div class="timer-cancel" id="timer-hint">tap ring to skip · pause for video</div>
 </div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
   <div class="popup">
@@ -5411,17 +5452,49 @@ const _timerExName = () => document.getElementById('timer-ex-name');
 const _timerPos = () => document.getElementById('timer-position');
 const _timerSide = () => document.getElementById('timer-side-label');
 const RING_CIRCUMFERENCE = 2 * Math.PI * 90;
+let _timerPaused = false;
+let _timerPausedRemaining = 0;
+let _timerPausedOnDone = null;
+let _timerPausedSideLabel = '';
 
-// Single tap on overlay: skip to next (queue) or cancel (solo)
-// Long press / hold would be complex — keep tap = skip/cancel
+// Tap ring = skip (queue) or cancel (solo). Pause button is separate.
 function handleTimerTap(e) {
+  if (_timerPaused) { _resumeTimer(); return; }
   if (!_activeTimer) return;
-  if (_timerQueue) {
-    // In queue mode: tap skips to next exercise
-    _advanceQueue();
-  } else {
-    stopExTimer();
-  }
+  if (_timerQueue) { _advanceQueue(); } else { stopExTimer(); }
+}
+
+function toggleTimerPause() {
+  if (_timerPaused) { _resumeTimer(); } else { _pauseTimer(); }
+}
+
+function _pauseTimer() {
+  if (!_activeTimer || _activeTimer.isLeadIn || _timerPaused) return;
+  clearInterval(_activeTimer.interval);
+  _timerPaused = true;
+  _timerPausedRemaining = Math.max(1, Math.ceil((_activeTimer.endTime - Date.now()) / 1000));
+  _timerPausedOnDone = _activeTimer.onDone;
+  _timerPausedSideLabel = _timerSide().textContent;
+  _timerLabel().textContent = 'PAUSED';
+  document.getElementById('timer-pause-btn').textContent = '▶ Resume';
+  // Show video link
+  const link = _activeTimer.videoLink || (_timerQueue && _timerQueue.exercises[_timerQueue.idx] ? _timerQueue.exercises[_timerQueue.idx].videoLink : '');
+  const linkEl = document.getElementById('timer-video-link');
+  if (link) { linkEl.href = link; linkEl.style.display = 'block'; }
+}
+
+function _resumeTimer() {
+  if (!_timerPaused) return;
+  _timerPaused = false;
+  document.getElementById('timer-pause-btn').textContent = '⏸ Pause';
+  document.getElementById('timer-video-link').style.display = 'none';
+  // Resume countdown from stored remaining
+  const { interval, endTime, onDone } = _runCountdown(
+    _activeTimer.total, _timerPausedSideLabel, _timerPausedOnDone, _timerPausedRemaining
+  );
+  _activeTimer.interval = interval;
+  _activeTimer.endTime = endTime;
+  _activeTimer.onDone = onDone;
 }
 
 function _beep(freqs) {
@@ -5463,12 +5536,13 @@ function _startLeadIn(seconds, label, sideLabel, onDone) {
   return iv;
 }
 
-function _runCountdown(seconds, sideLabel, onDone) {
+function _runCountdown(seconds, sideLabel, onDone, startFromRemaining) {
   const big = _timerBig(), lbl = _timerLabel(), ring = _timerRing(), side = _timerSide();
   big.className = 'timer-big-number';
   lbl.textContent = 'HOLD';
   side.textContent = sideLabel || '';
-  const endTime = Date.now() + seconds * 1000;
+  const initialRemaining = startFromRemaining || seconds;
+  const endTime = Date.now() + initialRemaining * 1000;
 
   function tick() {
     const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
@@ -5483,7 +5557,7 @@ function _runCountdown(seconds, sideLabel, onDone) {
   }
   tick();
   const iv = setInterval(tick, 250);
-  return { interval: iv, endTime };
+  return { interval: iv, endTime, onDone };
 }
 
 // ── Single exercise timer (called from popup timer buttons) ──
@@ -5492,10 +5566,14 @@ function startExTimer(seconds, btnEl) {
   const exItem = btnEl.closest('.exercise-item');
   const exNameEl = exItem ? exItem.querySelector('.ex-name') : null;
   const exName = exNameEl ? exNameEl.textContent.split(/\d+s|\d+\s*min/)[0].trim() : '';
-  const bothSides = exItem ? exHasBothSides({ name: exName, sets: (exNameEl ? exNameEl.textContent : '') }) : false;
+  const linkEl = exItem ? exItem.querySelector('.ex-link') : null;
+  const videoLink = linkEl ? linkEl.href : '';
+  const bothSides = exHasBothSides({ name: exName, sets: exNameEl ? exNameEl.textContent : '' });
 
   btnEl.classList.add('running');
   _timerPos().textContent = '';
+  document.getElementById('timer-pause-btn').style.display = 'block';
+  document.getElementById('timer-video-link').style.display = 'none';
   _timerOverlay().classList.add('open');
 
   let wakeLock = null;
@@ -5503,15 +5581,14 @@ function startExTimer(seconds, btnEl) {
 
   function runPhase(sideLabel, onPhaseDone) {
     const iv = _startLeadIn(seconds, exName, sideLabel, () => {
-      const { interval } = _runCountdown(seconds, sideLabel, onPhaseDone);
-      _activeTimer = { interval, btnEl, total: seconds, isLeadIn: false, wakeLock };
+      const result = _runCountdown(seconds, sideLabel, onPhaseDone);
+      _activeTimer = { interval: result.interval, endTime: result.endTime, onDone: onPhaseDone, btnEl, total: seconds, isLeadIn: false, wakeLock, videoLink };
     });
-    _activeTimer = { interval: iv, btnEl, total: seconds, isLeadIn: true, wakeLock };
+    _activeTimer = { interval: iv, btnEl, total: seconds, isLeadIn: true, wakeLock, videoLink };
   }
 
   if (bothSides) {
     runPhase('← Left Side', () => {
-      // Pause between sides
       _timerBig().textContent = '↔';
       _timerBig().className = 'timer-big-number leadin';
       _timerLabel().textContent = 'FLIP SIDES';
@@ -5568,7 +5645,8 @@ function startRoutineTimer(routineKey, dateStr) {
       name: ex.name,
       secs: parseTimerSeconds(ex.sets),
       bothSides: exHasBothSides(ex),
-      checkKey: prefix + i
+      checkKey: prefix + i,
+      videoLink: ex.link || ''
     }));
 
   if (exercises.length === 0) return;
@@ -5579,9 +5657,12 @@ function startRoutineTimer(routineKey, dateStr) {
   // Close any open popup so the timer overlay gets full screen
   closePopup();
 
+  _timerPaused = false;
   _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock };
   _timerOverlay().classList.add('open');
-  document.getElementById('timer-hint').textContent = 'tap to skip · hold cancel';
+  document.getElementById('timer-pause-btn').textContent = '⏸ Pause';
+  document.getElementById('timer-pause-btn').style.display = 'block';
+  document.getElementById('timer-video-link').style.display = 'none';
   _runQueueStep();
 }
 
@@ -5615,12 +5696,12 @@ function _runQueueStep() {
     }, 1200);
   }
 
-  function runPhase(sideLabel, onDone) {
+  function runPhase(sideLabel, onPhaseDone) {
     const iv = _startLeadIn(ex.secs, ex.name, sideLabel, () => {
-      const { interval } = _runCountdown(ex.secs, sideLabel, onDone);
-      _activeTimer = { interval, btnEl: null, total: ex.secs, isLeadIn: false, wakeLock: _timerQueue.wakeLock };
+      const result = _runCountdown(ex.secs, sideLabel, onPhaseDone);
+      _activeTimer = { interval: result.interval, endTime: result.endTime, onDone: onPhaseDone, btnEl: null, total: ex.secs, isLeadIn: false, wakeLock: _timerQueue.wakeLock, videoLink: ex.videoLink };
     });
-    _activeTimer = { interval: iv, btnEl: null, total: ex.secs, isLeadIn: true, wakeLock: _timerQueue.wakeLock };
+    _activeTimer = { interval: iv, btnEl: null, total: ex.secs, isLeadIn: true, wakeLock: _timerQueue.wakeLock, videoLink: ex.videoLink };
   }
 
   if (ex.bothSides) {
@@ -5696,10 +5777,12 @@ function openRoutinePopup(routineKey, dateStr) {
   const prefix = 'r_' + routineKey + '_';
   const isTrackable = routineKey === 'gym' || routineKey === 'bodyweight';
   const exSets = isTrackable ? getExSets(dateStr) : {};
+  const hasTimedExs = routine.exercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0);
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
   document.getElementById('popup-body').innerHTML =
+    (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
     '<div class="exercise-list">' +
     routine.exercises.map((ex, i) => {
       if (ex._divider) {
@@ -5746,10 +5829,6 @@ function openRoutinePopup(routineKey, dateStr) {
     }).join('') +
     '</div>' +
     (routineKey === 'gym' ? buildGymExtras(dateStr, exSets) : '') +
-    // Full routine timer button — only for routines that have timed exercises
-    (routine.exercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0)
-      ? `<div style="padding:10px 0 4px;text-align:center"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:8px 20px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px">▶ Start Full Routine Timer</button></div>`
-      : '') +
     '<div class="notes-section">' +
       '<div class="notes-label">Notes for ' + dateStr + '</div>' +
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
