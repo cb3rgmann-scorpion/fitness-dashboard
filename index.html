@@ -1168,6 +1168,8 @@
     font-size: min(36vw, 160px); font-weight: 900; line-height: 1;
     font-family: 'JetBrains Mono', 'SF Mono', 'Menlo', monospace;
     color: var(--green,#22c55e); transition: color 0.3s;
+    -webkit-text-stroke: 5px rgba(0,0,0,0.7);
+    paint-order: stroke fill;
   }
   .timer-overlay .timer-big-number.leadin { color: rgba(255,255,255,0.6); }
   .timer-overlay .timer-big-number.warning { color: var(--orange,#f59e0b); }
@@ -1177,17 +1179,29 @@
     font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.45);
     margin-top: 6px; text-transform: uppercase; letter-spacing: 2px;
   }
+  .timer-controls { display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:16px; }
+  .timer-ctrl-row { display:flex; gap:8px; }
   .timer-pause-btn {
-    margin-top: 20px; padding: 10px 28px; border-radius: 24px;
+    padding: 10px 32px; border-radius: 24px;
     background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
     font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.7);
     cursor: pointer; letter-spacing: 0.5px;
   }
+  .timer-ctrl-btn {
+    padding: 10px 20px; border-radius: 24px;
+    font-size: 13px; font-weight: 700; cursor: pointer; letter-spacing: 0.3px;
+  }
+  .timer-btn-green {
+    background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); color: #4ade80;
+  }
+  .timer-btn-dim {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.55);
+  }
   .timer-video-link {
-    margin-top: 12px; padding: 8px 22px; border-radius: 20px;
+    padding: 8px 22px; border-radius: 20px;
     background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
     font-size: 13px; font-weight: 700; color: #a5b4fc;
-    text-decoration: none; cursor: pointer;
+    text-decoration: none; cursor: pointer; display:none;
   }
   .timer-overlay .timer-cancel {
     position: absolute; bottom: max(32px, env(safe-area-inset-bottom,16px));
@@ -1497,8 +1511,20 @@
       <div class="timer-label" id="timer-label">GET READY</div>
     </div>
   </div>
-  <div id="timer-pause-btn" class="timer-pause-btn" onclick="toggleTimerPause()">⏸ Pause</div>
-  <a id="timer-video-link" class="timer-video-link" target="_blank" style="display:none">▶ Watch Video</a>
+  <div id="timer-controls" class="timer-controls">
+    <div class="timer-ctrl-row" id="timer-row-pause">
+      <div class="timer-pause-btn" id="timer-pause-btn" onclick="toggleTimerPause()">⏸ Pause</div>
+    </div>
+    <div class="timer-ctrl-row" id="timer-row-resume" style="display:none">
+      <div class="timer-ctrl-btn timer-btn-green" onclick="toggleTimerPause()">▶ Resume</div>
+      <div class="timer-ctrl-btn timer-btn-dim" onclick="resetTimer()">↺ Reset</div>
+    </div>
+    <div class="timer-ctrl-row" id="timer-row-nav" style="display:none">
+      <div class="timer-ctrl-btn timer-btn-dim" onclick="prevQueue()">← Prev</div>
+      <div class="timer-ctrl-btn timer-btn-dim" onclick="_advanceQueue()">Next →</div>
+    </div>
+    <a id="timer-video-link" class="timer-video-link" target="_blank" style="display:none">▶ Watch Video</a>
+  </div>
   <div class="timer-cancel" id="timer-hint">tap ring to skip · pause for video</div>
 </div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
@@ -5468,6 +5494,16 @@ function toggleTimerPause() {
   if (_timerPaused) { _resumeTimer(); } else { _pauseTimer(); }
 }
 
+function _showPauseControls(show) {
+  document.getElementById('timer-row-pause').style.display = show ? 'none' : 'flex';
+  document.getElementById('timer-row-resume').style.display = show ? 'flex' : 'none';
+  document.getElementById('timer-row-nav').style.display = (show && _timerQueue) ? 'flex' : 'none';
+  const link = _activeTimer ? (_activeTimer.videoLink || '') : '';
+  const linkEl = document.getElementById('timer-video-link');
+  if (show && link) { linkEl.href = link; linkEl.style.display = 'block'; }
+  else { linkEl.style.display = 'none'; }
+}
+
 function _pauseTimer() {
   if (!_activeTimer || _activeTimer.isLeadIn || _timerPaused) return;
   clearInterval(_activeTimer.interval);
@@ -5476,25 +5512,40 @@ function _pauseTimer() {
   _timerPausedOnDone = _activeTimer.onDone;
   _timerPausedSideLabel = _timerSide().textContent;
   _timerLabel().textContent = 'PAUSED';
-  document.getElementById('timer-pause-btn').textContent = '▶ Resume';
-  // Show video link
-  const link = _activeTimer.videoLink || (_timerQueue && _timerQueue.exercises[_timerQueue.idx] ? _timerQueue.exercises[_timerQueue.idx].videoLink : '');
-  const linkEl = document.getElementById('timer-video-link');
-  if (link) { linkEl.href = link; linkEl.style.display = 'block'; }
+  _showPauseControls(true);
 }
 
 function _resumeTimer() {
   if (!_timerPaused) return;
   _timerPaused = false;
-  document.getElementById('timer-pause-btn').textContent = '⏸ Pause';
-  document.getElementById('timer-video-link').style.display = 'none';
-  // Resume countdown from stored remaining
+  _showPauseControls(false);
   const { interval, endTime, onDone } = _runCountdown(
     _activeTimer.total, _timerPausedSideLabel, _timerPausedOnDone, _timerPausedRemaining
   );
   _activeTimer.interval = interval;
   _activeTimer.endTime = endTime;
   _activeTimer.onDone = onDone;
+}
+
+function resetTimer() {
+  if (!_activeTimer) return;
+  clearInterval(_activeTimer.interval);
+  _timerPaused = false;
+  _showPauseControls(false);
+  // Restart the current side countdown from full duration
+  const { total, btnEl, wakeLock, videoLink, onDone } = _activeTimer;
+  const side = _timerPausedSideLabel || _timerSide().textContent;
+  const result = _runCountdown(total, side, onDone);
+  _activeTimer = { interval: result.interval, endTime: result.endTime, onDone, btnEl, total, isLeadIn: false, wakeLock, videoLink };
+}
+
+function prevQueue() {
+  if (!_timerQueue) return;
+  if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
+  _timerPaused = false;
+  _showPauseControls(false);
+  _timerQueue.idx = Math.max(0, _timerQueue.idx - 1);
+  _runQueueStep();
 }
 
 function _beep(freqs) {
@@ -5572,8 +5623,8 @@ function startExTimer(seconds, btnEl) {
 
   btnEl.classList.add('running');
   _timerPos().textContent = '';
-  document.getElementById('timer-pause-btn').style.display = 'block';
-  document.getElementById('timer-video-link').style.display = 'none';
+  _timerPaused = false;
+  _showPauseControls(false);
   _timerOverlay().classList.add('open');
 
   let wakeLock = null;
@@ -5628,6 +5679,7 @@ function stopExTimer() {
   clearInterval(_activeTimer.interval);
   if (_activeTimer.wakeLock) try { _activeTimer.wakeLock.release(); } catch(e) {}
   if (_activeTimer.btnEl) { _activeTimer.btnEl.classList.remove('running'); _activeTimer.btnEl.textContent = '⏱'; }
+  _timerPaused = false;
   _timerOverlay().classList.remove('open');
   _activeTimer = null;
 }
@@ -5660,9 +5712,7 @@ function startRoutineTimer(routineKey, dateStr) {
   _timerPaused = false;
   _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock };
   _timerOverlay().classList.add('open');
-  document.getElementById('timer-pause-btn').textContent = '⏸ Pause';
-  document.getElementById('timer-pause-btn').style.display = 'block';
-  document.getElementById('timer-video-link').style.display = 'none';
+  _showPauseControls(false);
   _runQueueStep();
 }
 
@@ -5728,6 +5778,7 @@ function _stopQueue() {
   if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
   if (_timerQueue && _timerQueue.wakeLock) try { _timerQueue.wakeLock.release(); } catch(e) {}
   _timerQueue = null;
+  _timerPaused = false;
   _timerOverlay().classList.remove('open');
 }
 
