@@ -6859,12 +6859,13 @@ function renderMonth() {
       const csvNote = CSV_NOTES[dStr] || '';
       let evHtml = '';
       if (ev) {
-        const evShort = ev.replace('🍁 ','').substring(0, 18);
+        const evFull = ev.replace('🍁 ','');
         const mcHol = ev.includes('🍁');
-        evHtml = `<div style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:700;background:${mcHol ? 'var(--red-bg)' : 'var(--purple-bg)'};color:${mcHol ? 'var(--red)' : 'var(--purple)'};">${eventIcon(dStr)} ${evShort}</div>`;
+        const evClamp = 'display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;word-break:break-word;line-height:1.2';
+        evHtml = `<div title="${evFull.replace(/"/g,'&quot;')}" style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:700;background:${mcHol ? 'var(--red-bg)' : 'var(--purple-bg)'};color:${mcHol ? 'var(--red)' : 'var(--purple)'};${evClamp}">${eventIcon(dStr)} ${evFull}</div>`;
       } else if (csvNote) {
-        const noteShort = csvNote.substring(0, 16);
-        evHtml = `<div style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:600;background:var(--cyan-bg);color:var(--cyan)">📝 ${noteShort}</div>`;
+        const noteClamp = 'display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;word-break:break-word;line-height:1.2';
+        evHtml = `<div title="${csvNote.replace(/"/g,'&quot;')}" style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:600;background:var(--cyan-bg);color:var(--cyan);${noteClamp}">📝 ${csvNote}</div>`;
       }
 
       const strHtml = `<div class="mc-stretch">🧘 ${strR}</div>`;
