@@ -1434,6 +1434,7 @@
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeDay(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-daily" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
       <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
@@ -1485,6 +1486,7 @@
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeWeek(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-week" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
       <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
@@ -1506,6 +1508,7 @@
       <button class="nav-btn" onclick="showMonthView()">Month</button>
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-month" style="font-size:13px"></button>
+      <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
       <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
@@ -1623,6 +1626,28 @@
   </div>
 </div>
 
+<!-- ═══════════════ MEAL SUGGESTIONS POPUP ═══════════════ -->
+<div class="popup-backdrop" id="meal-sugg-backdrop" onclick="if(event.target===this)closeMealSuggestions()">
+  <div class="popup" style="max-width:520px">
+    <div class="popup-header">
+      <div class="popup-title" id="meal-sugg-title">🍽️ Meal Suggestions</div>
+      <button class="popup-close" onclick="closeMealSuggestions()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="meal-sugg-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP SUGGESTIONS POPUP ═══════════════ -->
+<div class="popup-backdrop" id="app-sugg-backdrop" onclick="if(event.target===this)closeAppSuggestions()">
+  <div class="popup" style="max-width:520px">
+    <div class="popup-header">
+      <div class="popup-title">💡 Suggestions for next session</div>
+      <button class="popup-close" onclick="closeAppSuggestions()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="app-sugg-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ MONTH STATS POPUP ═══════════════ -->
 <div class="popup-backdrop" id="stats-backdrop" onclick="if(event.target===this)closeStats()">
   <div class="popup" style="max-width:920px;max-height:92vh;overflow-x:hidden">
@@ -1637,6 +1662,8 @@
           <button class="stats-tab" id="stats-mode-month" onclick="setStatsMode('month')" style="font-size:9px;padding:3px 7px;background:var(--purple-bg);color:var(--purple);border-color:var(--purple-border)" title="Monthly view">Mo</button>
           <button class="stats-tab" id="stats-mode-year" onclick="setStatsMode('year')" style="font-size:9px;padding:3px 7px" title="Yearly view">Yr</button>
         </div>
+        <button class="stats-tab" onclick="openAppSuggestions()" title="Suggestions for next session" style="flex-shrink:0;margin-left:6px;font-size:11px;padding:4px 7px">💡</button>
+        <button class="stats-tab" onclick="openSettings()" title="Settings" style="flex-shrink:0;margin-left:3px;font-size:11px;padding:4px 7px">⚙️</button>
         <button class="popup-close" onclick="closeStats()" style="flex-shrink:0;margin-left:6px;font-size:11px;padding:4px 8px">✕</button>
       </div>
       <div class="stats-tabs" id="stats-tabs" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -1678,6 +1705,8 @@ const DB_CACHE = {
   health: {},     // dateStr -> {steps, active_cal, resting_hr, sleep_hours}
   healthWorkouts: {}, // dateStr -> [{type, duration_min, distance_m, active_cal, avg_hr, max_hr, start_time}]
   healthLastSync: null, // ISO timestamp of most recent sync
+  dietEvents: {}, // dateStr -> [{id, time, tags:[], note}]  (exception/annotation log)
+  suggestions: null, // [{id, ts, note}]  (running app-feedback list, lazy-loaded from localStorage)
 };
 
 function initSupabase() {
@@ -3165,7 +3194,9 @@ function renderOverviewStats(container) {
   '<div style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:4px">Click a card for detailed stats & charts</div>';
 
   if (mWeightPoints.length >= 2) {
-    requestAnimationFrame(() => drawWeightProjectionChart('chart-weight-overview', mWeightPoints));
+    const _evRange = (typeof getDietEventsRange === 'function')
+      ? getDietEventsRange(days[0], days[days.length-1]) : [];
+    requestAnimationFrame(() => drawWeightProjectionChart('chart-weight-overview', mWeightPoints, _evRange));
   }
 }
 
@@ -3540,9 +3571,11 @@ function renderExerciseStats(container) {
     </div>` : ''}
   `;
 
+  const _evRange = (typeof getDietEventsRange === 'function')
+    ? getDietEventsRange(days[0], days[days.length-1]) : [];
   requestAnimationFrame(() => {
     drawBarChart('chart-completion', dailyCompletion, 'var(--cyan)');
-    if (weights.length > 0) drawWeightProjectionChart('chart-weight', weights);
+    if (weights.length > 0) drawWeightProjectionChart('chart-weight', weights, _evRange);
   });
 }
 
@@ -4207,7 +4240,7 @@ function drawLineChart(canvasId, data, colorVar, unit, invertBetter, minY, maxY)
   });
 }
 
-function drawWeightProjectionChart(canvasId, weights) {
+function drawWeightProjectionChart(canvasId, weights, events) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || weights.length === 0) return;
   const ctx = canvas.getContext('2d');
@@ -4306,6 +4339,50 @@ function drawWeightProjectionChart(canvasId, weights) {
     if (i === 0 || i === weights.length - 1 || i % step === 0)
       ctx.fillText(d.date.substring(5), toX(d.date), h - 2);
   });
+
+  // ── Diet event markers (annotations) ──
+  // Draw small colored dots near the top of the chart at each event date.
+  // Colors mirror DIET_EVENT_TAGS so the weight chart shows when alcohol /
+  // restaurant / binge events happened, helping spot multi-day water/sodium
+  // bumps that follow them.
+  if (events && events.length && typeof DIET_EVENT_TAGS !== 'undefined') {
+    const eventStartMs = startDate.getTime();
+    const eventEndMs = endDate.getTime();
+    // Group by date so we stack dots vertically per day
+    const byDate = {};
+    events.forEach(e => {
+      const t = new Date(e.date + 'T12:00:00').getTime();
+      if (t < eventStartMs || t > eventEndMs) return;
+      if (!byDate[e.date]) byDate[e.date] = [];
+      // One dot per tag on the event (or 1 generic dot if no tags)
+      const tags = (e.tags && e.tags.length) ? e.tags : ['note'];
+      tags.forEach(tagId => byDate[e.date].push(tagId));
+    });
+    Object.keys(byDate).forEach(date => {
+      const x = toX(date);
+      const tagIds = byDate[date].slice(0, 4); // cap visual stack at 4
+      tagIds.forEach((tagId, idx) => {
+        const tag = DIET_EVENT_TAGS.find(t => t.id === tagId);
+        const color = tag ? getComputedColor(tag.color) : getComputedColor('var(--text-muted)');
+        const y = pad.t + 3 + idx * 4;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      // Thin vertical guide-line down to the chart so eye can correlate
+      ctx.strokeStyle = getComputedColor('var(--text-muted)');
+      ctx.globalAlpha = 0.18;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([1, 2]);
+      ctx.beginPath();
+      ctx.moveTo(x, pad.t + 3 + tagIds.length * 4);
+      ctx.lineTo(x, pad.t + ch);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    });
+  }
 }
 
 function drawBarChart(canvasId, data, colorVar) {
@@ -5222,6 +5299,413 @@ function getFirstMeal(dateStr) { return _getDailyField(dateStr, 'first_meal'); }
 function setFirstMeal(dateStr, val) { dbSaveDaily(dateStr, 'first_meal', val); renderDaily(); }
 function getLastMeal(dateStr) { return _getDailyField(dateStr, 'last_meal'); }
 function setLastMeal(dateStr, val) { dbSaveDaily(dateStr, 'last_meal', val); renderDaily(); }
+
+// ── DIET EVENT (exception / annotation) TRACKING ──
+// Lightweight food/lifestyle annotations layered on top of meal tracking.
+// Use case: flag deviations (donut, restaurant, alcohol, binge) so they can
+// be correlated with weight changes 24-72h later.
+// IMPORTANT REALISM NOTE: short-term weight changes after these events are
+// almost entirely water/sodium/glycogen — not adipose. Patterns over weeks
+// are signal; same-day spikes are noise.
+const DIET_EVENT_TAGS = [
+  { id: 'alcohol',    icon: '🍷', label: 'Alcohol',    color: 'var(--orange)' },
+  { id: 'restaurant', icon: '🍔', label: 'Eating out', color: 'var(--purple)' },
+  { id: 'binge',      icon: '🥧', label: 'Binge',      color: 'var(--red)'    },
+  { id: 'note',       icon: '📝', label: 'Note',       color: 'var(--cyan)'   },
+];
+function _newId() { return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function getDietEvents(dateStr) {
+  if (DB_CACHE.dietEvents[dateStr]) return DB_CACHE.dietEvents[dateStr];
+  try {
+    const arr = JSON.parse(localStorage.getItem('dietevent_' + dateStr)) || [];
+    DB_CACHE.dietEvents[dateStr] = arr;
+    return arr;
+  } catch(e) { return []; }
+}
+function _saveDietEvents(dateStr, arr) {
+  DB_CACHE.dietEvents[dateStr] = arr;
+  localStorage.setItem('dietevent_' + dateStr, JSON.stringify(arr));
+}
+function addDietEvent(dateStr, tags, note, time) {
+  const arr = getDietEvents(dateStr).slice();
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  arr.push({
+    id: _newId(),
+    time: time || (hh + ':' + mm),
+    tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
+    note: (note || '').trim(),
+  });
+  _saveDietEvents(dateStr, arr);
+  if (typeof renderDaily === 'function') renderDaily();
+}
+function removeDietEvent(dateStr, id) {
+  const arr = getDietEvents(dateStr).filter(e => e.id !== id);
+  _saveDietEvents(dateStr, arr);
+  if (typeof renderDaily === 'function') renderDaily();
+}
+function getDietEventsRange(startDateStr, endDateStr) {
+  // Returns flat list of {date, time, tags, note, id} for all events in range.
+  const out = [];
+  const start = new Date(startDateStr + 'T12:00:00');
+  const end = new Date(endDateStr + 'T12:00:00');
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const ds_ = d.toISOString().slice(0,10);
+    const evs = getDietEvents(ds_);
+    evs.forEach(e => out.push({ ...e, date: ds_ }));
+  }
+  return out;
+}
+
+// ── APP SUGGESTIONS (running notes for next session w/ Claude) ──
+function getSuggestions() {
+  if (DB_CACHE.suggestions !== null) return DB_CACHE.suggestions;
+  try { DB_CACHE.suggestions = JSON.parse(localStorage.getItem('app_suggestions')) || []; }
+  catch(e) { DB_CACHE.suggestions = []; }
+  return DB_CACHE.suggestions;
+}
+function _saveSuggestions() {
+  localStorage.setItem('app_suggestions', JSON.stringify(DB_CACHE.suggestions || []));
+}
+function addSuggestion(note) {
+  const text = (note || '').trim();
+  if (!text) return;
+  const list = getSuggestions();
+  list.push({ id: _newId(), ts: new Date().toISOString(), note: text });
+  _saveSuggestions();
+}
+function removeSuggestion(id) {
+  DB_CACHE.suggestions = getSuggestions().filter(s => s.id !== id);
+  _saveSuggestions();
+}
+function clearSuggestions() {
+  DB_CACHE.suggestions = [];
+  _saveSuggestions();
+}
+
+// ── APP SUGGESTIONS POPUP ──
+function openAppSuggestions() {
+  const bd = document.getElementById('app-sugg-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  renderAppSuggPopup();
+  setTimeout(() => {
+    const inp = document.getElementById('app-sugg-input');
+    if (inp) inp.focus();
+  }, 50);
+}
+function closeAppSuggestions() {
+  const bd = document.getElementById('app-sugg-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function renderAppSuggPopup() {
+  const body = document.getElementById('app-sugg-body');
+  if (!body) return;
+  const list = getSuggestions();
+  // Newest first
+  const sorted = list.slice().sort((a,b) => (a.ts < b.ts ? 1 : -1));
+  const fmt = ts => {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { month:'short', day:'numeric' }) + ' ' +
+             d.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+    } catch(e) { return ''; }
+  };
+  body.innerHTML = `
+    <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--divider)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">
+        Jot down ideas, bugs, or tweaks as they occur to you. Reviewed at the start of the next Claude session.
+      </div>
+      <textarea id="app-sugg-input" placeholder="e.g. add export to CSV, the week view is cramped on phone..."
+        onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){_submitAppSugg();event.preventDefault();}"
+        style="width:100%;min-height:60px;padding:8px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:13px;font-family:inherit;box-sizing:border-box;resize:vertical"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px">
+        <span style="font-size:9px;color:var(--text-muted)">⌘/Ctrl + Enter to add</span>
+        <button onclick="_submitAppSugg()"
+          style="padding:6px 14px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+ Add note</button>
+      </div>
+    </div>
+    ${sorted.length === 0
+      ? '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;font-style:italic">No suggestions yet.</div>'
+      : `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">Notes (${sorted.length})</div>` +
+        sorted.map(s => {
+          const noteText = (s.note || '').replace(/</g,'&lt;').replace(/\n/g,'<br>');
+          return `<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid var(--card-border);border-radius:8px;margin-bottom:6px;background:var(--card-bg)">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:9px;color:var(--text-muted);margin-bottom:3px">${fmt(s.ts)}</div>
+              <div style="font-size:12px;color:var(--text);line-height:1.4">${noteText}</div>
+            </div>
+            <span onclick="if(confirm('Delete this note?')){removeSuggestion('${s.id}');renderAppSuggPopup();}"
+              style="cursor:pointer;color:var(--text-muted);font-size:14px;padding:0 4px" title="Delete">×</span>
+          </div>`;
+        }).join('')
+    }
+    ${sorted.length > 0 ? `<div style="margin-top:10px;text-align:center">
+      <button onclick="if(confirm('Clear ALL suggestions? (Use this after I\\'ve reviewed them in our next session.)')){clearSuggestions();renderAppSuggPopup();}"
+        style="padding:5px 12px;border-radius:5px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">
+        Clear all (after review)
+      </button>
+    </div>` : ''}
+  `;
+}
+function _submitAppSugg() {
+  const inp = document.getElementById('app-sugg-input');
+  if (!inp) return;
+  const txt = inp.value.trim();
+  if (!txt) return;
+  addSuggestion(txt);
+  inp.value = '';
+  renderAppSuggPopup();
+  setTimeout(() => { inp.focus(); }, 30);
+}
+
+// ── MEAL SUGGESTIONS (family-suggestable meals for the day) ──
+// Replaces the old prescriptive Breakfast/Lunch/Dinner slot system.
+// Data shape: per-date array of {id, text, suggestedBy, ts, status}
+//   status = 'open' | 'eating' | 'declined'
+// suggestedBy is a free string for now ('me'). Future: kids/Lisa logins.
+function getMealSuggestions(dateStr) {
+  try { return JSON.parse(localStorage.getItem('mealsugg_' + dateStr)) || []; }
+  catch(e) { return []; }
+}
+function _saveMealSuggestions(dateStr, arr) {
+  localStorage.setItem('mealsugg_' + dateStr, JSON.stringify(arr));
+}
+function addMealSuggestion(dateStr, text, suggestedBy) {
+  const t = (text || '').trim();
+  if (!t) return;
+  const arr = getMealSuggestions(dateStr);
+  arr.push({
+    id: _newId(),
+    text: t,
+    suggestedBy: (suggestedBy || 'me').trim() || 'me',
+    ts: new Date().toISOString(),
+    status: 'open',
+  });
+  _saveMealSuggestions(dateStr, arr);
+  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
+  if (typeof renderDaily === 'function') renderDaily();
+}
+function setMealSuggestionStatus(dateStr, id, status) {
+  const arr = getMealSuggestions(dateStr).map(s =>
+    s.id === id ? { ...s, status: status } : s);
+  _saveMealSuggestions(dateStr, arr);
+  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
+  if (typeof renderDaily === 'function') renderDaily();
+}
+function removeMealSuggestion(dateStr, id) {
+  const arr = getMealSuggestions(dateStr).filter(s => s.id !== id);
+  _saveMealSuggestions(dateStr, arr);
+  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
+  if (typeof renderDaily === 'function') renderDaily();
+}
+
+// In-card compact header: shows button + summary of today's suggestions.
+function buildMealSuggestionsHeader(dateStr) {
+  const arr = getMealSuggestions(dateStr);
+  const eating = arr.filter(s => s.status === 'eating').length;
+  const open = arr.filter(s => s.status === 'open').length;
+  // Inline preview of up to 2 active (eating + open) suggestions
+  const preview = arr
+    .filter(s => s.status !== 'declined')
+    .slice(0, 2)
+    .map(s => {
+      const icon = s.status === 'eating' ? '✓' : '·';
+      const color = s.status === 'eating' ? 'var(--green)' : 'var(--text-muted)';
+      return `<div style="display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:11px;color:var(--text)">
+        <span style="color:${color};font-weight:700;width:8px;text-align:center">${icon}</span>
+        <span style="flex:1">${(s.text || '').replace(/</g,'&lt;')}</span>
+        <span style="font-size:8px;color:var(--text-muted)">${(s.suggestedBy || 'me')}</span>
+      </div>`;
+    }).join('');
+  const moreCount = arr.length - Math.min(2, arr.filter(s => s.status !== 'declined').length);
+  const moreLine = arr.length > 2
+    ? `<div style="font-size:9px;color:var(--text-muted);text-align:center;padding:2px 0;cursor:pointer" onclick="openMealSuggestions('${dateStr}')">+ ${arr.length - 2} more</div>`
+    : '';
+  const btnLabel = arr.length === 0 ? '🍽️ Suggest a meal' : `🍽️ Suggestions${eating ? ' · ' + eating + ' eating' : ''}${open ? ' · ' + open + ' open' : ''}`;
+  return `
+    <div style="padding:6px 8px 4px;display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--divider)">
+      <button onclick="openMealSuggestions('${dateStr}')"
+        style="flex:1;padding:5px 10px;border-radius:6px;border:1px solid var(--cyan-border,var(--input-border));background:var(--cyan-bg,var(--input-bg));color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left">
+        ${btnLabel}
+      </button>
+      <span style="font-size:9px;color:var(--text-muted);cursor:pointer" onclick="openRecipeLibrary()" title="Open recipe library">📖 recipes</span>
+    </div>
+    ${preview ? '<div style="padding:2px 0">' + preview + '</div>' : '<div style="padding:6px 8px;font-size:10px;color:var(--text-muted);font-style:italic">No suggestions yet — tap above to add one</div>'}
+    ${moreLine}
+  `;
+}
+
+let _mealSuggCurrentDate = null;
+function openMealSuggestions(dateStr) {
+  _mealSuggCurrentDate = dateStr;
+  const bd = document.getElementById('meal-sugg-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  renderMealSuggPopup();
+  setTimeout(() => {
+    const inp = document.getElementById('meal-sugg-input');
+    if (inp) inp.focus();
+  }, 50);
+}
+function closeMealSuggestions() {
+  const bd = document.getElementById('meal-sugg-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function renderMealSuggPopup() {
+  const dateStr = _mealSuggCurrentDate;
+  if (!dateStr) return;
+  const body = document.getElementById('meal-sugg-body');
+  const title = document.getElementById('meal-sugg-title');
+  if (!body) return;
+  const arr = getMealSuggestions(dateStr);
+  const dt = new Date(dateStr + 'T12:00:00');
+  const dayLabel = dt.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' });
+  if (title) title.textContent = '🍽️ Meal Suggestions — ' + dayLabel;
+
+  const groups = {
+    eating: arr.filter(s => s.status === 'eating'),
+    open: arr.filter(s => s.status === 'open'),
+    declined: arr.filter(s => s.status === 'declined'),
+  };
+  const renderRow = (s) => {
+    const isEating = s.status === 'eating';
+    const isDeclined = s.status === 'declined';
+    const noteText = (s.text || '').replace(/</g,'&lt;');
+    const suggestedBy = (s.suggestedBy || 'me').replace(/</g,'&lt;');
+    const tsLabel = (() => {
+      try { const d = new Date(s.ts); return d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}); }
+      catch(e) { return ''; }
+    })();
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--card-border);border-radius:8px;margin-bottom:6px;background:${isEating ? 'var(--green-bg)' : isDeclined ? 'transparent' : 'var(--card-bg)'};opacity:${isDeclined ? '0.55' : '1'}">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:var(--text);text-decoration:${isDeclined ? 'line-through' : 'none'}">${noteText}</div>
+        <div style="font-size:9px;color:var(--text-muted);margin-top:2px">${suggestedBy} · ${tsLabel}</div>
+      </div>
+      <button onclick="setMealSuggestionStatus('${dateStr}','${s.id}','${isEating ? 'open' : 'eating'}')"
+        title="${isEating ? 'Un-mark eating' : 'Mark as eating this'}"
+        style="padding:4px 9px;border-radius:5px;border:1px solid var(--green-border);background:${isEating ? 'var(--green)' : 'transparent'};color:${isEating ? '#000' : 'var(--green)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+        ${isEating ? '✓' : 'Eat'}
+      </button>
+      <button onclick="setMealSuggestionStatus('${dateStr}','${s.id}','${isDeclined ? 'open' : 'declined'}')"
+        title="${isDeclined ? 'Re-open' : 'Decline'}"
+        style="padding:4px 9px;border-radius:5px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+        ${isDeclined ? '↶' : 'Skip'}
+      </button>
+      <span onclick="if(confirm('Delete this suggestion?'))removeMealSuggestion('${dateStr}','${s.id}')" style="cursor:pointer;color:var(--text-muted);font-size:14px;padding:0 4px" title="Delete">×</span>
+    </div>`;
+  };
+  const sectionHtml = (label, items) => items.length === 0 ? '' :
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:10px 0 4px">${label} (${items.length})</div>${items.map(renderRow).join('')}`;
+
+  body.innerHTML = `
+    <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--divider)">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">
+        Add a meal idea for this day — yours, or eventually one your kids or Lisa can suggest.
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="meal-sugg-input" type="text" placeholder="e.g. chicken stir-fry with rice"
+          onkeydown="if(event.key==='Enter'){_submitMealSugg();event.preventDefault();}"
+          style="flex:1;padding:7px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:13px;font-family:inherit">
+        <input id="meal-sugg-by" type="text" placeholder="me"
+          style="width:70px;padding:7px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit" title="Suggested by">
+        <button onclick="_submitMealSugg()"
+          style="padding:7px 14px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
+      </div>
+    </div>
+    ${arr.length === 0
+      ? '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:12px;font-style:italic">No suggestions yet for this day.</div>'
+      : sectionHtml('🍽️ Eating', groups.eating) + sectionHtml('💭 Open ideas', groups.open) + sectionHtml('🚫 Declined', groups.declined)
+    }
+  `;
+}
+function _submitMealSugg() {
+  const inp = document.getElementById('meal-sugg-input');
+  const byInp = document.getElementById('meal-sugg-by');
+  if (!inp || !_mealSuggCurrentDate) return;
+  const text = inp.value;
+  const by = byInp ? byInp.value : 'me';
+  if (!text.trim()) return;
+  addMealSuggestion(_mealSuggCurrentDate, text, by);
+  inp.value = '';
+  // Don't clear "by" field — user can add several from same person
+  inp.focus();
+}
+
+// ── DIET EVENT UI HELPERS ──
+// Transient draft state — which tags are toggled on the inline form, per date.
+window._dietDraft = window._dietDraft || {};
+function _getDraft(dateStr) {
+  if (!window._dietDraft[dateStr]) window._dietDraft[dateStr] = { tags: {}, note: '' };
+  return window._dietDraft[dateStr];
+}
+function dietDraftToggleTag(dateStr, tagId) {
+  const d = _getDraft(dateStr);
+  d.tags[tagId] = !d.tags[tagId];
+  // Re-render just by toggling the pill class without a full renderDaily
+  const el = document.querySelector('[data-diet-tag="' + dateStr + '_' + tagId + '"]');
+  if (el) {
+    if (d.tags[tagId]) el.classList.add('diet-tag-on');
+    else el.classList.remove('diet-tag-on');
+  }
+}
+function commitDietEvent(dateStr) {
+  const d = _getDraft(dateStr);
+  const noteEl = document.getElementById('diet-event-note-' + dateStr);
+  const note = noteEl ? noteEl.value : '';
+  const selectedTags = Object.keys(d.tags).filter(k => d.tags[k]);
+  // Require either a tag or a note
+  if (selectedTags.length === 0 && !note.trim()) return;
+  // Reset draft BEFORE addDietEvent (which triggers re-render)
+  window._dietDraft[dateStr] = { tags: {}, note: '' };
+  addDietEvent(dateStr, selectedTags, note);
+}
+function buildDietEventStrip(dateStr) {
+  const events = getDietEvents(dateStr);
+  const draft = _getDraft(dateStr);
+  // Tag pills
+  const pillHtml = DIET_EVENT_TAGS.map(t => {
+    const on = !!draft.tags[t.id];
+    return `<span data-diet-tag="${dateStr}_${t.id}"
+      onclick="dietDraftToggleTag('${dateStr}','${t.id}')"
+      style="display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:600;padding:2px 6px;border-radius:10px;cursor:pointer;border:1px solid ${on ? t.color : 'var(--card-border)'};background:${on ? t.color : 'transparent'};color:${on ? '#000' : 'var(--text-dim)'}"
+      title="${t.label}">${t.icon}<span style="font-size:8px">${t.label}</span></span>`;
+  }).join('');
+  // Today's events
+  const eventListHtml = events.length === 0 ? '' : `
+    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
+      ${events.map(e => {
+        const tagIcons = (e.tags || []).map(tid => {
+          const t = DIET_EVENT_TAGS.find(x => x.id === tid);
+          return t ? `<span style="color:${t.color}">${t.icon}</span>` : '';
+        }).join('');
+        const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+        return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 5px 2px 6px;border-radius:8px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-dim);max-width:100%">
+          <span style="opacity:0.6;font-size:8px">${e.time}</span>
+          ${tagIcons}
+          ${noteText ? `<span style="color:var(--text)">${noteText}</span>` : ''}
+          <span onclick="removeDietEvent('${dateStr}','${e.id}')" style="cursor:pointer;color:var(--text-muted);font-size:11px;line-height:1;padding-left:2px" title="Delete">×</span>
+        </span>`;
+      }).join('')}
+    </div>`;
+  return `
+    <div style="padding-top:4px;border-top:1px solid var(--divider);margin-top:2px">
+      <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap">
+        <span style="font-size:8px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px">⚠ EVENT</span>
+        ${pillHtml}
+        <input id="diet-event-note-${dateStr}" type="text"
+          placeholder="optional note (e.g. '2 donuts')"
+          oninput="_getDraft('${dateStr}').note=this.value"
+          onkeydown="if(event.key==='Enter'){commitDietEvent('${dateStr}');event.preventDefault();}"
+          style="flex:1;min-width:80px;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-family:inherit"
+          value="${(draft.note || '').replace(/"/g,'&quot;')}">
+        <button onclick="commitDietEvent('${dateStr}')"
+          style="padding:2px 8px;border-radius:4px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1">+</button>
+      </div>
+      ${eventListHtml}
+    </div>`;
+}
 
 // ── SUPPLEMENT TRACKING ──
 const SUPPLEMENTS = [
@@ -6392,20 +6876,7 @@ function renderDaily() {
   // Meals card
   const waterCount = getWater(dateStr);
   const coffeeCount = getCoffee(dateStr);
-  document.getElementById('meals-card').innerHTML = meals.map((m,i) => {
-    const mDone = checked['m_'+i] ? 'done' : '';
-    const choiceIdx = getMealChoice(dateStr, i);
-    const selected = m.options[choiceIdx] || m.options[0];
-    const hasAlts = m.options.length > 1;
-    return `
-    <div class="check-row ${mDone}">
-      <div class="meal-time">${m.time}</div>
-      <div class="check-box" onclick="toggleScheduleItem(this.parentElement,'${dateStr}','m_${i}')">${mDone ? '✓' : ''}</div>
-      <div class="check-text" ${hasAlts ? `onclick="cycleMealChoice('${dateStr}',${i},${m.options.length})" style="cursor:pointer"` : `onclick="toggleScheduleItem(this.parentElement,'${dateStr}','m_${i}')"`}>
-        <div class="meal-name">${selected.name}${hasAlts ? ' <span style="font-size:8px;color:var(--text-muted)">⟳ ' + (choiceIdx+1) + '/' + m.options.length + '</span>' : ''}</div>
-      </div>
-    </div>`;
-  }).join('') + `
+  document.getElementById('meals-card').innerHTML = buildMealSuggestionsHeader(dateStr) + `
     <div class="card-footer">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
         <div class="supp-row" style="flex:1;margin:0">
@@ -6470,6 +6941,7 @@ function renderDaily() {
           `;
         })()}
       </div>
+      ${buildDietEventStrip(dateStr)}
     </div>`;
 
   // Schedule card — with checkboxes
@@ -6625,7 +7097,7 @@ function renderWeek() {
   // Track weekly totals for summary
   let weekWorkouts = 0, weekWorkoutsDone = 0;
   let weekStretches = 0, weekStretchesDone = 0;
-  let weekMeals = 0, weekMealsDone = 0;
+  let weekDietEventCount = 0, weekDietEventTagCounts = { alcohol:0, restaurant:0, binge:0, note:0 };
   let weekMornings = 0, weekMorningsDone = 0;
   let weekWater = 0, weekTotalDone = 0, weekTotalAll = 0;
 
@@ -6645,7 +7117,14 @@ function renderWeek() {
     if (wo) { weekWorkouts++; if (checked['s_workout']) weekWorkoutsDone++; }
     weekStretches++; if (checked['s_stretch']) weekStretchesDone++;
     weekMornings++; if (checked['s_morning']) weekMorningsDone++;
-    for (let i = 0; i < 5; i++) { weekMeals++; if (checked['m_'+i]) weekMealsDone++; }
+    // Tally diet events for the week (replaces old per-slot meal tracking)
+    const _dEvents = (typeof getDietEvents === 'function') ? getDietEvents(dStr) : [];
+    weekDietEventCount += _dEvents.length;
+    _dEvents.forEach(_e => {
+      (_e.tags || []).forEach(_t => {
+        if (weekDietEventTagCounts[_t] !== undefined) weekDietEventTagCounts[_t]++;
+      });
+    });
     weekWater += getWater(dStr);
     weekTotalDone += prog.done;
     weekTotalAll += prog.total;
@@ -6716,7 +7195,16 @@ function renderWeek() {
       ${summaryRow('🏋️ Exercise', weekWorkoutsDone, weekWorkouts, 'var(--cyan)')}
       ${summaryRow('🧘 Stretch', weekStretchesDone, weekStretches, 'var(--purple)')}
       ${summaryRow('☀️ Morning', weekMorningsDone, weekMornings, 'var(--orange)')}
-      ${summaryRow('🍽️ Meals', weekMealsDone, weekMeals, 'var(--green)')}
+      <div class="ws-row" title="Diet exception events flagged this week">
+        <span class="ws-label">⚠️ Events</span>
+        <span class="ws-value" style="color:var(--text-dim)">
+          ${weekDietEventCount === 0 ? '<span style="color:var(--text-muted);font-size:10px">none</span>' :
+            (weekDietEventTagCounts.alcohol > 0 ? `<span style="color:var(--orange)">🍷${weekDietEventTagCounts.alcohol}</span> ` : '') +
+            (weekDietEventTagCounts.restaurant > 0 ? `<span style="color:var(--purple)">🍔${weekDietEventTagCounts.restaurant}</span> ` : '') +
+            (weekDietEventTagCounts.binge > 0 ? `<span style="color:var(--red)">🥧${weekDietEventTagCounts.binge}</span> ` : '') +
+            (weekDietEventTagCounts.note > 0 ? `<span style="color:var(--cyan)">📝${weekDietEventTagCounts.note}</span>` : '')}
+        </span>
+      </div>
       <div class="ws-row" style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.05)">
         <span class="ws-label">💧 Water</span>
         <span class="ws-value" style="color:var(--cyan)">${weekWater} × 375ml</span>
