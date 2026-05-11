@@ -343,7 +343,7 @@
   /* Light mode overrides for elements with hardcoded rgba whites */
   [data-theme="light"] .track-dot {
     background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.10);
-    color: var(--text-dim);
+    color: var(--text);
   }
   [data-theme="light"] .check-row.done {
     background: var(--check-done-bg);
@@ -624,6 +624,74 @@
   }
   .bw-ex-input:focus { border-color: var(--cyan); outline: none; }
   .bw-ex-label { font-weight: 600; }
+
+  /* Gym inline summary — subtype-aware exercise list under the gym row */
+  .gym-inline-summary {
+    margin: 4px 0 8px 0;
+    padding: 6px 8px;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.02);
+  }
+  .gym-inline-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px 6px; margin-bottom: 4px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .gym-inline-detail-link {
+    font-size: 10px; color: var(--cyan); cursor: pointer; font-weight: 600;
+  }
+  .gym-inline-detail-link:hover { text-decoration: underline; }
+  .gym-inline-row {
+    display: flex; align-items: flex-start; gap: 6px;
+    padding: 4px 4px; border-radius: 4px;
+  }
+  .gym-inline-row .check-box {
+    width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px;
+    border: 1px solid var(--card-border); border-radius: 3px;
+    background: transparent; cursor: pointer; font-size: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-muted);
+  }
+  .gym-inline-row .check-box.checked {
+    background: var(--green-bg); border-color: var(--green); color: var(--green);
+  }
+  .gym-inline-row.done .gym-ex-name { color: var(--green); text-decoration: line-through; opacity: 0.65; }
+  .gym-inline-row.warmup { background: rgba(251, 146, 60, 0.04); }
+  .gym-inline-row.cooldown { background: rgba(168, 85, 247, 0.04); }
+  .gym-ex-name { font-size: 11px; font-weight: 600; color: var(--text); }
+  .gym-ex-sets { font-size: 9px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
+  .gym-swapped-tag { font-size: 8px; color: var(--cyan); font-weight: 700; margin-left: 4px; }
+  .gym-ex-inputs {
+    display: flex; align-items: center; gap: 3px; margin-top: 3px; flex-wrap: wrap;
+  }
+  .gym-ex-inputs .wlog-input {
+    width: 38px; font-size: 10px; padding: 2px 4px; text-align: center;
+  }
+  .gym-ex-inputs .wlog-unit { font-size: 9px; color: var(--text-muted); }
+  .gym-swap-btn {
+    cursor: pointer; padding: 1px 6px; border-radius: 3px; font-size: 11px;
+    color: var(--text-muted); border: 1px solid var(--card-border); margin-left: 2px;
+    line-height: 1;
+  }
+  .gym-swap-btn:hover { color: var(--cyan); border-color: var(--cyan); }
+  .gym-vid-link {
+    font-size: 11px; color: var(--cyan); text-decoration: none;
+    padding: 0 4px; border-radius: 3px; margin-left: 2px;
+  }
+  .gym-vid-link:hover { background: var(--cyan-bg); }
+  .gym-cardio-quick {
+    display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;
+  }
+  .gym-cardio-btn {
+    font-size: 10px; padding: 3px 8px; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--card-border); background: transparent;
+    color: var(--text-dim); font-weight: 600;
+  }
+  .gym-cardio-btn:hover { background: var(--input-bg); color: var(--text); }
+  .gym-cardio-btn.done {
+    border-color: var(--green-border); background: var(--green-bg); color: var(--green);
+  }
 
   /* Stretch tiers */
   .stretch-tiers { display: flex; flex-direction: column; gap: 2px; }
@@ -1085,7 +1153,7 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 8px; font-weight: 700; cursor: pointer;
     background: var(--input-bg); border: 1px solid var(--input-border);
-    color: var(--text-muted); transition: all 0.15s; flex-shrink: 0;
+    color: var(--text); transition: all 0.15s; flex-shrink: 0;
   }
   .track-dot.active { border-color: var(--purple); color: #fff; }
   .track-dot.mood-active { background: var(--purple); border-color: var(--purple); color: #fff; }
@@ -1648,6 +1716,17 @@
   </div>
 </div>
 
+<!-- ═══════════════ EXERCISE SWAP POPUP ═══════════════ -->
+<div class="popup-backdrop" id="exswap-backdrop" onclick="if(event.target===this)closeExSwap()">
+  <div class="popup" style="max-width:480px">
+    <div class="popup-header">
+      <div class="popup-title" id="exswap-title">↻ Swap exercise</div>
+      <button class="popup-close" onclick="closeExSwap()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="exswap-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ MONTH STATS POPUP ═══════════════ -->
 <div class="popup-backdrop" id="stats-backdrop" onclick="if(event.target===this)closeStats()">
   <div class="popup" style="max-width:920px;max-height:92vh;overflow-x:hidden">
@@ -2175,7 +2254,7 @@ function toggleWorkoutDone(dateStr, woId) {
   }
   // Auto-check the alt workout task when any workout is logged
   if (isDone) setChecked(dateStr, 's_alt', true);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 function parseTimeInput(val) {
@@ -2205,7 +2284,7 @@ function setWorkoutDist(dateStr, woId, val) {
 
 function setWorkoutSubtype(dateStr, woId, subtype) {
   setWorkoutLog(dateStr, woId, 'subtype', subtype);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 function getBodyExReps(dateStr, exKey) {
@@ -4761,7 +4840,7 @@ function cycleMealChoice(dateStr, slot, totalOptions) {
   const current = getMealChoice(dateStr, slot);
   const next = (current + 1) % totalOptions;
   localStorage.setItem('meal_' + dateStr + '_' + slot, next);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 function getMeals(dateStr, isKid) {
@@ -5026,19 +5105,53 @@ const ROUTINES = {
       { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
   },
+  // ── GYM ROUTINES ──
+  // Each starts with WARMUP CARDIO (writes to existing row/walk row when logged).
+  // muscleGroup tag drives the swap-from-menu feature (EXERCISE_BANK).
+  // PT note: warmup cardio = 5-15 min easy/zone-1 ONLY. Hard cardio after a
+  // heavy lift session blunts strength adaptation (interference effect).
   gym: {
-    title: "Gym Session — Full Workout",
+    // 'gym' = full body. Kept under this key for backward compatibility with
+    // existing data; gym_full is an alias.
+    title: "Gym — Full Body",
     exercises: [
-      { name: "Goblet Squat", sets: "3×12", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Lower body — hold dumbbell at chest" },
-      { name: "Romanian Deadlift", sets: "3×10", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge at hips, slight knee bend" },
-      { name: "Leg Press", sets: "3×12", link: "https://www.youtube.com/watch?v=IZxyjW7MPJQ", detail: "Feet shoulder-width, full ROM" },
-      { name: "Lat Pulldown", sets: "3×12", link: "https://www.youtube.com/watch?v=CAwf7n6Luuc", detail: "Upper body — wide grip, chest up" },
-      { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Shoulder-friendly — don't flare elbows" },
-      { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades together" },
-      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light weight — protect right shoulder" },
-      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Core — keep hips level" },
-      { name: "Dead Bug", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Core — press low back to floor" },
-      { name: "Cooldown Walk + Stretch", sets: "5 min", link: "", detail: "Easy walk, then today's stretch routine" },
+      { name: "Warmup Cardio", sets: "8–10 min easy", link: "", detail: "Treadmill, row, or bike — zone 1, conversational pace. Logs to Row/Walk row.", muscleGroup: "warmup", _warmupCardio: true },
+      { name: "Goblet Squat", sets: "3×10", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Lower — hold DB at chest, knees track toes", muscleGroup: "quads" },
+      { name: "Lat Pulldown", sets: "3×10", link: "https://www.youtube.com/watch?v=CAwf7n6Luuc", detail: "Back — wide grip, chest up, drive elbows down", muscleGroup: "back" },
+      { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Chest — shoulder-friendly, don't flare elbows", muscleGroup: "chest" },
+      { name: "Romanian Deadlift", sets: "3×8", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge at hips, slight knee bend, hams loaded", muscleGroup: "hams" },
+      { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades together", muscleGroup: "back" },
+      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light weight — protect right shoulder", muscleGroup: "shoulders" },
+      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Core — keep hips level, brace", muscleGroup: "core" },
+      { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Light walking + today's stretch tier", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  gym_upper: {
+    title: "Gym — Upper Body",
+    exercises: [
+      { name: "Warmup Cardio", sets: "5–10 min easy", link: "", detail: "Row or treadmill — zone 1. Wakes up the shoulder girdle. Logs to Row/Walk row.", muscleGroup: "warmup", _warmupCardio: true },
+      { name: "Lat Pulldown", sets: "3×10–12", link: "https://www.youtube.com/watch?v=CAwf7n6Luuc", detail: "Wide grip, chest up, drive elbows down — don't yank with biceps", muscleGroup: "back" },
+      { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Shoulder-friendly — keep elbows ~45°, full ROM", muscleGroup: "chest" },
+      { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades, control the eccentric", muscleGroup: "back" },
+      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load to protect the right shoulder. Slight forward angle is fine.", muscleGroup: "shoulders" },
+      { name: "Bicep Curl (DB)", sets: "3×12", link: "https://www.youtube.com/watch?v=ykJmrZ5v0Oo", detail: "No swing, full lockout, slow eccentric", muscleGroup: "biceps" },
+      { name: "Tricep Rope Pushdown", sets: "3×12", link: "https://www.youtube.com/watch?v=2-LAMcpzODU", detail: "Elbows pinned to sides, full extension at the bottom", muscleGroup: "triceps" },
+      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Core — neutral spine, hips level", muscleGroup: "core" },
+      { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Doorway chest stretch + cross-body shoulder + tricep overhead", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  gym_lower: {
+    title: "Gym — Lower Body",
+    exercises: [
+      { name: "Warmup Cardio", sets: "8–12 min easy", link: "", detail: "Bike or easy row preferred — primes hips/knees/ankles. Logs to Row/Walk row.", muscleGroup: "warmup", _warmupCardio: true },
+      { name: "Goblet Squat", sets: "3×10", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Hold DB at chest, sit between heels, knees track toes", muscleGroup: "quads" },
+      { name: "Romanian Deadlift", sets: "3×8", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge — push hips back, slight knee bend, feel hams stretch", muscleGroup: "hams" },
+      { name: "Leg Press", sets: "3×12", link: "https://www.youtube.com/watch?v=IZxyjW7MPJQ", detail: "Feet shoulder-width, full ROM, don't lock out knees", muscleGroup: "quads" },
+      { name: "Walking Lunges", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Step long, knee tracks over toe, push off front heel", muscleGroup: "quads" },
+      { name: "Hamstring Curl", sets: "3×12", link: "https://www.youtube.com/watch?v=F488k67BTbo", detail: "Full ROM, slow eccentric — protects knees", muscleGroup: "hams" },
+      { name: "Calf Raises (Standing)", sets: "3×15", link: "https://www.youtube.com/watch?v=-M4-G8p8fmc", detail: "Pause 1s at top, full stretch at bottom", muscleGroup: "calves" },
+      { name: "Dead Bug", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Core — press low back to floor, opposite arm/leg", muscleGroup: "core" },
+      { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Hip flexor + figure-4 + standing quad", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
   row_steady: {
@@ -5069,24 +5182,95 @@ const ROUTINES = {
     ]
   },
   yoga: {
-    title: "Yoga Session",
+    title: "Yoga Session — Pick a Video",
     exercises: [
-      { name: "Follow-along Video", sets: "20–30 min", link: "https://www.youtube.com/watch?v=v7AYKMP6rOE", detail: "Yoga with Adriene: Yoga for Beginners" },
-      { name: "Alt: Yoga for Back Pain", sets: "20 min", link: "https://www.youtube.com/watch?v=XeXz8fIZDCE", detail: "Gentle, good for desk workers" },
-      { name: "Alt: Morning Yoga", sets: "15 min", link: "https://www.youtube.com/watch?v=4pKly2JojMw", detail: "Energizing, good wake-up routine" },
+      { name: "Yoga for Beginners", sets: "20-30 min", link: "https://www.youtube.com/watch?v=v7AYKMP6rOE", detail: "Yoga with Adriene — solid foundational flow if you're not sure where to start" },
+      { name: "Yoga for Back Pain", sets: "20 min", link: "https://www.youtube.com/watch?v=XeXz8fIZDCE", detail: "Gentle — good after a desk-heavy day or low-back stiffness" },
+      { name: "Morning Yoga", sets: "15 min", link: "https://www.youtube.com/watch?v=4pKly2JojMw", detail: "Energizing — best as a wake-up routine, not after evening lifts" },
+      { name: "Yoga for Hips", sets: "30 min", link: "https://www.youtube.com/watch?v=4pKly2JojMw", detail: "Hip openers — pair with leg/lower-body day for recovery" },
+      { name: "Yoga for Athletes", sets: "30 min", link: "https://www.youtube.com/watch?v=zKVI4zNxoHg", detail: "Stronger flow with mobility work — good post-lift" },
+      { name: "Yin Yoga (longer holds)", sets: "30-45 min", link: "https://www.youtube.com/watch?v=Wq1bK0RXAfo", detail: "Passive holds, fascia work — 2-5 min per pose, very calming" },
+      { name: "Yoga for Runners", sets: "20 min", link: "https://www.youtube.com/watch?v=GLy2rYHwUqY", detail: "Hamstring/calf/IT band focus — great after track or treadmill" },
+      { name: "Bedtime / Wind-Down Yoga", sets: "15-20 min", link: "https://www.youtube.com/watch?v=v7SN-d4qXx0", detail: "Slow flow + restorative poses — sleep prep, do in dim light" },
+      { name: "Power Yoga", sets: "30-45 min", link: "https://www.youtube.com/watch?v=brZB0qS7g50", detail: "Vinyasa flow with strength work — counts as a workout in its own right" },
     ]
   },
+  // ── BODYWEIGHT ROUTINES ──
+  // 'bodyweight' = full body (default). bodyweight_upper, bodyweight_lower
+  // are the split versions. muscleGroup tags drive the swap UI from EXERCISE_BANK_BW.
+  // PT note: warmup for bodyweight is dynamic mobility, not cardio that
+  // writes to row/walk — at-home cardio is different equipment. Keep a
+  // mobility warmup + optional cardio note.
   bodyweight: {
-    title: "Bodyweight Workout",
+    title: "Bodyweight — Full Body",
     exercises: [
-      { name: "Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Chest to floor, full extension", trackReps: true },
-      { name: "Squats", sets: "3×15", link: "https://www.youtube.com/watch?v=aclHkVaku9U", detail: "Bodyweight, below parallel", trackReps: true },
-      { name: "Lunges (each leg)", sets: "3×10", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Knee tracks over toes", trackReps: true },
-      { name: "Sit-ups / Crunches", sets: "3×15", link: "https://www.youtube.com/watch?v=jDwoBqPH0jk", detail: "Controlled, no neck pulling", trackReps: true },
-      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Keep hips level, brace core", trackReps: true },
-      { name: "Dead Bugs", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back to floor", trackReps: true },
-      { name: "Glute Bridges", sets: "3×12", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, hold 2s", trackReps: true },
-      { name: "Superman Hold", sets: "3×10", link: "https://www.youtube.com/watch?v=z6PJMT2y8GQ", detail: "Arms + legs up, hold 3s", trackReps: true },
+      { name: "Dynamic Warmup", sets: "3-5 min", link: "https://www.youtube.com/watch?v=R0mMK7TgRA0", detail: "Arm circles, leg swings, hip openers, jumping jacks. Get warm.", muscleGroup: "warmup", _warmupCardio: true, _bwMode: true },
+      { name: "Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Chest to floor, full extension. Knee push-up variation if needed.", muscleGroup: "bw_chest", trackReps: true },
+      { name: "Bodyweight Squats", sets: "3×15", link: "https://www.youtube.com/watch?v=aclHkVaku9U", detail: "Below parallel, knees track toes", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Reverse Lunges (each leg)", sets: "3×10", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Step back, knee under hip, push through front heel", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Glute Bridges", sets: "3×12", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, hold 2s. Single-leg variation for progression.", muscleGroup: "bw_hams_glutes", trackReps: true },
+      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Hips level, brace core, neutral spine", muscleGroup: "bw_core", trackReps: true },
+      { name: "Dead Bugs", sets: "3×8/side", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back into floor, opposite arm/leg", muscleGroup: "bw_core", trackReps: true },
+      { name: "Superman Hold", sets: "3×10s", link: "https://www.youtube.com/watch?v=z6PJMT2y8GQ", detail: "Arms + legs up, hold 3s — posterior chain", muscleGroup: "bw_back", trackReps: true },
+      { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Today's stretch tier or any quick mobility flow", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  bodyweight_upper: {
+    title: "Bodyweight — Upper Body",
+    exercises: [
+      { name: "Dynamic Warmup", sets: "3-5 min", link: "https://www.youtube.com/watch?v=R0mMK7TgRA0", detail: "Arm circles, shoulder rolls, scap squeezes, jumping jacks", muscleGroup: "warmup", _warmupCardio: true, _bwMode: true },
+      { name: "Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Chest to floor. Knee push-ups → standard → decline as you progress.", muscleGroup: "bw_chest", trackReps: true },
+      { name: "Pike Push-ups", sets: "3×8", link: "https://www.youtube.com/watch?v=x7_aBg1SKeo", detail: "Shoulder press version — feet on floor or bench, hips up high", muscleGroup: "bw_shoulders", trackReps: true },
+      { name: "Doorway / Inverted Rows", sets: "3×10", link: "https://www.youtube.com/watch?v=hvoQiF0kBI8", detail: "Use a sturdy doorframe or table. Pull chest to bar/edge.", muscleGroup: "bw_back", trackReps: true },
+      { name: "Tricep Dips (chair/bench)", sets: "3×10", link: "https://www.youtube.com/watch?v=0326dy_-CzM", detail: "Hands on chair, elbows back not flared. Easier: feet closer to chair.", muscleGroup: "bw_triceps", trackReps: true },
+      { name: "Plank-to-Push-up", sets: "3×8/side", link: "https://www.youtube.com/watch?v=hVpL9nqvg7U", detail: "Forearm plank → push to high plank, alternating arms", muscleGroup: "bw_chest", trackReps: true },
+      { name: "Superman Hold", sets: "3×15s", link: "https://www.youtube.com/watch?v=z6PJMT2y8GQ", detail: "Arms + legs up — posterior chain + lower back", muscleGroup: "bw_back", trackReps: true },
+      { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Hips level, brace, neutral spine", muscleGroup: "bw_core", trackReps: true },
+      { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Doorway chest stretch + cross-body shoulder + tricep overhead", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  bodyweight_lower: {
+    title: "Bodyweight — Lower Body",
+    exercises: [
+      { name: "Dynamic Warmup", sets: "3-5 min", link: "https://www.youtube.com/watch?v=R0mMK7TgRA0", detail: "Hip openers, leg swings, walking lunges, jumping jacks. Get hips warm.", muscleGroup: "warmup", _warmupCardio: true, _bwMode: true },
+      { name: "Bodyweight Squats", sets: "3×20", link: "https://www.youtube.com/watch?v=aclHkVaku9U", detail: "Below parallel, knees track toes, control the descent", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Reverse Lunges (each leg)", sets: "3×12", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Step back, drive through front heel", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Bulgarian Split Squat", sets: "3×8/leg", link: "https://www.youtube.com/watch?v=2C-uNgKwPLE", detail: "Back foot on chair/bench. Vertical torso. Quad-dominant.", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Single-Leg Glute Bridge", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=lz-EJW7TQXk", detail: "One leg extended. Drive through planted heel.", muscleGroup: "bw_hams_glutes", trackReps: true },
+      { name: "Calf Raises", sets: "3×20", link: "https://www.youtube.com/watch?v=-M4-G8p8fmc", detail: "Pause at top, full ROM. Single-leg version for harder.", muscleGroup: "bw_calves", trackReps: true },
+      { name: "Wall Sit", sets: "3×30-60s", link: "https://www.youtube.com/watch?v=y-wV4Venusw", detail: "Knees at 90°, back flat to wall. Quad endurance.", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Dead Bugs", sets: "3×8/side", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back into floor", muscleGroup: "bw_core", trackReps: true },
+      { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + figure-4 + standing quad stretch", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  // ── KETTLEBELL ROUTINES ──
+  // 'circuits' = continuous flow, conditioning emphasis. 'strength' = heavier
+  // KB, lower reps, more rest. PT note: kettlebell hinge mechanics are
+  // unforgiving — don't load until form is grooved. Watch your back angle.
+  kettlebell_circuits: {
+    title: "Kettlebell — Circuit / Conditioning",
+    exercises: [
+      { name: "Mobility Warmup", sets: "3-5 min", link: "https://www.youtube.com/watch?v=R0mMK7TgRA0", detail: "Hip openers, shoulder rolls, halos with light KB. Get warm.", muscleGroup: "warmup", _warmupCardio: true, _bwMode: true },
+      { name: "Two-Hand KB Swing", sets: "3×15", link: "https://www.youtube.com/watch?v=YSxHifyI6s8", detail: "Hip hinge, snap hips at top, arms are ropes — not a squat", muscleGroup: "kb_swings" },
+      { name: "Goblet Squat", sets: "3×12", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "KB at chest, sit between heels", muscleGroup: "kb_squat" },
+      { name: "Bent-Over Row (single arm)", sets: "3×10/arm", link: "https://www.youtube.com/watch?v=roCP6wCXPqo", detail: "Hinge over, drive elbow up", muscleGroup: "kb_row" },
+      { name: "KB Push Press", sets: "3×8/arm", link: "https://www.youtube.com/watch?v=v_QPoPIv2pE", detail: "Slight leg dip then drive overhead", muscleGroup: "kb_press" },
+      { name: "Romanian Deadlift", sets: "3×10", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge — KB close to legs, soft knees", muscleGroup: "kb_hinge" },
+      { name: "Suitcase Carry", sets: "3×30s/side", link: "https://www.youtube.com/watch?v=Xz_3oV2cIQo", detail: "One KB hanging — anti-lateral-flexion core", muscleGroup: "kb_carry" },
+      { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + thoracic rotation + shoulder pass-throughs", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+  kettlebell_strength: {
+    title: "Kettlebell — Strength",
+    exercises: [
+      { name: "Mobility Warmup", sets: "3-5 min", link: "https://www.youtube.com/watch?v=R0mMK7TgRA0", detail: "Halos with light KB, hip openers, shoulder rolls, scapular wall slides", muscleGroup: "warmup", _warmupCardio: true, _bwMode: true },
+      { name: "KB Clean & Press", sets: "5×3-5/arm", link: "https://www.youtube.com/watch?v=2Kbtg33pYSE", detail: "Heavy. Clean to rack → strict press. Reset between reps.", muscleGroup: "kb_press" },
+      { name: "Goblet Squat (heavy)", sets: "4×6-8", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Heavier KB, slower tempo, full ROM", muscleGroup: "kb_squat" },
+      { name: "Single-Leg Romanian Deadlift", sets: "4×6-8/leg", link: "https://www.youtube.com/watch?v=PEtlQXMSKI0", detail: "One leg, slight knee bend — balance + hinge", muscleGroup: "kb_hinge" },
+      { name: "Renegade Row", sets: "3×6/side", link: "https://www.youtube.com/watch?v=yuwxoLyWTtU", detail: "Plank position, row one KB at a time. Brace hard.", muscleGroup: "kb_row" },
+      { name: "Heavy Two-Hand Swing", sets: "5×8-10", link: "https://www.youtube.com/watch?v=YSxHifyI6s8", detail: "Heavier KB, fewer reps, focus on hip drive", muscleGroup: "kb_swings" },
+      { name: "Farmer's Carry", sets: "3×40s", link: "https://www.youtube.com/watch?v=Gn-dxMFjp8M", detail: "Two heavy KBs, shoulders packed, walk tall", muscleGroup: "kb_carry" },
+      { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + lat stretch + thoracic rotation", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
   stretch_quick: {
@@ -5193,8 +5377,8 @@ const OTHER_WORKOUTS = [
   { id: 'row', icon: '🚣', label: 'Row', hasTime: true, hasDist: true, distUnit: 'm', types: ['steady', 'intervals'] },
   { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
   { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
-  { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['upper', 'lower', 'full'] },
-  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['upper', 'lower', 'full'],
+  { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['full', 'upper', 'lower'] },
+  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['full', 'upper', 'lower'],
     exercises: [
       { key: 'pushups', label: 'Push-ups', icon: '🫸' },
       { key: 'situps', label: 'Sit-ups', icon: '🔄' },
@@ -5214,6 +5398,149 @@ const OTHER_WORKOUTS = [
   },
   { id: 'yoga_session', icon: '🧘', label: 'Yoga', hasTime: true, hasDist: false },
 ];
+
+// ──────────────────────────────────────────────
+// EXERCISE BANK — alternatives by muscle group for the gym swap UI
+// Each gym exercise carries a `muscleGroup` tag. The swap button in the
+// routine popup pulls alternatives from here.
+// ──────────────────────────────────────────────
+const EXERCISE_BANK = {
+  chest: [
+    { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Shoulder-friendly — keep elbows ~45°" },
+    { name: "Barbell Bench Press", sets: "3×8", link: "https://www.youtube.com/watch?v=rT7DgCr-3pg", detail: "Tuck elbows, retract shoulder blades, drive feet" },
+    { name: "Incline DB Press", sets: "3×10", link: "https://www.youtube.com/watch?v=8iPEnn-ltC8", detail: "30-45° bench, hits upper chest" },
+    { name: "Push-up", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Bodyweight alternative, full ROM, brace core" },
+    { name: "Cable Chest Fly", sets: "3×12", link: "https://www.youtube.com/watch?v=Iwe6AmxVf7o", detail: "Slight elbow bend, feel stretch — joint-friendly" },
+  ],
+  back: [
+    { name: "Lat Pulldown", sets: "3×10–12", link: "https://www.youtube.com/watch?v=CAwf7n6Luuc", detail: "Wide grip, drive elbows down, chest up" },
+    { name: "Pull-up / Assisted Pull-up", sets: "3×max", link: "https://www.youtube.com/watch?v=eGo4IYlbE5g", detail: "Dead hang, pull chest to bar; use assist machine if needed" },
+    { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades, control eccentric" },
+    { name: "Bent-Over DB Row", sets: "3×10/side", link: "https://www.youtube.com/watch?v=roCP6wCXPqo", detail: "Hinge, neutral spine, drive elbow up" },
+    { name: "Chest-Supported Row", sets: "3×12", link: "https://www.youtube.com/watch?v=7uyjRFLnZJk", detail: "Removes lower-back load — safe back option" },
+  ],
+  shoulders: [
+    { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load to protect right shoulder" },
+    { name: "Lateral Raise", sets: "3×12", link: "https://www.youtube.com/watch?v=3VcKaXpzqRo", detail: "Light weight, lead with elbows, no swing" },
+    { name: "Face Pull", sets: "3×15", link: "https://www.youtube.com/watch?v=rep-qVOkqgk", detail: "Rear delt + posture work — high reps" },
+    { name: "Arnold Press", sets: "3×10", link: "https://www.youtube.com/watch?v=6Z15_WdXmVw", detail: "Rotate palms in→out — full shoulder ROM" },
+  ],
+  biceps: [
+    { name: "Bicep Curl (DB)", sets: "3×12", link: "https://www.youtube.com/watch?v=ykJmrZ5v0Oo", detail: "No swing, slow eccentric" },
+    { name: "Hammer Curl", sets: "3×10", link: "https://www.youtube.com/watch?v=zC3nLlEvin4", detail: "Neutral grip — also hits brachialis" },
+    { name: "Cable Bicep Curl", sets: "3×12", link: "https://www.youtube.com/watch?v=85zxhxWj9Mk", detail: "Constant tension — joint-friendly" },
+  ],
+  triceps: [
+    { name: "Tricep Rope Pushdown", sets: "3×12", link: "https://www.youtube.com/watch?v=2-LAMcpzODU", detail: "Elbows pinned to sides, full extension" },
+    { name: "Overhead Tricep Extension", sets: "3×10", link: "https://www.youtube.com/watch?v=_gsUck-7M9I", detail: "Long-head emphasis — light weight" },
+    { name: "Tricep Dip (assisted)", sets: "3×max", link: "https://www.youtube.com/watch?v=0326dy_-CzM", detail: "Use assist machine; protect shoulder" },
+  ],
+  quads: [
+    { name: "Goblet Squat", sets: "3×10", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Hold DB at chest, knees track toes" },
+    { name: "Leg Press", sets: "3×12", link: "https://www.youtube.com/watch?v=IZxyjW7MPJQ", detail: "Feet shoulder-width, full ROM, don't lock out" },
+    { name: "Walking Lunges", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Step long, push off front heel" },
+    { name: "Bulgarian Split Squat", sets: "3×8/leg", link: "https://www.youtube.com/watch?v=2C-uNgKwPLE", detail: "Back foot on bench, vertical torso" },
+    { name: "Leg Extension", sets: "3×12", link: "https://www.youtube.com/watch?v=YyvSfVjQeL0", detail: "Knee isolation — controlled, no kicking" },
+  ],
+  hams: [
+    { name: "Romanian Deadlift", sets: "3×8", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge — push hips back, slight knee bend" },
+    { name: "Hamstring Curl", sets: "3×12", link: "https://www.youtube.com/watch?v=F488k67BTbo", detail: "Slow eccentric, full ROM" },
+    { name: "Glute-Ham Raise", sets: "3×8", link: "https://www.youtube.com/watch?v=eAaXJEVpC2g", detail: "Advanced — bodyweight or assisted" },
+    { name: "Glute Bridge / Hip Thrust", sets: "3×12", link: "https://www.youtube.com/watch?v=SEdqd1n0cvg", detail: "Glute + hamstring — pause at top" },
+  ],
+  calves: [
+    { name: "Calf Raises (Standing)", sets: "3×15", link: "https://www.youtube.com/watch?v=-M4-G8p8fmc", detail: "Pause 1s at top, full stretch at bottom" },
+    { name: "Seated Calf Raise", sets: "3×15", link: "https://www.youtube.com/watch?v=JbyjNymZOt0", detail: "Targets soleus more — for rehab/ankle support" },
+  ],
+  core: [
+    { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Neutral spine, hips level, brace" },
+    { name: "Dead Bug", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back to floor, opposite arm/leg" },
+    { name: "Pallof Press", sets: "3×10/side", link: "https://www.youtube.com/watch?v=AH_QZLm_0-s", detail: "Anti-rotation — light cable, slow" },
+    { name: "Hanging Knee Raise", sets: "3×10", link: "https://www.youtube.com/watch?v=hdng3Nm1x_E", detail: "Controlled — no swinging" },
+    { name: "Ab Wheel Rollout", sets: "3×8", link: "https://www.youtube.com/watch?v=rqiTPdK1c_I", detail: "Advanced — start from knees" },
+  ],
+  // ── Bodyweight alternatives (for at-home Body workouts) ──
+  bw_chest: [
+    { name: "Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=IODxDxX7oi4", detail: "Chest to floor, full extension" },
+    { name: "Knee Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=jWxvty2KROs", detail: "Easier regression — keep core tight" },
+    { name: "Decline Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=SKPab2YC8BE", detail: "Feet elevated on chair — hits upper chest more" },
+    { name: "Diamond Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=J0DnG1_S92I", detail: "Hands together under chest — tricep emphasis" },
+    { name: "Plank-to-Push-up", sets: "3×8/side", link: "https://www.youtube.com/watch?v=hVpL9nqvg7U", detail: "Forearm plank → push to high plank" },
+  ],
+  bw_back: [
+    { name: "Doorway / Inverted Rows", sets: "3×10", link: "https://www.youtube.com/watch?v=hvoQiF0kBI8", detail: "Sturdy doorframe or table — pull chest to it" },
+    { name: "Superman Hold", sets: "3×15s", link: "https://www.youtube.com/watch?v=z6PJMT2y8GQ", detail: "Arms + legs lifted, hold 3s" },
+    { name: "Reverse Snow Angels", sets: "3×12", link: "https://www.youtube.com/watch?v=fGcVB4qH5pM", detail: "Face down, arms make snow angels — rear delt + traps" },
+    { name: "Towel Pull-down", sets: "3×12", link: "https://www.youtube.com/watch?v=AqXnFs0DPMM", detail: "Pull a towel apart while raising overhead — isometric back" },
+  ],
+  bw_shoulders: [
+    { name: "Pike Push-ups", sets: "3×8", link: "https://www.youtube.com/watch?v=x7_aBg1SKeo", detail: "Hips up, head between hands — vertical pressing" },
+    { name: "Wall Walks", sets: "3×3", link: "https://www.youtube.com/watch?v=jr1Q-3MUd7w", detail: "Walk feet up wall toward handstand — advanced" },
+    { name: "Lateral Raise (light/no weight)", sets: "3×15", link: "https://www.youtube.com/watch?v=3VcKaXpzqRo", detail: "Use water bottles or air-only — high rep" },
+  ],
+  bw_triceps: [
+    { name: "Tricep Dips (chair/bench)", sets: "3×10", link: "https://www.youtube.com/watch?v=0326dy_-CzM", detail: "Hands on chair, elbows back not flared" },
+    { name: "Diamond Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=J0DnG1_S92I", detail: "Hands together — tricep emphasis" },
+    { name: "Close-Grip Push-ups", sets: "3×max", link: "https://www.youtube.com/watch?v=JhPoT_AojCM", detail: "Hands shoulder-width, elbows tucked" },
+  ],
+  bw_quads: [
+    { name: "Bodyweight Squats", sets: "3×20", link: "https://www.youtube.com/watch?v=aclHkVaku9U", detail: "Below parallel, knees track toes" },
+    { name: "Reverse Lunges (each leg)", sets: "3×10", link: "https://www.youtube.com/watch?v=QOVaHwm-Q6U", detail: "Step back, drive through front heel" },
+    { name: "Bulgarian Split Squat", sets: "3×8/leg", link: "https://www.youtube.com/watch?v=2C-uNgKwPLE", detail: "Back foot elevated, vertical torso" },
+    { name: "Wall Sit", sets: "3×30-60s", link: "https://www.youtube.com/watch?v=y-wV4Venusw", detail: "Knees 90°, back flat to wall" },
+    { name: "Jump Squats", sets: "3×10", link: "https://www.youtube.com/watch?v=A-cFYWvaHr0", detail: "Explosive — soft landing through midfoot" },
+  ],
+  bw_hams_glutes: [
+    { name: "Glute Bridges", sets: "3×15", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, hold 2s" },
+    { name: "Single-Leg Glute Bridge", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=lz-EJW7TQXk", detail: "One leg extended, drive through planted heel" },
+    { name: "Single-Leg Romanian Deadlift", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=Qy3uquIA1WI", detail: "Hinge on one leg, slight knee bend, balance" },
+    { name: "Step-ups (chair)", sets: "3×10/leg", link: "https://www.youtube.com/watch?v=dQqApCGd5Ss", detail: "Drive through heel of stepping foot" },
+    { name: "Donkey Kicks", sets: "3×12/side", link: "https://www.youtube.com/watch?v=NJ-0XzsvdPs", detail: "On hands and knees, kick heel to ceiling" },
+  ],
+  bw_calves: [
+    { name: "Calf Raises (Standing)", sets: "3×20", link: "https://www.youtube.com/watch?v=-M4-G8p8fmc", detail: "Pause at top, full stretch at bottom" },
+    { name: "Single-Leg Calf Raises", sets: "3×12/leg", link: "https://www.youtube.com/watch?v=8luNk2SUvYQ", detail: "Harder — full body load on one calf" },
+  ],
+  bw_core: [
+    { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Neutral spine, hips level" },
+    { name: "Dead Bugs", sets: "3×8/side", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Press low back to floor" },
+    { name: "Bird Dog", sets: "3×10/side", link: "https://www.youtube.com/watch?v=wiFNA3sqjCA", detail: "Opposite arm + leg, stay stable" },
+    { name: "Mountain Climbers", sets: "3×30s", link: "https://www.youtube.com/watch?v=nmwgirgXLYM", detail: "Knee to chest, fast tempo — also cardio" },
+    { name: "Hollow Hold", sets: "3×20s", link: "https://www.youtube.com/watch?v=LlDNef_Ztsc", detail: "Lower back pressed to floor, arms + legs up" },
+    { name: "Bicycle Crunches", sets: "3×20", link: "https://www.youtube.com/watch?v=9FGilxCbdz8", detail: "Slow, controlled, opposite elbow to knee" },
+  ],
+  // ── Kettlebell alternatives (for the kettlebell workout) ──
+  kb_swings: [
+    { name: "Two-Hand Swing", sets: "3×15", link: "https://www.youtube.com/watch?v=YSxHifyI6s8", detail: "Hip hinge, snap hips at top, arms are ropes" },
+    { name: "Single-Arm Swing", sets: "3×10/arm", link: "https://www.youtube.com/watch?v=p9I8L2D_Vh0", detail: "Same form, one hand — more core anti-rotation" },
+    { name: "Alternating Swing", sets: "3×16", link: "https://www.youtube.com/watch?v=qGIcVVCD7-c", detail: "Switch hands at the top of each swing" },
+  ],
+  kb_squat: [
+    { name: "Goblet Squat", sets: "3×12", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Hold KB at chest, sit between heels" },
+    { name: "KB Front Squat (single)", sets: "3×8/side", link: "https://www.youtube.com/watch?v=dj2GP31rg9c", detail: "KB in racked position, one side at a time" },
+    { name: "KB Sumo Squat", sets: "3×12", link: "https://www.youtube.com/watch?v=ZQUmoP6IxlU", detail: "Wide stance, KB hanging between legs" },
+  ],
+  kb_hinge: [
+    { name: "Romanian Deadlift", sets: "3×10", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge — KB close to legs, soft knees" },
+    { name: "KB Single-Leg Deadlift", sets: "3×8/leg", link: "https://www.youtube.com/watch?v=PEtlQXMSKI0", detail: "One leg, slight knee bend, hinge to balance" },
+    { name: "Sumo Deadlift (KB)", sets: "3×10", link: "https://www.youtube.com/watch?v=7Hj8yu_X7uc", detail: "Wide stance, KB between feet" },
+  ],
+  kb_press: [
+    { name: "KB Clean & Press", sets: "3×6/arm", link: "https://www.youtube.com/watch?v=2Kbtg33pYSE", detail: "Clean to rack → press overhead. Power move." },
+    { name: "KB Strict Press", sets: "3×8/arm", link: "https://www.youtube.com/watch?v=GSBmRlD4CtU", detail: "Start in rack, no leg drive — pure shoulder strength" },
+    { name: "KB Push Press", sets: "3×8/arm", link: "https://www.youtube.com/watch?v=v_QPoPIv2pE", detail: "Slight leg dip then press — heavier loads possible" },
+  ],
+  kb_row: [
+    { name: "Bent-Over Row", sets: "3×10/arm", link: "https://www.youtube.com/watch?v=roCP6wCXPqo", detail: "Hinge over, drive elbow up, single arm" },
+    { name: "Renegade Row", sets: "3×8/side", link: "https://www.youtube.com/watch?v=yuwxoLyWTtU", detail: "Plank position, row one KB at a time — core challenge" },
+    { name: "KB Gorilla Row", sets: "3×10/side", link: "https://www.youtube.com/watch?v=Jvb_4n3JYxA", detail: "Two KBs, alternating row in sumo stance" },
+  ],
+  kb_carry: [
+    { name: "Suitcase Carry", sets: "3×30s/side", link: "https://www.youtube.com/watch?v=Xz_3oV2cIQo", detail: "One KB hanging — anti-lateral-flexion core" },
+    { name: "Farmer's Carry", sets: "3×40s", link: "https://www.youtube.com/watch?v=Gn-dxMFjp8M", detail: "Two KBs, shoulders packed, walk tall" },
+    { name: "Racked Carry", sets: "3×30s/side", link: "https://www.youtube.com/watch?v=B86RfDM2Bbc", detail: "KB in front rack — breathing under load" },
+  ],
+};
 
 // ──────────────────────────────────────────────
 // STRETCH TIERS — expandable alternatives
@@ -5259,7 +5586,7 @@ function toggleWater(dateStr, idx) {
   const current = getWater(dateStr);
   const newCount = (idx + 1 <= current) ? idx : idx + 1;
   setWater(dateStr, newCount);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 function getCoffee(dateStr) { return _getDailyField(dateStr, 'coffee'); }
 function setCoffee(dateStr, count) { dbSaveDaily(dateStr, 'coffee', count); }
@@ -5267,7 +5594,7 @@ function toggleCoffee(dateStr, idx) {
   const current = getCoffee(dateStr);
   const newCount = (idx + 1 <= current) ? idx : idx + 1;
   setCoffee(dateStr, newCount);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 // Mood (1-10), Energy (1-10), Sleep (hours), Weight (lbs)
@@ -5280,12 +5607,12 @@ function getMoodPM(dateStr) { return _getDailyField(dateStr, 'mood_pm'); }
 function getEnergyAM(dateStr) { return _getDailyField(dateStr, 'energy_am') || _getDailyField(dateStr, 'energy'); }
 function getEnergyPM(dateStr) { return _getDailyField(dateStr, 'energy_pm'); }
 // AM/PM setters
-function setMoodAM(dateStr, val) { dbSaveDaily(dateStr, 'mood_am', val); dbSaveDaily(dateStr, 'mood', val); renderDaily(); }
-function setMoodPM(dateStr, val) { dbSaveDaily(dateStr, 'mood_pm', val); renderDaily(); }
-function setEnergyAM(dateStr, val) { dbSaveDaily(dateStr, 'energy_am', val); dbSaveDaily(dateStr, 'energy', val); renderDaily(); }
+function setMoodAM(dateStr, val) { dbSaveDaily(dateStr, 'mood_am', val); dbSaveDaily(dateStr, 'mood', val); scheduleRender(renderDaily); }
+function setMoodPM(dateStr, val) { dbSaveDaily(dateStr, 'mood_pm', val); scheduleRender(renderDaily); }
+function setEnergyAM(dateStr, val) { dbSaveDaily(dateStr, 'energy_am', val); dbSaveDaily(dateStr, 'energy', val); scheduleRender(renderDaily); }
 function setEnergyPM(dateStr, val) {
   dbSaveDaily(dateStr, 'energy_pm', val);
-  renderDaily();
+  scheduleRender(renderDaily);
   // Low energy check happens in buildTrackingSection via banner
 }
 // Legacy setters (map to AM)
@@ -5338,12 +5665,12 @@ function addDietEvent(dateStr, tags, note, time) {
     note: (note || '').trim(),
   });
   _saveDietEvents(dateStr, arr);
-  if (typeof renderDaily === 'function') renderDaily();
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function removeDietEvent(dateStr, id) {
   const arr = getDietEvents(dateStr).filter(e => e.id !== id);
   _saveDietEvents(dateStr, arr);
-  if (typeof renderDaily === 'function') renderDaily();
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function getDietEventsRange(startDateStr, endDateStr) {
   // Returns flat list of {date, time, tags, note, id} for all events in range.
@@ -5484,21 +5811,21 @@ function addMealSuggestion(dateStr, text, suggestedBy) {
     status: 'open',
   });
   _saveMealSuggestions(dateStr, arr);
-  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
-  if (typeof renderDaily === 'function') renderDaily();
+  if (typeof renderMealSuggPopup === 'function') scheduleRender(renderMealSuggPopup);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function setMealSuggestionStatus(dateStr, id, status) {
   const arr = getMealSuggestions(dateStr).map(s =>
     s.id === id ? { ...s, status: status } : s);
   _saveMealSuggestions(dateStr, arr);
-  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
-  if (typeof renderDaily === 'function') renderDaily();
+  if (typeof renderMealSuggPopup === 'function') scheduleRender(renderMealSuggPopup);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function removeMealSuggestion(dateStr, id) {
   const arr = getMealSuggestions(dateStr).filter(s => s.id !== id);
   _saveMealSuggestions(dateStr, arr);
-  if (typeof renderMealSuggPopup === 'function') renderMealSuggPopup();
-  if (typeof renderDaily === 'function') renderDaily();
+  if (typeof renderMealSuggPopup === 'function') scheduleRender(renderMealSuggPopup);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 
 // In-card compact header: shows button + summary of today's suggestions.
@@ -5734,7 +6061,7 @@ function setSupp(dateStr, suppId, qty) {
     sb.from('daily_log').upsert({ date: dateStr, supps: JSON.stringify(supps) }, { onConflict: 'date' })
       .then(({error}) => { if (error) console.warn('DB supp save error:', error); });
   }
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 function toggleSupp(dateStr, suppId) {
@@ -5801,11 +6128,221 @@ function setExSet(dateStr, exKey, field, val) {
   sets[exKey][field] = val;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
 }
+
+// ── EXERCISE SWAPS (per-date overrides) ──
+// Lets the user swap any gym exercise for an alternative from EXERCISE_BANK
+// without altering the underlying routine. Key: routineKey + '_' + idx.
+function getExSwap(dateStr) {
+  try { return JSON.parse(localStorage.getItem('exswap_' + dateStr)) || {}; } catch(e) { return {}; }
+}
+function setExSwap(dateStr, key, exObj) {
+  const swaps = getExSwap(dateStr);
+  swaps[key] = exObj;
+  localStorage.setItem('exswap_' + dateStr, JSON.stringify(swaps));
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+  // If the popup is open, refresh it too
+  const pop = document.getElementById('popup-backdrop');
+  if (pop && pop.classList.contains('open')) {
+    const t = document.getElementById('popup-title');
+    if (t && _lastPopupKey) scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
+  }
+}
+function clearExSwap(dateStr, key) {
+  const swaps = getExSwap(dateStr);
+  delete swaps[key];
+  localStorage.setItem('exswap_' + dateStr, JSON.stringify(swaps));
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+// Returns the routine's exercise list with per-day swaps applied.
+function applyExSwaps(routineKey, exercises, dateStr) {
+  const swaps = getExSwap(dateStr);
+  return exercises.map((ex, i) => {
+    const sw = swaps[routineKey + '_' + i];
+    if (!sw) return ex;
+    // Preserve flags (_warmupCardio, _cooldown, muscleGroup) from original
+    return {
+      ...ex,
+      name: sw.name,
+      sets: sw.sets || ex.sets,
+      link: sw.link || '',
+      detail: sw.detail || ex.detail,
+      _swapped: true,
+    };
+  });
+}
+let _lastPopupKey = null;
+
+// ── CARDIO INTEGRATION ──
+// Quick-logs cardio into the existing OTHER_WORKOUTS row/walk entry.
+// Uses dbSaveDaily-style functions already defined elsewhere in the file.
+function logGymWarmupCardio(dateStr, kind) {
+  // kind: 'row' | 'treadmill' | 'track'
+  const map = {
+    row:       { woId: 'row',  subtype: 'steady', time: 10, dist: 2000 },
+    treadmill: { woId: 'walk', subtype: 'jog',    time: 10, dist: 1.5 },
+    track:     { woId: 'walk', subtype: 'run',    time: 10, dist: 2.0 },
+  };
+  const cfg = map[kind];
+  if (!cfg) return;
+  // Set subtype + defaults only if not already logged. Don't clobber actual logged values.
+  const log = getWorkoutLog(dateStr);
+  const existing = log[cfg.woId] || {};
+  if (typeof setWorkoutSubtype === 'function') setWorkoutSubtype(dateStr, cfg.woId, cfg.subtype);
+  if (!existing.time) setWorkoutLog(dateStr, cfg.woId, 'time', cfg.time);
+  if (!existing.dist) setWorkoutLog(dateStr, cfg.woId, 'dist', cfg.dist);
+  if (!existing.done && typeof toggleWorkoutDone === 'function') toggleWorkoutDone(dateStr, cfg.woId);
+  else if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// Compressed inline summary of the day's lift routine.
+// Used for gym, bodyweight, and kettlebell — branches by woType.
+//   - gym: weight × reps × sets, warmup writes to row/walk
+//   - bodyweight: just reps, warmup is mobility (no row/walk integration)
+//   - kettlebell: weight × reps, warmup is mobility
+function buildLiftInlineSummary(dateStr, woType, subtype) {
+  // Resolve routine key
+  let routineKey;
+  if (woType === 'gym') {
+    routineKey = (subtype === 'full' || !subtype) ? 'gym' : 'gym_' + subtype;
+  } else if (woType === 'bodyweight') {
+    routineKey = (subtype === 'full' || !subtype) ? 'bodyweight' : 'bodyweight_' + subtype;
+  } else if (woType === 'kettlebell') {
+    routineKey = 'kettlebell_' + (subtype || 'circuits');
+  } else {
+    return '';
+  }
+  const routine = ROUTINES[routineKey];
+  if (!routine) return '';
+
+  const exercises = applyExSwaps(routineKey, routine.exercises, dateStr);
+  const checked = getChecked(dateStr);
+  const exSets = getExSets(dateStr);
+  const wlog = getWorkoutLog(dateStr);
+  const rowDone = (wlog.row || {}).done;
+  const walkDone = (wlog.walk || {}).done;
+
+  const trackWeight = (woType === 'gym' || woType === 'kettlebell');
+  const trackReps = true;
+  const trackSets = (woType === 'gym');
+
+  const rows = exercises.map((ex, i) => {
+    const key = 'r_' + routineKey + '_' + i;
+    const exKey = routineKey + '_' + i;
+    const setData = exSets[exKey] || {};
+    const isDone = !!checked[key];
+    const nameLower = (ex.name || '').toLowerCase();
+    const isWarmup = ex._warmupCardio || nameLower.includes('warmup');
+    const isCooldown = ex._cooldown || nameLower.includes('cooldown');
+
+    if (isWarmup) {
+      // Gym uses real cardio buttons. Bodyweight/kettlebell use a video link only.
+      const cardioBtns = (woType === 'gym') ? `
+        <div class="gym-cardio-quick">
+          <span class="gym-cardio-btn ${rowDone ? 'done' : ''}" onclick="event.stopPropagation();logGymWarmupCardio('${dateStr}','row')" title="10 min easy row, 2000m">🚣 Row${rowDone ? ' ✓' : ''}</span>
+          <span class="gym-cardio-btn ${walkDone ? 'done' : ''}" onclick="event.stopPropagation();logGymWarmupCardio('${dateStr}','treadmill')" title="10 min jog, 1.5 km">🏃 Treadmill${walkDone ? ' ✓' : ''}</span>
+          <span class="gym-cardio-btn ${walkDone ? 'done' : ''}" onclick="event.stopPropagation();logGymWarmupCardio('${dateStr}','track')" title="10 min, 2 km on the track">🏃 Track${walkDone ? ' ✓' : ''}</span>
+        </div>` : (ex.link ? `<a class="gym-vid-link" href="${ex.link}" target="_blank" onclick="event.stopPropagation()" style="font-size:10px">▶ Watch warmup video</a>` : '');
+      return `<div class="gym-inline-row warmup">
+        <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${isDone ? '✓' : ''}</div>
+        <div style="flex:1;min-width:0">
+          <div class="gym-ex-name">🔥 ${ex.name} <span class="gym-ex-sets">${ex.sets || ''}</span></div>
+          ${cardioBtns}
+        </div>
+      </div>`;
+    }
+    if (isCooldown) {
+      return `<div class="gym-inline-row cooldown">
+        <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${isDone ? '✓' : ''}</div>
+        <div style="flex:1;min-width:0">
+          <div class="gym-ex-name">🧘 ${ex.name} <span class="gym-ex-sets">${ex.sets || ''}</span></div>
+        </div>
+      </div>`;
+    }
+    // Normal exercise row
+    const swapBtn = ex.muscleGroup && EXERCISE_BANK[ex.muscleGroup]
+      ? `<span class="gym-swap-btn" onclick="event.stopPropagation();openExSwap('${dateStr}','${routineKey}',${i},'${ex.muscleGroup}')" title="Swap exercise">↻</span>`
+      : '';
+    const swappedTag = ex._swapped ? '<span class="gym-swapped-tag" title="Swapped from default">·swap</span>' : '';
+    const inputs = `
+      ${trackWeight ? `<input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)"><span class="wlog-unit">×</span>` : ''}
+      ${trackReps ? `<input class="wlog-input" type="number" placeholder="reps" min="0" max="500" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">` : ''}
+      ${trackSets ? `<span class="wlog-unit">×</span><input class="wlog-input" type="number" placeholder="sets" min="0" max="20" value="${setData.sets || ''}" onchange="setExSet('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">` : ''}
+      ${swapBtn}
+      ${ex.link ? `<a class="gym-vid-link" href="${ex.link}" target="_blank" onclick="event.stopPropagation()">▶</a>` : ''}
+    `;
+    return `<div class="gym-inline-row ${isDone ? 'done' : ''}">
+      <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${isDone ? '✓' : ''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="gym-ex-name">${ex.name}${swappedTag} <span class="gym-ex-sets">${ex.sets || ''}</span></div>
+        <div class="gym-ex-inputs" onclick="event.stopPropagation()">${inputs}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="gym-inline-summary">
+    <div class="gym-inline-header">
+      <span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">${routine.title}</span>
+      <span class="gym-inline-detail-link" onclick="event.stopPropagation();openRoutinePopup('${routineKey}','${dateStr}')">View full details ›</span>
+    </div>
+    ${rows}
+  </div>`;
+}
+// Backward-compat shim — older code paths still call buildGymInlineSummary
+function buildGymInlineSummary(dateStr, subtype) {
+  return buildLiftInlineSummary(dateStr, 'gym', subtype);
+}
+
+// Stub: opens a small overlay listing alternatives from EXERCISE_BANK[group]
+let _swapContext = null;
+function openExSwap(dateStr, routineKey, exIndex, muscleGroup) {
+  _swapContext = { dateStr, routineKey, exIndex, muscleGroup };
+  const bd = document.getElementById('exswap-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  renderExSwapPopup();
+}
+function closeExSwap() {
+  const bd = document.getElementById('exswap-backdrop');
+  if (bd) bd.classList.remove('open');
+  _swapContext = null;
+}
+function renderExSwapPopup() {
+  if (!_swapContext) return;
+  const { dateStr, routineKey, exIndex, muscleGroup } = _swapContext;
+  const body = document.getElementById('exswap-body');
+  const title = document.getElementById('exswap-title');
+  if (!body) return;
+  const alternatives = EXERCISE_BANK[muscleGroup] || [];
+  const routine = ROUTINES[routineKey];
+  const currentEx = routine && routine.exercises[exIndex];
+  const swaps = getExSwap(dateStr);
+  const swapKey = routineKey + '_' + exIndex;
+  const isSwapped = !!swaps[swapKey];
+  if (title) title.textContent = '↻ Swap: ' + (muscleGroup.charAt(0).toUpperCase() + muscleGroup.slice(1));
+  body.innerHTML = `
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">
+      Current: <strong style="color:var(--text)">${currentEx ? currentEx.name : '?'}</strong>
+      ${isSwapped ? `<button onclick="clearExSwap('${dateStr}','${swapKey}');closeExSwap()" style="margin-left:8px;padding:3px 8px;border-radius:4px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">↶ Revert</button>` : ''}
+    </div>
+    ${alternatives.map(alt => `
+      <div onclick='_pickExSwap(${JSON.stringify(alt).replace(/'/g, "&#39;")})' style="padding:10px 12px;border:1px solid var(--card-border);border-radius:8px;margin-bottom:6px;cursor:pointer;background:var(--card-bg)">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${alt.name} <span style="color:var(--text-dim);font-weight:400;font-size:11px">${alt.sets}</span></div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px">${alt.detail}</div>
+      </div>
+    `).join('')}
+  `;
+}
+function _pickExSwap(alt) {
+  if (!_swapContext) return;
+  const { dateStr, routineKey, exIndex } = _swapContext;
+  setExSwap(dateStr, routineKey + '_' + exIndex, alt);
+  closeExSwap();
+}
 function toggleRating(dateStr, rKey, val, routineKey) {
   const ratings = getRatings(dateStr);
   const newVal = ratings[rKey] === val ? undefined : val;
   dbSaveRating(dateStr, rKey, newVal);
-  openRoutinePopup(routineKey, dateStr);
+  scheduleRender(() => openRoutinePopup(routineKey, dateStr));
 }
 
 // ══════════════════════════════════════════════
@@ -6329,18 +6866,27 @@ function openRoutinePopup(routineKey, dateStr) {
   }
   const routine = ROUTINES[routineKey];
   if (!routine) return;
+  _lastPopupKey = routineKey;
   const checked = getChecked(dateStr);
   const prefix = 'r_' + routineKey + '_';
-  const isTrackable = routineKey === 'gym' || routineKey === 'bodyweight';
+  const isGymRoutine = routineKey === 'gym' || routineKey.indexOf('gym_') === 0;
+  const isBwRoutine = routineKey === 'bodyweight' || routineKey.indexOf('bodyweight_') === 0;
+  const isKbRoutine = routineKey.indexOf('kettlebell_') === 0;
+  const isLiftRoutine = isGymRoutine || isBwRoutine || isKbRoutine;
+  const isTrackable = isLiftRoutine;
   const exSets = isTrackable ? getExSets(dateStr) : {};
-  const hasTimedExs = routine.exercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0);
+  // Apply per-day exercise swaps (lift routines only — anything with muscleGroup tags)
+  const effectiveExercises = isLiftRoutine
+    ? applyExSwaps(routineKey, routine.exercises, dateStr)
+    : routine.exercises;
+  const hasTimedExs = effectiveExercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0);
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
   document.getElementById('popup-body').innerHTML =
     (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
     '<div class="exercise-list">' +
-    routine.exercises.map((ex, i) => {
+    effectiveExercises.map((ex, i) => {
       if (ex._divider) {
         return `<div style="margin:12px 0 6px;padding:8px 0 4px;border-top:2px solid var(--purple-border);font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px">${ex.name}</div>`;
       }
@@ -6350,9 +6896,12 @@ function openRoutinePopup(routineKey, dateStr) {
       const rating = ratings[rKey];
       const exKey = routineKey + '_' + i;
       const setData = exSets[exKey] || {};
-      // Show reps/weight for gym, reps for bodyweight
-      const showGymTrack = routineKey === 'gym' && ex.sets && !ex.name.toLowerCase().includes('cooldown');
-      const showBwTrack = ex.trackReps || (routineKey === 'bodyweight' && ex.sets);
+      // Show reps/weight inputs based on routine type
+      const _exNameLower = (ex.name || '').toLowerCase();
+      const _isWarmup = ex._warmupCardio || _exNameLower.includes('warmup');
+      const _isCooldown = ex._cooldown || _exNameLower.includes('cooldown');
+      const showGymTrack = (isGymRoutine || isKbRoutine) && ex.sets && !_isWarmup && !_isCooldown;
+      const showBwTrack = isBwRoutine && ex.sets && !_isWarmup && !_isCooldown;
       const timerSecs = parseTimerSeconds(ex.sets);
       const timerHtml = timerSecs > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs},this)">⏱</div></div>` : '';
       return `
@@ -6376,15 +6925,18 @@ function openRoutinePopup(routineKey, dateStr) {
               <span class="wlog-unit">reps</span>
             </div>` : ''}
           </div>
-          <div style="display:flex;gap:2px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation()">
-            <span class="rating-btn ${rating === -1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',-1,'${routineKey}')">😞</span>
-            <span class="rating-btn ${rating === 0 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',0,'${routineKey}')">😐</span>
-            <span class="rating-btn ${rating === 1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',1,'${routineKey}')">😊</span>
+          <div style="display:flex;flex-direction:column;gap:3px;margin-left:auto;flex-shrink:0;align-items:flex-end" onclick="event.stopPropagation()">
+            ${isLiftRoutine && ex.muscleGroup && EXERCISE_BANK[ex.muscleGroup] ? `<span class="gym-swap-btn" onclick="event.stopPropagation();openExSwap('${dateStr}','${routineKey}',${i},'${ex.muscleGroup}')" title="Swap exercise">↻</span>` : ''}
+            <div style="display:flex;gap:2px">
+              <span class="rating-btn ${rating === -1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',-1,'${routineKey}')">😞</span>
+              <span class="rating-btn ${rating === 0 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',0,'${routineKey}')">😐</span>
+              <span class="rating-btn ${rating === 1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',1,'${routineKey}')">😊</span>
+            </div>
           </div>
         </div>`;
     }).join('') +
     '</div>' +
-    (routineKey === 'gym' ? buildGymExtras(dateStr, exSets) : '') +
+    (isGymRoutine ? buildGymExtras(dateStr, exSets) : '') +
     '<div class="notes-section">' +
       '<div class="notes-label">Notes for ' + dateStr + '</div>' +
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
@@ -6548,7 +7100,7 @@ function toggleScheduleItem(el, dateStr, key) {
 function toggleAlloTask(dateStr) {
   const cur = getChecked(dateStr)['s_allo'];
   setChecked(dateStr, 's_allo', !cur);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 // ── Row Auto-Adjustment ──
@@ -6635,11 +7187,44 @@ function adjustRowWorkout(wo, dateStr) {
   return { adjusted: true, wo: adjWo, reason, recentRow: closest };
 }
 
-function getRoutineKey(wo) {
+// Resolve subtype from the day's workout log (preferred) or wo.target/label.
+// Returns 'upper' | 'lower' | 'full' for gym/bodyweight; or 'circuits' | 'strength' for kettlebell.
+function getLiftSubtype(dateStr, wo, woId, validSubs) {
+  try {
+    const log = (typeof getWorkoutLog === 'function') ? getWorkoutLog(dateStr) : null;
+    const sub = log && log[woId] && log[woId].subtype;
+    if (validSubs.indexOf(sub) >= 0) return sub;
+  } catch(e) {}
+  const t = ((wo && (wo.target || wo.label)) || '').toLowerCase();
+  for (let i = 0; i < validSubs.length; i++) {
+    if (t.includes(validSubs[i])) return validSubs[i];
+  }
+  return validSubs[0];
+}
+function getGymSubtype(dateStr, wo) {
+  return getLiftSubtype(dateStr, wo, 'gym', ['full', 'upper', 'lower']);
+}
+function getBwSubtype(dateStr, wo) {
+  return getLiftSubtype(dateStr, wo, 'bodyweight', ['full', 'upper', 'lower']);
+}
+function getKbSubtype(dateStr, wo) {
+  return getLiftSubtype(dateStr, wo, 'kettlebell', ['circuits', 'strength']);
+}
+function getRoutineKey(wo, dateStr) {
   if (!wo) return null;
-  if (wo.type === 'gym') return 'gym';
+  if (wo.type === 'gym') {
+    const sub = dateStr ? getGymSubtype(dateStr, wo) : 'full';
+    return sub === 'full' ? 'gym' : 'gym_' + sub;
+  }
   if (wo.type === 'yoga') return 'yoga';
-  if (wo.type === 'bodyweight') return 'bodyweight';
+  if (wo.type === 'bodyweight') {
+    const sub = dateStr ? getBwSubtype(dateStr, wo) : 'full';
+    return sub === 'full' ? 'bodyweight' : 'bodyweight_' + sub;
+  }
+  if (wo.type === 'kettlebell') {
+    const sub = dateStr ? getKbSubtype(dateStr, wo) : 'circuits';
+    return 'kettlebell_' + sub;
+  }
   if (wo.type === 'row' && wo._adjustReason) return 'row_maintenance';
   if (wo.type === 'row' && wo.label.includes('Interval')) return 'row_intervals';
   if (wo.type === 'row') return 'row_steady';
@@ -6686,10 +7271,20 @@ function cycleStretchRotation(dateStr) {
   const cur = getStretchRotation(dateStr);
   const next = { A: 'B', B: 'C', C: 'A' }[cur] || 'A';
   localStorage.setItem('str_rot_' + dateStr, next);
-  renderDaily();
+  scheduleRender(renderDaily);
 }
 
 // ── DAILY VIEW ──
+// iOS Safari sometimes drops the paint when innerHTML is rebuilt synchronously
+// inside a tap handler — the tap target gets destroyed mid-touch and the paint
+// defers indefinitely. Wrapping the render call in requestAnimationFrame releases
+// the current event tick so iOS finishes the touch sequence before we rebuild.
+// Use scheduleRender(fn) from any handler that runs inside an onclick on a chiclet/pill/etc.
+function scheduleRender(fn) {
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn);
+  else setTimeout(fn, 0);
+}
+
 function renderDaily() {
   const now = new Date();
   now.setDate(now.getDate() + currentDayOffset);
@@ -6721,7 +7316,7 @@ function renderDaily() {
 
   // Workout card
   const wc = document.getElementById('workout-card');
-  const rKey = getRoutineKey(wo);
+  const rKey = getRoutineKey(wo, dateStr);
   const checked = getChecked(dateStr);
   const wlog = getWorkoutLog(dateStr);
 
@@ -6790,21 +7385,15 @@ function renderDaily() {
     const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
       `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
     ).join('')}</div>` : '';
-    // Expandable bodyweight exercises
-    let bwExHtml = '';
-    if (w.exercises && isDone) {
-      const exData = (entry.exercises) || {};
-      bwExHtml = `<div class="bw-exercises">${w.exercises.map(ex =>
-        `<div class="bw-ex">
-          <span>${ex.icon}</span>
-          <span class="bw-ex-label">${ex.label}</span>
-          <input class="bw-ex-input" type="number" min="0" step="1" placeholder="0"
-            value="${exData[ex.key] || ''}"
-            onchange="setExReps('${dateStr}','${w.id}','${ex.key}',this.value)"
-            onclick="event.stopPropagation()">
-        </div>`
-      ).join('')}</div>`;
+    // Inline routine summary for gym/bodyweight/kettlebell — subtype-aware
+    // exercise list with checkboxes, weight/reps/sets, swap button, video link.
+    // The legacy bw-exercises rep-counter is now redundant — the inline
+    // summary tracks reps via setExSet keyed by routine+index.
+    let inlineSummaryHtml = '';
+    if (w.id === 'gym' || w.id === 'bodyweight' || w.id === 'kettlebell') {
+      inlineSummaryHtml = buildLiftInlineSummary(dateStr, w.id, subtype);
     }
+    let bwExHtml = ''; // legacy slot — kept for non-inline workouts that still use w.exercises
     const fromHealth = entry.source === 'apple_health';
     const healthBadge = fromHealth ? '<span title="From Apple Health" style="font-size:8px;opacity:0.7;margin-left:2px">⌚</span>' : '';
     return `<div class="wlog-row ${isDone ? 'done' : ''}">
@@ -6815,7 +7404,7 @@ function renderDaily() {
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
       ${typePills}
-    </div>${bwExHtml}`;
+    </div>${bwExHtml}${inlineSummaryHtml}`;
   }).join('');
 
   // Stretch tiers section
@@ -6841,7 +7430,7 @@ function renderDaily() {
     <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${isKidDay2 ? '👧 Kids:' : '🆓 Free:'}</span>
     ${quickPicks.map(p => {
       const done = (wlog[p.id] || {}).done;
-      return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="toggleWorkoutDone('${dateStr}','${p.id}');renderDaily()">${done ? '✓ ' : ''}${p.label}</span>`;
+      return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="toggleWorkoutDone('${dateStr}','${p.id}')">${done ? '✓ ' : ''}${p.label}</span>`;
     }).join('')}
   </div>`;
 
