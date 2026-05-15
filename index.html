@@ -586,6 +586,16 @@
   .wlog-row {
     display: flex; align-items: center; gap: 4px; padding: 3px 0; font-size: 11px;
   }
+  /* Per-row collapse: rows with an inline exercise summary (gym/body/kettlebell)
+     are compact by default; tap the row to expand. Mirrors how the legacy
+     bodyweight section behaved before the inline-summary refactor. */
+  .wlog-row.has-summary { cursor: pointer; }
+  .wlog-chev {
+    font-size: 8px; margin-left: 4px; opacity: 0.5; transition: transform 0.2s;
+  }
+  .wlog-row.expanded .wlog-chev { transform: rotate(90deg); }
+  .wlog-summary { display: none; }
+  .wlog-row.expanded + .wlog-summary { display: block; }
   .wlog-row .check-box {
     width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--input-border);
     display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -737,6 +747,196 @@
     background: var(--green-bg, rgba(34,197,94,0.15)); color: var(--green); border-color: var(--green);
   }
   .supp-pill .supp-qty { font-size: 7px; opacity: 0.7; margin-left: 2px; }
+
+  /* Diet-event v1 — "Log a deviation" section with a bigger pill grid,
+     manual calorie estimate, and a richer per-event row in today's list. */
+  .de-section { padding: 10px 4px 8px; border-top: 1px solid var(--divider); margin-top: 4px; }
+  .de-header {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-dim);
+    padding: 0 0 8px;
+  }
+  .de-pill-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; margin-bottom: 8px; }
+  .de-pill {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 8px 4px;
+    border: 1.5px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-dim);
+    font-size: 10px; font-weight: 700;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.08s;
+    min-height: 50px;
+  }
+  .de-pill .de-pill-icon { font-size: 20px; line-height: 1; }
+  .de-pill:active { transform: scale(0.97); }
+  .de-pill.on {
+    border-color: var(--de-color, var(--cyan));
+    background: var(--de-color, var(--cyan));
+    color: #000;
+  }
+  .de-input-row { display: flex; gap: 5px; align-items: center; margin-bottom: 6px; }
+  .de-note-input {
+    flex: 1; min-width: 0;
+    padding: 7px 9px; border-radius: 6px;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text);
+    font-size: 12px; font-family: inherit;
+  }
+  .de-note-input:focus { border-color: var(--cyan); outline: none; }
+  .de-cal-input {
+    width: 62px;
+    padding: 7px 6px; border-radius: 6px;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text);
+    font-size: 11px; font-family: inherit; text-align: center;
+  }
+  .de-cal-input:focus { border-color: var(--orange); outline: none; }
+  .de-log-btn {
+    padding: 7px 14px; border-radius: 6px;
+    border: 1px solid var(--green-border); background: var(--green-bg); color: var(--green);
+    font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+  }
+  .de-events-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); padding: 8px 0 4px;
+  }
+  .de-event-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    background: var(--input-bg);
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+  .de-event-time { color: var(--text-muted); font-size: 10px; min-width: 42px; font-variant-numeric: tabular-nums; }
+  .de-event-icons { display: flex; gap: 2px; font-size: 14px; flex-shrink: 0; }
+  .de-event-note { flex: 1; min-width: 0; color: var(--text); word-break: break-word; }
+  .de-cal-badge {
+    font-size: 11px; font-weight: 700; color: var(--orange);
+    padding: 2px 8px; border-radius: 10px;
+    background: rgba(251,146,60,0.15);
+    border: 1px solid rgba(251,146,60,0.3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .de-event-del {
+    cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .de-event-del:hover { color: var(--red); }
+  .de-total {
+    text-align: right;
+    font-size: 11px; font-weight: 700;
+    color: var(--orange);
+    padding: 6px 6px 0;
+    border-top: 1px dashed var(--card-border);
+    margin-top: 4px;
+  }
+  @media (max-width: 380px) {
+    .de-pill-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .de-pill { font-size: 9px; padding: 6px 2px; min-height: 46px; }
+    .de-pill .de-pill-icon { font-size: 18px; }
+  }
+
+  /* ── Restaurant picker entry link (in de-section header row) ── */
+  .de-header-row { display: flex; align-items: center; justify-content: space-between; padding: 0 0 8px; }
+  .de-rest-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 9px; border-radius: 12px;
+    border: 1px solid var(--card-border); background: var(--input-bg);
+    color: var(--cyan); font-size: 10px; font-weight: 700;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, background 0.15s, transform 0.08s;
+  }
+  .de-rest-link:active { transform: scale(0.97); }
+  .de-rest-link:hover { border-color: var(--cyan); }
+
+  /* ── Restaurant picker popup body ── */
+  .rp-chain-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .rp-chain {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px;
+    border: 1.5px solid var(--card-border); border-radius: 8px;
+    background: var(--input-bg);
+    cursor: pointer; user-select: none;
+    transition: border-color 0.15s, transform 0.08s;
+  }
+  .rp-chain:hover { border-color: var(--cyan); }
+  .rp-chain:active { transform: scale(0.98); }
+  .rp-chain-icon { font-size: 22px; line-height: 1; }
+  .rp-chain-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .rp-back {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 6px 10px; border-radius: 6px;
+    border: 1px solid var(--card-border); background: var(--input-bg);
+    color: var(--text-dim); font-size: 11px; font-weight: 600;
+    cursor: pointer; user-select: none; margin-bottom: 10px;
+  }
+  .rp-back:hover { color: var(--text); border-color: var(--cyan); }
+  .rp-tips {
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--cyan);
+    background: rgba(34,211,238,0.06);
+    border-radius: 0 6px 6px 0;
+  }
+  .rp-tips-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 1px;
+    color: var(--cyan); margin-bottom: 4px; text-transform: uppercase;
+  }
+  .rp-tips ul { margin: 0; padding-left: 16px; }
+  .rp-tips li { font-size: 11px; color: var(--text-dim); line-height: 1.5; margin: 2px 0; }
+  .rp-tier-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-muted); padding: 12px 2px 4px;
+  }
+  .rp-tier-light { color: var(--green); }
+  .rp-tier-med   { color: #f59e0b; }
+  .rp-tier-heavy { color: var(--red); }
+  .rp-item {
+    display: flex; align-items: stretch; gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--card-border); border-radius: 8px;
+    background: var(--input-bg);
+    margin-bottom: 6px;
+  }
+  .rp-item.pick { border-left: 3px solid var(--green); }
+  .rp-item-main { flex: 1; min-width: 0; }
+  .rp-item-row1 { display: flex; align-items: center; gap: 6px; }
+  .rp-item-name { font-size: 12px; font-weight: 700; color: var(--text); }
+  .rp-item-pick-badge {
+    font-size: 8px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 6px;
+    background: rgba(34,197,94,0.15); color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3);
+    flex-shrink: 0;
+  }
+  .rp-item-note { font-size: 10px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+  .rp-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; min-width: 70px; }
+  .rp-item-cal { font-size: 11px; font-weight: 700; color: var(--orange); white-space: nowrap; }
+  .rp-item-cal-light { color: var(--green); }
+  .rp-item-cal-heavy { color: var(--red); }
+  .rp-item-log {
+    padding: 5px 10px; border-radius: 6px;
+    border: 1px solid var(--green-border); background: var(--green-bg); color: var(--green);
+    font-size: 10px; font-weight: 700; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+  }
+  .rp-item-log:active { transform: scale(0.96); }
+  .rp-disclaimer {
+    font-size: 9px; color: var(--text-muted); font-style: italic;
+    margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--card-border);
+    line-height: 1.5;
+  }
+  .rp-empty {
+    padding: 20px; text-align: center; color: var(--text-muted); font-size: 11px;
+  }
+
   .water-tracker { display: flex; align-items: center; gap: 6px; padding: 6px 0 2px; }
   .water-tracker .water-label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
   .water-drops { display: flex; gap: 3px; }
@@ -904,6 +1104,20 @@
   .month-cell.empty { background: transparent; border-color: transparent; cursor: default; }
   .month-cell.empty:hover { border-color: transparent; box-shadow: none; }
   .month-cell.today { border: 2px solid var(--purple) !important; box-shadow: 0 0 12px rgba(167,139,250,0.35), inset 0 0 6px rgba(167,139,250,0.1); z-index: 1; }
+  /* Touch-device pin highlight (option-a: first tap pins preview, second tap navigates) */
+  .month-cell.pinned {
+    border: 2px solid var(--cyan) !important;
+    box-shadow: 0 0 14px rgba(34,211,238,0.4), inset 0 0 6px rgba(34,211,238,0.12) !important;
+    z-index: 2;
+  }
+  #month-preview-pop {
+    position: absolute; display: none; z-index: 50;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    border-radius: 8px; padding: 8px 10px;
+    box-shadow: var(--card-shadow-hover);
+    font-size: 10px; line-height: 1.3;
+    width: 200px;
+  }
   .month-cell.craig { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.25); }
   .month-cell.lisa { background: rgba(244,114,182,0.12); border-color: rgba(244,114,182,0.25); }
 
@@ -1716,6 +1930,17 @@
   </div>
 </div>
 
+<!-- ═══════════════ RESTAURANT PICKER POPUP ═══════════════ -->
+<div class="popup-backdrop" id="rest-pick-backdrop" onclick="if(event.target===this)closeRestaurantPicker()">
+  <div class="popup" style="max-width:520px">
+    <div class="popup-header">
+      <div class="popup-title" id="rest-pick-title">🍽 Eating out</div>
+      <button class="popup-close" onclick="closeRestaurantPicker()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="rest-pick-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ EXERCISE SWAP POPUP ═══════════════ -->
 <div class="popup-backdrop" id="exswap-backdrop" onclick="if(event.target===this)closeExSwap()">
   <div class="popup" style="max-width:480px">
@@ -2339,6 +2564,18 @@ function restoreOpenSections(dateStr) {
     const el = document.getElementById(base + '-' + dateStr);
     if (el) { el.classList.add('open'); el.previousElementSibling.classList.add('open'); }
   });
+}
+
+// Per-wlog-row expand/collapse (gym/body/kettlebell summary section).
+// State persists across re-renders via window._expandedWlogRows so a render
+// triggered by, e.g., setting weight on an exercise doesn't snap the row shut.
+window._expandedWlogRows = window._expandedWlogRows || new Set();
+function toggleWlogRow(rowEl) {
+  const wid = rowEl.getAttribute('data-wid');
+  if (!wid) return;
+  const nowExpanded = rowEl.classList.toggle('expanded');
+  if (nowExpanded) window._expandedWlogRows.add(wid);
+  else window._expandedWlogRows.delete(wid);
 }
 
 // ══════════════════════════════════════════════
@@ -5036,6 +5273,27 @@ const STRETCH_ROTATION = {
 // ROUTINE DETAILS — Exercises with YouTube links
 // ──────────────────────────────────────────────
 const ROUTINES = {
+  // ── Trigger finger rehab routine (added 2026-05-14) ──
+  // Right middle finger, conservative care phase. Tendon glides 3×/day, 5 reps each,
+  // hold 3 sec, stop short of any triggering or sharp pain. Reassess at 6 weeks
+  // (~2026-06-25): if no improvement, see a doctor — corticosteroid injection is the
+  // next step before pulley release surgery. REMOVE this routine when symptoms resolve.
+  trigger_finger: {
+    title: "Trigger Finger — Tendon Glides (3×/day)",
+    exercises: [
+      { name: "1. Straight hand", sets: "Hold 3s × 5", link: "https://www.youtube.com/results?search_query=trigger+finger+tendon+glides", detail: "All fingers extended, fully open, palm visible. The reset position. Breathe." },
+      { name: "2. Hook fist", sets: "Hold 3s × 5", link: "https://www.youtube.com/results?search_query=tendon+gliding+hook+fist", detail: "ONLY the two finger joints bend (PIP + DIP). The MCP (base) joint stays straight — fingers form a hook/claw shape, not a fist." },
+      { name: "3. Full fist", sets: "Hold 3s × 5", link: "https://www.youtube.com/results?search_query=tendon+gliding+full+fist", detail: "Complete fist, all three joints bent. Thumb wraps around. Gentle — never push through a catch." },
+      { name: "4. Tabletop", sets: "Hold 3s × 5", link: "https://www.youtube.com/results?search_query=tendon+gliding+tabletop", detail: "MCP (base) bent 90°, but the finger joints (PIP + DIP) stay STRAIGHT. Fingers look like a tabletop above the palm." },
+      { name: "5. Straight fist", sets: "Hold 3s × 5", link: "https://www.youtube.com/results?search_query=tendon+gliding+straight+fist", detail: "MCP + middle joint (PIP) bent, but the fingertip (DIP) stays STRAIGHT. Fingertip points outward over the palm." },
+      { name: "── Stop short of triggering. Sharp pain = stop. ──", sets: "", detail: "If the finger catches mid-glide, ease off and shorten the range. The point is to keep the tendon moving — not to force the snag.", _divider: true },
+      { name: "── Supplemental (optional, do once daily) ──", sets: "", detail: "", _divider: true },
+      { name: "A1 pulley massage", sets: "30s gentle", link: "https://www.youtube.com/results?search_query=A1+pulley+massage+trigger+finger", detail: "Base of the affected finger, palm side. Use thumb of opposite hand. Slow longitudinal strokes along the tendon. No deep pressure.", _optional: true },
+      { name: "Passive finger extension", sets: "10s × 3", link: "", detail: "Use the opposite hand to gently bend the affected finger backward toward the back of the hand. Stretch the flexor tendon. Stop at first resistance — no force.", _optional: true },
+      { name: "Forearm flexor stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arm straight out, palm up. With the other hand, gently pull the fingers down and back toward the floor. Stretches the long flexor that feeds into the trigger finger.", _optional: true },
+      { name: "Heat before / ice after", sets: "5–10 min", link: "", detail: "Warm hand under running water before glides loosens the tissue. Ice the base of the finger afterward if inflamed. Either or both — not required.", _optional: true },
+    ]
+  },
   morning: {
     title: "Morning Stretch — ~10 Min (Egoscue-Inspired)",
     exercises: [
@@ -5634,12 +5892,520 @@ function setLastMeal(dateStr, val) { dbSaveDaily(dateStr, 'last_meal', val); ren
 // IMPORTANT REALISM NOTE: short-term weight changes after these events are
 // almost entirely water/sodium/glycogen — not adipose. Patterns over weeks
 // are signal; same-day spikes are noise.
+// v1 deviation tags. IDs stable for back-compat with existing localStorage
+// data (alcohol/restaurant/binge predate v1; labels changed but ids didn't).
+// `note` is no longer a user-facing pill — note text lives in the input field.
 const DIET_EVENT_TAGS = [
-  { id: 'alcohol',    icon: '🍷', label: 'Alcohol',    color: 'var(--orange)' },
-  { id: 'restaurant', icon: '🍔', label: 'Eating out', color: 'var(--purple)' },
-  { id: 'binge',      icon: '🥧', label: 'Binge',      color: 'var(--red)'    },
-  { id: 'note',       icon: '📝', label: 'Note',       color: 'var(--cyan)'   },
+  { id: 'restaurant', icon: '🍔', label: 'Eat out',  color: 'var(--purple)' },
+  { id: 'alcohol',    icon: '🍷', label: 'Drinks',   color: 'var(--orange)' },
+  { id: 'binge',      icon: '🥧', label: 'Binge',    color: 'var(--red)'    },
+  { id: 'pop',        icon: '🥤', label: 'Pop',      color: 'var(--cyan)'   },
+  { id: 'fried',      icon: '🍟', label: 'Fried',    color: '#f59e0b'       },
+  { id: 'dessert',    icon: '🍰', label: 'Dessert',  color: 'var(--pink)'   },
+  { id: 'snack',      icon: '🍫', label: 'Snack',    color: '#a78bfa'       },
 ];
+
+// ════════════════════════════════════════════════════════════════════════════
+// RESTAURANT MENU DATABASE
+// ────────────────────────────────────────────────────────────────────────────
+// Curated menu data for restaurants Craig visits. All cal values are MID-POINT
+// estimates with ±20% real-world variance (portion drift, condiments, prep).
+// UI renders them as "~NNN cal" so the wobble is visible. Items are tiered:
+//   light  ≤ 450 cal  (deficit-friendly)
+//   med    451-750 cal
+//   heavy  > 750 cal  (deficit-blowing)
+// `pick` flag marks items the dietician/coach would actually recommend for
+// someone in a calorie deficit. `note` shows under the item name.
+// `coachTips` are the "how do I order well here" lines shown at the top.
+//
+// Started 2026-05-13 with Cora's only — this is a proof-of-flow build. Add
+// more chains in follow-up sessions: Tim Hortons, A&W, McDonald's, Cactus
+// Club, Earls, Browns, Boston Pizza, sushi (generic), wings (generic),
+// drinks (generic). See WorkoutApp-Feature-Log.md "Known stale / pending".
+// ════════════════════════════════════════════════════════════════════════════
+const RESTAURANT_DB = {
+  coras: {
+    name: "Cora's",
+    icon: '🍳',
+    aliases: ['cora', "cora's", 'coras'],
+    coachTips: [
+      'Sub fruit for potatoes — saves ~250 cal',
+      'Dry toast or skip — saves ~150 cal',
+      'Sausage/bacon on the side, take half home',
+      'Build-your-own: 2 eggs + fruit + dry toast ≈ 400 cal',
+    ],
+    items: [
+      // ── LIGHT (≤450 cal) — the "decent picks" pool ──
+      { id: 'two_eggs_fruit',     name: '2 eggs + fruit + dry toast',  cals: 400, tier: 'light', pick: true,  note: 'Order off-menu: ask for fruit instead of potatoes, dry whole-wheat toast' },
+      { id: 'fit_bright',         name: 'Fit & Bright',                 cals: 380, tier: 'light', pick: true,  note: 'Egg whites, fruit, dry toast — Cora\'s lightest plate' },
+      { id: 'fruit_yogurt',       name: 'Fruit & Yogurt bowl',          cals: 420, tier: 'light', pick: true,  note: 'Yogurt, granola, fruit — fiber + protein OK, watch the granola portion' },
+      { id: 'eggs_yvette_no_bread', name: 'Eggs Yvette (no bread)',     cals: 440, tier: 'light', pick: true,  note: 'Hollandaise costs ~150 cal but the rest is protein-heavy' },
+      { id: 'omelet_veggie_lite', name: 'Veggie omelet (sub fruit)',    cals: 450, tier: 'light', pick: true,  note: 'Spinach/mushroom/pepper, fruit instead of potatoes, dry toast' },
+      // ── MEDIUM (451-750 cal) — proceed with awareness ──
+      { id: 'eggs_benny',         name: 'Eggs Benedict (classic)',      cals: 700, tier: 'med',                note: 'English muffin + hollandaise + ham. Comes with potatoes & fruit' },
+      { id: 'eggs_ben_quentin',   name: 'Eggs Ben Quentin',             cals: 730, tier: 'med',                note: 'Cora\'s benedict variant with extras' },
+      { id: 'croque_madame',      name: 'Croque Madame',                cals: 720, tier: 'med',                note: 'Ham, cheese, egg on bread — cheese-heavy' },
+      { id: 'french_toast',       name: 'French Toast (small)',         cals: 680, tier: 'med',                note: 'Without whipped cream. Syrup adds 100+ if you pour generously' },
+      { id: 'pancakes_short',     name: 'Pancake short stack',          cals: 650, tier: 'med',                note: '2 pancakes + fruit. Syrup is uncounted — easy 150+ extra' },
+      { id: 'wrap_chicken',       name: 'Chicken wrap (no fries)',      cals: 580, tier: 'med',                note: 'Sub salad or fruit for fries — fries adds 350+' },
+      // ── HEAVY (>750 cal) — these are the "1-meal-blew-the-day" plates ──
+      { id: 'jo_construction',    name: 'Jo Construction Western',      cals: 1240, tier: 'heavy',             note: '3 eggs, ham, sausage, bacon, potatoes, toast, fruit. ~2 days of deficit erased' },
+      { id: 'jo_lumberjack',      name: 'Jo Lumberjack (Bûcheron)',     cals: 1400, tier: 'heavy',             note: 'Cora\'s biggest plate. Famous for a reason' },
+      { id: 'coras_special',      name: 'The Famous Cora\'s Special',   cals: 950,  tier: 'heavy',             note: 'Big plate — 2 eggs, ham, bacon, sausage, potatoes, toast, fruit' },
+      { id: 'crepe_banana_royale',name: 'Banana Royale crêpe',          cals: 980,  tier: 'heavy',             note: 'Crêpe + banana + caramel + whipped cream. Dessert pretending to be breakfast' },
+      { id: 'crepe_strawberry',   name: 'Strawberry crêpe + whip',      cals: 820,  tier: 'heavy',             note: 'Sweet crêpe with cream — closer to dessert than a meal' },
+      { id: 'pancake_big_stack',  name: 'Pancake big stack + fruit',    cals: 880,  tier: 'heavy',             note: 'Before syrup. With syrup easily 1000+' },
+      { id: 'belgian_waffle',     name: 'Belgian waffle + whip + fruit',cals: 840,  tier: 'heavy',             note: 'Waffles run sugary even before syrup' },
+      // ── SIDES & DRINKS (mostly informational; tap to add a small entry) ──
+      { id: 'side_bacon',         name: 'Side bacon (3 strips)',        cals: 150,  tier: 'light',             note: 'Add-on' },
+      { id: 'side_sausages',      name: 'Side sausages (2)',            cals: 260,  tier: 'med',               note: 'Add-on' },
+      { id: 'side_potatoes',      name: 'Side potatoes',                cals: 250,  tier: 'med',               note: 'Comes default with most plates' },
+      { id: 'side_fruit',         name: 'Side fruit',                   cals: 90,   tier: 'light',             note: 'Substitute this for potatoes — easy win' },
+      { id: 'coffee_black',       name: 'Coffee (black)',               cals: 5,    tier: 'light',             note: 'Cream + sugar adds ~50 per add' },
+      { id: 'orange_juice_lg',    name: 'Orange juice (large)',         cals: 220,  tier: 'light',             note: 'Liquid sugar. Watch this — easy to forget' },
+      { id: 'hot_choc_whip',      name: 'Hot chocolate + whip',         cals: 320,  tier: 'med',               note: 'Closer to dessert than a beverage' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // TIM HORTONS — coffee + breakfast/lunch focus. The danger here isn't a
+  // single big meal, it's the cumulative drip of "I just had a coffee and
+  // a muffin" landing at 700 cal twice a day. Most muffins are 400+.
+  // ════════════════════════════════════════════════════════════════════════
+  tims: {
+    name: "Tim Hortons",
+    icon: '☕',
+    aliases: ['tim', 'tims', 'tim hortons', 'timmies'],
+    coachTips: [
+      'Coffee black or 1+1 (Double Double = ~140 cal)',
+      'English muffin breakfast sandwich beats biscuit by ~150 cal',
+      'Skip the muffins — most are 400+ (more cal than a donut)',
+      'Iced Capp = milkshake. ~430 cal medium.',
+    ],
+    items: [
+      // ── DRINKS ──
+      { id: 'tim_coffee_black',     name: 'Coffee, black (med)',           cals: 5,   tier: 'light', pick: true,  note: 'The reset button' },
+      { id: 'tim_steeped_tea',      name: 'Steeped tea, plain (med)',      cals: 5,   tier: 'light', pick: true,  note: 'Add 1 milk + 1 sugar = ~30 cal' },
+      { id: 'tim_coffee_1_1',       name: 'Coffee, 1 cream + 1 sugar',     cals: 70,  tier: 'light', pick: true,  note: 'Most of the daily-coffee ritual without the damage' },
+      { id: 'tim_double_double',    name: 'Double Double (med)',           cals: 140, tier: 'light',              note: '2 cream + 2 sugar — fine occasionally' },
+      { id: 'tim_french_vanilla',   name: 'French Vanilla (med)',          cals: 290, tier: 'med',                note: 'Closer to dessert than coffee' },
+      { id: 'tim_iced_capp',        name: 'Iced Capp original (med)',      cals: 430, tier: 'med',                note: 'Sugar + cream slushie. Treat as dessert' },
+      { id: 'tim_iced_capp_choc',   name: 'Iced Capp w/ chocolate milk',   cals: 470, tier: 'med',                note: 'Worse than the original' },
+      { id: 'tim_hot_choc',         name: 'Hot chocolate (med)',           cals: 270, tier: 'med',                note: 'Liquid sugar + dairy' },
+      { id: 'tim_latte_med',        name: 'Latte (med)',                   cals: 190, tier: 'light',              note: 'Mostly milk' },
+      // ── BREAKFAST ──
+      { id: 'tim_bagel_plain',      name: 'Bagel, plain (no spread)',      cals: 270, tier: 'light', pick: true,  note: 'Decent base. Cream cheese adds ~120, butter ~90' },
+      { id: 'tim_bagel_cream',      name: 'Bagel + cream cheese',          cals: 390, tier: 'light',              note: 'Almost in the next tier' },
+      { id: 'tim_egg_cheese_em',    name: 'Egg + Cheese English Muffin',   cals: 290, tier: 'light', pick: true,  note: 'The lightest hot breakfast option' },
+      { id: 'tim_bacon_em',         name: 'Bacon Breakfast Sandwich (EM)', cals: 380, tier: 'light', pick: true,  note: 'Order on English muffin, not biscuit' },
+      { id: 'tim_sausage_biscuit',  name: 'Sausage Breakfast (biscuit)',   cals: 510, tier: 'med',                note: 'Biscuit + sausage is the worst combo here' },
+      { id: 'tim_bagel_belt',       name: 'BELT bagel',                    cals: 470, tier: 'med',                note: 'Bacon, egg, lettuce, tomato — bagel doubles the cal vs muffin' },
+      { id: 'tim_breakfast_wrap',   name: 'Breakfast wrap (sausage)',      cals: 420, tier: 'med',                note: 'Bacon version is ~360' },
+      { id: 'tim_hashbrown',        name: 'Hash brown',                    cals: 110, tier: 'light',              note: 'Side. Small but oily' },
+      // ── BAKED / DONUTS ──
+      { id: 'tim_boston_cream',     name: 'Boston Cream donut',            cals: 250, tier: 'light',              note: 'Lower-cal donut option, somehow' },
+      { id: 'tim_honey_cruller',    name: 'Honey Cruller',                 cals: 290, tier: 'med',                note: 'Glazed = sugar coating' },
+      { id: 'tim_apple_fritter',    name: 'Apple Fritter',                 cals: 370, tier: 'med',                note: 'Big. Worse than most donuts' },
+      { id: 'tim_timbit',           name: 'Timbit (each)',                 cals: 60,  tier: 'light',              note: '10-pack = ~600. They add up fast' },
+      { id: 'tim_muffin_blueberry', name: 'Blueberry muffin',              cals: 360, tier: 'med',                note: '"Healthy" framing, real-cost similar to a fritter' },
+      { id: 'tim_muffin_bran',      name: 'Fruit Explosion muffin',        cals: 440, tier: 'med',                note: 'The "good"-sounding ones are often the worst' },
+      // ── LUNCH ──
+      { id: 'tim_chicken_noodle',   name: 'Chicken noodle soup',           cals: 110, tier: 'light', pick: true,  note: 'One of the best Tim\'s lunch picks' },
+      { id: 'tim_chili_sm',         name: 'Chili (small)',                 cals: 270, tier: 'light', pick: true,  note: 'Protein + fiber, low cal' },
+      { id: 'tim_turkey_bacon_club',name: 'Turkey Bacon Club',             cals: 440, tier: 'light',              note: 'Decent for a sandwich' },
+      { id: 'tim_crispy_chicken_w', name: 'Crispy Chicken Wrap',           cals: 360, tier: 'light',              note: 'Crispy = fried. Grilled version is ~310' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // A&W — burger chain. Most things skew heavy. The "Mama" / "Buddy" tier
+  // is where someone in a deficit can survive; everything bigger than that
+  // is a meal-and-a-half.
+  // ════════════════════════════════════════════════════════════════════════
+  aw: {
+    name: "A&W",
+    icon: '🍔',
+    aliases: ['a&w', 'aw', 'a and w'],
+    coachTips: [
+      'Buddy or Mama Burger — not Papa/Grandpa (300–400 cal more)',
+      'Skip onion rings (~370 cal) — they are not "lighter"',
+      'Diet Root Beer — regular is liquid sugar (~280 cal med)',
+      'Combo meals add ~600 cal of fries + drink. Order à la carte',
+    ],
+    items: [
+      // ── BURGERS ──
+      { id: 'aw_buddy',         name: 'Buddy Burger',                cals: 290, tier: 'light', pick: true,  note: 'Smallest A&W burger — actually deficit-friendly' },
+      { id: 'aw_mama',          name: 'Mama Burger',                 cals: 430, tier: 'light', pick: true,  note: 'Single patty, classic. Reasonable solo' },
+      { id: 'aw_teen',          name: 'Teen Burger (w/ bacon)',      cals: 590, tier: 'med',                note: 'Bacon + cheese adds 160+ over Mama' },
+      { id: 'aw_papa',          name: 'Papa Burger',                 cals: 610, tier: 'med',                note: 'Double patty version of Mama' },
+      { id: 'aw_grandpa',       name: 'Grandpa Burger',              cals: 810, tier: 'heavy',              note: 'Triple patty. Order if you skipped lunch and dinner' },
+      { id: 'aw_mozza',         name: 'Mozza Burger',                cals: 620, tier: 'med',                note: 'Mozza adds ~190 cal vs plain' },
+      { id: 'aw_beyond',        name: 'Beyond Meat Burger',          cals: 520, tier: 'med',                note: 'Plant-based ≠ low-cal. Same ballpark as a beef burger' },
+      { id: 'aw_chubby_chx',    name: 'Chubby Chicken Sandwich',     cals: 490, tier: 'med',                note: 'Crispy. Not actually "lighter" than a Mama' },
+      // ── BREAKFAST ──
+      { id: 'aw_bacon_egger',   name: 'Bacon & Egger',               cals: 390, tier: 'light', pick: true,  note: 'Best A&W breakfast pick' },
+      { id: 'aw_sausage_egger', name: 'Sausage & Egger',             cals: 490, tier: 'med',                note: 'Sausage is fattier than bacon' },
+      { id: 'aw_grandma_saus',  name: 'Grandma Sausage Sandwich',    cals: 440, tier: 'light',              note: 'Like a McMuffin equivalent' },
+      { id: 'aw_hashbrown',     name: 'Hash brown',                  cals: 190, tier: 'light',              note: 'Add-on' },
+      // ── SIDES ──
+      { id: 'aw_fries_reg',     name: 'Fries (regular)',             cals: 380, tier: 'light',              note: 'Add this to a burger and you have a 600+ meal' },
+      { id: 'aw_fries_lg',      name: 'Fries (large)',               cals: 530, tier: 'med',                note: 'Single side, half a day for many' },
+      { id: 'aw_onion_rings',   name: 'Onion Rings (regular)',       cals: 370, tier: 'light',              note: 'Heavier per-gram than fries' },
+      { id: 'aw_sweet_pot',     name: 'Sweet potato fries',          cals: 370, tier: 'light',              note: 'Same as fries — sweet potato isn\'t a free pass' },
+      { id: 'aw_side_salad',    name: 'Side salad (no dressing)',    cals: 110, tier: 'light', pick: true,  note: 'Dressing adds 100–200' },
+      // ── DRINKS / DESSERT ──
+      { id: 'aw_diet_rb',       name: 'Diet Root Beer (med)',        cals: 5,   tier: 'light', pick: true,  note: 'Same flavor, no sugar' },
+      { id: 'aw_root_beer_med', name: 'Root Beer (med)',             cals: 280, tier: 'med',                note: 'Liquid sugar' },
+      { id: 'aw_root_beer_lg',  name: 'Root Beer (large)',           cals: 410, tier: 'med',                note: 'Approaching meal-cal territory in a glass' },
+      { id: 'aw_milkshake_van', name: 'Vanilla Milkshake (small)',   cals: 480, tier: 'med',                note: 'Not a drink. Dessert' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // McDONALD'S — biggest menu, most familiar numbers. Single-patty + plain
+  // beats almost everything. The breakfast platters and McFlurries are
+  // where it goes wrong. Combos always add ~600 cal of fries + soda.
+  // ════════════════════════════════════════════════════════════════════════
+  mcd: {
+    name: "McDonald's",
+    icon: '🍟',
+    aliases: ['mcd', 'mcdonalds', "mcdonald's", 'mickey ds'],
+    coachTips: [
+      'Single-patty + no fries. Hamburger is ~250 cal',
+      'McChicken (~370) over Crispy Chicken Sandwich (~470)',
+      'Big Breakfast w/ Hotcakes is ~1,090 cal — full day in one tray',
+      'Apple slices or side salad swap fries (480 → 15 cal)',
+    ],
+    items: [
+      // ── BURGERS ──
+      { id: 'mcd_hamburger',         name: 'Hamburger',                  cals: 250,  tier: 'light', pick: true,  note: 'Single patty, no cheese. Lightest "meal" item on the menu' },
+      { id: 'mcd_cheeseburger',      name: 'Cheeseburger',               cals: 300,  tier: 'light', pick: true,  note: 'Adds ~50 cal of cheese' },
+      { id: 'mcd_mcdouble',          name: 'McDouble',                   cals: 390,  tier: 'light',              note: 'Two patties, one slice cheese' },
+      { id: 'mcd_double_cheese',     name: 'Double Cheeseburger',        cals: 440,  tier: 'light',              note: 'Two patties, two slices cheese' },
+      { id: 'mcd_big_mac',           name: 'Big Mac',                    cals: 540,  tier: 'med',                note: 'The sauce is ~80 cal of the total' },
+      { id: 'mcd_qpc',               name: 'Quarter Pounder w/ Cheese',  cals: 520,  tier: 'med',                note: 'Single bigger patty' },
+      { id: 'mcd_qpc_bacon',         name: 'Quarter Pounder w/ Bacon',   cals: 620,  tier: 'med',                note: 'Bacon adds ~100' },
+      // ── CHICKEN / FISH ──
+      { id: 'mcd_mcchicken',         name: 'McChicken',                  cals: 370,  tier: 'light', pick: true,  note: 'Lightest chicken sandwich here. Skip the mayo to save 80' },
+      { id: 'mcd_nuggets_6',         name: 'Chicken McNuggets (6)',      cals: 270,  tier: 'light',              note: 'Plain. Sauces add 50–90 each' },
+      { id: 'mcd_nuggets_10',        name: 'Chicken McNuggets (10)',     cals: 440,  tier: 'light',              note: 'Easy to overshoot — these are small' },
+      { id: 'mcd_nuggets_20',        name: 'Chicken McNuggets (20)',     cals: 880,  tier: 'heavy',              note: '20-pack is for sharing — solo it\'s a deficit-blower' },
+      { id: 'mcd_filet_o_fish',      name: 'Filet-O-Fish',               cals: 390,  tier: 'light',              note: 'Tartar + cheese carry the cal load' },
+      { id: 'mcd_mccrispy',          name: 'McCrispy / Spicy McCrispy',  cals: 510,  tier: 'med',                note: 'Bigger bun, fried fillet' },
+      { id: 'mcd_grilled_salad',     name: 'Grilled Chicken Salad',      cals: 250,  tier: 'light', pick: true,  note: 'Light vinaigrette only. Creamy dressing adds 200+' },
+      // ── BREAKFAST ──
+      { id: 'mcd_egg_mcmuffin',      name: 'Egg McMuffin',               cals: 310,  tier: 'light', pick: true,  note: 'Best fast-food breakfast under 350 cal' },
+      { id: 'mcd_sausage_mcmuf',     name: 'Sausage McMuffin',           cals: 400,  tier: 'light',              note: 'Sausage is the cal driver. Plain is ~290' },
+      { id: 'mcd_sausage_mcmuf_egg', name: 'Sausage McMuffin w/ Egg',    cals: 480,  tier: 'med',                note: 'Sausage + egg + cheese on muffin' },
+      { id: 'mcd_breakfast_burrito', name: 'Sausage Breakfast Burrito',  cals: 310,  tier: 'light',              note: 'Decent for a hot breakfast' },
+      { id: 'mcd_bacon_mcgriddle',   name: 'Bacon McGriddle',            cals: 430,  tier: 'light',              note: 'Pancakes-as-buns = sweet + savory. Fine occasionally' },
+      { id: 'mcd_sausage_mcgriddle', name: 'Sausage McGriddle',          cals: 430,  tier: 'light',              note: 'With egg & cheese ~560' },
+      { id: 'mcd_big_breakfast',     name: 'Big Breakfast',              cals: 750,  tier: 'heavy',              note: 'Eggs, sausage, hash brown, biscuit — without hotcakes' },
+      { id: 'mcd_big_breakfast_hp',  name: 'Big Breakfast w/ Hotcakes',  cals: 1090, tier: 'heavy',              note: 'Worst breakfast on the menu. ~2 days of deficit erased' },
+      { id: 'mcd_hotcakes_3',        name: 'Hotcakes (3)',               cals: 510,  tier: 'med',                note: 'Before syrup. Syrup pack adds 180' },
+      { id: 'mcd_hash_brown',        name: 'Hash brown',                 cals: 140,  tier: 'light',              note: 'Side' },
+      // ── SIDES ──
+      { id: 'mcd_fries_sm',          name: 'Fries (small)',              cals: 230,  tier: 'light',              note: 'The smallest size that exists. Most-ordered is medium' },
+      { id: 'mcd_fries_med',         name: 'Fries (medium)',             cals: 340,  tier: 'light',              note: 'Default combo size' },
+      { id: 'mcd_fries_lg',          name: 'Fries (large)',              cals: 480,  tier: 'med',                note: 'Half a day in a side' },
+      { id: 'mcd_apple_slices',      name: 'Apple slices',               cals: 15,   tier: 'light', pick: true,  note: 'Free swap for fries on Happy Meal — works for adults too' },
+      // ── DRINKS / DESSERT ──
+      { id: 'mcd_diet_coke',         name: 'Diet Coke (any size)',       cals: 5,    tier: 'light', pick: true,  note: '0 cal. The default if you must have soda' },
+      { id: 'mcd_coke_med',          name: 'Coke (medium)',              cals: 280,  tier: 'med',                note: 'Liquid sugar' },
+      { id: 'mcd_iced_coffee_med',   name: 'Iced Coffee (medium)',       cals: 140,  tier: 'light',              note: 'Pre-sweetened — order unsweetened for ~30' },
+      { id: 'mcd_mcflurry_mm',       name: 'McFlurry M&M (regular)',     cals: 640,  tier: 'heavy',              note: 'Dessert. Equivalent to a Big Mac in cal' },
+      { id: 'mcd_vanilla_cone',      name: 'Vanilla Cone',               cals: 210,  tier: 'light',              note: 'Smallest dessert pick' },
+      { id: 'mcd_apple_pie',         name: 'Apple Pie',                  cals: 240,  tier: 'light',              note: 'Baked pastry — not light, but contained' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // CACTUS CLUB CAFE — most entrees are 800-1200 cal; the "feature" sharing
+  // plates (truffle fries, cauliflower) are 800-900 *each*. Decent picks
+  // are bowls and the tuna salad. Skip wings, fries-as-side, dessert.
+  // ════════════════════════════════════════════════════════════════════════
+  cactus: {
+    name: "Cactus Club",
+    icon: '🌵',
+    aliases: ['cactus', 'cactus club'],
+    coachTips: [
+      'Tuna sashimi salad or Buddha bowl — the only sub-700 cal entrees',
+      'Sushi cones are sneakily heavy (~480 each, often ordered as snack)',
+      'Truffle fries are 890 cal as a "side." Skip or split',
+      'Rocky Mountain (kid menu chicken bowl) is ~550 — it\'s actually ordered by adults',
+    ],
+    items: [
+      // ── DECENT-ISH ENTREES ──
+      { id: 'cc_tuna_salad',     name: 'Tuna sashimi salad',          cals: 580,  tier: 'med',  pick: true,  note: 'One of the lightest entrees here' },
+      { id: 'cc_buddha_bowl',    name: 'Buddha rice bowl',            cals: 640,  tier: 'med',  pick: true,  note: 'Tofu/quinoa/veg — protein OK, dressing-dependent' },
+      { id: 'cc_bao_trio',       name: 'Bao bun trio',                cals: 620,  tier: 'med',  pick: true,  note: 'Three small steamed buns — share-plate energy' },
+      { id: 'cc_lettuce_wraps',  name: 'Chicken lettuce wraps',       cals: 700,  tier: 'med',                note: 'Smaller portion than most entrees' },
+      // ── HEAVY ENTREES ──
+      { id: 'cc_crispy_chx_sw',  name: 'Crispy chicken sandwich',     cals: 890,  tier: 'heavy',              note: 'Comes with fries — the meal lands ~1100' },
+      { id: 'cc_caesar_chicken', name: 'Caesar salad w/ chicken',     cals: 840,  tier: 'heavy',              note: 'Caesar dressing is the cal driver, not the lettuce' },
+      { id: 'cc_butternut_rav',  name: 'Butternut squash ravioli',    cals: 890,  tier: 'heavy',              note: 'Sage brown butter sauce — calorie-dense' },
+      { id: 'cc_hunter_chicken', name: 'Hunter chicken',              cals: 1100, tier: 'heavy',              note: 'Mushroom cream sauce, mash. Big plate' },
+      { id: 'cc_cc_burger',      name: 'CC Burger + fries',           cals: 1050, tier: 'heavy',              note: 'Standard burger setup' },
+      { id: 'cc_steak_frites',   name: 'Steak frites',                cals: 1300, tier: 'heavy',              note: '8oz steak, fries, sauce. Full-day plate' },
+      { id: 'cc_korean_caulif',  name: 'Korean fried cauliflower',    cals: 880,  tier: 'heavy',              note: 'Fried + sweet sauce — dessert in vegetable form' },
+      { id: 'cc_wings',          name: 'Wings (10pc)',                cals: 1100, tier: 'heavy',              note: 'Comes with sauce + ranch. Add fries and you\'re at 1500+' },
+      // ── SHARING / SIDES ──
+      { id: 'cc_truffle_fries',  name: 'Truffle fries (side)',        cals: 890,  tier: 'heavy',              note: 'Often shared but rarely tracked. Order at your peril' },
+      { id: 'cc_yam_fries',      name: 'Crispy yam fries',            cals: 530,  tier: 'med',                note: 'Sweet potato bias — same as regular fries calorie-wise' },
+      { id: 'cc_sushi_cone',     name: 'Sushi cone (each)',           cals: 480,  tier: 'med',                note: 'Easy to order 2-3 as a "snack" = 1000-1500 cal' },
+      // ── DESSERT ──
+      { id: 'cc_key_lime_pie',   name: 'Key lime pie',                cals: 750,  tier: 'heavy',              note: 'Standard pie cal load' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // EARLS — same casual-fine-dining tier as Cactus Club. Bibimbap and Buddha
+  // bowls are the deficit-friendly choices. Wings, burgers, butter chicken
+  // are 1000+ cal traps.
+  // ════════════════════════════════════════════════════════════════════════
+  earls: {
+    name: "Earls",
+    icon: '🍽',
+    aliases: ['earls', "earl's"],
+    coachTips: [
+      'Bibimbap or Buddha bowl — the sub-900 cal entrees',
+      'Cedar plank salmon (no truffle fries) — one of the lighter mains',
+      'Wings (1lb) ≈ 1200 cal *before* fries and beer',
+      'Cajun chicken sandwich + truffle fries combo lands 1900+',
+    ],
+    items: [
+      // ── DECENT-ISH ENTREES ──
+      { id: 'earls_bibimbap',    name: 'Bibimbap rice bowl',          cals: 840,  tier: 'heavy', pick: true, note: 'Heavy by absolute number, light by Earls standards. Protein-decent' },
+      { id: 'earls_buddha',      name: 'Buddha bowl',                 cals: 640,  tier: 'med',  pick: true,  note: 'One of the few sub-700 cal entrees' },
+      { id: 'earls_cedar_salmon',name: 'Cedar plank salmon',          cals: 720,  tier: 'med',  pick: true,  note: 'Skip the truffle fries side — ask for veg or salad' },
+      { id: 'earls_fish_tacos',  name: 'Baja fish tacos',             cals: 890,  tier: 'heavy',              note: 'Comes with rice + beans' },
+      // ── HEAVY ENTREES ──
+      { id: 'earls_cajun_chx',   name: 'Cajun chicken sandwich',      cals: 1080, tier: 'heavy',              note: 'Comes with truffle fries by default — meal hits 1900' },
+      { id: 'earls_santa_fe',    name: 'Santa Fe chicken salad',      cals: 880,  tier: 'heavy',              note: 'Salad in name only. Crispy noodles, dressing' },
+      { id: 'earls_butter_chx',  name: 'Butter chicken curry',        cals: 1100, tier: 'heavy',              note: 'Cream-based + naan + rice. Indulgent' },
+      { id: 'earls_steak_frites',name: 'Steak frites',                cals: 1300, tier: 'heavy',              note: '8oz + truffle fries + chimichurri' },
+      { id: 'earls_burger',      name: 'Earls Original Burger',       cals: 1100, tier: 'heavy',              note: 'Standard 8oz burger setup' },
+      // ── SHARING / SIDES / WINGS ──
+      { id: 'earls_wings_lb',    name: 'Wings (1 lb)',                cals: 1200, tier: 'heavy',              note: 'Shareable in theory; solo it\'s a meal-and-a-half' },
+      { id: 'earls_truffle_fr',  name: 'Truffle fries (side)',        cals: 860,  tier: 'heavy',              note: 'Same trap as Cactus Club\'s' },
+      { id: 'earls_warm_pretzel',name: 'Warm pretzel',                cals: 720,  tier: 'med',                note: 'Doughy + cheese sauce — share-plate but solo-able' },
+      // ── DESSERT ──
+      { id: 'earls_sticky_tof',  name: 'Sticky toffee pudding',       cals: 870,  tier: 'heavy',              note: 'Earls\'s most ordered dessert. Equivalent to a full meal' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BROWNS SOCIALHOUSE — slightly more casual / pub-style than Cactus or
+  // Earls. Wings, burgers, mac & cheese are signature heavies. Salads with
+  // grilled chicken are the survivable picks.
+  // ════════════════════════════════════════════════════════════════════════
+  browns: {
+    name: "Browns Socialhouse",
+    icon: '🍻',
+    aliases: ['browns', "brown's", 'browns socialhouse'],
+    coachTips: [
+      'Power bowl or grilled chicken salad — the sub-700 picks',
+      'Yam fries are one of the biggest sides anywhere (~720 cal)',
+      'Chicken parm (~1300) is the cal champion. Mac & cheese close behind',
+      'Wings + a beer + fries = 2000 cal. Easy to drift there',
+    ],
+    items: [
+      // ── DECENT-ISH ENTREES ──
+      { id: 'br_power_bowl',     name: 'Power bowl',                  cals: 620,  tier: 'med',  pick: true,  note: 'Quinoa/grilled chicken/veg. One of the few sub-700 entrees' },
+      { id: 'br_grilled_chx_sal',name: 'Grilled chicken salad',       cals: 580,  tier: 'med',  pick: true,  note: 'Light vinaigrette only. Creamy dressings add 200+' },
+      { id: 'br_taco_trio',      name: 'Taco trio (chicken)',         cals: 750,  tier: 'med',                note: 'Three tacos + rice. Order grilled not crispy' },
+      // ── HEAVY ENTREES ──
+      { id: 'br_browns_burger',  name: 'Browns Burger + fries',       cals: 1200, tier: 'heavy',              note: 'Default setup includes fries' },
+      { id: 'br_chicken_parm',   name: 'Chicken parmesan',            cals: 1300, tier: 'heavy',              note: 'Breaded chicken + cheese + pasta. Cal champion here' },
+      { id: 'br_mac_cheese',     name: 'Mac & cheese (entree)',       cals: 1100, tier: 'heavy',              note: 'Add chicken: +200. Add bacon: +150' },
+      { id: 'br_steak_frites',   name: 'Steak frites',                cals: 1400, tier: 'heavy',              note: 'Standard sit-down steak setup' },
+      { id: 'br_korean_caulif',  name: 'Korean cauliflower',          cals: 890,  tier: 'heavy',              note: 'Fried + sweet sauce. Same trap as Cactus' },
+      // ── WINGS / SIDES ──
+      { id: 'br_wings_1lb',      name: 'Wings (1 lb)',                cals: 1100, tier: 'heavy',              note: 'Share or commit' },
+      { id: 'br_yam_fries',      name: 'Yam fries (side)',            cals: 720,  tier: 'med',                note: 'Browns\' yam fries are notably big' },
+      { id: 'br_kettle_chips',   name: 'Kettle chips + dip',          cals: 850,  tier: 'heavy',              note: 'Share plate, frequently solo\'d' },
+      // ── DESSERT ──
+      { id: 'br_skillet_cookie', name: 'Skillet cookie + ice cream',  cals: 1100, tier: 'heavy',              note: 'Chocolate chip cookie + ice cream. Dessert disaster' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BOSTON PIZZA — pizza chain with a long pasta/wing menu. Pizza cal scales
+  // wildly with size + toppings. Personal pizzas are the safer ceiling.
+  // The Bandera bread + a beer + a personal pizza lands ~2400 cal.
+  // ════════════════════════════════════════════════════════════════════════
+  bp: {
+    name: "Boston Pizza",
+    icon: '🍕',
+    aliases: ['boston pizza', 'bp'],
+    coachTips: [
+      'Personal pizza ceiling > sharing a medium and "having two slices"',
+      'Bandera bread is ~1200 cal — easy to share, easy to overshoot',
+      'Salads with grilled chicken (no creamy dressing) are the only sub-700 picks',
+      'Pasta dishes are the most cal-dense menu category',
+    ],
+    items: [
+      // ── DECENT-ISH (such as it gets here) ──
+      { id: 'bp_grilled_chx_sal',name: 'Grilled chicken salad',       cals: 590,  tier: 'med',  pick: true,  note: 'Vinaigrette. Avoid Caesar/ranch dressings' },
+      { id: 'bp_thai_chx_bites', name: 'Thai chicken bites',          cals: 680,  tier: 'med',  pick: true,  note: 'Lightest "share" plate' },
+      { id: 'bp_personal_marg',  name: 'Personal Margherita pizza',   cals: 720,  tier: 'med',  pick: true,  note: 'One of the lightest personal pizzas' },
+      // ── PIZZAS ──
+      { id: 'bp_personal_meat',  name: 'Personal Meateor pizza',      cals: 1100, tier: 'heavy',              note: 'Meat-heavy personal — easily 1100+' },
+      { id: 'bp_med_pepperoni',  name: 'Medium pepperoni (2 slices)', cals: 540,  tier: 'med',                note: 'Per 2 slices. Whole medium = ~1600 cal' },
+      { id: 'bp_med_meat_lover', name: 'Medium meat lover (2 slices)',cals: 620,  tier: 'med',                note: 'Per 2 slices. Whole medium = ~1860 cal' },
+      { id: 'bp_perogy_pizza',   name: 'Spicy Perogy pizza (personal)',cals:1300, tier: 'heavy',              note: 'Iconic BP. Heavy.' },
+      // ── PASTA ──
+      { id: 'bp_jamb_pasta',     name: 'Jambalaya fettuccine',        cals: 1300, tier: 'heavy',              note: 'Cream + protein + pasta' },
+      { id: 'bp_chx_alfredo',    name: 'Chicken alfredo',             cals: 1200, tier: 'heavy',              note: 'Cream sauce + pasta — biggest cal trap on the menu' },
+      { id: 'bp_lasagna',        name: 'Lasagna',                     cals: 1100, tier: 'heavy',              note: 'Comes with garlic toast (+250)' },
+      // ── WINGS / APPS ──
+      { id: 'bp_bandera_bread',  name: 'Bandera bread (share)',       cals: 1200, tier: 'heavy',              note: 'Famous BP starter. Add cheese: +400' },
+      { id: 'bp_wings_lb',       name: 'Wings (1 lb)',                cals: 900,  tier: 'heavy',              note: 'Shareable; solo a 900 cal app' },
+      { id: 'bp_nachos',         name: 'Nachos (share)',              cals: 1500, tier: 'heavy',              note: 'Loaded nachos rarely shared evenly' },
+      // ── BURGERS ──
+      { id: 'bp_burger',         name: 'BP Burger + fries',           cals: 1150, tier: 'heavy',              note: 'Standard sit-down burger setup' },
+      // ── DESSERT ──
+      { id: 'bp_pizza_cookie',   name: 'Pizza cookie + ice cream',    cals: 1300, tier: 'heavy',              note: 'Big-format dessert designed to share' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SUSHI (generic) — for local independents (Oichi, Sushi Aoi) where no
+  // published nutrition data exists. Per-piece nigiri/sashimi and per-roll
+  // maki estimates. Real meals tally up by tapping multiple items. Sushi
+  // is one of the few cuisines where ordering well actually keeps you
+  // under 700 cal — but tempura/dynamite/dragon rolls are deceptively heavy.
+  // ════════════════════════════════════════════════════════════════════════
+  sushi: {
+    name: "Sushi (generic)",
+    icon: '🍣',
+    aliases: ['sushi', 'oichi', 'sushi aoi', 'oichi sushi', 'aoi'],
+    coachTips: [
+      'Nigiri + sashimi + miso = ~500 cal for a satisfying meal',
+      'Tempura, dynamite, and dragon rolls run 400-550 cal *each*',
+      'A "small" sushi dinner of 2 specialty rolls is easily 900-1100',
+      'Soy sauce sodium aside, cal cost is in the rice + sauces, not the fish',
+    ],
+    items: [
+      // ── NIGIRI / SASHIMI (per piece) ──
+      { id: 'sushi_nigiri_salmon',name: 'Salmon nigiri (per piece)',  cals: 50,  tier: 'light', pick: true,  note: 'Tap once per piece. 6 pieces = 300 cal' },
+      { id: 'sushi_nigiri_tuna',  name: 'Tuna nigiri (per piece)',    cals: 50,  tier: 'light', pick: true,  note: 'Tap once per piece' },
+      { id: 'sushi_nigiri_ebi',   name: 'Shrimp/ebi nigiri (per piece)', cals: 45, tier: 'light', pick: true,note: 'Tap once per piece' },
+      { id: 'sushi_sashimi_pc',   name: 'Sashimi (per piece, any fish)', cals: 35, tier: 'light', pick: true,note: 'No rice — lighter than nigiri. Tap once per piece' },
+      // ── MAKI ROLLS (per full roll, ~6-8 pieces) ──
+      { id: 'sushi_avocado_roll', name: 'Avocado roll (full)',         cals: 160, tier: 'light', pick: true,  note: '~6 pieces of cucumber/avocado roll' },
+      { id: 'sushi_cuke_roll',    name: 'Cucumber roll (full)',        cals: 140, tier: 'light', pick: true,  note: 'Lightest roll on most menus' },
+      { id: 'sushi_salmon_roll',  name: 'Salmon roll (full)',          cals: 220, tier: 'light', pick: true,  note: 'Plain salmon + rice, 6 pieces' },
+      { id: 'sushi_california',   name: 'California roll (full)',      cals: 280, tier: 'light',              note: 'Crab/cuke/avocado + sesame. Mayo adds 50' },
+      { id: 'sushi_spicy_tuna',   name: 'Spicy tuna roll (full)',      cals: 290, tier: 'light',              note: 'Spicy mayo bumps it up' },
+      { id: 'sushi_dragon_roll',  name: 'Dragon roll (full)',          cals: 420, tier: 'med',                note: 'Eel/avocado/sweet sauce — sneaky heavy' },
+      { id: 'sushi_tempura_roll', name: 'Shrimp tempura roll (full)',  cals: 480, tier: 'med',                note: 'Fried tempura inside. Half a meal in one roll' },
+      { id: 'sushi_dynamite',     name: 'Dynamite roll (full)',        cals: 510, tier: 'med',                note: 'Tempura + spicy mayo combo' },
+      { id: 'sushi_rainbow',      name: 'Rainbow roll (full)',         cals: 470, tier: 'med',                note: 'California base + assorted sashimi on top' },
+      { id: 'sushi_spider',       name: 'Spider roll (full)',          cals: 530, tier: 'med',                note: 'Soft-shell crab tempura — heaviest common roll' },
+      // ── SIDES ──
+      { id: 'sushi_edamame',      name: 'Edamame (order)',             cals: 200, tier: 'light', pick: true,  note: 'Decent protein + fiber' },
+      { id: 'sushi_miso',         name: 'Miso soup',                   cals: 60,  tier: 'light', pick: true,  note: 'Sodium-heavy but cal-cheap' },
+      { id: 'sushi_seaweed_sal',  name: 'Seaweed salad',               cals: 110, tier: 'light', pick: true,  note: 'Sesame oil dressing — small portion' },
+      { id: 'sushi_gyoza_pc',     name: 'Gyoza (per piece)',           cals: 60,  tier: 'light',              note: 'Tap per piece. 6 = 360' },
+      { id: 'sushi_tempura_pc',   name: 'Tempura prawn (per piece)',   cals: 80,  tier: 'light',              note: 'Tap per piece. 4-piece order = 320' },
+      { id: 'sushi_house_salad',  name: 'House salad + ginger dressing',cals: 180, tier: 'light',             note: 'Ginger dressing has more cal than it looks' },
+      // ── DRINKS ──
+      { id: 'sushi_sake_small',   name: 'Sake (small carafe)',         cals: 200, tier: 'light',              note: 'Counts as alcohol — see Drinks coach tip' },
+      { id: 'sushi_japanese_beer',name: 'Japanese beer (Sapporo, etc)',cals: 200, tier: 'light',              note: 'Asahi/Sapporo run higher than light beer' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // WINGS (generic) — for wing nights where the chain isn't tracked. Bone-in
+  // and boneless are different beasts. Sauces add 20-50 cal each. Headline:
+  // wings rarely come solo — fries + 2 beers usually doubles the bill.
+  // ════════════════════════════════════════════════════════════════════════
+  wings: {
+    name: "Wings (generic)",
+    icon: '🍗',
+    aliases: ['wings', 'wing night', 'pub wings'],
+    coachTips: [
+      '10 hot wings ≈ 900-1100 cal (sauce-dependent)',
+      'Boneless wings are smaller per piece but you eat more — net similar',
+      'Dry rubs (lemon pepper, salt-and-pepper) save 100-150 vs sauced',
+      'Side-of-fries adds 350-500. Beer adds 150 each. Honest meal: 1500-2000',
+    ],
+    items: [
+      // ── BONE-IN (per wing) ──
+      { id: 'wings_plain_pc',     name: 'Bone-in plain (per wing)',    cals: 80,  tier: 'light',              note: 'Tap per wing. 10 = 800 cal before sauce/dip' },
+      { id: 'wings_dry_rub_pc',   name: 'Bone-in dry rub (per wing)',  cals: 90,  tier: 'light', pick: true,  note: 'Lemon pepper / salt-and-pepper. 10 = 900' },
+      { id: 'wings_hot_pc',       name: 'Bone-in hot sauce (per wing)',cals: 100, tier: 'light',              note: 'Standard hot/buffalo. 10 = 1000' },
+      { id: 'wings_honey_garlic_pc', name: 'Bone-in honey garlic (per wing)', cals: 115, tier: 'light',       note: 'Sweet sauces add 30+ vs plain. 10 = 1150' },
+      { id: 'wings_bbq_pc',       name: 'Bone-in BBQ (per wing)',      cals: 110, tier: 'light',              note: 'Sweet sauce. 10 = 1100' },
+      { id: 'wings_teriyaki_pc',  name: 'Bone-in teriyaki (per wing)', cals: 115, tier: 'light',              note: 'Sweet sauce. 10 = 1150' },
+      // ── BONELESS (per piece) ──
+      { id: 'wings_boneless_pc',  name: 'Boneless wing (per piece)',   cals: 60,  tier: 'light',              note: 'Smaller per piece — orders are typically 12-15. 12 = 720' },
+      { id: 'wings_boneless_hot_pc', name: 'Boneless hot (per piece)', cals: 70,  tier: 'light',              note: '12 = 840' },
+      // ── COMMON SIDES THAT TAG ALONG ──
+      { id: 'wings_blue_cheese',  name: 'Blue cheese / ranch dip (1)', cals: 150, tier: 'light',              note: 'Per dip cup. Easy to use 2-3' },
+      { id: 'wings_celery_carrots',name: 'Celery & carrots',           cals: 30,  tier: 'light', pick: true,  note: 'Comes free. Use them — they\'re the only fiber' },
+      { id: 'wings_fries_side',   name: 'Fries (side, pub-size)',      cals: 450, tier: 'med',                note: 'Larger than fast-food medium' },
+      // ── SHORTCUT ENTRIES (typical order, save tapping) ──
+      { id: 'wings_10_hot_combo', name: '10 hot wings + fries + dip',  cals: 1600, tier: 'heavy',             note: 'Standard wing-night order. With 1 beer: ~1750' },
+      { id: 'wings_20_mixed',     name: '20 wings (split sauces)',     cals: 2000, tier: 'heavy',             note: 'Typical "we\'ll share" order — solo it\'s a 2-day write-off' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // DRINKS (alcohol) — pulled from the typical bar order. IMPORTANT framing:
+  // alcohol calories don't behave like food calories. While ethanol is being
+  // metabolized (24-48hr after meaningful drinking), the body parks fat
+  // oxidation. So a 600-cal night out doesn't just blow today's deficit —
+  // it pauses progress for the next day too. The cal number matters AND
+  // the metabolic side effect matters.
+  // ════════════════════════════════════════════════════════════════════════
+  drinks: {
+    name: "Drinks (alcohol)",
+    icon: '🍷',
+    aliases: ['drinks', 'alcohol', 'bar', 'beer', 'wine'],
+    coachTips: [
+      'Alcohol cal pause fat oxidation for 24-48hr — they cost MORE than the number',
+      'Vodka soda or light beer is the lowest-impact session pick (~100/serving)',
+      'Wine: 5oz pour is a single. A "glass" at home is often 8oz+ (200+ cal)',
+      'Cocktails with juice/syrup are 250-450 each — same as a small meal',
+    ],
+    items: [
+      // ── BEER (per serving) ──
+      { id: 'drink_beer_light',   name: 'Light beer (12 oz)',          cals: 100, tier: 'light', pick: true,  note: 'Bud Light, Coors Light, Mich Ultra ~95. Lowest-impact beer' },
+      { id: 'drink_beer_reg',     name: 'Regular beer (12 oz)',        cals: 150, tier: 'light',              note: 'Stella, Heineken, Coors Original' },
+      { id: 'drink_beer_ipa',     name: 'IPA / craft beer (12 oz)',    cals: 220, tier: 'light',              note: 'Hoppy + higher ABV. Some hit 280' },
+      { id: 'drink_beer_pint',    name: 'Pint (16 oz, regular beer)',  cals: 200, tier: 'light',              note: 'Pints are ~33% bigger than bottles. Adjust upward for IPA' },
+      { id: 'drink_guinness',     name: 'Guinness (16 oz pint)',       cals: 210, tier: 'light',              note: 'Lower than IPA despite the heaviness' },
+      // ── WINE ──
+      { id: 'drink_wine_red_5',   name: 'Red wine (5 oz pour)',        cals: 125, tier: 'light',              note: 'Standard restaurant pour' },
+      { id: 'drink_wine_white_5', name: 'White wine (5 oz pour)',      cals: 120, tier: 'light',              note: 'Standard pour' },
+      { id: 'drink_wine_8oz',     name: 'Wine (8 oz home pour)',       cals: 200, tier: 'light',              note: 'Most home pours are 8 oz, not 5' },
+      { id: 'drink_champagne_4',  name: 'Champagne / sparkling (4 oz)',cals: 90,  tier: 'light',              note: 'Lower than still wine per pour' },
+      // ── SPIRITS (neat / on rocks) ──
+      { id: 'drink_spirit_15',    name: 'Spirit, neat/rocks (1.5 oz)', cals: 100, tier: 'light',              note: 'Vodka/gin/whiskey/tequila — same cal at 80 proof' },
+      { id: 'drink_spirit_double',name: 'Spirit, double (3 oz)',       cals: 200, tier: 'light',              note: 'Bar doubles' },
+      // ── COCKTAILS ──
+      { id: 'drink_vodka_soda',   name: 'Vodka soda',                  cals: 100, tier: 'light', pick: true,  note: 'Lowest-cal cocktail. Add lime, no syrup' },
+      { id: 'drink_gin_tonic',    name: 'Gin & tonic',                 cals: 180, tier: 'light',              note: 'Tonic adds 80 of sugar. "Diet tonic" exists' },
+      { id: 'drink_rum_coke',     name: 'Rum & Coke',                  cals: 200, tier: 'light',              note: 'Coke = 100 cal of the total. Diet swap saves it' },
+      { id: 'drink_old_fash',     name: 'Old Fashioned',               cals: 200, tier: 'light',              note: 'Sugar cube + bitters + whiskey' },
+      { id: 'drink_manhattan',    name: 'Manhattan',                   cals: 220, tier: 'light',              note: 'Whiskey + sweet vermouth' },
+      { id: 'drink_margarita',    name: 'Margarita (rocks)',           cals: 280, tier: 'light',              note: 'Frozen versions hit 400-500' },
+      { id: 'drink_marg_frozen',  name: 'Margarita (frozen/blended)',  cals: 450, tier: 'med',                note: 'Sugar bomb + tequila' },
+      { id: 'drink_cosmo',        name: 'Cosmopolitan',                cals: 220, tier: 'light',              note: 'Cranberry + triple sec' },
+      { id: 'drink_mojito',       name: 'Mojito',                      cals: 220, tier: 'light',              note: 'Sugar + rum' },
+      { id: 'drink_long_island',  name: 'Long Island Iced Tea',        cals: 420, tier: 'med',                note: '5 spirits + cola. Cal AND ABV bomb' },
+      { id: 'drink_pina_colada',  name: 'Piña Colada',                 cals: 490, tier: 'med',                note: 'Cream of coconut is the cal driver' },
+      { id: 'drink_whiskey_sour', name: 'Whiskey sour',                cals: 200, tier: 'light',              note: 'Sour mix = sugar' },
+      // ── SHOTS ──
+      { id: 'drink_shot_15',      name: 'Shot (1.5 oz, plain)',        cals: 100, tier: 'light',              note: 'Vodka/whiskey/tequila' },
+      { id: 'drink_shot_jager',   name: 'Jägermeister shot',           cals: 100, tier: 'light',              note: 'Liqueurs sit ~100 per shot' },
+    ],
+  },
+};
+// Helper: render a cal value with leading ~ to communicate the wobble
+function fmtRestCal(n) { return '~' + n + ' cal'; }
 function _newId() { return 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function getDietEvents(dateStr) {
   if (DB_CACHE.dietEvents[dateStr]) return DB_CACHE.dietEvents[dateStr];
@@ -5653,16 +6419,18 @@ function _saveDietEvents(dateStr, arr) {
   DB_CACHE.dietEvents[dateStr] = arr;
   localStorage.setItem('dietevent_' + dateStr, JSON.stringify(arr));
 }
-function addDietEvent(dateStr, tags, note, time) {
+function addDietEvent(dateStr, tags, note, time, cals) {
   const arr = getDietEvents(dateStr).slice();
   const now = new Date();
   const hh = String(now.getHours()).padStart(2,'0');
   const mm = String(now.getMinutes()).padStart(2,'0');
+  const calsNum = parseInt(cals, 10);
   arr.push({
     id: _newId(),
     time: time || (hh + ':' + mm),
     tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
     note: (note || '').trim(),
+    cals: (isFinite(calsNum) && calsNum > 0) ? calsNum : 0,
   });
   _saveDietEvents(dateStr, arr);
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
@@ -5964,73 +6732,224 @@ function _submitMealSugg() {
 // Transient draft state — which tags are toggled on the inline form, per date.
 window._dietDraft = window._dietDraft || {};
 function _getDraft(dateStr) {
-  if (!window._dietDraft[dateStr]) window._dietDraft[dateStr] = { tags: {}, note: '' };
+  if (!window._dietDraft[dateStr]) window._dietDraft[dateStr] = { tags: {}, note: '', cals: '' };
   return window._dietDraft[dateStr];
 }
 function dietDraftToggleTag(dateStr, tagId) {
   const d = _getDraft(dateStr);
   d.tags[tagId] = !d.tags[tagId];
-  // Re-render just by toggling the pill class without a full renderDaily
+  // v1 pill: toggle .on class. The .de-pill.on CSS rule (see styles) uses
+  // the inline --de-color var on the pill to fill with the tag color.
   const el = document.querySelector('[data-diet-tag="' + dateStr + '_' + tagId + '"]');
   if (el) {
-    if (d.tags[tagId]) el.classList.add('diet-tag-on');
-    else el.classList.remove('diet-tag-on');
+    if (d.tags[tagId]) el.classList.add('on');
+    else el.classList.remove('on');
   }
 }
 function commitDietEvent(dateStr) {
   const d = _getDraft(dateStr);
   const noteEl = document.getElementById('diet-event-note-' + dateStr);
+  const calsEl = document.getElementById('diet-event-cals-' + dateStr);
   const note = noteEl ? noteEl.value : '';
+  const cals = calsEl ? calsEl.value : '';
   const selectedTags = Object.keys(d.tags).filter(k => d.tags[k]);
-  // Require either a tag or a note
-  if (selectedTags.length === 0 && !note.trim()) return;
+  // Require a tag OR a note OR a cal count to commit. Empty submits are no-ops.
+  const calsNum = parseInt(cals, 10);
+  const hasCals = isFinite(calsNum) && calsNum > 0;
+  if (selectedTags.length === 0 && !note.trim() && !hasCals) return;
   // Reset draft BEFORE addDietEvent (which triggers re-render)
-  window._dietDraft[dateStr] = { tags: {}, note: '' };
-  addDietEvent(dateStr, selectedTags, note);
+  window._dietDraft[dateStr] = { tags: {}, note: '', cals: '' };
+  addDietEvent(dateStr, selectedTags, note, undefined, calsNum);
 }
+
+// ── RESTAURANT PICKER ──
+// Single popup that serves both surfaces:
+//   • Pre-meal coach: "I'm at Cora's, what should I eat?" → see Decent picks first
+//   • Post-hoc log:   "I had the Jo Construction" → tap + Log on the row
+// Both flows reuse addDietEvent under the hood. Tagging is automatic
+// (auto-applies the 'restaurant' tag) so this doesn't fight the existing
+// pill UI — the pill stays for freeform tagging.
+window._restPickState = window._restPickState || { dateStr: null, chainId: null };
+function openRestaurantPicker(dateStr) {
+  window._restPickState = { dateStr: dateStr, chainId: null };
+  const bd = document.getElementById('rest-pick-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  renderRestaurantPicker();
+}
+function closeRestaurantPicker() {
+  const bd = document.getElementById('rest-pick-backdrop');
+  if (bd) bd.classList.remove('open');
+  window._restPickState = { dateStr: null, chainId: null };
+}
+function _restPickChain(chainId) {
+  window._restPickState.chainId = chainId;
+  renderRestaurantPicker();
+}
+function _restPickBack() {
+  window._restPickState.chainId = null;
+  renderRestaurantPicker();
+}
+function logRestaurantItem(chainId, itemId) {
+  const dateStr = window._restPickState.dateStr;
+  if (!dateStr) return;
+  const chain = RESTAURANT_DB[chainId];
+  if (!chain) return;
+  const item = (chain.items || []).find(i => i.id === itemId);
+  if (!item) return;
+  const note = chain.name + ' · ' + item.name;
+  // Auto-tag with 'restaurant' since this is, by definition, eating out.
+  addDietEvent(dateStr, ['restaurant'], note, undefined, item.cals);
+  // Soft confirmation: brief flash on the tapped row, then close.
+  const row = document.querySelector('[data-rp-item="' + itemId + '"]');
+  if (row) {
+    row.style.borderColor = 'var(--green)';
+    row.style.background = 'var(--green-bg)';
+  }
+  setTimeout(() => closeRestaurantPicker(), 350);
+}
+function renderRestaurantPicker() {
+  const body = document.getElementById('rest-pick-body');
+  const titleEl = document.getElementById('rest-pick-title');
+  if (!body) return;
+  const state = window._restPickState;
+  // ── View 1: chain picker ──
+  if (!state.chainId) {
+    if (titleEl) titleEl.textContent = '🍽 Eating out — pick a place';
+    const chainIds = Object.keys(RESTAURANT_DB);
+    const grid = chainIds.map(cid => {
+      const c = RESTAURANT_DB[cid];
+      return `<div class="rp-chain" onclick="_restPickChain('${cid}')">
+        <div class="rp-chain-icon">${c.icon || '🍴'}</div>
+        <div class="rp-chain-name">${c.name}</div>
+      </div>`;
+    }).join('');
+    body.innerHTML = `
+      <div class="rp-chain-grid">${grid}</div>
+      <div class="rp-disclaimer">More restaurants coming. Cal estimates are mid-points with ±20% real-world variance — treat them as rough.</div>
+    `;
+    return;
+  }
+  // ── View 2: menu for a chosen chain ──
+  const chain = RESTAURANT_DB[state.chainId];
+  if (!chain) { _restPickBack(); return; }
+  if (titleEl) titleEl.textContent = (chain.icon || '🍴') + ' ' + chain.name;
+
+  // Coach tips (only if defined)
+  const tipsHtml = (chain.coachTips && chain.coachTips.length)
+    ? `<div class="rp-tips">
+         <div class="rp-tips-label">Order smart</div>
+         <ul>${chain.coachTips.map(t => `<li>${t}</li>`).join('')}</ul>
+       </div>`
+    : '';
+
+  // Render items grouped: "Decent picks" (pick:true) first, then by tier.
+  const items = chain.items || [];
+  const picks   = items.filter(i => i.pick);
+  const lights  = items.filter(i => !i.pick && i.tier === 'light');
+  const meds    = items.filter(i => i.tier === 'med');
+  const heavies = items.filter(i => i.tier === 'heavy');
+
+  const renderItem = (it) => {
+    const calClass = it.tier === 'light' ? 'rp-item-cal-light'
+                   : it.tier === 'heavy' ? 'rp-item-cal-heavy' : '';
+    const pickBadge = it.pick ? '<span class="rp-item-pick-badge">decent</span>' : '';
+    const note = it.note ? `<div class="rp-item-note">${it.note}</div>` : '';
+    return `<div class="rp-item ${it.pick ? 'pick' : ''}" data-rp-item="${it.id}">
+      <div class="rp-item-main">
+        <div class="rp-item-row1">
+          <span class="rp-item-name">${it.name}</span>
+          ${pickBadge}
+        </div>
+        ${note}
+      </div>
+      <div class="rp-item-right">
+        <div class="rp-item-cal ${calClass}">${fmtRestCal(it.cals)}</div>
+        <button class="rp-item-log" onclick="logRestaurantItem('${state.chainId}','${it.id}')">+ Log</button>
+      </div>
+    </div>`;
+  };
+
+  const sections = [];
+  if (picks.length)   sections.push(`<div class="rp-tier-label rp-tier-light">★ Decent picks</div>` + picks.map(renderItem).join(''));
+  if (lights.length)  sections.push(`<div class="rp-tier-label rp-tier-light">Light (≤450 cal)</div>` + lights.map(renderItem).join(''));
+  if (meds.length)    sections.push(`<div class="rp-tier-label rp-tier-med">Medium (450–750 cal)</div>` + meds.map(renderItem).join(''));
+  if (heavies.length) sections.push(`<div class="rp-tier-label rp-tier-heavy">Heavy (&gt;750 cal) — read first</div>` + heavies.map(renderItem).join(''));
+
+  body.innerHTML = `
+    <div class="rp-back" onclick="_restPickBack()">← All restaurants</div>
+    ${tipsHtml}
+    ${sections.join('')}
+    <div class="rp-disclaimer">Cal values are mid-points with ±20% real-world variance. Substitutions, condiments, and portion drift can shift any estimate by 100–200 cal.</div>
+  `;
+}
+
 function buildDietEventStrip(dateStr) {
   const events = getDietEvents(dateStr);
   const draft = _getDraft(dateStr);
-  // Tag pills
+  // ── Tag pills (v1: bigger, multi-select, icon above label) ──
   const pillHtml = DIET_EVENT_TAGS.map(t => {
     const on = !!draft.tags[t.id];
-    return `<span data-diet-tag="${dateStr}_${t.id}"
+    return `<div class="de-pill ${on ? 'on' : ''}"
+      data-diet-tag="${dateStr}_${t.id}"
+      style="--de-color:${t.color}"
       onclick="dietDraftToggleTag('${dateStr}','${t.id}')"
-      style="display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:600;padding:2px 6px;border-radius:10px;cursor:pointer;border:1px solid ${on ? t.color : 'var(--card-border)'};background:${on ? t.color : 'transparent'};color:${on ? '#000' : 'var(--text-dim)'}"
-      title="${t.label}">${t.icon}<span style="font-size:8px">${t.label}</span></span>`;
-  }).join('');
-  // Today's events
-  const eventListHtml = events.length === 0 ? '' : `
-    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">
-      ${events.map(e => {
-        const tagIcons = (e.tags || []).map(tid => {
-          const t = DIET_EVENT_TAGS.find(x => x.id === tid);
-          return t ? `<span style="color:${t.color}">${t.icon}</span>` : '';
-        }).join('');
-        const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
-        return `<span style="display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 5px 2px 6px;border-radius:8px;background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-dim);max-width:100%">
-          <span style="opacity:0.6;font-size:8px">${e.time}</span>
-          ${tagIcons}
-          ${noteText ? `<span style="color:var(--text)">${noteText}</span>` : ''}
-          <span onclick="removeDietEvent('${dateStr}','${e.id}')" style="cursor:pointer;color:var(--text-muted);font-size:11px;line-height:1;padding-left:2px" title="Delete">×</span>
-        </span>`;
-      }).join('')}
+      title="${t.label}">
+      <span class="de-pill-icon">${t.icon}</span>
+      <span>${t.label}</span>
     </div>`;
+  }).join('');
+  // ── Today's logged events (richer per-row layout) ──
+  let totalCals = 0;
+  const eventRows = events.map(e => {
+    const tagIcons = (e.tags || []).map(tid => {
+      const t = DIET_EVENT_TAGS.find(x => x.id === tid);
+      return t ? `<span style="color:${t.color}" title="${t.label}">${t.icon}</span>` : '';
+    }).join('');
+    const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    const cals = (typeof e.cals === 'number' && e.cals > 0) ? e.cals : 0;
+    if (cals) totalCals += cals;
+    const calBadge = cals ? `<span class="de-cal-badge">+${cals} cal</span>` : '';
+    // Display time as 12hr-ish (HH:MM stored as 24hr — keep simple)
+    return `<div class="de-event-row">
+      <span class="de-event-time">${e.time}</span>
+      ${tagIcons ? `<span class="de-event-icons">${tagIcons}</span>` : ''}
+      <span class="de-event-note">${noteText}</span>
+      ${calBadge}
+      <span class="de-event-del" onclick="removeDietEvent('${dateStr}','${e.id}')" title="Delete">×</span>
+    </div>`;
+  }).join('');
+  const totalLine = totalCals > 0
+    ? `<div class="de-total">+${totalCals} cal logged today</div>`
+    : '';
+  const eventsBlock = events.length === 0 ? '' : `
+    <div class="de-events-label">Today</div>
+    ${eventRows}
+    ${totalLine}
+  `;
+  const draftNote = (draft.note || '').replace(/"/g,'&quot;');
+  const draftCals = (draft.cals || '').toString().replace(/"/g,'&quot;');
   return `
-    <div style="padding-top:4px;border-top:1px solid var(--divider);margin-top:2px">
-      <div style="display:flex;align-items:center;gap:3px;flex-wrap:wrap">
-        <span style="font-size:8px;color:var(--text-muted);font-weight:600;letter-spacing:0.5px">⚠ EVENT</span>
-        ${pillHtml}
-        <input id="diet-event-note-${dateStr}" type="text"
-          placeholder="optional note (e.g. '2 donuts')"
+    <div class="de-section">
+      <div class="de-header-row">
+        <div class="de-header" style="padding:0">⚠ Log a deviation</div>
+        <div class="de-rest-link" onclick="openRestaurantPicker('${dateStr}')" title="Pick from a restaurant menu (estimates cals)">🍽 Eating out?</div>
+      </div>
+      <div class="de-pill-grid">${pillHtml}</div>
+      <div class="de-input-row">
+        <input id="diet-event-note-${dateStr}" class="de-note-input" type="text"
+          placeholder="optional note (e.g. 'Cactus Club')"
           oninput="_getDraft('${dateStr}').note=this.value"
           onkeydown="if(event.key==='Enter'){commitDietEvent('${dateStr}');event.preventDefault();}"
-          style="flex:1;min-width:80px;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-family:inherit"
-          value="${(draft.note || '').replace(/"/g,'&quot;')}">
-        <button onclick="commitDietEvent('${dateStr}')"
-          style="padding:2px 8px;border-radius:4px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;line-height:1">+</button>
+          value="${draftNote}">
+        <input id="diet-event-cals-${dateStr}" class="de-cal-input" type="number" inputmode="numeric"
+          placeholder="cal" min="0" step="50"
+          oninput="_getDraft('${dateStr}').cals=this.value"
+          onkeydown="if(event.key==='Enter'){commitDietEvent('${dateStr}');event.preventDefault();}"
+          value="${draftCals}">
+        <button class="de-log-btn" onclick="commitDietEvent('${dateStr}')">+ Log</button>
       </div>
-      ${eventListHtml}
+      ${eventsBlock}
     </div>`;
 }
 
@@ -7348,8 +8267,12 @@ function renderDaily() {
   }
 
   // Morning routine — always shown, clickable for details
+  // Trigger finger rehab — added 2026-05-14, REMOVE when symptoms resolve (~6 wks)
+  // Rowing-paused notice — added 2026-05-14, REMOVE when finger is cleared
   const morningHtml = `
-    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>`;
+    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>
+    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer; border-left:3px solid var(--orange);" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(3×/day · pain-limit)</span></div>
+    <div style="margin-bottom:8px; padding:7px 10px; border-radius:6px; border-left:3px solid var(--orange); background:rgba(251,146,60,0.07); font-size:10px; color:var(--text-dim); line-height:1.4;">🟠 <strong style="color:var(--orange)">Rowing paused</strong> while right middle finger heals — sub walks or bike. Reassess <strong>~Jun 25</strong>.</div>`;
 
   // Recommended workout section
   let recommendedHtml = '';
@@ -7396,15 +8319,24 @@ function renderDaily() {
     let bwExHtml = ''; // legacy slot — kept for non-inline workouts that still use w.exercises
     const fromHealth = entry.source === 'apple_health';
     const healthBadge = fromHealth ? '<span title="From Apple Health" style="font-size:8px;opacity:0.7;margin-left:2px">⌚</span>' : '';
-    return `<div class="wlog-row ${isDone ? 'done' : ''}">
-      <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
+    // Per-row collapse: only rows that have a real inline summary get the
+    // expand/collapse affordance. Light rows (row/walk/swim/yoga) stay flat.
+    const hasSummary = inlineSummaryHtml !== '';
+    const isExpanded = hasSummary && window._expandedWlogRows && window._expandedWlogRows.has(w.id);
+    const rowExtraClass = (hasSummary ? ' has-summary' : '') + (isExpanded ? ' expanded' : '');
+    const rowOnclick = hasSummary ? ' onclick="toggleWlogRow(this)"' : '';
+    const checkboxStop = hasSummary ? 'event.stopPropagation();' : '';
+    const chevronHtml = hasSummary ? '<span class="wlog-chev">▸</span>' : '';
+    return `<div class="wlog-row ${isDone ? 'done' : ''}${rowExtraClass}" data-wid="${w.id}"${rowOnclick}>
+      <div class="check-box ${isDone ? 'checked' : ''}" onclick="${checkboxStop}toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
       <span class="wlog-icon">${w.icon}</span>
       <span class="wlog-label">${w.label}${healthBadge}</span>
       ${w.hasTime ? `<input class="wlog-input" type="text" placeholder="m:ss" value="${fmtTimeVal(entry.time)}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()" style="width:36px">` : ''}
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
       ${typePills}
-    </div>${bwExHtml}${inlineSummaryHtml}`;
+      ${chevronHtml}
+    </div>${bwExHtml}${hasSummary ? `<div class="wlog-summary">${inlineSummaryHtml}</div>` : ''}`;
   }).join('');
 
   // Stretch tiers section
@@ -7686,7 +8618,14 @@ function renderWeek() {
   // Track weekly totals for summary
   let weekWorkouts = 0, weekWorkoutsDone = 0;
   let weekStretches = 0, weekStretchesDone = 0;
-  let weekDietEventCount = 0, weekDietEventTagCounts = { alcohol:0, restaurant:0, binge:0, note:0 };
+  // Init tag-count buckets from DIET_EVENT_TAGS so new v1 tags (pop/fried/dessert/snack)
+  // are tallied automatically. Legacy buckets (alcohol/restaurant/binge) still match ids.
+  let weekDietEventCount = 0;
+  const weekDietEventTagCounts = {};
+  if (typeof DIET_EVENT_TAGS !== 'undefined') {
+    DIET_EVENT_TAGS.forEach(t => { weekDietEventTagCounts[t.id] = 0; });
+  }
+  let weekDietEventCals = 0;
   let weekMornings = 0, weekMorningsDone = 0;
   let weekWater = 0, weekTotalDone = 0, weekTotalAll = 0;
 
@@ -7713,6 +8652,7 @@ function renderWeek() {
       (_e.tags || []).forEach(_t => {
         if (weekDietEventTagCounts[_t] !== undefined) weekDietEventTagCounts[_t]++;
       });
+      if (typeof _e.cals === 'number' && _e.cals > 0) weekDietEventCals += _e.cals;
     });
     weekWater += getWater(dStr);
     weekTotalDone += prog.done;
@@ -7784,14 +8724,16 @@ function renderWeek() {
       ${summaryRow('🏋️ Exercise', weekWorkoutsDone, weekWorkouts, 'var(--cyan)')}
       ${summaryRow('🧘 Stretch', weekStretchesDone, weekStretches, 'var(--purple)')}
       ${summaryRow('☀️ Morning', weekMorningsDone, weekMornings, 'var(--orange)')}
-      <div class="ws-row" title="Diet exception events flagged this week">
+      <div class="ws-row" title="Diet exception events flagged this week (icons by tag; +cal sum if any cal estimates entered)">
         <span class="ws-label">⚠️ Events</span>
         <span class="ws-value" style="color:var(--text-dim)">
-          ${weekDietEventCount === 0 ? '<span style="color:var(--text-muted);font-size:10px">none</span>' :
-            (weekDietEventTagCounts.alcohol > 0 ? `<span style="color:var(--orange)">🍷${weekDietEventTagCounts.alcohol}</span> ` : '') +
-            (weekDietEventTagCounts.restaurant > 0 ? `<span style="color:var(--purple)">🍔${weekDietEventTagCounts.restaurant}</span> ` : '') +
-            (weekDietEventTagCounts.binge > 0 ? `<span style="color:var(--red)">🥧${weekDietEventTagCounts.binge}</span> ` : '') +
-            (weekDietEventTagCounts.note > 0 ? `<span style="color:var(--cyan)">📝${weekDietEventTagCounts.note}</span>` : '')}
+          ${weekDietEventCount === 0
+            ? '<span style="color:var(--text-muted);font-size:10px">none</span>'
+            : DIET_EVENT_TAGS.map(t => weekDietEventTagCounts[t.id] > 0
+                ? `<span style="color:${t.color}">${t.icon}${weekDietEventTagCounts[t.id]}</span>`
+                : '').join(' ')
+              + (weekDietEventCals > 0 ? ` <span style="color:var(--orange);font-weight:700">+${weekDietEventCals}cal</span>` : '')
+          }
         </span>
       </div>
       <div class="ws-row" style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.05)">
@@ -7812,6 +8754,9 @@ function renderWeek() {
 
 // ── MONTH VIEW ──
 function renderMonth() {
+  // Re-render replaces #month-grid innerHTML, which strips any .pinned class.
+  // Close any open touch-pin so the popover doesn't outlive its highlighted cell.
+  if (typeof closeMonthPin === 'function') closeMonthPin();
   const now = new Date();
   const todayStr = ds(now);
   const viewDate = new Date(now.getFullYear(), now.getMonth() + currentMonthOffset, 1);
@@ -7957,7 +8902,7 @@ function renderMonth() {
       const dayOffset = Math.round(diffMs / 86400000);
 
       html += `
-        <div class="month-cell ${cellClass} ${isToday?'today':''}" style="${mcBottomBorder}" onclick="goToDay(${dayOffset})">
+        <div class="month-cell ${cellClass} ${isToday?'today':''}" style="${mcBottomBorder}" data-dstr="${dStr}" onclick="monthCellTap(event,'${dStr}',${dayOffset})">
           <div class="mc-top">
             <div class="mc-date">${dayNum}</div>
             ${badgeLabel ? `<span class="mc-badge ${cellClass}">${badgeLabel}</span>` : ''}
@@ -8032,13 +8977,104 @@ function switchView(id) {
   updateNavButtons();
 }
 
-function goToDay(offset) { currentView = 'daily'; currentDayOffset = offset; renderDaily(); switchView('daily-view'); updateNavButtons(); }
+function goToDay(offset) { closeMonthPin(); currentView = 'daily'; currentDayOffset = offset; renderDaily(); switchView('daily-view'); updateNavButtons(); }
 function showDailyView() { currentView = 'daily'; currentDayOffset = 0; renderDaily(); switchView('daily-view'); }
 function showWeekView() { currentView = 'week'; currentWeekOffset = 0; renderWeek(); switchView('week-view'); }
-function showMonthView() { currentView = 'month'; currentMonthOffset = 0; renderMonth(); switchView('month-view'); }
+function showMonthView() { closeMonthPin(); currentView = 'month'; currentMonthOffset = 0; renderMonth(); switchView('month-view'); }
 function changeDay(delta) { currentDayOffset += delta; renderDaily(); updateNavButtons(); }
 function changeWeek(delta) { currentWeekOffset += delta; renderWeek(); updateNavButtons(); }
-function changeMonth(delta) { currentMonthOffset += delta; renderMonth(); updateNavButtons(); }
+function changeMonth(delta) { closeMonthPin(); currentMonthOffset += delta; renderMonth(); updateNavButtons(); }
+
+// ── Month-cell tap (touch devices: first tap pins preview, second tap navigates) ──
+window._monthPin = null;
+function monthCellTap(ev, dStr, dayOffset) {
+  if (ev) ev.stopPropagation();
+  const isTouch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  if (!isTouch) { goToDay(dayOffset); return; }
+  if (window._monthPin === dStr) { closeMonthPin(); goToDay(dayOffset); return; }
+  showMonthPin(dStr, dayOffset);
+}
+function showMonthPin(dStr, dayOffset) {
+  window._monthPin = dStr;
+  document.querySelectorAll('.month-cell.pinned').forEach(el => el.classList.remove('pinned'));
+  const cell = document.querySelector(`.month-cell[data-dstr="${dStr}"]`);
+  if (cell) cell.classList.add('pinned');
+  const wo = WORKOUT_PLANS[dStr];
+  const ev = getEvents(dStr);
+  const csvNote = CSV_NOTES[dStr] || '';
+  const strR = getStretchRotation(dStr);
+  const prog = getDayProgress(dStr);
+  const pct = prog.total > 0 ? Math.round(prog.done / prog.total * 100) : 0;
+  const pColor = pct === 100 ? 'var(--green)' : pct > 50 ? 'var(--cyan)' : pct > 0 ? 'var(--orange)' : 'var(--text-muted)';
+  const dateObj = new Date(dStr + 'T12:00:00');
+  const dateHeading = dateObj.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const evFull = ev ? ev.replace('🍁 ', '') : '';
+  const evIcon = ev ? eventIcon(dStr) : (csvNote ? '📝' : '');
+  const noteText = (evFull || csvNote || '').replace(/</g, '&lt;');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const isPastOrToday = dStr <= ds(today);
+  const pop = _getMonthPop();
+  pop.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px">
+      <div style="font-weight:700;color:var(--text);font-size:11px">${dateHeading}</div>
+      <span onclick="closeMonthPin()" style="cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;padding:0 4px">✕</span>
+    </div>
+    ${wo ? `<div style="color:var(--cyan);margin-bottom:3px">${wIcon(wo.type)} ${wo.label}</div>` : `<div style="color:var(--text-dim);margin-bottom:3px">😴 No workout scheduled</div>`}
+    ${noteText ? `<div style="color:var(--purple);margin-bottom:3px;word-break:break-word">${evIcon} ${noteText}</div>` : ''}
+    <div style="color:var(--text-dim);margin-bottom:3px">🧘 ${strR}</div>
+    ${isPastOrToday ? `<div style="color:${pColor};margin-bottom:6px">📊 Progress: ${pct}%</div>` : `<div style="color:var(--text-muted);margin-bottom:6px;font-style:italic">upcoming</div>`}
+    <button onclick="goToDay(${dayOffset})" style="width:100%;padding:6px 8px;border-radius:4px;border:1px solid var(--purple);background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">→ Go to day</button>
+  `;
+  _positionMonthPop(pop, cell);
+  pop.style.display = 'block';
+}
+function _getMonthPop() {
+  let p = document.getElementById('month-preview-pop');
+  if (!p) {
+    p = document.createElement('div');
+    p.id = 'month-preview-pop';
+    p.addEventListener('click', e => e.stopPropagation());
+    const wrap = document.querySelector('.month-grid-wrap');
+    if (wrap) {
+      if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
+      wrap.appendChild(p);
+    } else {
+      document.body.appendChild(p);
+    }
+  }
+  return p;
+}
+function _positionMonthPop(pop, cell) {
+  const wrap = document.querySelector('.month-grid-wrap');
+  if (!cell || !wrap) return;
+  const cellRect = cell.getBoundingClientRect();
+  const wrapRect = wrap.getBoundingClientRect();
+  // Pop dimensions (width is fixed via CSS; estimate height to flip if needed)
+  const popWidth = 200;
+  const popHeight = pop.offsetHeight || 170;
+  // Vertical: place below cell, flip above if it would overflow viewport
+  let top = (cellRect.bottom - wrapRect.top) + 4;
+  const wouldOverflow = cellRect.bottom + popHeight + 8 > window.innerHeight;
+  if (wouldOverflow) top = (cellRect.top - wrapRect.top) - popHeight - 4;
+  // Horizontal: center on cell, clamp to wrap bounds
+  let left = (cellRect.left - wrapRect.left) + (cellRect.width - popWidth) / 2;
+  left = Math.max(4, Math.min(left, wrapRect.width - popWidth - 4));
+  pop.style.top = top + 'px';
+  pop.style.left = left + 'px';
+}
+function closeMonthPin() {
+  window._monthPin = null;
+  document.querySelectorAll('.month-cell.pinned').forEach(el => el.classList.remove('pinned'));
+  const p = document.getElementById('month-preview-pop');
+  if (p) p.style.display = 'none';
+}
+// Dismiss pin when tapping outside a month-cell (but not inside the popover itself)
+document.addEventListener('click', (ev) => {
+  if (!window._monthPin) return;
+  if (ev.target.closest('#month-preview-pop')) return;
+  if (ev.target.closest('.month-cell[data-dstr]')) return;
+  closeMonthPin();
+});
 
 // ── Refresh ──
 async function refreshData(btn) {
