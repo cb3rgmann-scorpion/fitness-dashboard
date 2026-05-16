@@ -590,6 +590,16 @@
      are compact by default; tap the row to expand. Mirrors how the legacy
      bodyweight section behaved before the inline-summary refactor. */
   .wlog-row.has-summary { cursor: pointer; }
+  /* Tracker-hint affordance — small chevron at the end of body/gym/kettlebell rows
+     to signal "tap me to open the tracker." Replaces the old expand/collapse chevron. */
+  .wlog-tracker-hint {
+    margin-left: auto; padding-left: 6px;
+    font-size: 14px; line-height: 1; color: var(--text-muted);
+    transition: color 0.12s, transform 0.12s;
+    flex-shrink: 0;
+  }
+  .wlog-row.has-popup { cursor: pointer; }
+  .wlog-row.has-popup:hover .wlog-tracker-hint { color: var(--cyan); transform: translateX(2px); }
   .wlog-chev {
     font-size: 8px; margin-left: 4px; opacity: 0.5; transition: transform 0.2s;
   }
@@ -8452,25 +8462,25 @@ function renderDaily() {
     const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
       `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
     ).join('')}</div>` : '';
-    // Inline routine summary for gym/bodyweight/kettlebell — subtype-aware
-    // exercise list with checkboxes, weight/reps/sets, swap button, video link.
-    // The legacy bw-exercises rep-counter is now redundant — the inline
-    // summary tracks reps via setExSet keyed by routine+index.
-    let inlineSummaryHtml = '';
-    if (w.id === 'gym' || w.id === 'bodyweight' || w.id === 'kettlebell') {
-      inlineSummaryHtml = buildLiftInlineSummary(dateStr, w.id, subtype);
-    }
-    let bwExHtml = ''; // legacy slot — kept for non-inline workouts that still use w.exercises
+    // Exercise-tracking workouts (gym/bodyweight/kettlebell) open the full
+    // routine popup directly on row tap. The previous inline-summary +
+    // expand pattern was an extra step before reaching the actual tracker.
+    // (Per Craig's UX feedback 2026-05-15 — match the eat-out picker pattern.)
+    let popupRoutineKey = '';
+    if (w.id === 'gym')              popupRoutineKey = (subtype === 'full' || !subtype) ? 'gym' : 'gym_' + subtype;
+    else if (w.id === 'bodyweight')  popupRoutineKey = (subtype === 'full' || !subtype) ? 'bodyweight' : 'bodyweight_' + subtype;
+    else if (w.id === 'kettlebell')  popupRoutineKey = 'kettlebell_' + (subtype || 'circuits');
+
     const fromHealth = entry.source === 'apple_health';
     const healthBadge = fromHealth ? '<span title="From Apple Health" style="font-size:8px;opacity:0.7;margin-left:2px">⌚</span>' : '';
-    // Per-row collapse: only rows that have a real inline summary get the
-    // expand/collapse affordance. Light rows (row/walk/swim/yoga) stay flat.
-    const hasSummary = inlineSummaryHtml !== '';
-    const isExpanded = hasSummary && window._expandedWlogRows && window._expandedWlogRows.has(w.id);
-    const rowExtraClass = (hasSummary ? ' has-summary' : '') + (isExpanded ? ' expanded' : '');
-    const rowOnclick = hasSummary ? ' onclick="toggleWlogRow(this)"' : '';
-    const checkboxStop = hasSummary ? 'event.stopPropagation();' : '';
-    const chevronHtml = hasSummary ? '<span class="wlog-chev">▸</span>' : '';
+    // Tap-target hierarchy:
+    //   - Row click → opens popup (for exercise-tracking types) or no-op (for inline-input types)
+    //   - Checkbox / inputs / type pills → stopPropagation, do their own thing
+    const opensPopup = popupRoutineKey !== '';
+    const rowOnclick = opensPopup ? ` onclick="openRoutinePopup('${popupRoutineKey}','${dateStr}')"` : '';
+    const checkboxStop = opensPopup ? 'event.stopPropagation();' : '';
+    const rowExtraClass = opensPopup ? ' has-popup' : '';
+    const trackerHint = opensPopup ? '<span class="wlog-tracker-hint" title="Open exercise tracker">›</span>' : '';
     return `<div class="wlog-row ${isDone ? 'done' : ''}${rowExtraClass}" data-wid="${w.id}"${rowOnclick}>
       <div class="check-box ${isDone ? 'checked' : ''}" onclick="${checkboxStop}toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
       <span class="wlog-icon">${w.icon}</span>
@@ -8479,8 +8489,8 @@ function renderDaily() {
       ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
       ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
       ${typePills}
-      ${chevronHtml}
-    </div>${bwExHtml}${hasSummary ? `<div class="wlog-summary">${inlineSummaryHtml}</div>` : ''}`;
+      ${trackerHint}
+    </div>`;
   }).join('');
 
   // Stretch tiers section
@@ -8506,7 +8516,15 @@ function renderDaily() {
     <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${isKidDay2 ? '👧 Kids:' : '🆓 Free:'}</span>
     ${quickPicks.map(p => {
       const done = (wlog[p.id] || {}).done;
-      return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="toggleWorkoutDone('${dateStr}','${p.id}')">${done ? '✓ ' : ''}${p.label}</span>`;
+      // Exercise-tracking chips (gym/body/kettlebell) open the routine popup
+      // directly. Inline-input chips (walk/row/swim/yoga) toggle done since
+      // they're already trackable via the row's inline inputs.
+      let chipOnclick;
+      if (p.id === 'gym')             chipOnclick = `openRoutinePopup('${(p.sub === 'full' || !p.sub) ? 'gym' : 'gym_' + p.sub}','${dateStr}')`;
+      else if (p.id === 'bodyweight') chipOnclick = `openRoutinePopup('${(p.sub === 'full' || !p.sub) ? 'bodyweight' : 'bodyweight_' + p.sub}','${dateStr}')`;
+      else if (p.id === 'kettlebell') chipOnclick = `openRoutinePopup('kettlebell_${p.sub || 'circuits'}','${dateStr}')`;
+      else                            chipOnclick = `toggleWorkoutDone('${dateStr}','${p.id}')`;
+      return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="${chipOnclick}">${done ? '✓ ' : ''}${p.label}</span>`;
     }).join('')}
   </div>`;
 
