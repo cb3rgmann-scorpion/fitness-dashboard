@@ -928,6 +928,66 @@
     white-space: nowrap;
   }
   .rp-item-log:active { transform: scale(0.96); }
+  /* Quantity stepper (replaces the "+ Log" button) */
+  .rp-item.in-cart { border-color: var(--green); background: rgba(34,197,94,0.06); }
+  .rp-stepper {
+    display: inline-flex; align-items: center; gap: 0;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: var(--input-bg); overflow: hidden;
+  }
+  .rp-stepper.has-qty { border-color: var(--green); background: var(--green-bg); }
+  .rp-step-btn {
+    padding: 4px 10px; border: none; background: transparent;
+    color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: inherit; line-height: 1; min-width: 28px;
+    transition: background 0.1s;
+  }
+  .rp-step-btn:active { transform: scale(0.92); }
+  .rp-step-btn:hover { background: rgba(255,255,255,0.06); }
+  .rp-step-minus { color: var(--text-muted); }
+  .rp-stepper.has-qty .rp-step-minus { color: var(--text); }
+  .rp-step-plus { color: var(--green); }
+  .rp-qty {
+    display: inline-block; min-width: 22px; text-align: center;
+    font-size: 12px; font-weight: 700; color: var(--text);
+    font-variant-numeric: tabular-nums;
+    padding: 0 2px;
+  }
+  /* Sticky cart footer — appears when cart has items */
+  .rp-cart-footer {
+    position: sticky; bottom: -8px; left: 0; right: 0;
+    margin: 12px -16px -16px;
+    padding: 0;
+    background: linear-gradient(to top, var(--card-bg) 60%, transparent);
+    pointer-events: none;
+    transition: padding 0.18s;
+  }
+  .rp-cart-footer.active {
+    pointer-events: auto;
+    padding: 12px 16px 14px;
+    border-top: 1px solid var(--card-border);
+    background: var(--card-bg);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .rp-cart-summary {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+  }
+  .rp-cart-count {
+    font-size: 11px; font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .rp-cart-total {
+    font-size: 14px; font-weight: 800; color: var(--orange);
+    font-variant-numeric: tabular-nums;
+  }
+  .rp-cart-save-btn {
+    padding: 9px 18px; border-radius: 8px;
+    border: 1px solid var(--green-border); background: var(--green); color: #000;
+    font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+    transition: transform 0.08s;
+  }
+  .rp-cart-save-btn:active { transform: scale(0.96); }
   .rp-disclaimer {
     font-size: 9px; color: var(--text-muted); font-style: italic;
     margin-top: 12px; padding-top: 8px; border-top: 1px dashed var(--card-border);
@@ -6737,6 +6797,13 @@ function _getDraft(dateStr) {
   return window._dietDraft[dateStr];
 }
 function dietDraftToggleTag(dateStr, tagId) {
+  // Special case: tapping the "Eat out" pill opens the restaurant picker
+  // instead of toggling a tag. The picker handles its own auto-tagging on save.
+  // (Per Craig's UX feedback 2026-05-15 — single entry point for eating out.)
+  if (tagId === 'restaurant') {
+    openRestaurantPicker(dateStr);
+    return;
+  }
   const d = _getDraft(dateStr);
   d.tags[tagId] = !d.tags[tagId];
   // v1 pill: toggle .on class. The .de-pill.on CSS rule (see styles) uses
@@ -6770,9 +6837,12 @@ function commitDietEvent(dateStr) {
 // Both flows reuse addDietEvent under the hood. Tagging is automatic
 // (auto-applies the 'restaurant' tag) so this doesn't fight the existing
 // pill UI — the pill stays for freeform tagging.
-window._restPickState = window._restPickState || { dateStr: null, chainId: null };
+// State shape: { dateStr, chainId, carts: { [chainId]: { [itemId]: qty } } }
+// Cart is per-chain so switching chains preserves each chain's selections.
+// Save commits ONE diet event for the currently-viewed chain, then clears that chain's cart.
+window._restPickState = window._restPickState || { dateStr: null, chainId: null, carts: {} };
 function openRestaurantPicker(dateStr) {
-  window._restPickState = { dateStr: dateStr, chainId: null };
+  window._restPickState = { dateStr: dateStr, chainId: null, carts: {} };
   const bd = document.getElementById('rest-pick-backdrop');
   if (!bd) return;
   bd.classList.add('open');
@@ -6781,7 +6851,7 @@ function openRestaurantPicker(dateStr) {
 function closeRestaurantPicker() {
   const bd = document.getElementById('rest-pick-backdrop');
   if (bd) bd.classList.remove('open');
-  window._restPickState = { dateStr: null, chainId: null };
+  window._restPickState = { dateStr: null, chainId: null, carts: {} };
 }
 function _restPickChain(chainId) {
   window._restPickState.chainId = chainId;
@@ -6791,23 +6861,90 @@ function _restPickBack() {
   window._restPickState.chainId = null;
   renderRestaurantPicker();
 }
-function logRestaurantItem(chainId, itemId) {
+// ── Cart helpers ──
+function _restGetCart(chainId) {
+  if (!window._restPickState.carts[chainId]) window._restPickState.carts[chainId] = {};
+  return window._restPickState.carts[chainId];
+}
+function _restGetQty(chainId, itemId) {
+  const cart = window._restPickState.carts[chainId];
+  return (cart && cart[itemId]) || 0;
+}
+function _restAdjustQty(chainId, itemId, delta) {
+  const cart = _restGetCart(chainId);
+  const newQty = Math.max(0, (cart[itemId] || 0) + delta);
+  if (newQty === 0) delete cart[itemId];
+  else cart[itemId] = newQty;
+  // Surgical re-render: only update the affected row + footer (not the whole picker).
+  _restUpdateRow(chainId, itemId);
+  _restUpdateFooter(chainId);
+}
+function _restCartSummary(chainId) {
+  // Returns { items: [{name, qty, cals, lineCals}], totalCals, count }
+  const chain = RESTAURANT_DB[chainId];
+  if (!chain) return { items: [], totalCals: 0, count: 0 };
+  const cart = window._restPickState.carts[chainId] || {};
+  const items = [];
+  let totalCals = 0;
+  let count = 0;
+  (chain.items || []).forEach(it => {
+    const qty = cart[it.id] || 0;
+    if (qty > 0) {
+      const lineCals = it.cals * qty;
+      items.push({ name: it.name, qty: qty, cals: it.cals, lineCals: lineCals });
+      totalCals += lineCals;
+      count += qty;
+    }
+  });
+  return { items: items, totalCals: totalCals, count: count };
+}
+function _restUpdateRow(chainId, itemId) {
+  const qty = _restGetQty(chainId, itemId);
+  const stepper = document.querySelector('[data-rp-stepper="' + itemId + '"]');
+  if (stepper) {
+    const qtyEl = stepper.querySelector('.rp-qty');
+    if (qtyEl) qtyEl.textContent = qty;
+    stepper.classList.toggle('has-qty', qty > 0);
+  }
+  const row = document.querySelector('[data-rp-item="' + itemId + '"]');
+  if (row) row.classList.toggle('in-cart', qty > 0);
+}
+function _restUpdateFooter(chainId) {
+  const footer = document.getElementById('rp-cart-footer');
+  if (!footer) return;
+  const summary = _restCartSummary(chainId);
+  if (summary.count === 0) {
+    footer.classList.remove('active');
+    footer.innerHTML = '';
+    return;
+  }
+  footer.classList.add('active');
+  footer.innerHTML = `
+    <div class="rp-cart-summary">
+      <span class="rp-cart-count">${summary.count} item${summary.count > 1 ? 's' : ''}</span>
+      <span class="rp-cart-total">~${summary.totalCals} cal</span>
+    </div>
+    <button class="rp-cart-save-btn" onclick="_restSaveCart('${chainId}')">Save order</button>
+  `;
+}
+function _restSaveCart(chainId) {
   const dateStr = window._restPickState.dateStr;
   if (!dateStr) return;
   const chain = RESTAURANT_DB[chainId];
   if (!chain) return;
-  const item = (chain.items || []).find(i => i.id === itemId);
-  if (!item) return;
-  const note = chain.name + ' · ' + item.name;
+  const summary = _restCartSummary(chainId);
+  if (summary.count === 0) return;
+  // Compose note: "Chain · 8× Item, 1× Item"
+  // For single item with qty 1, omit the "1×" prefix for cleaner display.
+  const itemStr = (summary.items.length === 1 && summary.items[0].qty === 1)
+    ? summary.items[0].name
+    : summary.items.map(i => i.qty + '× ' + i.name).join(', ');
+  const note = chain.name + ' · ' + itemStr;
   // Auto-tag with 'restaurant' since this is, by definition, eating out.
-  addDietEvent(dateStr, ['restaurant'], note, undefined, item.cals);
-  // Soft confirmation: brief flash on the tapped row, then close.
-  const row = document.querySelector('[data-rp-item="' + itemId + '"]');
-  if (row) {
-    row.style.borderColor = 'var(--green)';
-    row.style.background = 'var(--green-bg)';
-  }
-  setTimeout(() => closeRestaurantPicker(), 350);
+  addDietEvent(dateStr, ['restaurant'], note, undefined, summary.totalCals);
+  // Clear this chain's cart and close.
+  delete window._restPickState.carts[chainId];
+  closeRestaurantPicker();
 }
 function renderRestaurantPicker() {
   const body = document.getElementById('rest-pick-body');
@@ -6856,7 +6993,9 @@ function renderRestaurantPicker() {
                    : it.tier === 'heavy' ? 'rp-item-cal-heavy' : '';
     const pickBadge = it.pick ? '<span class="rp-item-pick-badge">decent</span>' : '';
     const note = it.note ? `<div class="rp-item-note">${it.note}</div>` : '';
-    return `<div class="rp-item ${it.pick ? 'pick' : ''}" data-rp-item="${it.id}">
+    const qty = _restGetQty(state.chainId, it.id);
+    const inCart = qty > 0;
+    return `<div class="rp-item ${it.pick ? 'pick' : ''} ${inCart ? 'in-cart' : ''}" data-rp-item="${it.id}">
       <div class="rp-item-main">
         <div class="rp-item-row1">
           <span class="rp-item-name">${it.name}</span>
@@ -6866,7 +7005,11 @@ function renderRestaurantPicker() {
       </div>
       <div class="rp-item-right">
         <div class="rp-item-cal ${calClass}">${fmtRestCal(it.cals)}</div>
-        <button class="rp-item-log" onclick="logRestaurantItem('${state.chainId}','${it.id}')">+ Log</button>
+        <div class="rp-stepper ${inCart ? 'has-qty' : ''}" data-rp-stepper="${it.id}">
+          <button class="rp-step-btn rp-step-minus" onclick="_restAdjustQty('${state.chainId}','${it.id}',-1)" aria-label="Decrease">−</button>
+          <span class="rp-qty">${qty}</span>
+          <button class="rp-step-btn rp-step-plus" onclick="_restAdjustQty('${state.chainId}','${it.id}',1)" aria-label="Increase">+</button>
+        </div>
       </div>
     </div>`;
   };
@@ -6882,7 +7025,10 @@ function renderRestaurantPicker() {
     ${tipsHtml}
     ${sections.join('')}
     <div class="rp-disclaimer">Cal values are mid-points with ±20% real-world variance. Substitutions, condiments, and portion drift can shift any estimate by 100–200 cal.</div>
+    <div id="rp-cart-footer" class="rp-cart-footer"></div>
   `;
+  // Initialize footer state if cart already has items (e.g., user navigated back)
+  _restUpdateFooter(state.chainId);
 }
 
 function buildDietEventStrip(dateStr) {
@@ -6932,10 +7078,7 @@ function buildDietEventStrip(dateStr) {
   const draftCals = (draft.cals || '').toString().replace(/"/g,'&quot;');
   return `
     <div class="de-section">
-      <div class="de-header-row">
-        <div class="de-header" style="padding:0">⚠ Log a deviation</div>
-        <div class="de-rest-link" onclick="openRestaurantPicker('${dateStr}')" title="Pick from a restaurant menu (estimates cals)">🍽 Eating out?</div>
-      </div>
+      <div class="de-header">⚠ Log a deviation</div>
       <div class="de-pill-grid">${pillHtml}</div>
       <div class="de-input-row">
         <input id="diet-event-note-${dateStr}" class="de-note-input" type="text"
