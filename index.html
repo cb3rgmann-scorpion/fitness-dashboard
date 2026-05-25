@@ -950,6 +950,195 @@
     .de-pill .de-pill-icon { font-size: 18px; }
   }
 
+  /* ── Body log popup (task #12, 2026-05-24) ── */
+  .bl-section-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--text-muted);
+    margin: 12px 0 6px;
+  }
+  .bl-section-label:first-child { margin-top: 0; }
+  .bl-active-list { margin-bottom: 4px; }
+  .bl-empty {
+    font-size: 11px; color: var(--text-muted); padding: 14px;
+    text-align: center; background: var(--input-bg);
+    border: 1px dashed var(--card-border); border-radius: 6px;
+    line-height: 1.5;
+  }
+  .bl-active-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; margin-bottom: 4px;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: var(--input-bg); font-size: 11px;
+  }
+  .bl-active-part { font-weight: 700; flex: 1; min-width: 0; }
+  .bl-active-pain { font-weight: 800; font-size: 12px; min-width: 36px; text-align: right; font-variant-numeric: tabular-nums; }
+  .bl-active-stiff { font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .bl-active-flag { color: var(--red); font-size: 14px; }
+  .bl-active-note { font-size: 12px; cursor: help; opacity: 0.7; }
+  .bl-active-time { font-size: 10px; color: var(--text-muted); min-width: 56px; text-align: right; }
+  .bl-active-del {
+    cursor: pointer; color: var(--text-muted); font-size: 16px;
+    line-height: 1; padding: 0 4px; flex-shrink: 0;
+  }
+  .bl-active-del:hover { color: var(--red); }
+  .bl-form { padding: 4px 0; }
+  .bl-row { margin-bottom: 10px; }
+  .bl-label {
+    display: block; font-size: 10px; font-weight: 700;
+    color: var(--text-dim); margin-bottom: 4px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .bl-val {
+    color: var(--text); font-size: 13px; font-weight: 800;
+    font-variant-numeric: tabular-nums; padding: 0 2px;
+  }
+  .bl-input {
+    width: 100%; padding: 8px 10px; box-sizing: border-box;
+    border: 1px solid var(--input-border); background: var(--input-bg);
+    color: var(--text); border-radius: 6px;
+    font-size: 13px; font-family: inherit;
+  }
+  .bl-input:focus { border-color: var(--cyan); outline: none; }
+  .bl-side-row { display: flex; gap: 12px; flex-wrap: wrap; padding: 4px 0; }
+  .bl-side {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    color: var(--text);
+  }
+  .bl-range { width: 100%; accent-color: var(--cyan); }
+  .bl-flag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-dim); cursor: pointer;
+  }
+  .bl-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding-top: 10px; border-top: 1px solid var(--divider);
+    margin-top: 12px;
+  }
+  .bl-cancel, .bl-save {
+    padding: 8px 16px; border-radius: 6px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit;
+  }
+  .bl-cancel {
+    border: 1px solid var(--card-border);
+    background: transparent; color: var(--text-muted);
+  }
+  .bl-save {
+    border: 1px solid var(--green-border);
+    background: var(--green-bg); color: var(--green);
+  }
+  .bl-save:hover { filter: brightness(1.1); }
+  .bl-realism {
+    margin-top: 14px; padding: 10px 12px;
+    font-size: 10px; color: var(--text-muted);
+    background: var(--red-bg);
+    border-left: 3px solid var(--red); border-radius: 4px;
+    line-height: 1.55;
+  }
+  .bl-realism strong { color: var(--red); font-weight: 700; }
+
+  /* Tabs */
+  .bl-tabs {
+    display: flex; gap: 4px;
+    border-bottom: 1px solid var(--card-border);
+    margin-bottom: 4px;
+  }
+  .bl-tab {
+    flex: 1; padding: 9px 12px;
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-muted); font-size: 12px; font-weight: 700;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .bl-tab:hover { color: var(--text); }
+  .bl-tab.active {
+    color: var(--cyan);
+    border-bottom-color: var(--cyan);
+  }
+
+  /* Two-column grid for compact form rows */
+  .bl-grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  @media (max-width: 480px) {
+    .bl-grid-2 { grid-template-columns: 1fr; gap: 0; }
+  }
+
+  /* Textarea variant */
+  .bl-textarea {
+    resize: vertical; min-height: 50px;
+    font-family: inherit; line-height: 1.4;
+  }
+
+  /* Body-part chips (multi-select for appointments) */
+  .bl-chip-grid {
+    display: flex; flex-wrap: wrap; gap: 4px;
+  }
+  .bl-chip {
+    cursor: pointer; user-select: none;
+  }
+  .bl-chip-input { display: none; }
+  .bl-chip span {
+    display: inline-block;
+    padding: 4px 10px;
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 10px; font-weight: 600;
+    transition: all 0.1s;
+  }
+  .bl-chip-input:checked + span {
+    border-color: var(--cyan);
+    background: var(--cyan);
+    color: #000;
+  }
+
+  /* Appointment row (collapsible details) */
+  .bl-appt-row {
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    background: var(--input-bg);
+    margin-bottom: 4px;
+    overflow: hidden;
+  }
+  .bl-appt-summary {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; cursor: pointer; list-style: none;
+    font-size: 11px;
+  }
+  .bl-appt-summary::-webkit-details-marker { display: none; }
+  .bl-appt-summary::before {
+    content: '▸'; color: var(--text-muted); font-size: 10px;
+    transition: transform 0.1s;
+  }
+  .bl-appt-row[open] .bl-appt-summary::before { transform: rotate(90deg); }
+  .bl-appt-icon { font-size: 14px; }
+  .bl-appt-prov { flex: 1; font-weight: 700; min-width: 0; }
+  .bl-appt-date {
+    font-size: 10px; color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .bl-appt-followup {
+    font-size: 9px; color: var(--cyan);
+    padding: 1px 5px; border-radius: 3px;
+    background: var(--input-bg); border: 1px solid var(--cyan);
+  }
+  .bl-appt-body {
+    padding: 8px 12px 12px;
+    border-top: 1px dashed var(--card-border);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .bl-appt-fld { margin-bottom: 4px; }
+  .bl-appt-key {
+    font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; font-size: 9px;
+    letter-spacing: 0.5px; margin-right: 4px;
+  }
+
   /* Flag-row pills (smaller, dimmer — secondary affordance for context tags) */
   .de-flag-label {
     font-size: 9px; font-weight: 700; text-transform: uppercase;
@@ -5695,6 +5884,327 @@ const RECIPE_LIBRARY = {
   ]
 };
 
+// ════════════════════════════════════════════════════════════════════════════
+// BODY LOG POPUP (task #12, 2026-05-24)
+// ────────────────────────────────────────────────────────────────────────────
+// Renders the "Active" list (last 14 days, one entry per part+side) plus a
+// form for logging a new entry. Realism caveat anchored at the bottom: this
+// is pattern-recognition data, not diagnosis.
+// ════════════════════════════════════════════════════════════════════════════
+function buildActiveBodyHtml() {
+  const items = getActiveBodyItems(14);
+  if (items.length === 0) {
+    return `<div class="bl-empty">
+      Nothing active in the last 14 days. Log here when something feels off —
+      the data only matters if it's captured close to when it happens.
+    </div>`;
+  }
+  const daysSince = (iso) => Math.floor((Date.now() - new Date(iso).getTime()) / (24*60*60*1000));
+  const dayLabel = (n) => n <= 0 ? 'today' : n === 1 ? 'yesterday' : n + 'd ago';
+  return items.map(e => {
+    const painColor = e.pain >= 7 ? 'var(--red)' : e.pain >= 4 ? 'var(--orange)' : e.pain > 0 ? 'var(--green)' : 'var(--text-muted)';
+    const sideLabel = (!e.side || e.side === 'na') ? '' :
+      (e.side === 'both' ? 'Both ' : (e.side[0].toUpperCase() + e.side.slice(1) + ' '));
+    const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    return `<div class="bl-active-row">
+      <span class="bl-active-part">${sideLabel}${e.part}</span>
+      <span class="bl-active-pain" style="color:${painColor}">${e.pain}/10</span>
+      ${e.stiffness > 0 ? `<span class="bl-active-stiff">stiff ${e.stiffness}</span>` : ''}
+      ${e.flag ? `<span class="bl-active-flag" title="Flagged for follow-up">⚑</span>` : ''}
+      <span class="bl-active-time">${dayLabel(daysSince(e.created_at))}</span>
+      ${noteText ? `<span class="bl-active-note" title="${noteText}">📝</span>` : ''}
+      <span class="bl-active-del" onclick="removeBodyLogEntry('${e.id}')" title="Remove this entry">×</span>
+    </div>`;
+  }).join('');
+}
+
+// Draft buffer for the appointment form, keyed within the open popup.
+// Lives in memory only — cleared when popup closes or after save.
+let _apptDraft = { body_parts: {} };
+
+function openBodyLog(tab) {
+  tab = tab || 'symptoms';
+  document.getElementById('popup-title').textContent = '🩹 Body';
+  _renderBodyLogTab(tab);
+  document.getElementById('popup-backdrop').classList.add('open');
+  // Fire migration + refresh in the background — render uses cache immediately,
+  // then re-renders if/when fresh data arrives. Non-blocking.
+  if (typeof sbReady !== 'undefined' && sbReady) {
+    (async () => {
+      await _migrateLocalBodyLogToSupabase();
+      await _migrateLocalAppointmentsToSupabase();
+      await _refreshBodyLogFromSupabase();
+      await _refreshAppointmentsFromSupabase();
+      const popupOpen = document.getElementById('popup-backdrop').classList.contains('open');
+      const titleEl = document.getElementById('popup-title');
+      const popupBody = document.getElementById('popup-body');
+      const userIsTyping = popupBody && document.activeElement && popupBody.contains(document.activeElement);
+      // Only re-render if (a) still on Body popup, (b) user isn't actively typing in the form.
+      // Skipping the re-render leaves localStorage refreshed; next open will show fresh data.
+      if (popupOpen && titleEl && titleEl.textContent === '🩹 Body' && !userIsTyping) {
+        _renderBodyLogTab(tab);
+      }
+      if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
+    })();
+  }
+}
+
+function _renderBodyLogTab(tab) {
+  const body = document.getElementById('popup-body');
+  if (!body) return;
+  const tabsHtml = `
+    <div class="bl-tabs">
+      <button type="button" class="bl-tab ${tab === 'symptoms' ? 'active' : ''}" onclick="_renderBodyLogTab('symptoms')">Symptoms</button>
+      <button type="button" class="bl-tab ${tab === 'appointments' ? 'active' : ''}" onclick="_renderBodyLogTab('appointments')">Appointments</button>
+    </div>
+  `;
+  const realismHtml = `
+    <div class="bl-realism">
+      <strong>When to escalate:</strong> sustained pain ≥7 for 3+ days, pain that's
+      getting worse not better, OR new neurological symptoms (numbness, tingling,
+      weakness, joint locking) — flag and contact a clinician. This log is for
+      pattern recognition over weeks, not for diagnosing what's happening.
+    </div>
+  `;
+  const tabContent = tab === 'appointments' ? buildAppointmentsHtml() : buildSymptomsHtml();
+  body.innerHTML = tabsHtml + tabContent + realismHtml;
+}
+
+function buildSymptomsHtml() {
+  return `
+    <div class="bl-section-label">Active (last 14 days)</div>
+    <div class="bl-active-list">${buildActiveBodyHtml()}</div>
+
+    <div class="bl-section-label">Log new entry</div>
+    <div class="bl-form">
+      <div class="bl-row">
+        <label class="bl-label">Body part</label>
+        <select id="bl-part" class="bl-input">
+          <option value="">— pick one —</option>
+          ${BODY_PARTS.map(p => `<option value="${p}">${p}</option>`).join('')}
+        </select>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Side</label>
+        <div class="bl-side-row">
+          <label class="bl-side"><input type="radio" name="bl-side" value="left"> Left</label>
+          <label class="bl-side"><input type="radio" name="bl-side" value="right"> Right</label>
+          <label class="bl-side"><input type="radio" name="bl-side" value="both"> Both</label>
+          <label class="bl-side"><input type="radio" name="bl-side" value="na" checked> N/A</label>
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Pain <span id="bl-pain-val" class="bl-val">0</span> / 10</label>
+        <input type="range" id="bl-pain" min="0" max="10" value="0" class="bl-range"
+          oninput="document.getElementById('bl-pain-val').textContent=this.value">
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Stiffness <span id="bl-stiff-val" class="bl-val">0</span> / 10</label>
+        <input type="range" id="bl-stiff" min="0" max="10" value="0" class="bl-range"
+          oninput="document.getElementById('bl-stiff-val').textContent=this.value">
+      </div>
+      <div class="bl-row">
+        <input type="text" id="bl-note" class="bl-input"
+          placeholder="optional note (e.g. 'after 1.4km walk', 'morning stiffness')">
+      </div>
+      <div class="bl-row">
+        <label class="bl-flag">
+          <input type="checkbox" id="bl-flag"> Flag for follow-up with a clinician
+        </label>
+      </div>
+      <div class="bl-actions">
+        <button class="bl-cancel" onclick="closePopup()">Cancel</button>
+        <button class="bl-save" onclick="submitBodyLogEntry()">Save</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildAppointmentRow(a) {
+  const provType = APPT_PROVIDER_TYPES.find(p => p.id === a.provider_type) || APPT_PROVIDER_TYPES[0];
+  const partsLabel = (a.body_parts && a.body_parts.length) ? a.body_parts.join(', ') : '';
+  const dateLabel = a.appointment_date || '';
+  const followUp = a.follow_up_date ? ` <span class="bl-appt-followup">↻ ${a.follow_up_date}</span>` : '';
+  const noteText = (a.notes || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const findings = (a.findings || '').replace(/</g,'&lt;');
+  const treatment = (a.treatment || '').replace(/</g,'&lt;');
+  const recs = (a.recommendations || '').replace(/</g,'&lt;');
+  const reason = (a.reason || '').replace(/</g,'&lt;');
+  return `<details class="bl-appt-row">
+    <summary class="bl-appt-summary">
+      <span class="bl-appt-icon">${provType.icon}</span>
+      <span class="bl-appt-prov">${provType.label}${a.provider_name ? ' · ' + a.provider_name : ''}</span>
+      <span class="bl-appt-date">${dateLabel}</span>
+      ${followUp}
+      <span class="bl-active-del" onclick="event.stopPropagation();event.preventDefault();removeAppointmentEntry('${a.id}')" title="Delete">×</span>
+    </summary>
+    <div class="bl-appt-body">
+      ${partsLabel ? `<div class="bl-appt-fld"><span class="bl-appt-key">Parts:</span> ${partsLabel}</div>` : ''}
+      ${a.clinic_name ? `<div class="bl-appt-fld"><span class="bl-appt-key">Clinic:</span> ${a.clinic_name}</div>` : ''}
+      ${reason ? `<div class="bl-appt-fld"><span class="bl-appt-key">Reason:</span> ${reason}</div>` : ''}
+      ${findings ? `<div class="bl-appt-fld"><span class="bl-appt-key">Findings:</span> ${findings}</div>` : ''}
+      ${treatment ? `<div class="bl-appt-fld"><span class="bl-appt-key">Treatment:</span> ${treatment}</div>` : ''}
+      ${recs ? `<div class="bl-appt-fld"><span class="bl-appt-key">Recommendations:</span> ${recs}</div>` : ''}
+      ${noteText ? `<div class="bl-appt-fld"><span class="bl-appt-key">Notes:</span> ${noteText}</div>` : ''}
+    </div>
+  </details>`;
+}
+
+function buildAppointmentsHtml() {
+  const recent = getRecentAppointments(20);
+  const recentHtml = recent.length === 0
+    ? `<div class="bl-empty">No appointments logged yet. Log clinician visits here so you can scroll back through them at your next appointment, or brief a new provider with recent history.</div>`
+    : recent.map(buildAppointmentRow).join('');
+  const todayStr = new Date().toISOString().slice(0, 10);
+  // Reset draft when opening tab (form is uncontrolled below for everything except body parts chips)
+  _apptDraft = { body_parts: {} };
+  const partChipsHtml = BODY_PARTS.map(p => `
+    <label class="bl-chip">
+      <input type="checkbox" class="bl-chip-input" value="${p}" onchange="_toggleApptPart('${p}', this.checked)">
+      <span>${p}</span>
+    </label>
+  `).join('');
+  return `
+    <div class="bl-section-label">Recent appointments</div>
+    <div class="bl-active-list">${recentHtml}</div>
+
+    <div class="bl-section-label">Log appointment</div>
+    <div class="bl-form">
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Date</label>
+          <input type="date" id="bl-appt-date" class="bl-input" value="${todayStr}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Provider type</label>
+          <select id="bl-appt-type" class="bl-input">
+            ${APPT_PROVIDER_TYPES.map(p => `<option value="${p.id}">${p.icon} ${p.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Provider name</label>
+          <input type="text" id="bl-appt-name" class="bl-input" placeholder="e.g. Dr. Smith">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Clinic / location</label>
+          <input type="text" id="bl-appt-clinic" class="bl-input" placeholder="optional">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Body parts discussed</label>
+        <div class="bl-chip-grid">${partChipsHtml}</div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Reason for visit</label>
+        <input type="text" id="bl-appt-reason" class="bl-input" placeholder="what brought you in">
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Findings / what they said</label>
+        <textarea id="bl-appt-findings" class="bl-input bl-textarea" rows="2"
+          placeholder="diagnosis, observations, imaging results"></textarea>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Treatment done</label>
+        <textarea id="bl-appt-treatment" class="bl-input bl-textarea" rows="2"
+          placeholder="manipulation, exercises taught, injection, imaging ordered"></textarea>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Recommendations / homework</label>
+        <textarea id="bl-appt-recs" class="bl-input bl-textarea" rows="2"
+          placeholder="exercises to do at home, activity restrictions, next-steps"></textarea>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Follow-up date</label>
+          <input type="date" id="bl-appt-followup" class="bl-input">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Other notes</label>
+          <input type="text" id="bl-appt-notes" class="bl-input" placeholder="optional">
+        </div>
+      </div>
+      <div class="bl-actions">
+        <button class="bl-cancel" onclick="closePopup()">Cancel</button>
+        <button class="bl-save" onclick="submitAppointment()">Save appointment</button>
+      </div>
+    </div>
+  `;
+}
+
+function _toggleApptPart(part, checked) {
+  if (!_apptDraft.body_parts) _apptDraft.body_parts = {};
+  if (checked) _apptDraft.body_parts[part] = true;
+  else delete _apptDraft.body_parts[part];
+}
+
+function submitBodyLogEntry() {
+  const partEl = document.getElementById('bl-part');
+  const part = partEl ? partEl.value : '';
+  if (!part) {
+    if (partEl) partEl.focus();
+    alert('Pick a body part first.');
+    return;
+  }
+  const sideEl = document.querySelector('input[name="bl-side"]:checked');
+  const side = sideEl ? sideEl.value : 'na';
+  const pain = parseInt(document.getElementById('bl-pain').value, 10) || 0;
+  const stiff = parseInt(document.getElementById('bl-stiff').value, 10) || 0;
+  const note = (document.getElementById('bl-note').value || '').trim();
+  const flag = document.getElementById('bl-flag').checked;
+  addBodyStateEntry({ part: part, side: side, pain: pain, stiffness: stiff, note: note, flag: flag });
+  _renderBodyLogTab('symptoms');
+  if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
+}
+
+function removeBodyLogEntry(id) {
+  if (!confirm('Remove this body-log entry?')) return;
+  removeBodyStateEntry(id);
+  _renderBodyLogTab('symptoms');
+  if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
+}
+
+function submitAppointment() {
+  const dateEl = document.getElementById('bl-appt-date');
+  const date = dateEl ? dateEl.value : '';
+  if (!date) {
+    if (dateEl) dateEl.focus();
+    alert('Pick a date for the appointment.');
+    return;
+  }
+  const provType = document.getElementById('bl-appt-type').value;
+  const provName = (document.getElementById('bl-appt-name').value || '').trim();
+  const clinic = (document.getElementById('bl-appt-clinic').value || '').trim();
+  const parts = Object.keys(_apptDraft.body_parts || {});
+  const reason = (document.getElementById('bl-appt-reason').value || '').trim();
+  const findings = (document.getElementById('bl-appt-findings').value || '').trim();
+  const treatment = (document.getElementById('bl-appt-treatment').value || '').trim();
+  const recs = (document.getElementById('bl-appt-recs').value || '').trim();
+  const followUp = (document.getElementById('bl-appt-followup').value || '') || null;
+  const notes = (document.getElementById('bl-appt-notes').value || '').trim();
+  addAppointment({
+    appointment_date: date,
+    provider_type: provType,
+    provider_name: provName,
+    clinic_name: clinic,
+    body_parts: parts,
+    reason: reason,
+    findings: findings,
+    treatment: treatment,
+    recommendations: recs,
+    follow_up_date: followUp,
+    notes: notes
+  });
+  _renderBodyLogTab('appointments');
+}
+
+function removeAppointmentEntry(id) {
+  if (!confirm('Remove this appointment?')) return;
+  removeAppointment(id);
+  _renderBodyLogTab('appointments');
+}
+
 /* Mobile-portrait three-zone facelift. On screens ≤600px, only one .zone card body
    is expanded at a time; tapping a collapsed zone header swaps active state.
    On desktop (>600px) all zones stay visible and the callback (if any) runs as usual. */
@@ -6518,7 +7028,7 @@ function _saveBodyLog(data) {
 function addBodyStateEntry(payload) {
   const data = _getBodyLog();
   const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-  data.entries.push({
+  const entry = {
     id: id,
     date: payload.date || new Date().toISOString().slice(0, 10),
     part: payload.part,
@@ -6528,8 +7038,11 @@ function addBodyStateEntry(payload) {
     note: payload.note || '',
     flag: !!payload.flag,
     created_at: new Date().toISOString()
-  });
+  };
+  data.entries.push(entry);
   _saveBodyLog(data);
+  // Fire-and-forget sync to Supabase (non-blocking, non-fatal on failure)
+  _syncBodyEntryToSupabase(entry);
   return id;
 }
 
@@ -6537,6 +7050,7 @@ function removeBodyStateEntry(id) {
   const data = _getBodyLog();
   data.entries = data.entries.filter(e => e.id !== id);
   _saveBodyLog(data);
+  _syncDeleteBodyEntry(id);
 }
 
 // Returns most-recent entry per (part, side) within daysWindow, sorted by recency.
@@ -6553,6 +7067,247 @@ function getActiveBodyItems(daysWindow) {
     if (!map[key] || new Date(map[key].created_at) < d) map[key] = e;
   }
   return Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+// ── Supabase sync (write-through pattern) ──
+// localStorage is the cache + offline buffer; Supabase is the source of truth.
+// All errors are non-fatal — UI keeps working from the cache.
+async function _syncBodyEntryToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('body_log').upsert({
+      client_id: entry.id,
+      entry_date: entry.date,
+      part: entry.part,
+      side: entry.side,
+      pain: entry.pain,
+      stiffness: entry.stiffness,
+      note: entry.note,
+      flag: entry.flag,
+      created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('body_log upsert failed:', error);
+  } catch (e) { console.warn('body_log upsert threw:', e); }
+}
+
+async function _syncDeleteBodyEntry(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('body_log').delete().eq('client_id', clientId);
+    if (error) console.warn('body_log delete failed:', error);
+  } catch (e) { console.warn('body_log delete threw:', e); }
+}
+
+// Pull authoritative state from Supabase, rebuild localStorage cache.
+async function _refreshBodyLogFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data, error } = await sb.from('body_log')
+      .select('*').order('created_at', { ascending: true });
+    if (error) { console.warn('body_log fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id,
+      date: r.entry_date,
+      part: r.part,
+      side: r.side,
+      pain: r.pain,
+      stiffness: r.stiffness,
+      note: r.note || '',
+      flag: !!r.flag,
+      created_at: r.created_at
+    }));
+    _saveBodyLog({ entries: entries });
+  } catch (e) { console.warn('body_log refresh threw:', e); }
+}
+
+// One-shot migration: if localStorage has entries and Supabase doesn't know about
+// them yet, push them up. Idempotent via client_id unique constraint.
+async function _migrateLocalBodyLogToSupabase() {
+  if (localStorage.getItem('body_log_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getBodyLog();
+  if (local.entries.length === 0) {
+    localStorage.setItem('body_log_sb_migrated', '1');
+    return;
+  }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const { error } = await sb.from('body_log').upsert({
+        client_id: e.id,
+        entry_date: e.date,
+        part: e.part,
+        side: e.side,
+        pain: e.pain,
+        stiffness: e.stiffness,
+        note: e.note,
+        flag: e.flag,
+        created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) { console.warn('body_log migrate row failed:', error); allOk = false; }
+    } catch (ex) { console.warn('body_log migrate row threw:', ex); allOk = false; }
+  }
+  if (allOk) localStorage.setItem('body_log_sb_migrated', '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BODY APPOINTMENTS — clinician visit log (task #12 expansion, 2026-05-25)
+// ────────────────────────────────────────────────────────────────────────────
+// Purpose: log doctor/physio/chiro visits with what was said, what was prescribed,
+// and follow-up info. Designed so Craig can scroll through history at the next
+// visit OR present it to a new provider as a recent-history summary.
+// Same hybrid cache pattern as body_log: localStorage cache + Supabase source of truth.
+// ════════════════════════════════════════════════════════════════════════════
+const APPT_PROVIDER_TYPES = [
+  { id: 'doctor',     label: 'Doctor',       icon: '👨‍⚕️' },
+  { id: 'physio',     label: 'Physio',       icon: '🏋️' },
+  { id: 'chiro',      label: 'Chiropractor', icon: '🦴' },
+  { id: 'massage',    label: 'Massage',      icon: '💆' },
+  { id: 'specialist', label: 'Specialist',   icon: '🔬' },
+  { id: 'imaging',    label: 'Imaging',      icon: '📷' },
+  { id: 'other',      label: 'Other',        icon: '🩺' },
+];
+
+function _getAppointments() {
+  try {
+    const raw = localStorage.getItem('body_appointments');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    if (!p || !Array.isArray(p.entries)) return { entries: [] };
+    return p;
+  } catch (e) { return { entries: [] }; }
+}
+
+function _saveAppointments(data) {
+  localStorage.setItem('body_appointments', JSON.stringify(data));
+}
+
+function addAppointment(payload) {
+  const data = _getAppointments();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const entry = {
+    id: id,
+    appointment_date: payload.appointment_date,
+    provider_type: payload.provider_type || 'doctor',
+    provider_name: payload.provider_name || '',
+    clinic_name: payload.clinic_name || '',
+    body_parts: payload.body_parts || [],
+    reason: payload.reason || '',
+    findings: payload.findings || '',
+    treatment: payload.treatment || '',
+    recommendations: payload.recommendations || '',
+    follow_up_date: payload.follow_up_date || null,
+    notes: payload.notes || '',
+    created_at: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  _saveAppointments(data);
+  _syncAppointmentToSupabase(entry);
+  return id;
+}
+
+function removeAppointment(id) {
+  const data = _getAppointments();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveAppointments(data);
+  _syncDeleteAppointment(id);
+}
+
+function getRecentAppointments(limit) {
+  limit = limit || 10;
+  const data = _getAppointments();
+  return data.entries.slice()
+    .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
+    .slice(0, limit);
+}
+
+async function _syncAppointmentToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('body_appointments').upsert({
+      client_id: entry.id,
+      appointment_date: entry.appointment_date,
+      provider_type: entry.provider_type,
+      provider_name: entry.provider_name,
+      clinic_name: entry.clinic_name,
+      body_parts: entry.body_parts,
+      reason: entry.reason,
+      findings: entry.findings,
+      treatment: entry.treatment,
+      recommendations: entry.recommendations,
+      follow_up_date: entry.follow_up_date,
+      notes: entry.notes,
+      created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('body_appointments upsert failed:', error);
+  } catch (e) { console.warn('body_appointments upsert threw:', e); }
+}
+
+async function _syncDeleteAppointment(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('body_appointments').delete().eq('client_id', clientId);
+    if (error) console.warn('body_appointments delete failed:', error);
+  } catch (e) { console.warn('body_appointments delete threw:', e); }
+}
+
+async function _refreshAppointmentsFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data, error } = await sb.from('body_appointments')
+      .select('*').order('appointment_date', { ascending: false });
+    if (error) { console.warn('body_appointments fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id,
+      appointment_date: r.appointment_date,
+      provider_type: r.provider_type,
+      provider_name: r.provider_name || '',
+      clinic_name: r.clinic_name || '',
+      body_parts: r.body_parts || [],
+      reason: r.reason || '',
+      findings: r.findings || '',
+      treatment: r.treatment || '',
+      recommendations: r.recommendations || '',
+      follow_up_date: r.follow_up_date,
+      notes: r.notes || '',
+      created_at: r.created_at
+    }));
+    _saveAppointments({ entries: entries });
+  } catch (e) { console.warn('body_appointments refresh threw:', e); }
+}
+
+async function _migrateLocalAppointmentsToSupabase() {
+  if (localStorage.getItem('body_appointments_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getAppointments();
+  if (local.entries.length === 0) {
+    localStorage.setItem('body_appointments_sb_migrated', '1');
+    return;
+  }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const { error } = await sb.from('body_appointments').upsert({
+        client_id: e.id,
+        appointment_date: e.appointment_date,
+        provider_type: e.provider_type,
+        provider_name: e.provider_name,
+        clinic_name: e.clinic_name,
+        body_parts: e.body_parts,
+        reason: e.reason,
+        findings: e.findings,
+        treatment: e.treatment,
+        recommendations: e.recommendations,
+        follow_up_date: e.follow_up_date,
+        notes: e.notes,
+        created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) { allOk = false; console.warn('appt migrate row failed:', error); }
+    } catch (ex) { allOk = false; console.warn('appt migrate row threw:', ex); }
+  }
+  if (allOk) localStorage.setItem('body_appointments_sb_migrated', '1');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -9519,6 +10274,13 @@ function renderDaily() {
       ${allo ? `<div class="pill" style="cursor:pointer" onclick="toggleAlloTask('${dateStr}')" title="Tap to check off medication">💊 <span class="pill-val red">Allo day</span></div>` : ''}
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
       ${currentDayOffset === 0 ? `<div class="pill" style="cursor:pointer;border-color:var(--orange-border);background:var(--orange-bg)" onclick="enterBackfillMode()" title="Fill in yesterday's gaps">📝 <span class="pill-val" style="color:var(--orange)">Catch up</span></div>` : ''}
+      ${(() => {
+        // Body log pill — always available. Red count badge when there are active items
+        // in the last 14 days (task #12, 2026-05-24).
+        const _bn = (typeof getActiveBodyItems === 'function') ? getActiveBodyItems(14).length : 0;
+        const _badge = _bn > 0 ? ` <span style="color:var(--red);font-weight:800">${_bn}</span>` : '';
+        return `<div class="pill" style="cursor:pointer" onclick="openBodyLog()" title="Body log — pain, stiffness, injury tracking">🩹 <span class="pill-val" style="color:var(--text-muted)">Body</span>${_badge}</div>`;
+      })()}
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
