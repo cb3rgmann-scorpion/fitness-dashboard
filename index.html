@@ -590,6 +590,104 @@
      are compact by default; tap the row to expand. Mirrors how the legacy
      bodyweight section behaved before the inline-summary refactor. */
   .wlog-row.has-summary { cursor: pointer; }
+  /* ────────────── Morning check-in popup ────────────── */
+  .mp-section { margin-bottom: 18px; }
+  .mp-section:last-child { margin-bottom: 0; }
+  .mp-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 8px;
+  }
+  .mp-section-hint {
+    font-size: 10px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.4;
+  }
+  .mp-chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mp-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 12px; border-radius: 8px;
+    border: 1.5px solid var(--card-border); background: var(--input-bg);
+    color: var(--text); font-size: 12px; font-weight: 600;
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+  }
+  .mp-chip:active { transform: scale(0.96); }
+  .mp-chip:hover { border-color: var(--cyan); }
+  .mp-chip.selected { border-color: var(--green); background: var(--green-bg); color: var(--green); }
+  .mp-chip-skip {
+    color: var(--text-muted); font-style: italic;
+  }
+  /* Goal chips render slightly bigger + show description on hover */
+  .mp-goal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .mp-goal-chip {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1.5px solid var(--card-border); background: var(--input-bg);
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+    text-align: left;
+  }
+  .mp-goal-chip:active { transform: scale(0.97); }
+  .mp-goal-chip:hover { border-color: var(--cyan); }
+  .mp-goal-chip.selected { border-color: var(--green); background: var(--green-bg); }
+  .mp-goal-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .mp-goal-chip.selected .mp-goal-name { color: var(--green); }
+  .mp-goal-desc { font-size: 9px; color: var(--text-muted); line-height: 1.35; }
+  /* Missed-yesterday link + expand */
+  .mp-missed-link {
+    margin-top: 8px;
+    padding: 8px 10px; border-radius: 6px;
+    background: rgba(34,211,238,0.05);
+    border: 1px dashed var(--card-border);
+    font-size: 11px; color: var(--cyan);
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
+    transition: background 0.12s;
+  }
+  .mp-missed-link:hover { background: rgba(34,211,238,0.10); }
+  .mp-missed-detail {
+    margin-top: 8px; padding: 10px 12px;
+    border-radius: 6px; background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    font-size: 11px; color: var(--text-dim); line-height: 1.5;
+  }
+  .mp-missed-detail .mp-missed-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 0; border-bottom: 1px dashed var(--card-border);
+  }
+  .mp-missed-detail .mp-missed-row:last-child { border-bottom: none; }
+  .mp-missed-row-label { flex: 1; }
+  .mp-missed-row-pill {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    color: var(--text-muted); cursor: pointer;
+  }
+  .mp-missed-row-pill:hover { color: var(--cyan); border-color: var(--cyan); }
+  .mp-tone {
+    margin-top: 12px;
+    font-size: 10px; color: var(--text-muted);
+    font-style: italic; line-height: 1.5; text-align: center;
+  }
+  .mp-footer {
+    display: flex; gap: 8px; align-items: center; justify-content: flex-end;
+    margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--card-border);
+  }
+  .mp-done-btn {
+    padding: 10px 22px; border-radius: 8px;
+    border: 1px solid var(--green-border); background: var(--green); color: #000;
+    font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit;
+    transition: transform 0.08s;
+  }
+  .mp-done-btn:active { transform: scale(0.97); }
+  .mp-done-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  /* Morning check-in entry button on meals card */
+  .mp-entry-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 12px;
+    border: 1px solid var(--card-border); background: var(--input-bg);
+    color: var(--text); font-size: 11px; font-weight: 700; cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .mp-entry-btn:hover { border-color: var(--cyan); }
+
   /* Tracker-hint affordance — small chevron at the end of body/gym/kettlebell rows
      to signal "tap me to open the tracker." Replaces the old expand/collapse chevron. */
   .wlog-tracker-hint {
@@ -824,10 +922,11 @@
   .de-event-icons { display: flex; gap: 2px; font-size: 14px; flex-shrink: 0; }
   .de-event-note { flex: 1; min-width: 0; color: var(--text); word-break: break-word; }
   .de-cal-badge {
-    font-size: 11px; font-weight: 700; color: var(--orange);
+    /* Calories are data, not a warning — softened from orange to neutral 2026-05-24 */
+    font-size: 11px; font-weight: 700; color: var(--text-muted);
     padding: 2px 8px; border-radius: 10px;
-    background: rgba(251,146,60,0.15);
-    border: 1px solid rgba(251,146,60,0.3);
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -837,9 +936,10 @@
   }
   .de-event-del:hover { color: var(--red); }
   .de-total {
+    /* Softened from orange (deviation alarm) to muted (data) 2026-05-24 */
     text-align: right;
     font-size: 11px; font-weight: 700;
-    color: var(--orange);
+    color: var(--text-muted);
     padding: 6px 6px 0;
     border-top: 1px dashed var(--card-border);
     margin-top: 4px;
@@ -848,6 +948,22 @@
     .de-pill-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
     .de-pill { font-size: 9px; padding: 6px 2px; min-height: 46px; }
     .de-pill .de-pill-icon { font-size: 18px; }
+  }
+
+  /* Flag-row pills (smaller, dimmer — secondary affordance for context tags) */
+  .de-flag-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-muted);
+    margin: 2px 0 4px; opacity: 0.7;
+  }
+  .de-pill-grid-flags { grid-template-columns: repeat(6, minmax(0,1fr)); gap: 4px; }
+  .de-pill-flag {
+    padding: 5px 2px; min-height: 38px;
+    font-size: 9px; opacity: 0.85;
+  }
+  .de-pill-flag .de-pill-icon { font-size: 14px; }
+  @media (max-width: 380px) {
+    .de-pill-grid-flags { grid-template-columns: repeat(3, minmax(0,1fr)); }
   }
 
   /* ── Restaurant picker entry link (in de-section header row) ── */
@@ -1641,6 +1757,21 @@
     .nav-strip { padding: 6px 12px; flex-wrap: wrap; }
   }
 
+  /* ── Backfill banner (recovery affordance for missed-day logging) ── */
+  .backfill-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 8px 14px;
+    background: var(--orange-bg); border-bottom: 1px solid var(--orange-border);
+    color: var(--orange); font-size: 12px; font-weight: 600;
+  }
+  .backfill-banner.hidden { display: none; }
+  .bf-exit {
+    background: transparent; border: 1px solid var(--orange-border);
+    color: var(--orange); padding: 4px 10px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .bf-exit:hover { background: var(--orange-bg); }
+
   /* ── Mobile (iPhone etc) ── */
   @media (max-width: 600px) {
     body { width: 100vw; height: auto; min-height: 100vh; overflow-y: auto; }
@@ -1674,6 +1805,18 @@
       padding: 8px 10px; max-height: none;
     }
     .card { padding: 12px; }
+
+    /* Backfill banner: tighter on mobile */
+    .backfill-banner { font-size: 11px; padding: 6px 10px; }
+    .bf-exit { padding: 3px 8px; font-size: 10px; }
+
+    /* Three-zone facelift: only the active zone's body is expanded.
+       Triad (workout/meals/tasks) headers stay visible — one body open at a time. */
+    .zone .card-body { display: none; }
+    .zone.zone-active .card-body { display: block; }
+    .zone .card-header { cursor: pointer; user-select: none; }
+    .zone:not(.zone-active) { padding: 10px 12px; }
+    .zone:not(.zone-active) .card-header { margin: 0; }
     .card-title { font-size: 12px; }
     .check-row { padding: 8px 10px; }
     .check-text { font-size: 13px; }
@@ -1791,10 +1934,16 @@
     </div>
   </div>
 
+  <!-- Backfill banner (shown when filling in a past day's gaps) -->
+  <div class="backfill-banner hidden" id="backfill-banner">
+    <span class="bf-label">📝 Filling in <span id="backfill-date-label">yesterday</span> — partial logs are fine.</span>
+    <button class="bf-exit" onclick="exitBackfillMode()">Back to today ›</button>
+  </div>
+
   <div class="main-content">
     <!-- Workout Card -->
-    <div class="card">
-      <div class="card-header">
+    <div class="card zone zone-active" data-zone="workout">
+      <div class="card-header" onclick="toggleZone(this)">
         <div class="card-icon workout" id="workout-icon">💪</div>
         <div class="card-title" id="workout-title">Today's Workout</div>
       </div>
@@ -1802,8 +1951,8 @@
     </div>
 
     <!-- Meals Card -->
-    <div class="card">
-      <div class="card-header" onclick="openRecipeLibrary()" style="cursor:pointer" title="Open recipe library">
+    <div class="card zone" data-zone="meals">
+      <div class="card-header" onclick="toggleZone(this, openRecipeLibrary)" style="cursor:pointer" title="Open recipe library">
         <div class="card-icon meals">🥗</div>
         <div class="card-title">Meals & Supplements <span style="font-size:9px;color:var(--purple);font-weight:400">› recipes</span></div>
       </div>
@@ -1811,8 +1960,8 @@
     </div>
 
     <!-- Schedule Card -->
-    <div class="card" id="schedule-card-wrapper">
-      <div class="card-header">
+    <div class="card zone" id="schedule-card-wrapper" data-zone="tasks">
+      <div class="card-header" onclick="toggleZone(this)">
         <div class="card-icon schedule">✅</div>
         <div class="card-title">Tasks</div>
       </div>
@@ -1922,6 +2071,13 @@
     </div>
     <div class="popup-body" id="settings-body">
       <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">👤 Profile & TDEE</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">Estimates your daily energy expenditure (Mifflin-St Jeor BMR × activity multiplier). Honest caveat: formula estimates are ±300-500 cal off actual TDEE for most people — the activity guess is the biggest source of error. Treat the number as a starting point, not a precise target.</div>
+        <div id="profile-section-body"></div>
+        <button onclick="saveProfileFromUI()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-top:8px">💾 Save profile</button>
+        <div id="profile-tdee-display" style="margin-top:10px;padding:10px;border-radius:6px;background:var(--input-bg);border:1px solid var(--card-border);font-size:11px;color:var(--text)"></div>
+      </div>
+      <div style="border-top:1px solid var(--divider);padding-top:12px;margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🚣 Concept2 Logbook</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Enter your API token from <a href="https://log.concept2.com/developers/keys" target="_blank" style="color:var(--cyan)">log.concept2.com/developers/keys</a>. Stored locally only — never sent anywhere except Concept2.</div>
         <div style="display:flex;gap:6px;align-items:center">
@@ -1997,6 +2153,17 @@
       <button class="popup-close" onclick="closeAppSuggestions()">✕ Close</button>
     </div>
     <div class="popup-body" id="app-sugg-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ MORNING CHECK-IN POPUP ═══════════════ -->
+<div class="popup-backdrop" id="morning-prompt-backdrop" onclick="if(event.target===this)closeMorningPrompt()">
+  <div class="popup" style="max-width:480px">
+    <div class="popup-header">
+      <div class="popup-title" id="morning-prompt-title">☀️ Good morning</div>
+      <button class="popup-close" onclick="closeMorningPrompt()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="morning-prompt-body"></div>
   </div>
 </div>
 
@@ -2147,6 +2314,9 @@ async function doLogout() {
 async function startDashboard() {
   await migrateLocalStorage();
   await refreshData();
+  // Preload profile so getProfileSync() in render code returns the real values
+  // rather than the empty fallback on first paint.
+  await loadProfile();
 }
 
 // Load routines/exercises from Supabase → overwrite hardcoded ROUTINES
@@ -2230,11 +2400,12 @@ async function loadTrackingData(startDate, endDate) {
         sleep: parseFloat(row.sleep) || 0, weight: parseFloat(row.weight) || 0,
         water: row.water || 0, coffee: row.coffee || 0, notes: row.notes || '',
         first_meal: row.first_meal || 0, last_meal: row.last_meal || 0,
+        daily_goal: row.daily_goal || '',
         supps: row.supps ? (typeof row.supps === 'string' ? JSON.parse(row.supps) : row.supps) : {}
       };
     });
     // Merge localStorage daily fields into DB_CACHE (covers fields not yet in Supabase schema)
-    const dailyFields = ['mood','energy','mood_am','mood_pm','energy_am','energy_pm','sleep','weight','water','coffee','notes','first_meal','last_meal'];
+    const dailyFields = ['mood','energy','mood_am','mood_pm','energy_am','energy_pm','sleep','weight','water','coffee','notes','first_meal','last_meal','daily_goal'];
     const startD2 = new Date(startDate), endD2 = new Date(endDate);
     for (let d = new Date(startD2); d <= endD2; d.setDate(d.getDate() + 1)) {
       const dStr = ds(d);
@@ -2664,6 +2835,139 @@ async function getC2Token() {
   return '';
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// PROFILE & TDEE (added 2026-05-21)
+// ────────────────────────────────────────────────────────────────────────────
+// Mifflin-St Jeor BMR formula × activity multiplier = TDEE.
+// HONEST CAVEAT: TDEE estimates from formulas are ±300-500 cal off actual
+// energy expenditure for any given person. Activity multiplier is the biggest
+// source of error. Numbers are rendered with ~ prefix to communicate this.
+// Phase 2 (separate session): back-calibrate from observed weight changes
+// over rolling 4-week windows. This is what makes TDEE useful in practice.
+// ════════════════════════════════════════════════════════════════════════════
+let _profileCache = null;
+const ACTIVITY_MULTIPLIERS = {
+  sedentary: 1.2,    // Desk job, no real workouts
+  light:     1.375,  // Desk job + 1-3 workouts/week  ← Craig's current level
+  moderate:  1.55,   // Desk job + 3-5 workouts/week
+  active:    1.725,  // 6-7 workouts/week or physical job
+  very:      1.9,    // Heavy daily training + physical job
+};
+const ACTIVITY_LABELS = {
+  sedentary: 'Sedentary',
+  light:     'Lightly active',
+  moderate:  'Moderately active',
+  active:    'Very active',
+  very:      'Extra active',
+};
+async function loadProfile() {
+  if (_profileCache) return _profileCache;
+  if (!sbReady) return _profileFromLocalStorage();
+  try {
+    const { data } = await sb.from('user_settings')
+      .select('setting_key, setting_value')
+      .like('setting_key', 'profile_%');
+    if (data && data.length) {
+      const p = {};
+      data.forEach(r => { p[r.setting_key] = r.setting_value; });
+      _profileCache = {
+        heightCm:      parseFloat(p.profile_height_cm) || 0,
+        birthYear:     parseInt(p.profile_birth_year, 10) || 0,
+        sex:           p.profile_sex || '',
+        activityLevel: p.profile_activity_level || 'light',
+      };
+      try { localStorage.setItem('_profile_cache', JSON.stringify(_profileCache)); } catch(e){}
+      return _profileCache;
+    }
+  } catch(e) { console.warn('Could not load profile from Supabase', e); }
+  return _profileFromLocalStorage();
+}
+function _profileFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem('_profile_cache');
+    if (raw) { _profileCache = JSON.parse(raw); return _profileCache; }
+  } catch(e){}
+  return { heightCm: 0, birthYear: 0, sex: '', activityLevel: 'light' };
+}
+function getProfileSync() {
+  // Synchronous accessor for render code. Returns cached profile or empty.
+  return _profileCache || _profileFromLocalStorage();
+}
+async function saveProfileField(key, value) {
+  // Update cache immediately for snappy UI.
+  _profileCache = _profileCache || { heightCm: 0, birthYear: 0, sex: '', activityLevel: 'light' };
+  if (key === 'profile_height_cm')           _profileCache.heightCm = parseFloat(value) || 0;
+  else if (key === 'profile_birth_year')     _profileCache.birthYear = parseInt(value, 10) || 0;
+  else if (key === 'profile_sex')            _profileCache.sex = value;
+  else if (key === 'profile_activity_level') _profileCache.activityLevel = value;
+  try { localStorage.setItem('_profile_cache', JSON.stringify(_profileCache)); } catch(e){}
+  if (!sbReady) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    await sb.from('user_settings').upsert({
+      user_id: session.user.id, setting_key: key, setting_value: String(value),
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'user_id,setting_key' });
+  } catch(e) { console.warn('Could not save profile field', e); }
+}
+// Latest non-zero weight from DB_CACHE.daily (most recent date first).
+function getLatestWeight() {
+  if (!DB_CACHE || !DB_CACHE.daily) return 0;
+  const dates = Object.keys(DB_CACHE.daily).sort().reverse();
+  for (const d of dates) {
+    const w = parseFloat(DB_CACHE.daily[d].weight);
+    if (w > 0) return w;
+  }
+  return 0;
+}
+// Mifflin-St Jeor BMR. Inputs: weight (lb), height (cm), age (years), sex.
+function computeBMR(weightLb, heightCm, age, sex) {
+  if (!weightLb || !heightCm || !age || !sex) return 0;
+  const weightKg = weightLb / 2.2046226218;
+  const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+  return Math.round(sex === 'female' ? base - 161 : base + 5);
+}
+// TDEE = BMR × activity multiplier. Returns 0 if profile or weight missing.
+function computeTDEE(profile, weightLb) {
+  const p = profile || getProfileSync();
+  const w = weightLb || getLatestWeight();
+  if (!w || !p.heightCm || !p.birthYear) return 0;
+  const age = new Date().getFullYear() - p.birthYear;
+  const bmr = computeBMR(w, p.heightCm, age, p.sex);
+  if (!bmr) return 0;
+  const mult = ACTIVITY_MULTIPLIERS[p.activityLevel] || ACTIVITY_MULTIPLIERS.light;
+  return Math.round(bmr * mult);
+}
+// Daily goal → cal delta relative to TDEE. Negative = deficit.
+function goalToCalDelta(goalId) {
+  switch (goalId) {
+    case 'slow_drop': return -250;
+    case 'deficit':   return -500;
+    case 'maintain':
+    case 'recovery':
+    case 'push':
+    default:          return 0;
+  }
+}
+function computeCalTarget(tdee, goalId) {
+  if (!tdee) return 0;
+  return Math.round((tdee + goalToCalDelta(goalId)) / 10) * 10;
+}
+// Public helper for UI: today's TDEE + goal target as a render-ready object.
+function getTodayCalContext(dateStr) {
+  const p = getProfileSync();
+  const tdee = computeTDEE(p);
+  if (!tdee) return null;
+  const goal = (DB_CACHE.daily && DB_CACHE.daily[dateStr] && DB_CACHE.daily[dateStr].daily_goal) || 'maintain';
+  return {
+    tdee: tdee,
+    goal: goal,
+    target: computeCalTarget(tdee, goal),
+    goalLabel: getPhaseLabel(goal),
+  };
+}
+
 async function openSettings() {
   const token = await getC2Token();
   document.getElementById('c2-token-input').value = token ? '••••••••••••••••' : '';
@@ -2671,7 +2975,130 @@ async function openSettings() {
   loadC2Recent();
   initHealthDateRange();
   refreshHealthStatus();
+  await loadProfile();
+  renderProfileSection();
   document.getElementById('settings-backdrop').classList.add('open');
+}
+
+// Render the Profile inputs inside the Settings popup body.
+function renderProfileSection() {
+  const body = document.getElementById('profile-section-body');
+  if (!body) return;
+  const p = getProfileSync();
+  const heightIn = p.heightCm ? Math.round(p.heightCm / 2.54 * 10) / 10 : '';
+  const inputStyle = 'padding:6px 8px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:12px;font-family:inherit;width:100%;box-sizing:border-box';
+  const labelStyle = 'display:block;font-size:10px;color:var(--text-dim);margin-bottom:3px;font-weight:600';
+  const activityChips = Object.keys(ACTIVITY_LABELS).map(k =>
+    `<label style="display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:6px;border:1.5px solid ${p.activityLevel === k ? 'var(--green)' : 'var(--card-border)'};background:${p.activityLevel === k ? 'var(--green-bg)' : 'var(--input-bg)'};color:${p.activityLevel === k ? 'var(--green)' : 'var(--text)'};font-size:10px;font-weight:600;cursor:pointer;margin:2px">
+      <input type="radio" name="profile-activity" value="${k}" ${p.activityLevel === k ? 'checked' : ''} style="display:none">
+      ${ACTIVITY_LABELS[k]}
+    </label>`
+  ).join('');
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div>
+        <label style="${labelStyle}">Height (cm)</label>
+        <input type="number" id="profile-height-cm" min="100" max="250" step="1" value="${p.heightCm || ''}" placeholder="e.g. 185" style="${inputStyle}" oninput="document.getElementById('profile-height-in').value = this.value ? (Math.round(this.value/2.54*10)/10) : ''; refreshProfileTdeeDisplay();">
+      </div>
+      <div>
+        <label style="${labelStyle}">Height (inches)</label>
+        <input type="number" id="profile-height-in" min="40" max="100" step="0.5" value="${heightIn}" placeholder="e.g. 73" style="${inputStyle}" oninput="document.getElementById('profile-height-cm').value = this.value ? Math.round(this.value*2.54) : ''; refreshProfileTdeeDisplay();">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div>
+        <label style="${labelStyle}">Birth year</label>
+        <input type="number" id="profile-birth-year" min="1900" max="${new Date().getFullYear()}" step="1" value="${p.birthYear || ''}" placeholder="e.g. 1982" style="${inputStyle}" oninput="refreshProfileTdeeDisplay()">
+      </div>
+      <div>
+        <label style="${labelStyle}">Sex (for BMR formula)</label>
+        <select id="profile-sex" style="${inputStyle}" onchange="refreshProfileTdeeDisplay()">
+          <option value="" ${!p.sex ? 'selected' : ''}>—</option>
+          <option value="male" ${p.sex === 'male' ? 'selected' : ''}>Male</option>
+          <option value="female" ${p.sex === 'female' ? 'selected' : ''}>Female</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label style="${labelStyle}">Activity level <span style="color:var(--text-muted);font-weight:400">— be conservative; most people overestimate</span></label>
+      <div id="profile-activity-chips" style="display:flex;flex-wrap:wrap" onclick="setTimeout(refreshProfileTdeeDisplay, 0)">${activityChips}</div>
+    </div>
+  `;
+  refreshProfileTdeeDisplay();
+  // Wire radio chip styling
+  body.querySelectorAll('input[name="profile-activity"]').forEach(r => {
+    r.addEventListener('change', () => {
+      body.querySelectorAll('label').forEach(l => {
+        const inp = l.querySelector('input[name="profile-activity"]');
+        if (!inp) return;
+        const sel = inp.checked;
+        l.style.borderColor = sel ? 'var(--green)' : 'var(--card-border)';
+        l.style.background = sel ? 'var(--green-bg)' : 'var(--input-bg)';
+        l.style.color = sel ? 'var(--green)' : 'var(--text)';
+      });
+      refreshProfileTdeeDisplay();
+    });
+  });
+}
+
+function refreshProfileTdeeDisplay() {
+  const display = document.getElementById('profile-tdee-display');
+  if (!display) return;
+  const heightCm = parseFloat(document.getElementById('profile-height-cm').value) || 0;
+  const birthYear = parseInt(document.getElementById('profile-birth-year').value, 10) || 0;
+  const sex = document.getElementById('profile-sex').value || '';
+  const activityEl = document.querySelector('input[name="profile-activity"]:checked');
+  const activity = activityEl ? activityEl.value : 'light';
+  const w = getLatestWeight();
+  const age = birthYear ? (new Date().getFullYear() - birthYear) : 0;
+  const bmr = computeBMR(w, heightCm, age, sex);
+  const tdee = bmr ? Math.round(bmr * (ACTIVITY_MULTIPLIERS[activity] || 1.375)) : 0;
+  if (!tdee) {
+    display.innerHTML = `<span style="color:var(--text-muted)">Fill in all fields above to see your TDEE estimate.</span>`;
+    return;
+  }
+  const targets = {
+    maintain:  tdee,
+    slow_drop: tdee - 250,
+    recovery:  tdee,
+    deficit:   tdee - 500,
+    push:      tdee,
+  };
+  const roundTo10 = n => Math.round(n / 10) * 10;
+  display.innerHTML = `
+    <div style="font-weight:700;color:var(--cyan);margin-bottom:6px">BMR ~${bmr} · TDEE ~${tdee} cal</div>
+    <div style="font-size:10px;color:var(--text-dim);margin-bottom:6px">Based on ${w} lb, ${heightCm} cm, age ${age}, ${sex}, ${ACTIVITY_LABELS[activity]}.</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px;font-size:10px">
+      <div>⚖️ Maintain: <strong style="color:var(--text)">~${roundTo10(targets.maintain)}</strong></div>
+      <div>⬇️ Slow drop: <strong style="color:var(--text)">~${roundTo10(targets.slow_drop)}</strong></div>
+      <div>🛌 Recovery: <strong style="color:var(--text)">~${roundTo10(targets.recovery)}</strong></div>
+      <div>⬇️⬇️ Deficit: <strong style="color:var(--text)">~${roundTo10(targets.deficit)}</strong></div>
+      <div>💪 Push: <strong style="color:var(--text)">~${roundTo10(targets.push)}</strong></div>
+    </div>
+    <div style="font-size:9px;color:var(--text-muted);margin-top:6px;font-style:italic">±300-500 cal real-world uncertainty. Trends matter more than daily exact match.</div>
+  `;
+}
+
+async function saveProfileFromUI() {
+  const heightCm = parseFloat(document.getElementById('profile-height-cm').value) || 0;
+  const birthYear = parseInt(document.getElementById('profile-birth-year').value, 10) || 0;
+  const sex = document.getElementById('profile-sex').value || '';
+  const activityEl = document.querySelector('input[name="profile-activity"]:checked');
+  const activity = activityEl ? activityEl.value : 'light';
+  await Promise.all([
+    saveProfileField('profile_height_cm', heightCm),
+    saveProfileField('profile_birth_year', birthYear),
+    saveProfileField('profile_sex', sex),
+    saveProfileField('profile_activity_level', activity),
+  ]);
+  // Brief confirmation
+  const display = document.getElementById('profile-tdee-display');
+  if (display) {
+    const orig = display.innerHTML;
+    display.innerHTML = `<span style="color:var(--green);font-weight:700">✓ Saved.</span>`;
+    setTimeout(() => { refreshProfileTdeeDisplay(); }, 800);
+  }
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
 
@@ -3538,7 +3965,7 @@ function renderOverviewStats(container) {
         '<div style="font-size:11px;font-weight:700;color:var(--green)">⚖️ Weight — ' + mWeightFirst + ' → ' + mWeightLast + ' lbs' +
           '<span style="font-weight:800;color:' + (mWeightLast <= mWeightFirst ? 'var(--green)' : 'var(--red)') + ';margin-left:4px">' +
           (mWeightLast - mWeightFirst > 0 ? '+' : '') + (mWeightLast - mWeightFirst).toFixed(1) + '</span></div>' +
-        '<div style="font-size:8px;color:var(--text-muted)"><span style="color:var(--orange)">━</span> −1.5/wk &nbsp;<span style="color:var(--red)">━</span> −2/wk</div>' +
+        '<div style="font-size:8px;color:var(--text-muted)"><span style="color:var(--orange)">━</span> intent (from daily goals) &nbsp;<span style="color:var(--red)">━</span> −2/wk max</div>' +
       '</div>' +
       '<canvas id="chart-weight-overview" style="width:100%;height:120px;display:block"></canvas>' +
     '</div>'
@@ -4644,10 +5071,39 @@ function drawWeightProjectionChart(canvasId, weights, events) {
   const endDate = new Date(weights[weights.length - 1].date + 'T12:00:00');
   const totalDays = Math.max(1, (endDate - startDate) / 86400000);
 
-  // Project lines: target = -1.5 lbs/week, caution = -2 lbs/week
-  const targetRate = 1.5 / 7, cautionRate = 2 / 7;
-  const targetEnd = startW - cautionRate * totalDays; // lowest possible (caution)
-  const allVals = weights.map(d => d.value).concat([startW, startW - targetRate * totalDays, targetEnd]);
+  // ── Intent trajectory — accumulated from daily_goal history ──
+  // Each day's daily_goal contributes its cal delta → lb delta (cal/3500).
+  // Days with no daily_goal default to 'maintain' (flat). The line bends
+  // where the goal changes day-to-day, showing what the weight trajectory
+  // SHOULD be if intent matches reality.
+  function computeIntentTrajectory() {
+    if (typeof goalToCalDelta !== 'function' || !DB_CACHE || !DB_CACHE.daily) return [];
+    const points = [];
+    let cumWeight = startW;
+    const startMs = startDate.getTime();
+    const endMs = endDate.getTime();
+    points.push({ date: weights[0].date, value: cumWeight });
+    // Walk day by day; accumulate weight delta from each day's goal
+    for (let t = startMs + 86400000; t <= endMs; t += 86400000) {
+      const dt = new Date(t);
+      const dStr = dt.toISOString().slice(0,10);
+      const goal = (DB_CACHE.daily[dStr] && DB_CACHE.daily[dStr].daily_goal) || 'maintain';
+      const calDelta = goalToCalDelta(goal);   // negative = deficit
+      const lbDelta = calDelta / 3500;          // negative = weight loss
+      cumWeight += lbDelta;
+      points.push({ date: dStr, value: cumWeight });
+    }
+    return points;
+  }
+  const intentLine = computeIntentTrajectory();
+  const intentEndW = intentLine.length ? intentLine[intentLine.length - 1].value : startW;
+
+  // Caution = -2 lbs/week is the medical "don't lose faster than this" zone.
+  // (We removed the static -1.5/wk target line — replaced by the dynamic
+  // intent line above, which reflects Craig's actual stated goals.)
+  const cautionRate = 2 / 7;
+  const cautionEnd = startW - cautionRate * totalDays;
+  const allVals = weights.map(d => d.value).concat([startW, intentEndW, cautionEnd]);
   const minY = Math.min(...allVals) - 1, maxY = Math.max(...allVals) + 1;
   const range = maxY - minY || 1;
 
@@ -4670,16 +5126,20 @@ function drawWeightProjectionChart(canvasId, weights, events) {
   ctx.fillStyle = 'rgba(239,68,68,0.06)';
   ctx.fillRect(pad.l, cautionY, cw, pad.t + ch - cautionY);
 
-  // Target line (−1.5 lbs/week) — orange dashed
-  const targetEndY = toY(startW - targetRate * totalDays);
-  ctx.strokeStyle = getComputedColor('var(--orange)');
-  ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
-  ctx.beginPath();
-  ctx.moveTo(pad.l, toY(startW));
-  ctx.lineTo(pad.l + cw, targetEndY);
-  ctx.stroke();
+  // ── Intent line — bends per daily_goal, replaces the static -1.5/wk target ──
+  if (intentLine.length > 1) {
+    ctx.strokeStyle = getComputedColor('var(--orange)');
+    ctx.lineWidth = 1.5; ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    intentLine.forEach((p, i) => {
+      const x = toX(p.date), y = toY(p.value);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
 
-  // Caution line (−2 lbs/week) — red dashed
+  // Caution line (−2 lbs/week) — red dashed, kept as the medical safety zone
   const cautionEndY = toY(startW - cautionRate * totalDays);
   ctx.strokeStyle = getComputedColor('var(--red)');
   ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
@@ -4692,9 +5152,10 @@ function drawWeightProjectionChart(canvasId, weights, events) {
   // Line labels at right edge
   ctx.font = 'bold 7px Inter,sans-serif'; ctx.textAlign = 'right';
   ctx.fillStyle = getComputedColor('var(--orange)');
-  ctx.fillText('−1.5/wk', pad.l + cw - 2, targetEndY - 3);
+  const intentEndY = toY(intentEndW);
+  ctx.fillText('intent', pad.l + cw - 2, intentEndY - 3);
   ctx.fillStyle = getComputedColor('var(--red)');
-  ctx.fillText('−2/wk', pad.l + cw - 2, cautionEndY + 9);
+  ctx.fillText('−2/wk max', pad.l + cw - 2, cautionEndY + 9);
 
   // Actual weight line — green
   ctx.strokeStyle = getComputedColor('var(--green)');
@@ -5234,6 +5695,24 @@ const RECIPE_LIBRARY = {
   ]
 };
 
+/* Mobile-portrait three-zone facelift. On screens ≤600px, only one .zone card body
+   is expanded at a time; tapping a collapsed zone header swaps active state.
+   On desktop (>600px) all zones stay visible and the callback (if any) runs as usual. */
+function toggleZone(headerEl, callback) {
+  if (window.innerWidth > 600) {
+    if (typeof callback === 'function') callback();
+    return;
+  }
+  var card = headerEl.closest('.zone');
+  if (!card) return;
+  if (card.classList.contains('zone-active')) {
+    if (typeof callback === 'function') callback();
+    return;
+  }
+  document.querySelectorAll('.zone').forEach(function (z) { z.classList.remove('zone-active'); });
+  card.classList.add('zone-active');
+}
+
 function openRecipeLibrary() {
   const popup = document.getElementById('popup-body');
   const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
@@ -5572,6 +6051,21 @@ const ROUTINES = {
       { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + figure-4 + standing quad stretch", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
+  // ── BODYWEIGHT SIMPLE ──
+  // Lightweight rep counter — restored 2026-05-15 per Craig's request. Mirrors
+  // the legacy bw_* tracking pattern from before the inline-summary refactor:
+  // just type how many you did total today across the 5 staple exercises.
+  // No prescription, no warmup/cooldown, no sets — just totals.
+  bodyweight_simple: {
+    title: "Bodyweight — Simple Rep Counter",
+    exercises: [
+      { name: "Push-ups",         sets: "today's total", detail: "Just type how many you did across the day. Knee push-ups count.", trackReps: true },
+      { name: "Sit-ups",          sets: "today's total", detail: "Full sit-ups, however you do them.", trackReps: true },
+      { name: "Squats",           sets: "today's total", detail: "Bodyweight, any depth that works for your knees.", trackReps: true },
+      { name: "Crunches",         sets: "today's total", detail: "Just the upper-ab crunch range.", trackReps: true },
+      { name: "Oblique crunches", sets: "today's total", detail: "Count each side or just total — your call.", trackReps: true },
+    ]
+  },
   // ── KETTLEBELL ROUTINES ──
   // 'circuits' = continuous flow, conditioning emphasis. 'strength' = heavier
   // KB, lower reps, more rest. PT note: kettlebell hinge mechanics are
@@ -5707,7 +6201,7 @@ const OTHER_WORKOUTS = [
   { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
   { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
   { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['full', 'upper', 'lower'] },
-  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['full', 'upper', 'lower'],
+  { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['full', 'upper', 'lower', 'simple'],
     exercises: [
       { key: 'pushups', label: 'Push-ups', icon: '🫸' },
       { key: 'situps', label: 'Sit-ups', icon: '🔄' },
@@ -5963,18 +6457,103 @@ function setLastMeal(dateStr, val) { dbSaveDaily(dateStr, 'last_meal', val); ren
 // IMPORTANT REALISM NOTE: short-term weight changes after these events are
 // almost entirely water/sodium/glycogen — not adipose. Patterns over weeks
 // are signal; same-day spikes are noise.
-// v1 deviation tags. IDs stable for back-compat with existing localStorage
-// data (alcohol/restaurant/binge predate v1; labels changed but ids didn't).
-// `note` is no longer a user-facing pill — note text lives in the input field.
+// v2 (2026-05-24): reframed from "log a deviation" to "log a meal".
+// Two-tier model: meal-type tags (primary, positive frame) + contextual flags
+// (secondary, for things that correlate with weight noise). Flag tags are NOT
+// moral judgements — they're data for 24-72h pattern correlation. IDs stable
+// for back-compat with existing localStorage data.
 const DIET_EVENT_TAGS = [
-  { id: 'restaurant', icon: '🍔', label: 'Eat out',  color: 'var(--purple)' },
-  { id: 'alcohol',    icon: '🍷', label: 'Drinks',   color: 'var(--orange)' },
-  { id: 'binge',      icon: '🥧', label: 'Binge',    color: 'var(--red)'    },
-  { id: 'pop',        icon: '🥤', label: 'Pop',      color: 'var(--cyan)'   },
-  { id: 'fried',      icon: '🍟', label: 'Fried',    color: '#f59e0b'       },
-  { id: 'dessert',    icon: '🍰', label: 'Dessert',  color: 'var(--pink)'   },
-  { id: 'snack',      icon: '🍫', label: 'Snack',    color: '#a78bfa'       },
+  // Meal-type tags — what kind of meal was this?
+  { id: 'meal_breakfast', icon: '🍳', label: 'Breakfast', color: '#fbbf24',       kind: 'meal' },
+  { id: 'meal_lunch',     icon: '🥗', label: 'Lunch',     color: 'var(--green)',  kind: 'meal' },
+  { id: 'meal_dinner',    icon: '🍗', label: 'Dinner',    color: 'var(--cyan)',   kind: 'meal' },
+  { id: 'snack',          icon: '🍫', label: 'Snack',     color: '#a78bfa',       kind: 'meal' },
+  // Contextual flags — tag if applicable. These are correlated with water/sodium/
+  // glycogen shifts over 24-72h; useful for pattern recognition, not for shame.
+  { id: 'restaurant', icon: '🍔', label: 'Eat out',  color: 'var(--purple)', kind: 'flag' },
+  { id: 'alcohol',    icon: '🍷', label: 'Drinks',   color: 'var(--orange)', kind: 'flag' },
+  { id: 'pop',        icon: '🥤', label: 'Pop',      color: 'var(--cyan)',   kind: 'flag' },
+  { id: 'fried',      icon: '🍟', label: 'Fried',    color: '#f59e0b',       kind: 'flag' },
+  { id: 'dessert',    icon: '🍰', label: 'Dessert',  color: 'var(--pink)',   kind: 'flag' },
+  { id: 'binge',      icon: '🥧', label: 'Binge',    color: 'var(--red)',    kind: 'flag' },
 ];
+
+// ════════════════════════════════════════════════════════════════════════════
+// BODY LOG (injury / DOMS / stiffness tracker)
+// ────────────────────────────────────────────────────────────────────────────
+// Added 2026-05-24 (task #12). Lightweight body-awareness log — captures pain
+// and stiffness (0-10), body part, side, free-text notes, and a follow-up flag.
+// Stored in localStorage; promotes to Supabase later when needed.
+//
+// IMPORTANT FRAMING: this is pattern-recognition data, NOT diagnosis. If pain
+// ≥7 is sustained for 3+ days, OR there are neurological symptoms (numbness,
+// tingling, weakness, joint locking), the user should be routed to a clinician.
+// The popup includes a realism caveat for this reason.
+// ════════════════════════════════════════════════════════════════════════════
+const BODY_PARTS = [
+  'Head', 'Neck',
+  'Shoulder', 'Upper back', 'Chest',
+  'Elbow', 'Wrist', 'Hand', 'Finger',
+  'Lower back', 'Hip', 'Abs',
+  'Knee', 'Calf', 'Ankle', 'Foot',
+  'Other'
+];
+
+function _getBodyLog() {
+  try {
+    const raw = localStorage.getItem('body_log');
+    if (!raw) return { entries: [] };
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.entries)) return { entries: [] };
+    return parsed;
+  } catch (e) {
+    return { entries: [] };
+  }
+}
+
+function _saveBodyLog(data) {
+  localStorage.setItem('body_log', JSON.stringify(data));
+}
+
+function addBodyStateEntry(payload) {
+  const data = _getBodyLog();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  data.entries.push({
+    id: id,
+    date: payload.date || new Date().toISOString().slice(0, 10),
+    part: payload.part,
+    side: payload.side || 'na',
+    pain: Number(payload.pain) || 0,
+    stiffness: Number(payload.stiffness) || 0,
+    note: payload.note || '',
+    flag: !!payload.flag,
+    created_at: new Date().toISOString()
+  });
+  _saveBodyLog(data);
+  return id;
+}
+
+function removeBodyStateEntry(id) {
+  const data = _getBodyLog();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveBodyLog(data);
+}
+
+// Returns most-recent entry per (part, side) within daysWindow, sorted by recency.
+// Used by the "Active" section of the body log popup and the bottom-bar pill badge.
+function getActiveBodyItems(daysWindow) {
+  daysWindow = daysWindow || 14;
+  const data = _getBodyLog();
+  const cutoff = new Date(Date.now() - daysWindow * 24 * 60 * 60 * 1000);
+  const map = {};
+  for (const e of data.entries) {
+    const d = new Date(e.created_at);
+    if (d < cutoff) continue;
+    const key = e.part + '_' + (e.side || 'na');
+    if (!map[key] || new Date(map[key].created_at) < d) map[key] = e;
+  }
+  return Object.values(map).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // RESTAURANT MENU DATABASE
@@ -7044,10 +7623,12 @@ function renderRestaurantPicker() {
 function buildDietEventStrip(dateStr) {
   const events = getDietEvents(dateStr);
   const draft = _getDraft(dateStr);
-  // ── Tag pills (v1: bigger, multi-select, icon above label) ──
-  const pillHtml = DIET_EVENT_TAGS.map(t => {
+  // ── Tag pills, v2 (2026-05-24): split into meal-types (primary) + flags (secondary).
+  // Reframed from "log a deviation" → "log a meal". Flags are correlation tags,
+  // not moral markers. ──
+  const pillRender = (t, extraClass) => {
     const on = !!draft.tags[t.id];
-    return `<div class="de-pill ${on ? 'on' : ''}"
+    return `<div class="de-pill ${extraClass || ''} ${on ? 'on' : ''}"
       data-diet-tag="${dateStr}_${t.id}"
       style="--de-color:${t.color}"
       onclick="dietDraftToggleTag('${dateStr}','${t.id}')"
@@ -7055,7 +7636,9 @@ function buildDietEventStrip(dateStr) {
       <span class="de-pill-icon">${t.icon}</span>
       <span>${t.label}</span>
     </div>`;
-  }).join('');
+  };
+  const mealPills = DIET_EVENT_TAGS.filter(t => t.kind === 'meal').map(t => pillRender(t, '')).join('');
+  const flagPills = DIET_EVENT_TAGS.filter(t => t.kind === 'flag').map(t => pillRender(t, 'de-pill-flag')).join('');
   // ── Today's logged events (richer per-row layout) ──
   let totalCals = 0;
   const eventRows = events.map(e => {
@@ -7066,7 +7649,7 @@ function buildDietEventStrip(dateStr) {
     const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     const cals = (typeof e.cals === 'number' && e.cals > 0) ? e.cals : 0;
     if (cals) totalCals += cals;
-    const calBadge = cals ? `<span class="de-cal-badge">+${cals} cal</span>` : '';
+    const calBadge = cals ? `<span class="de-cal-badge">${cals} cal</span>` : '';
     // Display time as 12hr-ish (HH:MM stored as 24hr — keep simple)
     return `<div class="de-event-row">
       <span class="de-event-time">${e.time}</span>
@@ -7077,7 +7660,7 @@ function buildDietEventStrip(dateStr) {
     </div>`;
   }).join('');
   const totalLine = totalCals > 0
-    ? `<div class="de-total">+${totalCals} cal logged today</div>`
+    ? `<div class="de-total">${totalCals} cal logged today</div>`
     : '';
   const eventsBlock = events.length === 0 ? '' : `
     <div class="de-events-label">Today</div>
@@ -7088,11 +7671,13 @@ function buildDietEventStrip(dateStr) {
   const draftCals = (draft.cals || '').toString().replace(/"/g,'&quot;');
   return `
     <div class="de-section">
-      <div class="de-header">⚠ Log a deviation</div>
-      <div class="de-pill-grid">${pillHtml}</div>
+      <div class="de-header">🍽️ Log a meal</div>
+      <div class="de-pill-grid">${mealPills}</div>
+      <div class="de-flag-label">Tag if applicable</div>
+      <div class="de-pill-grid de-pill-grid-flags">${flagPills}</div>
       <div class="de-input-row">
         <input id="diet-event-note-${dateStr}" class="de-note-input" type="text"
-          placeholder="optional note (e.g. 'Cactus Club')"
+          placeholder="what you ate (e.g. 'chicken + rice')"
           oninput="_getDraft('${dateStr}').note=this.value"
           onkeydown="if(event.key==='Enter'){commitDietEvent('${dateStr}');event.preventDefault();}"
           value="${draftNote}">
@@ -7105,6 +7690,186 @@ function buildDietEventStrip(dateStr) {
       </div>
       ${eventsBlock}
     </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MORNING CHECK-IN PROMPT
+// ────────────────────────────────────────────────────────────────────────────
+// Fires once per morning (5am-11am window) when yesterday's last_meal is empty,
+// to catch the IF tail and set today's intent. Also available manually via the
+// ☀️ button on the meals card. Two questions + an optional missed-link.
+// Added 2026-05-18 per Craig's request.
+// ════════════════════════════════════════════════════════════════════════════
+const DAILY_GOALS = [
+  { id: 'maintain',  icon: '⚖️',  name: 'Maintain',  desc: 'Eat at TDEE, normal training' },
+  { id: 'slow_drop', icon: '⬇️',  name: 'Slow drop', desc: 'Light deficit (~250 cal), normal training' },
+  { id: 'recovery',  icon: '🛌',  name: 'Recovery',  desc: 'Eat normal, rest or very light movement' },
+  { id: 'deficit',   icon: '⬇️⬇️',name: 'Deficit',   desc: 'Active deficit (~500 cal), reduce training' },
+  { id: 'push',      icon: '💪',  name: 'Push',     desc: 'Eat normal, train HARD. Use sparingly.' },
+];
+const MORNING_TIME_CHIPS = [
+  { hour: 16, label: '4pm' }, { hour: 17, label: '5pm' }, { hour: 18, label: '6pm' },
+  { hour: 19, label: '7pm' }, { hour: 20, label: '8pm' }, { hour: 21, label: '9pm' },
+  { hour: 22, label: '10pm' }, { hour: 23, label: 'after 10' },
+];
+// Per-day flag to avoid re-popping during the same morning
+function _morningPromptShownToday() {
+  const today = new Date().toISOString().slice(0,10);
+  return localStorage.getItem('morning_prompt_shown_' + today) === '1';
+}
+function _markMorningPromptShown() {
+  const today = new Date().toISOString().slice(0,10);
+  localStorage.setItem('morning_prompt_shown_' + today, '1');
+}
+function _shouldAutoFireMorningPrompt() {
+  // Fire if: 5am-11am local time, yesterday's last_meal empty, not shown today.
+  const now = new Date();
+  const hr = now.getHours();
+  if (hr < 5 || hr >= 11) return false;
+  if (_morningPromptShownToday()) return false;
+  const yest = new Date(now);
+  yest.setDate(yest.getDate() - 1);
+  const yestStr = yest.toISOString().slice(0,10);
+  const yestLM = getLastMeal(yestStr);
+  return !yestLM || yestLM === 0;
+}
+function openMorningPrompt(opts) {
+  opts = opts || {};
+  window._morningPromptState = {
+    todayStr: new Date().toISOString().slice(0,10),
+    yestStr: (function(){ const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })(),
+    lastMealChoice: null,   // hour selected (or 'skip')
+    goalChoice: null,
+    missedExpanded: false,
+  };
+  const bd = document.getElementById('morning-prompt-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  _markMorningPromptShown();
+  renderMorningPrompt();
+}
+function closeMorningPrompt() {
+  const bd = document.getElementById('morning-prompt-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function _mpSelectTime(hour) {
+  window._morningPromptState.lastMealChoice = hour;
+  renderMorningPrompt();
+}
+function _mpSkipTime() {
+  window._morningPromptState.lastMealChoice = 'skip';
+  renderMorningPrompt();
+}
+function _mpSelectGoal(goalId) {
+  window._morningPromptState.goalChoice = goalId;
+  renderMorningPrompt();
+}
+function _mpToggleMissed() {
+  window._morningPromptState.missedExpanded = !window._morningPromptState.missedExpanded;
+  renderMorningPrompt();
+}
+function _mpComputeMissedFields(yestStr) {
+  // Return list of {label, key, present} for yesterday's expected-but-empty fields.
+  const d = (DB_CACHE.daily && DB_CACHE.daily[yestStr]) || {};
+  const fields = [
+    { label: 'PM mood',       key: 'mood_pm',  present: !!(d.mood_pm  > 0) },
+    { label: 'PM energy',     key: 'energy_pm',present: !!(d.energy_pm> 0) },
+    { label: 'Sleep hours',   key: 'sleep',    present: !!(d.sleep    > 0) },
+    { label: 'Weight',        key: 'weight',   present: !!(d.weight   > 0) },
+  ];
+  return fields.filter(f => !f.present);
+}
+function _mpSubmit() {
+  const s = window._morningPromptState;
+  if (!s) return;
+  // 1. Last meal yesterday (skip writes nothing)
+  if (typeof s.lastMealChoice === 'number') {
+    dbSaveDaily(s.yestStr, 'last_meal', s.lastMealChoice);
+  }
+  // 2. Today's goal
+  if (s.goalChoice) {
+    dbSaveDaily(s.todayStr, 'daily_goal', s.goalChoice);
+  }
+  closeMorningPrompt();
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+function renderMorningPrompt() {
+  const body = document.getElementById('morning-prompt-body');
+  const titleEl = document.getElementById('morning-prompt-title');
+  if (!body) return;
+  const s = window._morningPromptState;
+  const now = new Date();
+  const hrLabel = now.toLocaleTimeString([], {hour:'numeric', hour12:true});
+  if (titleEl) titleEl.textContent = '☀️ Good morning — ' + hrLabel;
+
+  // Section 1: yesterday's last meal
+  const timeChips = MORNING_TIME_CHIPS.map(c =>
+    `<div class="mp-chip ${s.lastMealChoice === c.hour ? 'selected' : ''}" onclick="_mpSelectTime(${c.hour})">${c.label}</div>`
+  ).join('') +
+  `<div class="mp-chip mp-chip-skip ${s.lastMealChoice === 'skip' ? 'selected' : ''}" onclick="_mpSkipTime()">skip</div>`;
+
+  // Section 2: today's goal
+  const goalChips = DAILY_GOALS.map(g =>
+    `<div class="mp-goal-chip ${s.goalChoice === g.id ? 'selected' : ''}" onclick="_mpSelectGoal('${g.id}')">
+      <div class="mp-goal-name">${g.icon} ${g.name}</div>
+      <div class="mp-goal-desc">${g.desc}</div>
+    </div>`
+  ).join('');
+
+  // Missed-yesterday section
+  const missed = _mpComputeMissedFields(s.yestStr);
+  const missedLink = missed.length === 0 ? '' : `
+    <div class="mp-missed-link" onclick="_mpToggleMissed()">
+      <span>👀 ${missed.length} thing${missed.length>1?'s':''} missed yesterday</span>
+      <span>${s.missedExpanded ? '▾' : '▸'}</span>
+    </div>
+    ${s.missedExpanded ? `
+      <div class="mp-missed-detail">
+        ${missed.map(m => `<div class="mp-missed-row"><span class="mp-missed-row-label">${m.label}</span><span class="mp-missed-row-pill" onclick="closeMorningPrompt()">jump to yesterday</span></div>`).join('')}
+        <div class="mp-tone">No shame — just nudges. Yesterday is what it was; today is a chance to be a little better.</div>
+      </div>
+    ` : ''}
+  `;
+
+  const canSubmit = (s.lastMealChoice !== null) && s.goalChoice;
+  body.innerHTML = `
+    <div class="mp-section">
+      <div class="mp-section-label">When did you stop eating yesterday?</div>
+      <div class="mp-section-hint">Closes out your fasting window — pick the closest hour.</div>
+      <div class="mp-chip-grid">${timeChips}</div>
+    </div>
+    <div class="mp-section">
+      <div class="mp-section-label">What's your goal today?</div>
+      <div class="mp-section-hint">Sets how the day is framed. You can change this any time.</div>
+      <div class="mp-goal-grid">${goalChips}</div>
+    </div>
+    ${missedLink}
+    <div class="mp-footer">
+      <button class="mp-done-btn" onclick="_mpSubmit()" ${canSubmit ? '' : 'disabled'}>Save & continue</button>
+    </div>
+  `;
+}
+
+// Rolling phase computation — looks at last 7 days of daily_goal, returns mode.
+// Falls back to 'maintain' if no data. Used to show the user their actual
+// recent pattern (vs whatever they think it is).
+function getCurrentPhase() {
+  const today = new Date();
+  const counts = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dStr = d.toISOString().slice(0,10);
+    const goal = (DB_CACHE.daily && DB_CACHE.daily[dStr] && DB_CACHE.daily[dStr].daily_goal) || '';
+    if (goal) counts[goal] = (counts[goal] || 0) + 1;
+  }
+  let best = 'maintain', bestCount = 0;
+  Object.keys(counts).forEach(k => { if (counts[k] > bestCount) { best = k; bestCount = counts[k]; } });
+  return best;
+}
+function getPhaseLabel(phaseId) {
+  const g = DAILY_GOALS.find(x => x.id === phaseId);
+  return g ? (g.icon + ' ' + g.name) : '⚖️ Maintain';
 }
 
 // ── SUPPLEMENT TRACKING ──
@@ -8314,6 +9079,7 @@ function getRoutineKey(wo, dateStr) {
 let currentDayOffset = 0;   // 0 = today
 let currentMonthOffset = 0; // 0 = current month
 let currentWeekOffset = 0;  // 0 = current week
+let backfillMode = false;   // recovery mode for logging a past day's gaps
 
 function ds(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtDate(d) { return ['January','February','March','April','May','June','July','August','September','October','November','December'][d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); }
@@ -8611,6 +9377,12 @@ function renderDaily() {
             else s += 'background:var(--input-bg);border:1px solid var(--input-border);color:var(--text-muted);';
             return s;
           };
+          // IF window = yesterday's last_meal → today's first_meal (overnight fast)
+          const yest = new Date(dateStr + 'T12:00:00'); yest.setDate(yest.getDate() - 1);
+          const yestStr = yest.toISOString().slice(0, 10);
+          const yestLM = getLastMeal(yestStr);
+          const ifHrs = (yestLM && fm) ? ((24 - yestLM) + fm) : null;
+          const ifLabel = ifHrs ? `🌙 IF ${ifHrs}h` : '';
           return `
             <span style="font-size:8px;color:var(--text-muted);font-weight:600">🍽️</span>
             <div style="display:flex;gap:2px">${firstOpts.map(h =>
@@ -8621,9 +9393,36 @@ function renderDaily() {
               `<div style="${pillStyle(h, lm, 'var(--orange)', 'var(--orange)', recLast)}" onclick="setLastMeal('${dateStr}',${lm===h?0:h})">${fmtHr(h)}</div>`
             ).join('')}</div>
             ${ew ? `<span style="font-size:8px;font-weight:700;color:var(--cyan)">${ew}</span>` : ''}
+            ${ifLabel ? `<span style="font-size:8px;font-weight:700;color:var(--purple)" title="Overnight fasting window: yesterday's last meal to today's first">${ifLabel}</span>` : ''}
+            <span class="mp-entry-btn" style="margin-left:auto;font-size:9px;padding:3px 8px" onclick="openMorningPrompt()" title="Open morning check-in (last meal, today's goal, missed yesterday)">☀️ Check-in</span>
           `;
         })()}
       </div>
+      ${(() => {
+        // TDEE-aware cal target line — visible only if profile is set.
+        // Shows today's goal + target + running total against it.
+        const ctx = getTodayCalContext(dateStr);
+        if (!ctx) return '';
+        const eventsToday = getDietEvents(dateStr);
+        const loggedCal = eventsToday.reduce((sum, e) => sum + (e.cals || 0), 0);
+        const remaining = ctx.target - loggedCal;
+        const overBy = loggedCal > ctx.target ? loggedCal - ctx.target : 0;
+        const pct = ctx.target > 0 ? Math.min(100, Math.round((loggedCal / ctx.target) * 100)) : 0;
+        const barColor = overBy > 0 ? 'var(--red)' : loggedCal > ctx.target * 0.85 ? 'var(--orange)' : 'var(--green)';
+        return `<div style="margin:6px 0 2px;padding:7px 10px;border-radius:6px;background:var(--input-bg);border:1px solid var(--card-border);font-size:10px;color:var(--text)" title="TDEE estimate × today's daily_goal. Treat as rough target — ±300 cal real-world uncertainty.">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:700">${ctx.goalLabel}</span>
+            <span style="color:var(--text-dim)">·</span>
+            <span style="color:var(--text-dim)">Target ~${ctx.target} cal</span>
+            <span style="margin-left:auto;font-weight:700;color:${overBy > 0 ? 'var(--red)' : 'var(--text)'}">
+              ${loggedCal > 0 ? `+${loggedCal} logged${overBy > 0 ? ` (over by ${overBy})` : remaining > 0 ? ` · ${remaining} left` : ''}` : 'nothing logged yet'}
+            </span>
+          </div>
+          <div style="height:4px;border-radius:2px;background:var(--divider);overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};transition:width 0.3s"></div>
+          </div>
+        </div>`;
+      })()}
       ${buildDietEventStrip(dateStr)}
     </div>`;
 
@@ -8696,12 +9495,30 @@ function renderDaily() {
   }
   csHtml += '</div>';
 
+  // Backfill banner: show only when explicitly in backfill mode; force-clear on today
+  const _bfBanner = document.getElementById('backfill-banner');
+  if (_bfBanner) {
+    if (currentDayOffset === 0) backfillMode = false;
+    if (backfillMode) {
+      _bfBanner.classList.remove('hidden');
+      const _lbl = document.getElementById('backfill-date-label');
+      if (_lbl) {
+        const _dn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const _d = new Date(); _d.setDate(_d.getDate() + currentDayOffset);
+        _lbl.textContent = currentDayOffset === -1 ? 'yesterday' : (_dn[_d.getDay()] + ', ' + (_d.getMonth() + 1) + '/' + _d.getDate());
+      }
+    } else {
+      _bfBanner.classList.add('hidden');
+    }
+  }
+
   // Bottom bar — custody strip + month summary link
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
       <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
       ${allo ? `<div class="pill" style="cursor:pointer" onclick="toggleAlloTask('${dateStr}')" title="Tap to check off medication">💊 <span class="pill-val red">Allo day</span></div>` : ''}
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
+      ${currentDayOffset === 0 ? `<div class="pill" style="cursor:pointer;border-color:var(--orange-border);background:var(--orange-bg)" onclick="enterBackfillMode()" title="Fill in yesterday's gaps">📝 <span class="pill-val" style="color:var(--orange)">Catch up</span></div>` : ''}
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
@@ -8712,6 +9529,12 @@ function renderDaily() {
     </div>
   `;
   restoreOpenSections(dateStr);
+  // Auto-fire morning check-in if conditions met (today's view only, 5-11am,
+  // yesterday's last_meal empty, not shown today). Slight delay so the user
+  // sees the dashboard for a beat before the popup appears.
+  if (currentDayOffset === 0 && _shouldAutoFireMorningPrompt()) {
+    setTimeout(() => { if (_shouldAutoFireMorningPrompt()) openMorningPrompt(); }, 600);
+  }
 }
 
 // ── WEEK VIEW ──
@@ -8894,7 +9717,7 @@ function renderWeek() {
             : DIET_EVENT_TAGS.map(t => weekDietEventTagCounts[t.id] > 0
                 ? `<span style="color:${t.color}">${t.icon}${weekDietEventTagCounts[t.id]}</span>`
                 : '').join(' ')
-              + (weekDietEventCals > 0 ? ` <span style="color:var(--orange);font-weight:700">+${weekDietEventCals}cal</span>` : '')
+              + (weekDietEventCals > 0 ? ` <span style="color:var(--text-muted);font-weight:700">${weekDietEventCals}cal</span>` : '')
           }
         </span>
       </div>
@@ -9144,6 +9967,21 @@ function showDailyView() { currentView = 'daily'; currentDayOffset = 0; renderDa
 function showWeekView() { currentView = 'week'; currentWeekOffset = 0; renderWeek(); switchView('week-view'); }
 function showMonthView() { closeMonthPin(); currentView = 'month'; currentMonthOffset = 0; renderMonth(); switchView('month-view'); }
 function changeDay(delta) { currentDayOffset += delta; renderDaily(); updateNavButtons(); }
+
+/* Backfill mode — for catching up on a missed day's logs without shame-trip framing.
+   Enter: jumps to yesterday and shows a recovery banner. Exit: returns to today. */
+function enterBackfillMode() {
+  backfillMode = true;
+  currentDayOffset = -1;
+  renderDaily();
+  updateNavButtons();
+}
+function exitBackfillMode() {
+  backfillMode = false;
+  currentDayOffset = 0;
+  renderDaily();
+  updateNavButtons();
+}
 function changeWeek(delta) { currentWeekOffset += delta; renderWeek(); updateNavButtons(); }
 function changeMonth(delta) { closeMonthPin(); currentMonthOffset += delta; renderMonth(); updateNavButtons(); }
 
