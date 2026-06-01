@@ -617,6 +617,67 @@
   }
   /* Goal chips render slightly bigger + show description on hover */
   .mp-goal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  /* Task #13 variants: 4-up for load levels, 5-up for rest levels */
+  .mp-goal-grid-4 { grid-template-columns: repeat(4, minmax(0,1fr)); }
+  .mp-goal-grid-5 { grid-template-columns: repeat(5, minmax(0,1fr)); }
+  @media (max-width: 480px) {
+    .mp-goal-grid-4, .mp-goal-grid-5 { grid-template-columns: 1fr 1fr; }
+  }
+  /* Evening one-word input */
+  .ep-word-input {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 12px; border-radius: 8px;
+    border: 1.5px solid var(--card-border); background: var(--input-bg);
+    color: var(--text); font-size: 14px; font-family: inherit;
+    font-weight: 600;
+  }
+  .ep-word-input:focus { border-color: var(--cyan); outline: none; }
+  .ep-word-input::placeholder { color: var(--text-muted); font-weight: 400; }
+  /* Task #14 — sleep behavior check rows */
+  .ep-behavior-list { display: flex; flex-direction: column; gap: 6px; }
+  .ep-behavior-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px;
+    border: 1.5px solid var(--card-border); background: var(--input-bg);
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+  }
+  .ep-behavior-row:active { transform: scale(0.98); }
+  .ep-behavior-row:hover { border-color: var(--cyan); }
+  .ep-behavior-row.checked {
+    border-color: var(--green);
+    background: var(--green-bg);
+  }
+  .ep-behavior-check {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--card-border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    color: transparent;
+    flex-shrink: 0;
+  }
+  .ep-behavior-row.checked .ep-behavior-check {
+    border-color: var(--green);
+    background: var(--green);
+    color: #000;
+  }
+  .ep-behavior-text { flex: 1; min-width: 0; }
+  .ep-behavior-label {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    line-height: 1.2;
+  }
+  .ep-behavior-row.checked .ep-behavior-label { color: var(--green); }
+  .ep-behavior-desc {
+    font-size: 10px; color: var(--text-muted);
+    line-height: 1.35; margin-top: 2px;
+  }
+  .ep-behavior-count {
+    font-size: 11px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    background: var(--green-bg); color: var(--green);
+    margin-left: 6px;
+  }
   .mp-goal-chip {
     display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
     padding: 10px 12px; border-radius: 8px;
@@ -935,6 +996,29 @@
     flex-shrink: 0;
   }
   .de-event-del:hover { color: var(--red); }
+  /* Edit pencil for meal events — sibling of de-event-del */
+  .de-event-edit {
+    cursor: pointer; color: var(--text-muted); font-size: 13px; line-height: 1; padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .de-event-edit:hover { color: var(--cyan); }
+  /* Edit banner — shown above the meals form when editing an existing entry */
+  .de-edit-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 6px; padding: 6px 10px; margin-bottom: 8px;
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-radius: 6px;
+    font-size: 10px; color: var(--orange);
+    font-weight: 600;
+  }
+  .de-edit-cancel {
+    background: transparent; border: 1px solid var(--orange-border);
+    color: var(--orange); padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .de-edit-cancel:hover { background: var(--orange); color: #000; }
   .de-total {
     /* Softened from orange (deviation alarm) to muted (data) 2026-05-24 */
     text-align: right;
@@ -948,6 +1032,71 @@
     .de-pill-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
     .de-pill { font-size: 9px; padding: 6px 2px; min-height: 46px; }
     .de-pill .de-pill-icon { font-size: 18px; }
+  }
+
+  /* ── Activity decision tree (task #16, 2026-05-29) — top of workout card ── */
+  .adt-wrap {
+    padding: 8px 10px; margin-bottom: 10px;
+    border-radius: 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+  }
+  .adt-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 6px; flex-wrap: wrap;
+  }
+  .adt-title {
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-dim);
+  }
+  .adt-hint {
+    font-size: 9px; color: var(--text-muted); font-weight: 600;
+    line-height: 1.3;
+  }
+  .adt-hint strong { color: var(--text); font-weight: 800; }
+  .adt-clear {
+    display: inline-block; padding: 0 6px;
+    cursor: pointer; color: var(--text-muted);
+    font-size: 14px; font-weight: 800; margin-left: 2px;
+  }
+  .adt-clear:hover { color: var(--red); }
+  .adt-row {
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 4px;
+  }
+  .adt-chip {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; padding: 7px 4px;
+    border-radius: 6px;
+    border: 1.5px solid var(--card-border);
+    background: var(--card-bg);
+    cursor: pointer; user-select: none;
+    transition: border-color 0.12s, background 0.12s, opacity 0.12s, transform 0.08s;
+    min-height: 44px;
+  }
+  .adt-chip:active { transform: scale(0.97); }
+  .adt-chip:hover { border-color: var(--adt-color, var(--cyan)); }
+  .adt-chip.chosen {
+    border-color: var(--adt-color, var(--cyan));
+    background: var(--adt-color, var(--cyan));
+    color: #000;
+  }
+  .adt-chip.suggested {
+    border-color: var(--adt-color, var(--cyan));
+    border-style: dashed;
+  }
+  .adt-chip.dimmed { opacity: 0.30; }
+  .adt-icon { font-size: 16px; line-height: 1; }
+  .adt-label {
+    font-size: 9px; font-weight: 700;
+    color: var(--text); line-height: 1.1;
+    text-align: center;
+  }
+  .adt-chip.chosen .adt-label { color: #000; }
+  @media (max-width: 380px) {
+    .adt-chip { padding: 6px 2px; min-height: 40px; }
+    .adt-icon { font-size: 14px; }
+    .adt-label { font-size: 8px; }
   }
 
   /* ── Body log popup (task #12, 2026-05-24) ── */
@@ -981,6 +1130,103 @@
     line-height: 1; padding: 0 4px; flex-shrink: 0;
   }
   .bl-active-del:hover { color: var(--red); }
+  /* Edit pencil — same dimensions/positioning as the delete × */
+  .bl-active-edit {
+    cursor: pointer; color: var(--text-muted); font-size: 13px;
+    line-height: 1; padding: 0 4px; flex-shrink: 0;
+  }
+  .bl-active-edit:hover { color: var(--cyan); }
+
+  /* Edit banner — shown above the form when an existing row is being edited.
+     Subtle orange tint to distinguish from "add new" mode without alarming. */
+  .bl-edit-banner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 8px 12px; margin-bottom: 8px;
+    background: var(--orange-bg);
+    border: 1px solid var(--orange-border);
+    border-radius: 6px;
+    font-size: 11px; color: var(--orange);
+    font-weight: 600;
+  }
+  .bl-edit-cancel {
+    background: transparent; border: 1px solid var(--orange-border);
+    color: var(--orange); padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .bl-edit-cancel:hover { background: var(--orange); color: #000; }
+
+  /* ── Summary tab ── */
+  .bl-sum-section { margin-bottom: 18px; }
+  .bl-sum-header {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    color: var(--cyan); text-transform: uppercase;
+    padding: 6px 0 4px; border-bottom: 1px solid var(--card-border);
+    margin-bottom: 8px;
+  }
+  .bl-sum-subhead {
+    font-size: 10px; font-weight: 700; color: var(--text-muted);
+    margin: 10px 0 4px; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .bl-sum-empty {
+    font-size: 11px; color: var(--text-muted); padding: 6px 0;
+    font-style: italic;
+  }
+  .bl-sum-row {
+    display: flex; align-items: baseline; gap: 6px;
+    padding: 4px 0; border-bottom: 1px solid var(--card-border);
+    font-size: 11px;
+  }
+  .bl-sum-row:last-child { border-bottom: none; }
+  .bl-sum-label { flex: 1; color: var(--text); }
+  .bl-sum-val { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+  .bl-sum-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; background: var(--input-bg);
+    color: var(--text-muted); margin-right: 3px;
+  }
+  .bl-sum-pain-high { color: var(--red); font-weight: 700; }
+  .bl-sum-pain-mid  { color: var(--orange); font-weight: 700; }
+  .bl-sum-pain-low  { color: var(--green); }
+  .bl-sum-flag { color: var(--orange); font-size: 10px; margin-left: 3px; }
+  .bl-sum-trend-up   { color: var(--red);    font-size: 10px; }
+  .bl-sum-trend-down { color: var(--green);  font-size: 10px; }
+  .bl-sum-trend-flat { color: var(--text-muted); font-size: 10px; }
+  .bl-sum-tag-grid {
+    display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;
+  }
+  .bl-sum-tag-chip {
+    display: flex; align-items: center; gap: 3px;
+    background: var(--input-bg); border-radius: 4px;
+    padding: 3px 7px; font-size: 11px;
+  }
+  .bl-sum-tag-count {
+    font-weight: 700; color: var(--text); font-size: 11px;
+  }
+  .bl-sum-tag-label { color: var(--text-muted); font-size: 10px; }
+  .bl-sum-cal-total {
+    font-size: 11px; color: var(--text-muted); margin-top: 6px;
+  }
+  .bl-sum-cal-total strong { color: var(--text); }
+  .bl-sum-sched-row {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 4px 0; border-bottom: 1px solid var(--card-border);
+    font-size: 11px;
+  }
+  .bl-sum-sched-row:last-child { border-bottom: none; }
+  .bl-sum-sched-date { color: var(--text-muted); min-width: 72px; font-size: 10px; white-space: nowrap; }
+  .bl-sum-sched-event { color: var(--text); flex: 1; }
+  .bl-sum-appt-row {
+    padding: 5px 0; border-bottom: 1px solid var(--card-border);
+    font-size: 11px;
+  }
+  .bl-sum-appt-row:last-child { border-bottom: none; }
+  .bl-sum-appt-date { color: var(--text-muted); font-size: 10px; }
+  .bl-sum-note {
+    font-size: 10px; color: var(--text-muted);
+    margin: 2px 0 0; font-style: italic;
+  }
+
   .bl-form { padding: 4px 0; }
   .bl-row { margin-bottom: 10px; }
   .bl-label {
@@ -1137,6 +1383,232 @@
     font-weight: 700; color: var(--text-dim);
     text-transform: uppercase; font-size: 9px;
     letter-spacing: 0.5px; margin-right: 4px;
+  }
+  /* Task #22 — linked symptom display on appointment rows */
+  .bl-appt-linked-badge {
+    font-size: 9px; font-weight: 700;
+    padding: 2px 6px; border-radius: 8px;
+    background: var(--cyan-bg, rgba(34,211,238,0.10));
+    color: var(--cyan);
+    border: 1px solid var(--cyan);
+  }
+  .bl-appt-linked {
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px dashed var(--card-border);
+  }
+  .bl-appt-linked-list { margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+  .bl-appt-linked-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 4px 8px;
+    background: var(--input-bg);
+    border-radius: 4px;
+    font-size: 10px;
+  }
+  .bl-appt-linked-part { font-weight: 700; flex: 1; min-width: 0; }
+  .bl-appt-linked-pain { font-weight: 800; font-variant-numeric: tabular-nums; }
+  .bl-appt-linked-date { color: var(--text-muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+  .bl-active-link {
+    color: var(--cyan); font-size: 11px;
+    cursor: help;
+  }
+  /* Task #20 — print summary buttons at top of Summary tab */
+  .bl-sum-print-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 12px; margin-bottom: 12px;
+    background: var(--cyan-bg, rgba(34,211,238,0.08));
+    border: 1px solid var(--cyan);
+    border-radius: 6px;
+  }
+  .bl-sum-print-btn {
+    padding: 8px 14px; border-radius: 6px;
+    border: 1px solid var(--cyan);
+    background: var(--cyan); color: #000;
+    font-size: 12px; font-weight: 800; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .bl-sum-print-btn:hover { filter: brightness(1.1); }
+  .bl-sum-print-btn-secondary {
+    padding: 8px 14px; border-radius: 6px;
+    border: 1px solid var(--cyan);
+    background: transparent; color: var(--cyan);
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: inherit; white-space: nowrap;
+  }
+  .bl-sum-print-btn-secondary:hover { background: var(--cyan); color: #000; }
+  .bl-sum-print-hint {
+    font-size: 10px; color: var(--text-muted);
+    line-height: 1.4; flex: 1 1 100%;
+  }
+  /* Task #23 — Follow-up section styles */
+  .bl-sum-followups {
+    border-left: 3px solid var(--orange);
+    padding-left: 10px;
+  }
+  .bl-sum-fu-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; margin-bottom: 4px;
+    background: var(--input-bg); border-radius: 4px;
+    font-size: 11px;
+  }
+  .bl-sum-fu-row.overdue {
+    background: var(--red-bg, rgba(220,38,38,0.08));
+    border-left: 3px solid var(--red);
+  }
+  .bl-sum-fu-icon { font-size: 14px; flex-shrink: 0; }
+  .bl-sum-fu-text { flex: 1; min-width: 0; }
+  .bl-sum-fu-parts { color: var(--text-muted); font-size: 10px; margin-left: 4px; }
+  .bl-sum-fu-date { font-size: 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .bl-sum-fu-overdue { color: var(--red); font-weight: 800; font-size: 10px; }
+  .bl-sum-fu-today {
+    color: var(--orange); font-weight: 800; font-size: 10px;
+    padding: 2px 6px; border-radius: 8px;
+    background: var(--orange-bg); border: 1px solid var(--orange);
+  }
+  .bl-sum-fu-soon { color: var(--orange); font-weight: 700; font-size: 10px; }
+  .bl-sum-fu-future { color: var(--text-muted); font-size: 10px; }
+  /* Pulse animation for the today's-follow-up pill */
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+
+  /* Task #24 — Care cadence styles */
+  .cc-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; margin-bottom: 5px;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: var(--input-bg);
+    font-size: 11px;
+  }
+  .cc-row.cc-status-overdue {
+    border-left: 3px solid var(--red);
+    background: var(--red-bg, rgba(220,38,38,0.05));
+  }
+  .cc-row.cc-status-due-soon {
+    border-left: 3px solid var(--orange);
+    background: var(--orange-bg);
+  }
+  .cc-row.cc-status-ok { border-left: 3px solid var(--green); }
+  .cc-row.cc-status-never { border-left: 3px solid var(--text-muted); }
+  .cc-icon { font-size: 16px; flex-shrink: 0; }
+  .cc-text { flex: 1; min-width: 0; }
+  .cc-name { font-weight: 700; font-size: 12px; color: var(--text); }
+  .cc-meta {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    font-size: 9px; color: var(--text-muted); margin-top: 2px;
+  }
+  .cc-status {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 8px; letter-spacing: 0.3px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .cc-status-overdue { background: var(--red); color: #fff; }
+  .cc-status-due { background: var(--orange); color: #000; }
+  .cc-status-ok { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .cc-status-never { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+  .cc-action-btn {
+    background: var(--green); border: 1px solid var(--green);
+    color: #000; padding: 3px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 800; cursor: pointer;
+    font-family: inherit; flex-shrink: 0;
+  }
+  .cc-action-btn:hover { filter: brightness(1.1); }
+
+  /* Task #26 — Medications UI */
+  .med-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+  .med-row {
+    padding: 8px 10px;
+    background: var(--input-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    font-size: 11px;
+  }
+  .med-row-main {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .med-name { font-weight: 700; font-size: 12px; color: var(--text); }
+  .med-dose {
+    font-size: 10px; color: var(--text-muted);
+    padding: 1px 6px; border-radius: 8px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    font-variant-numeric: tabular-nums;
+  }
+  .med-type-badge {
+    font-size: 8px; font-weight: 800; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px;
+  }
+  .med-type-rx { background: var(--purple); color: #000; }
+  .med-type-otc { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+  .med-status {
+    font-size: 9px; font-weight: 800; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 8px; letter-spacing: 0.3px;
+    white-space: nowrap; margin-left: auto;
+  }
+  .med-status-done { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+  .med-status-partial { background: var(--orange-bg); color: var(--orange); border: 1px solid var(--orange); }
+  .med-status-pending { background: var(--cyan-bg, rgba(34,211,238,0.10)); color: var(--cyan); border: 1px solid var(--cyan); }
+  .med-status-prn { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+  .med-status-noday { background: var(--input-bg); color: var(--text-muted); border: 1px dashed var(--card-border); }
+  .med-action-btn {
+    background: var(--green); border: 1px solid var(--green);
+    color: #000; padding: 3px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 800; cursor: pointer; font-family: inherit;
+    white-space: nowrap;
+  }
+  .med-action-btn:hover { filter: brightness(1.1); }
+  .med-row-meta {
+    font-size: 9px; color: var(--text-muted);
+    margin-top: 3px; padding-left: 2px;
+  }
+  .med-row-history-toggle {
+    font-size: 10px; color: var(--text-muted);
+    cursor: pointer; user-select: none;
+    margin-top: 4px; padding: 2px 0;
+  }
+  .med-row-history-toggle:hover { color: var(--cyan); }
+  .med-row-history {
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px dashed var(--card-border);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .med-dose-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 6px; background: var(--card-bg);
+    border-radius: 4px; font-size: 10px;
+  }
+  .med-dose-row.med-dose-editing {
+    background: var(--input-bg); border: 1px dashed var(--cyan);
+  }
+  .med-dose-time {
+    font-variant-numeric: tabular-nums;
+    color: var(--text); font-weight: 600;
+    white-space: nowrap;
+  }
+  .med-dose-notes { flex: 1; min-width: 0; color: var(--text-muted); font-size: 10px; }
+  .med-no-doses { font-size: 10px; color: var(--text-muted); font-style: italic; padding: 4px 6px; }
+  .med-weekday-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .med-weekday { cursor: pointer; user-select: none; }
+  .med-weekday-input { display: none; }
+  .med-weekday span {
+    display: inline-block; padding: 4px 8px;
+    border: 1px solid var(--card-border); border-radius: 4px;
+    background: var(--input-bg); color: var(--text-muted);
+    font-size: 10px; font-weight: 700;
+  }
+  .med-weekday-input:checked + span {
+    border-color: var(--cyan); background: var(--cyan); color: #000;
+  }
+  .med-color-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .med-color-pick { cursor: pointer; }
+  .med-color-pick input { display: none; }
+  .med-color-swatch {
+    display: inline-block; width: 24px; height: 24px;
+    border-radius: 50%; background: var(--c);
+    border: 2px solid transparent;
+    transition: border-color 0.12s;
+  }
+  .med-color-pick input:checked + .med-color-swatch {
+    border-color: var(--text);
   }
 
   /* Flag-row pills (smaller, dimmer — secondary affordance for context tags) */
@@ -2356,6 +2828,17 @@
   </div>
 </div>
 
+<!-- ═══════════════ EVENING CHECK-IN POPUP (task #13, 2026-05-25) ═══════════════ -->
+<div class="popup-backdrop" id="evening-prompt-backdrop" onclick="if(event.target===this)closeEveningPrompt()">
+  <div class="popup" style="max-width:440px">
+    <div class="popup-header">
+      <div class="popup-title" id="evening-prompt-title">🌙 Wind-down</div>
+      <button class="popup-close" onclick="closeEveningPrompt()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="evening-prompt-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ RESTAURANT PICKER POPUP ═══════════════ -->
 <div class="popup-backdrop" id="rest-pick-backdrop" onclick="if(event.target===this)closeRestaurantPicker()">
   <div class="popup" style="max-width:520px">
@@ -2805,12 +3288,13 @@ async function loadTrackingData(startDate, endDate) {
 
 // Upsert a daily_log field to Supabase (fire-and-forget)
 function dbSaveDaily(dateStr, field, value) {
-  // Update cache
+  // Update cache (holds raw value — objects stay as objects)
   if (!DB_CACHE.daily[dateStr]) DB_CACHE.daily[dateStr] = {mood:0,energy:0,mood_am:0,mood_pm:0,energy_am:0,energy_pm:0,sleep:0,weight:0,water:0,coffee:0,notes:''};
   DB_CACHE.daily[dateStr][field] = value;
-  // Also save to localStorage as backup
-  localStorage.setItem(field + '_' + dateStr, value);
-  // Write to Supabase
+  // localStorage only accepts strings — JSON-encode objects (for JSONB cols like sleep_behaviors)
+  const lsValue = (value !== null && typeof value === 'object') ? JSON.stringify(value) : value;
+  localStorage.setItem(field + '_' + dateStr, lsValue);
+  // Write to Supabase — pass the raw value (supabase-js serializes the row to JSON)
   if (!sbReady) return;
   const row = { date: dateStr, [field]: value };
   sb.from('daily_log').upsert(row, { onConflict: 'date' }).then(({error}) => {
@@ -5906,13 +6390,21 @@ function buildActiveBodyHtml() {
     const sideLabel = (!e.side || e.side === 'na') ? '' :
       (e.side === 'both' ? 'Both ' : (e.side[0].toUpperCase() + e.side.slice(1) + ' '));
     const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+    // Task #26 — prefer event date (when it happened) over created_at (when logged)
+    const eventDate = e.date || e.created_at.slice(0, 10);
+    const dayCount = Math.floor((Date.now() - new Date(eventDate + 'T12:00:00').getTime()) / 86400000);
+    const eventLabel = e.event_time_local
+      ? dayLabel(dayCount) + ' @ ' + e.event_time_local
+      : dayLabel(dayCount);
     return `<div class="bl-active-row">
       <span class="bl-active-part">${sideLabel}${e.part}</span>
       <span class="bl-active-pain" style="color:${painColor}">${e.pain}/10</span>
       ${e.stiffness > 0 ? `<span class="bl-active-stiff">stiff ${e.stiffness}</span>` : ''}
       ${e.flag ? `<span class="bl-active-flag" title="Flagged for follow-up">⚑</span>` : ''}
-      <span class="bl-active-time">${dayLabel(daysSince(e.created_at))}</span>
+      ${e.appointment_id ? `<span class="bl-active-link" title="Linked to an appointment">🔗</span>` : ''}
+      <span class="bl-active-time">${eventLabel}</span>
       ${noteText ? `<span class="bl-active-note" title="${noteText}">📝</span>` : ''}
+      <span class="bl-active-edit" onclick="startEditBodyLog('${e.id}')" title="Edit this entry">✎</span>
       <span class="bl-active-del" onclick="removeBodyLogEntry('${e.id}')" title="Remove this entry">×</span>
     </div>`;
   }).join('');
@@ -5921,6 +6413,11 @@ function buildActiveBodyHtml() {
 // Draft buffer for the appointment form, keyed within the open popup.
 // Lives in memory only — cleared when popup closes or after save.
 let _apptDraft = { body_parts: {} };
+
+// Edit-mode pointers — null when adding a new entry, set to the entry id when editing.
+// Used by submitBodyLogEntry / submitAppointment to choose insert-vs-update path.
+let _bodyEditingId = null;
+let _apptEditingId = null;
 
 function openBodyLog(tab) {
   tab = tab || 'symptoms';
@@ -5933,8 +6430,14 @@ function openBodyLog(tab) {
     (async () => {
       await _migrateLocalBodyLogToSupabase();
       await _migrateLocalAppointmentsToSupabase();
+      if (typeof _migrateLocalCareCadenceToSupabase === 'function') await _migrateLocalCareCadenceToSupabase();
+      if (typeof _migrateLocalMedicationsToSupabase === 'function') await _migrateLocalMedicationsToSupabase();
+      if (typeof _migrateLocalMedDosesToSupabase === 'function') await _migrateLocalMedDosesToSupabase();
       await _refreshBodyLogFromSupabase();
       await _refreshAppointmentsFromSupabase();
+      if (typeof _refreshCareCadenceFromSupabase === 'function') await _refreshCareCadenceFromSupabase();
+      if (typeof _refreshMedicationsFromSupabase === 'function') await _refreshMedicationsFromSupabase();
+      if (typeof _refreshMedDosesFromSupabase === 'function') await _refreshMedDosesFromSupabase();
       const popupOpen = document.getElementById('popup-backdrop').classList.contains('open');
       const titleEl = document.getElementById('popup-title');
       const popupBody = document.getElementById('popup-body');
@@ -5955,10 +6458,13 @@ function _renderBodyLogTab(tab) {
   const tabsHtml = `
     <div class="bl-tabs">
       <button type="button" class="bl-tab ${tab === 'symptoms' ? 'active' : ''}" onclick="_renderBodyLogTab('symptoms')">Symptoms</button>
+      <button type="button" class="bl-tab ${tab === 'meds' ? 'active' : ''}" onclick="_renderBodyLogTab('meds')">Meds</button>
       <button type="button" class="bl-tab ${tab === 'appointments' ? 'active' : ''}" onclick="_renderBodyLogTab('appointments')">Appointments</button>
+      <button type="button" class="bl-tab ${tab === 'care' ? 'active' : ''}" onclick="_renderBodyLogTab('care')">Care</button>
+      <button type="button" class="bl-tab ${tab === 'summary' ? 'active' : ''}" onclick="_renderBodyLogTab('summary')">Summary</button>
     </div>
   `;
-  const realismHtml = `
+  const realismHtml = (tab === 'summary' || tab === 'care' || tab === 'meds') ? '' : `
     <div class="bl-realism">
       <strong>When to escalate:</strong> sustained pain ≥7 for 3+ days, pain that's
       getting worse not better, OR new neurological symptoms (numbness, tingling,
@@ -5966,16 +6472,32 @@ function _renderBodyLogTab(tab) {
       pattern recognition over weeks, not for diagnosing what's happening.
     </div>
   `;
-  const tabContent = tab === 'appointments' ? buildAppointmentsHtml() : buildSymptomsHtml();
+  const tabContent = tab === 'appointments' ? buildAppointmentsHtml()
+    : tab === 'summary' ? buildSummaryHtml()
+    : tab === 'care' ? buildCareHtml()
+    : tab === 'meds' ? buildMedsHtml()
+    : buildSymptomsHtml();
   body.innerHTML = tabsHtml + tabContent + realismHtml;
 }
 
 function buildSymptomsHtml() {
+  const editing = !!_bodyEditingId;
+  const sectionLabel = editing ? 'Editing entry' : 'Log new entry';
+  const saveLabel = editing ? 'Update entry' : 'Save';
+  const editBanner = editing ? `
+    <div class="bl-edit-banner" id="bl-edit-banner">
+      <span>✎ You're editing an existing entry. Changes will overwrite the original.</span>
+      <button type="button" class="bl-edit-cancel" onclick="cancelEditBodyLog()">Cancel edit</button>
+    </div>
+  ` : '';
+  const cancelHandler = editing ? 'cancelEditBodyLog()' : 'closePopup()';
+  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
   return `
     <div class="bl-section-label">Active (last 14 days)</div>
     <div class="bl-active-list">${buildActiveBodyHtml()}</div>
 
-    <div class="bl-section-label">Log new entry</div>
+    <div class="bl-section-label">${sectionLabel}</div>
+    ${editBanner}
     <div class="bl-form">
       <div class="bl-row">
         <label class="bl-label">Body part</label>
@@ -6007,14 +6529,35 @@ function buildSymptomsHtml() {
         <input type="text" id="bl-note" class="bl-input"
           placeholder="optional note (e.g. 'after 1.4km walk', 'morning stiffness')">
       </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Date (when it happened)</label>
+          <input type="date" id="bl-event-date" class="bl-input" value="${new Date().toISOString().slice(0,10)}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Time (optional)</label>
+          <input type="time" id="bl-event-time" class="bl-input">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Link to an appointment (optional)</label>
+        <select id="bl-appt-link" class="bl-input">
+          <option value="">— not linked —</option>
+          ${getRecentAppointments(30).map(a => {
+            const pt = APPT_PROVIDER_TYPES.find(p => p.id === a.provider_type) || APPT_PROVIDER_TYPES[0];
+            const label = `${a.appointment_date} · ${pt.label}${a.provider_name ? ' (' + a.provider_name + ')' : ''}`;
+            return `<option value="${a.id}">${label}</option>`;
+          }).join('')}
+        </select>
+      </div>
       <div class="bl-row">
         <label class="bl-flag">
           <input type="checkbox" id="bl-flag"> Flag for follow-up with a clinician
         </label>
       </div>
       <div class="bl-actions">
-        <button class="bl-cancel" onclick="closePopup()">Cancel</button>
-        <button class="bl-save" onclick="submitBodyLogEntry()">Save</button>
+        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
+        <button class="bl-save" onclick="submitBodyLogEntry()">${saveLabel}</button>
       </div>
     </div>
   `;
@@ -6030,12 +6573,39 @@ function buildAppointmentRow(a) {
   const treatment = (a.treatment || '').replace(/</g,'&lt;');
   const recs = (a.recommendations || '').replace(/</g,'&lt;');
   const reason = (a.reason || '').replace(/</g,'&lt;');
+  // Task #22 — find body_log entries linked to this appointment
+  const linkedSymptoms = (function() {
+    const data = (typeof _getBodyLog === 'function') ? _getBodyLog() : { entries: [] };
+    return data.entries.filter(e => e.appointment_id === a.id)
+      .sort((x, y) => new Date(y.created_at) - new Date(x.created_at));
+  })();
+  const linkedBadge = linkedSymptoms.length > 0
+    ? `<span class="bl-appt-linked-badge" title="${linkedSymptoms.length} symptom entry/entries linked">🔗 ${linkedSymptoms.length}</span>`
+    : '';
+  const linkedHtml = linkedSymptoms.length === 0 ? '' : `
+    <div class="bl-appt-fld bl-appt-linked">
+      <span class="bl-appt-key">Linked symptoms (${linkedSymptoms.length}):</span>
+      <div class="bl-appt-linked-list">
+        ${linkedSymptoms.map(s => {
+          const painColor = s.pain >= 7 ? 'var(--red)' : s.pain >= 4 ? 'var(--orange)' : 'var(--green)';
+          const sideLabel = (!s.side || s.side === 'na') ? '' : (s.side === 'both' ? 'Both ' : (s.side[0].toUpperCase() + s.side.slice(1) + ' '));
+          return `<div class="bl-appt-linked-row">
+            <span class="bl-appt-linked-part">${sideLabel}${s.part}</span>
+            <span class="bl-appt-linked-pain" style="color:${painColor}">${s.pain}/10</span>
+            <span class="bl-appt-linked-date">${s.date}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
   return `<details class="bl-appt-row">
     <summary class="bl-appt-summary">
       <span class="bl-appt-icon">${provType.icon}</span>
       <span class="bl-appt-prov">${provType.label}${a.provider_name ? ' · ' + a.provider_name : ''}</span>
       <span class="bl-appt-date">${dateLabel}</span>
       ${followUp}
+      ${linkedBadge}
+      <span class="bl-active-edit" onclick="event.stopPropagation();event.preventDefault();startEditAppointment('${a.id}')" title="Edit this appointment">✎</span>
       <span class="bl-active-del" onclick="event.stopPropagation();event.preventDefault();removeAppointmentEntry('${a.id}')" title="Delete">×</span>
     </summary>
     <div class="bl-appt-body">
@@ -6046,6 +6616,7 @@ function buildAppointmentRow(a) {
       ${treatment ? `<div class="bl-appt-fld"><span class="bl-appt-key">Treatment:</span> ${treatment}</div>` : ''}
       ${recs ? `<div class="bl-appt-fld"><span class="bl-appt-key">Recommendations:</span> ${recs}</div>` : ''}
       ${noteText ? `<div class="bl-appt-fld"><span class="bl-appt-key">Notes:</span> ${noteText}</div>` : ''}
+      ${linkedHtml}
     </div>
   </details>`;
 }
@@ -6056,19 +6627,32 @@ function buildAppointmentsHtml() {
     ? `<div class="bl-empty">No appointments logged yet. Log clinician visits here so you can scroll back through them at your next appointment, or brief a new provider with recent history.</div>`
     : recent.map(buildAppointmentRow).join('');
   const todayStr = new Date().toISOString().slice(0, 10);
-  // Reset draft when opening tab (form is uncontrolled below for everything except body parts chips)
-  _apptDraft = { body_parts: {} };
+  const editing = !!_apptEditingId;
+  // Only reset draft when we're NOT editing — startEditAppointment populates _apptDraft.body_parts
+  // from the entry before triggering this render.
+  if (!editing) _apptDraft = { body_parts: {} };
   const partChipsHtml = BODY_PARTS.map(p => `
     <label class="bl-chip">
-      <input type="checkbox" class="bl-chip-input" value="${p}" onchange="_toggleApptPart('${p}', this.checked)">
+      <input type="checkbox" class="bl-chip-input" value="${p}" ${_apptDraft.body_parts[p] ? 'checked' : ''} onchange="_toggleApptPart('${p}', this.checked)">
       <span>${p}</span>
     </label>
   `).join('');
+  const sectionLabel = editing ? 'Editing appointment' : 'Log appointment';
+  const saveLabel = editing ? 'Update appointment' : 'Save appointment';
+  const editBanner = editing ? `
+    <div class="bl-edit-banner" id="bl-edit-banner">
+      <span>✎ You're editing an existing appointment. Changes will overwrite the original.</span>
+      <button type="button" class="bl-edit-cancel" onclick="cancelEditAppointment()">Cancel edit</button>
+    </div>
+  ` : '';
+  const cancelHandler = editing ? 'cancelEditAppointment()' : 'closePopup()';
+  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
   return `
     <div class="bl-section-label">Recent appointments</div>
     <div class="bl-active-list">${recentHtml}</div>
 
-    <div class="bl-section-label">Log appointment</div>
+    <div class="bl-section-label">${sectionLabel}</div>
+    ${editBanner}
     <div class="bl-form">
       <div class="bl-grid-2">
         <div class="bl-row">
@@ -6126,8 +6710,8 @@ function buildAppointmentsHtml() {
         </div>
       </div>
       <div class="bl-actions">
-        <button class="bl-cancel" onclick="closePopup()">Cancel</button>
-        <button class="bl-save" onclick="submitAppointment()">Save appointment</button>
+        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
+        <button class="bl-save" onclick="submitAppointment()">${saveLabel}</button>
       </div>
     </div>
   `;
@@ -6137,6 +6721,235 @@ function _toggleApptPart(part, checked) {
   if (!_apptDraft.body_parts) _apptDraft.body_parts = {};
   if (checked) _apptDraft.body_parts[part] = true;
   else delete _apptDraft.body_parts[part];
+}
+
+// ── SUMMARY TAB ──────────────────────────────────────────────────────────────
+// Read-only digest across three time windows:
+//   1. Last 30 days — meal log
+//   2. Next 30 / next 90 days — schedule events
+//   3. Last 90 days — body log (injuries / pain / stiffness)
+// Also surfaces any appointments in the last 90 days.
+// No forms, no edit state — this is a "what do I bring to the doctor?" view.
+function buildSummaryHtml() {
+  const today = new Date();
+  const ds_ = d => d.toISOString().slice(0, 10);
+  const todayStr = ds_(today);
+
+  // ── helpers ──
+  function daysAgo(n) { const d = new Date(today); d.setDate(today.getDate() - n); return d; }
+  function daysAhead(n) { const d = new Date(today); d.setDate(today.getDate() + n); return d; }
+  function fmtDate(isoStr) {
+    if (!isoStr) return '';
+    const [y, m, dd] = isoStr.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[parseInt(m,10)-1] + ' ' + parseInt(dd,10);
+  }
+  function painClass(v) {
+    return v >= 7 ? 'bl-sum-pain-high' : v >= 4 ? 'bl-sum-pain-mid' : 'bl-sum-pain-low';
+  }
+
+  // ── SECTION 1: Last 30-day meal log ──────────────────────────────────────
+  const meal30Start = ds_(daysAgo(30));
+  const allMealEvents = (typeof getDietEventsRange === 'function')
+    ? getDietEventsRange(meal30Start, todayStr) : [];
+  let mealHtml = '';
+  if (allMealEvents.length === 0) {
+    mealHtml = `<div class="bl-sum-empty">No meals logged in the last 30 days.</div>`;
+  } else {
+    // Count by tag
+    const tagCounts = {};
+    let totalCals = 0;
+    let daysWithLog = new Set();
+    allMealEvents.forEach(e => {
+      daysWithLog.add(e.date);
+      if (e.cals > 0) totalCals += e.cals;
+      (e.tags || []).forEach(t => { tagCounts[t] = (tagCounts[t] || 0) + 1; });
+    });
+    // Sort tags: meal types first, then flags; each sorted by count desc
+    const mealTags = DIET_EVENT_TAGS.filter(t => t.kind === 'meal' && tagCounts[t.id]);
+    const flagTags = DIET_EVENT_TAGS.filter(t => t.kind === 'flag' && tagCounts[t.id]);
+    const sortedTags = [...mealTags, ...flagTags]
+      .sort((a, b) => (tagCounts[b.id] || 0) - (tagCounts[a.id] || 0));
+    const tagChips = sortedTags.map(t => `
+      <div class="bl-sum-tag-chip">
+        <span style="color:${t.color}">${t.icon}</span>
+        <span class="bl-sum-tag-count">${tagCounts[t.id]}</span>
+        <span class="bl-sum-tag-label">${t.label.toLowerCase()}</span>
+      </div>`).join('');
+    const calLine = totalCals > 0
+      ? `<div class="bl-sum-cal-total"><strong>${totalCals.toLocaleString()} cal</strong> logged across ${allMealEvents.length} entries (${daysWithLog.size} days)</div>`
+      : `<div class="bl-sum-cal-total">${allMealEvents.length} entries across ${daysWithLog.size} days — calories not logged</div>`;
+    mealHtml = `<div class="bl-sum-tag-grid">${tagChips}</div>${calLine}`;
+  }
+
+  // ── SECTION 2: Upcoming schedule ─────────────────────────────────────────
+  function buildSchedRows(fromDate, toDate) {
+    const rows = [];
+    for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+      const dStr = ds_(d);
+      const ev = (typeof CSV_EVENTS !== 'undefined' && CSV_EVENTS[dStr]) || '';
+      if (ev) rows.push({ date: dStr, event: ev });
+    }
+    return rows;
+  }
+  const sched30 = buildSchedRows(new Date(today.getTime() + 86400000), daysAhead(30));
+  const sched90 = buildSchedRows(daysAhead(31), daysAhead(90));
+  function schedRowsHtml(rows) {
+    if (rows.length === 0) return `<div class="bl-sum-empty">No scheduled events in this window.</div>`;
+    return rows.map(r => `
+      <div class="bl-sum-sched-row">
+        <span class="bl-sum-sched-date">${fmtDate(r.date)}</span>
+        <span class="bl-sum-sched-event">${r.event}</span>
+      </div>`).join('');
+  }
+
+  // ── SECTION 3: Last 90-day body log ──────────────────────────────────────
+  const cutoff90 = daysAgo(90);
+  const bodyData = (typeof _getBodyLog === 'function') ? _getBodyLog() : { entries: [] };
+  const entries90 = bodyData.entries.filter(e => new Date(e.created_at) >= cutoff90);
+  let bodyHtml = '';
+  if (entries90.length === 0) {
+    bodyHtml = `<div class="bl-sum-empty">No body log entries in the last 90 days.</div>`;
+  } else {
+    // Group by part+side
+    const groups = {};
+    entries90.forEach(e => {
+      const key = e.part + (e.side && e.side !== 'na' ? ' (' + e.side + ')' : '');
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(e);
+    });
+    // Sort groups: flagged first, then by most-recent entry desc
+    const groupEntries = Object.entries(groups).sort((a, b) => {
+      const aFlag = a[1].some(e => e.flag);
+      const bFlag = b[1].some(e => e.flag);
+      if (aFlag !== bFlag) return aFlag ? -1 : 1;
+      const aLatest = Math.max(...a[1].map(e => new Date(e.created_at)));
+      const bLatest = Math.max(...b[1].map(e => new Date(e.created_at)));
+      return bLatest - aLatest;
+    });
+    bodyHtml = groupEntries.map(([key, evs]) => {
+      const sorted = evs.slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      const first = sorted[0];
+      const latest = sorted[sorted.length - 1];
+      const maxPain = Math.max(...sorted.map(e => e.pain));
+      const hasFlag = sorted.some(e => e.flag);
+      // Trend: compare first vs latest pain
+      let trendHtml = '';
+      if (sorted.length > 1) {
+        const diff = latest.pain - first.pain;
+        if (diff < -1) trendHtml = `<span class="bl-sum-trend-down">↓ improving</span>`;
+        else if (diff > 1) trendHtml = `<span class="bl-sum-trend-up">↑ worsening</span>`;
+        else trendHtml = `<span class="bl-sum-trend-flat">→ stable</span>`;
+      }
+      const flagBadge = hasFlag ? `<span class="bl-sum-flag">⚑ flagged</span>` : '';
+      const dateRange = sorted.length > 1
+        ? `${fmtDate(first.created_at.slice(0,10))} – ${fmtDate(latest.created_at.slice(0,10))}`
+        : fmtDate(first.created_at.slice(0,10));
+      const noteText = latest.note ? `<div class="bl-sum-note">"${latest.note}"</div>` : '';
+      return `
+        <div class="bl-sum-row" style="flex-direction:column;align-items:flex-start;gap:3px">
+          <div style="display:flex;align-items:baseline;gap:6px;width:100%">
+            <span class="bl-sum-label" style="font-weight:700">${key}</span>
+            <span class="bl-sum-val">${dateRange}</span>
+            ${flagBadge}
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span>Peak pain: <span class="${painClass(maxPain)}">${maxPain}/10</span></span>
+            <span>Latest: <span class="${painClass(latest.pain)}">${latest.pain}/10</span></span>
+            <span>${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}</span>
+            ${trendHtml}
+          </div>
+          ${noteText}
+        </div>`;
+    }).join('');
+  }
+
+  // Appointments in last 90 days
+  const allAppts = (typeof getRecentAppointments === 'function') ? getRecentAppointments(50) : [];
+  const appts90 = allAppts.filter(a => a.appointment_date && a.appointment_date >= ds_(cutoff90));
+  const apptHtml = appts90.length === 0
+    ? `<div class="bl-sum-empty">No appointments in the last 90 days.</div>`
+    : appts90.sort((a,b) => b.appointment_date.localeCompare(a.appointment_date)).map(a => {
+        const prov = (typeof APPT_PROVIDER_TYPES !== 'undefined')
+          ? (APPT_PROVIDER_TYPES.find(p => p.id === a.provider_type) || APPT_PROVIDER_TYPES[0]) : { icon: '🏥', label: 'Clinician' };
+        const partsStr = (a.body_parts && a.body_parts.length) ? a.body_parts.join(', ') : '';
+        const reasonStr = a.reason ? ` — ${a.reason}` : '';
+        const findingsStr = a.findings ? `<div class="bl-sum-note">Findings: ${a.findings}</div>` : '';
+        const recsStr = a.recommendations ? `<div class="bl-sum-note">Recs: ${a.recommendations}</div>` : '';
+        return `<div class="bl-sum-appt-row">
+          <div><strong>${prov.icon} ${prov.label}${a.provider_name ? ' · ' + a.provider_name : ''}</strong>
+            <span class="bl-sum-appt-date" style="margin-left:6px">${fmtDate(a.appointment_date)}${reasonStr}</span>
+          </div>
+          ${partsStr ? `<div class="bl-sum-note">Parts: ${partsStr}</div>` : ''}
+          ${findingsStr}${recsStr}
+        </div>`;
+      }).join('');
+
+  // Task #23 — Follow-ups (upcoming + overdue)
+  const upcomingFollowUps = (typeof getUpcomingFollowUps === 'function') ? getUpcomingFollowUps(60) : [];
+  const overdueFollowUps = (typeof getOverdueFollowUps === 'function') ? getOverdueFollowUps() : [];
+  const followUpRow = (a, isOverdue) => {
+    const prov = APPT_PROVIDER_TYPES.find(p => p.id === a.provider_type) || APPT_PROVIDER_TYPES[0];
+    const parts = (a.body_parts || []).join(', ');
+    const daysOut = Math.round((new Date(a.follow_up_date) - new Date()) / 86400000);
+    const daysLabel = isOverdue
+      ? `<span class="bl-sum-fu-overdue">${Math.abs(daysOut)}d overdue</span>`
+      : daysOut === 0 ? `<span class="bl-sum-fu-today">TODAY</span>`
+      : daysOut === 1 ? `<span class="bl-sum-fu-soon">tomorrow</span>`
+      : `<span class="bl-sum-fu-future">in ${daysOut}d</span>`;
+    return `<div class="bl-sum-fu-row ${isOverdue ? 'overdue' : ''}">
+      <span class="bl-sum-fu-icon">${prov.icon}</span>
+      <span class="bl-sum-fu-text">
+        <strong>${prov.label}${a.provider_name ? ' · ' + a.provider_name : ''}</strong>
+        ${parts ? `<span class="bl-sum-fu-parts">${parts}</span>` : ''}
+      </span>
+      <span class="bl-sum-fu-date">${a.follow_up_date}</span>
+      ${daysLabel}
+    </div>`;
+  };
+  const followUpsHtml = (upcomingFollowUps.length === 0 && overdueFollowUps.length === 0)
+    ? ''
+    : `<div class="bl-sum-section bl-sum-followups">
+        <div class="bl-sum-header">⏰ Follow-ups</div>
+        ${overdueFollowUps.length > 0 ? `
+          <div class="bl-sum-subhead">Overdue (${overdueFollowUps.length})</div>
+          ${overdueFollowUps.map(a => followUpRow(a, true)).join('')}
+        ` : ''}
+        ${upcomingFollowUps.length > 0 ? `
+          <div class="bl-sum-subhead" style="margin-top:8px">Upcoming (next 60 days)</div>
+          ${upcomingFollowUps.map(a => followUpRow(a, false)).join('')}
+        ` : ''}
+      </div>`;
+
+  return `
+    <div class="bl-sum-print-row">
+      <button type="button" class="bl-sum-print-btn" onclick="openDoctorVisitSummary({daysBack:90})">📄 Print 90-day clinical summary</button>
+      <button type="button" class="bl-sum-print-btn-secondary" onclick="openDoctorVisitSummary({daysBack:30})">📄 30-day version</button>
+      <span class="bl-sum-print-hint">Opens a print-friendly page in a new window. Use browser print → Save as PDF for a copy to bring to clinical visits.</span>
+    </div>
+
+    ${followUpsHtml}
+
+    <div class="bl-sum-section">
+      <div class="bl-sum-header">🍽️ Last 30 days — Meal log</div>
+      ${mealHtml}
+    </div>
+
+    <div class="bl-sum-section">
+      <div class="bl-sum-header">📅 Upcoming events</div>
+      <div class="bl-sum-subhead">Next 30 days</div>
+      ${schedRowsHtml(sched30)}
+      <div class="bl-sum-subhead" style="margin-top:12px">Next 31–90 days</div>
+      ${schedRowsHtml(sched90)}
+    </div>
+
+    <div class="bl-sum-section">
+      <div class="bl-sum-header">🩹 Last 90 days — Body &amp; injury log</div>
+      ${bodyHtml}
+      <div class="bl-sum-subhead" style="margin-top:12px">Appointments</div>
+      ${apptHtml}
+    </div>
+  `;
 }
 
 function submitBodyLogEntry() {
@@ -6153,7 +6966,21 @@ function submitBodyLogEntry() {
   const stiff = parseInt(document.getElementById('bl-stiff').value, 10) || 0;
   const note = (document.getElementById('bl-note').value || '').trim();
   const flag = document.getElementById('bl-flag').checked;
-  addBodyStateEntry({ part: part, side: side, pain: pain, stiffness: stiff, note: note, flag: flag });
+  // Task #22 — optional appointment link
+  const apptEl = document.getElementById('bl-appt-link');
+  const appointment_id = apptEl ? (apptEl.value || null) : null;
+  // Task #26 — editable event date + optional time-of-day
+  const dateEl = document.getElementById('bl-event-date');
+  const timeEl = document.getElementById('bl-event-time');
+  const eventDate = dateEl && dateEl.value ? dateEl.value : new Date().toISOString().slice(0, 10);
+  const eventTime = timeEl && timeEl.value ? timeEl.value : null;
+  const payload = { date: eventDate, event_time_local: eventTime, part: part, side: side, pain: pain, stiffness: stiff, note: note, flag: flag, appointment_id: appointment_id };
+  if (_bodyEditingId) {
+    updateBodyStateEntry(_bodyEditingId, payload);
+    _bodyEditingId = null;
+  } else {
+    addBodyStateEntry(payload);
+  }
   _renderBodyLogTab('symptoms');
   if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
 }
@@ -6163,6 +6990,54 @@ function removeBodyLogEntry(id) {
   removeBodyStateEntry(id);
   _renderBodyLogTab('symptoms');
   if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
+}
+
+// Edit-mode entry: load an existing body_log row into the form, mark it as editing.
+// Form populates after the DOM re-renders, on next tick.
+function startEditBodyLog(id) {
+  const data = _getBodyLog();
+  const entry = data.entries.find(e => e.id === id);
+  if (!entry) return;
+  _bodyEditingId = id;
+  _renderBodyLogTab('symptoms');
+  setTimeout(() => {
+    const partEl = document.getElementById('bl-part');
+    if (partEl) partEl.value = entry.part;
+    const sideRadio = document.querySelector('input[name="bl-side"][value="' + (entry.side || 'na') + '"]');
+    if (sideRadio) sideRadio.checked = true;
+    const painEl = document.getElementById('bl-pain');
+    if (painEl) {
+      painEl.value = entry.pain;
+      const pv = document.getElementById('bl-pain-val');
+      if (pv) pv.textContent = entry.pain;
+    }
+    const stiffEl = document.getElementById('bl-stiff');
+    if (stiffEl) {
+      stiffEl.value = entry.stiffness;
+      const sv = document.getElementById('bl-stiff-val');
+      if (sv) sv.textContent = entry.stiffness;
+    }
+    const noteEl = document.getElementById('bl-note');
+    if (noteEl) noteEl.value = entry.note || '';
+    const flagEl = document.getElementById('bl-flag');
+    if (flagEl) flagEl.checked = !!entry.flag;
+    // Task #22 — restore the appointment link if present
+    const apptEl = document.getElementById('bl-appt-link');
+    if (apptEl && entry.appointment_id) apptEl.value = entry.appointment_id;
+    // Task #26 — restore event date + time-of-day
+    const dateEl = document.getElementById('bl-event-date');
+    if (dateEl && entry.date) dateEl.value = entry.date;
+    const timeEl = document.getElementById('bl-event-time');
+    if (timeEl && entry.event_time_local) timeEl.value = entry.event_time_local;
+    // Scroll form into view in case the popup is long
+    const banner = document.getElementById('bl-edit-banner');
+    if (banner && banner.scrollIntoView) banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 30);
+}
+
+function cancelEditBodyLog() {
+  _bodyEditingId = null;
+  _renderBodyLogTab('symptoms');
 }
 
 function submitAppointment() {
@@ -6183,7 +7058,7 @@ function submitAppointment() {
   const recs = (document.getElementById('bl-appt-recs').value || '').trim();
   const followUp = (document.getElementById('bl-appt-followup').value || '') || null;
   const notes = (document.getElementById('bl-appt-notes').value || '').trim();
-  addAppointment({
+  const payload = {
     appointment_date: date,
     provider_type: provType,
     provider_name: provName,
@@ -6195,7 +7070,13 @@ function submitAppointment() {
     recommendations: recs,
     follow_up_date: followUp,
     notes: notes
-  });
+  };
+  if (_apptEditingId) {
+    updateAppointment(_apptEditingId, payload);
+    _apptEditingId = null;
+  } else {
+    addAppointment(payload);
+  }
   _renderBodyLogTab('appointments');
 }
 
@@ -6203,6 +7084,724 @@ function removeAppointmentEntry(id) {
   if (!confirm('Remove this appointment?')) return;
   removeAppointment(id);
   _renderBodyLogTab('appointments');
+}
+
+// Edit-mode entry for appointments. Populates _apptDraft.body_parts so the chip
+// checkboxes render checked, then re-renders the tab and fills the form fields.
+function startEditAppointment(id) {
+  const data = _getAppointments();
+  const entry = data.entries.find(e => e.id === id);
+  if (!entry) return;
+  _apptEditingId = id;
+  _apptDraft = { body_parts: {} };
+  (entry.body_parts || []).forEach(p => { _apptDraft.body_parts[p] = true; });
+  _renderBodyLogTab('appointments');
+  setTimeout(() => {
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('bl-appt-date', entry.appointment_date);
+    setVal('bl-appt-type', entry.provider_type || 'doctor');
+    setVal('bl-appt-name', entry.provider_name);
+    setVal('bl-appt-clinic', entry.clinic_name);
+    setVal('bl-appt-reason', entry.reason);
+    setVal('bl-appt-findings', entry.findings);
+    setVal('bl-appt-treatment', entry.treatment);
+    setVal('bl-appt-recs', entry.recommendations);
+    setVal('bl-appt-followup', entry.follow_up_date);
+    setVal('bl-appt-notes', entry.notes);
+    const banner = document.getElementById('bl-edit-banner');
+    if (banner && banner.scrollIntoView) banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 30);
+}
+
+function cancelEditAppointment() {
+  _apptEditingId = null;
+  _apptDraft = { body_parts: {} };
+  _renderBodyLogTab('appointments');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEDICATIONS UI (task #26, 2026-05-29)
+// ────────────────────────────────────────────────────────────────────────────
+// "Meds" tab in Body popup: list active meds with today's status, add/edit form,
+// mark-taken-now quick action, recent doses log per med (with edit/delete).
+// ════════════════════════════════════════════════════════════════════════════
+let _medEditingId = null;
+let _doseEditingId = null;
+let _expandedMedHistory = {};  // {medId: bool} — which med's recent-doses panel is expanded
+
+function _colorVar(color) {
+  return 'var(--' + (color || 'cyan') + ')';
+}
+
+function buildMedsHtml() {
+  const meds = (typeof getActiveMedications === 'function') ? getActiveMedications() : [];
+  const editing = !!_medEditingId;
+  const editingItem = editing ? (_getMedications().entries.find(e => e.id === _medEditingId) || null) : null;
+  const fv = editingItem || {};
+  const fName = (fv.name || '').replace(/"/g,'&quot;');
+  const fType = fv.med_type || 'otc';
+  const fDose = (fv.dose || '').replace(/"/g,'&quot;');
+  const fFreqType = fv.frequency_type || 'as_needed';
+  const fFreqValue = fv.frequency_value != null ? fv.frequency_value : '';
+  const fWeeklyDays = Array.isArray(fv.weekly_days) ? fv.weekly_days : [];
+  const fStartDate = fv.start_date || new Date().toISOString().slice(0, 10);
+  const fEndDate = fv.end_date || '';
+  const fNotes = (fv.notes || '').replace(/"/g,'&quot;');
+  const fColor = fv.color || 'cyan';
+  const fActive = fv.active !== false;
+
+  const renderMedRow = (m) => {
+    const expected = medExpectedTodayCount(m);
+    const taken = medDosesTodayCount(m.id);
+    const isHistoryOpen = !!_expandedMedHistory[m.id];
+    let statusLabel = '';
+    if (expected === 0 && m.frequency_type === 'as_needed') {
+      statusLabel = `<span class="med-status med-status-prn">as needed</span>`;
+    } else if (expected === 0 && m.frequency_type === 'one_time') {
+      statusLabel = `<span class="med-status med-status-prn">one-time</span>`;
+    } else if (expected === 0) {
+      statusLabel = `<span class="med-status med-status-noday">not today</span>`;
+    } else if (taken >= expected) {
+      statusLabel = `<span class="med-status med-status-done">✓ ${taken}/${expected} today</span>`;
+    } else if (taken > 0) {
+      statusLabel = `<span class="med-status med-status-partial">${taken}/${expected} today</span>`;
+    } else {
+      statusLabel = `<span class="med-status med-status-pending">${expected} due today</span>`;
+    }
+    const colorCss = _colorVar(m.color);
+    const typeBadge = m.med_type === 'rx' ? `<span class="med-type-badge med-type-rx">Rx</span>` : `<span class="med-type-badge med-type-otc">OTC</span>`;
+    const recent = getDosesForMedication(m.id, 14);
+    return `<div class="med-row" style="border-left:3px solid ${colorCss}">
+      <div class="med-row-main">
+        <span class="med-name">${m.name.replace(/</g,'&lt;')}</span>
+        ${typeBadge}
+        ${m.dose ? `<span class="med-dose">${m.dose.replace(/</g,'&lt;')}</span>` : ''}
+        ${statusLabel}
+        <button class="med-action-btn" onclick="markMedTakenNow('${m.id}')" title="Mark taken now">+ Dose</button>
+        <span class="bl-active-edit" onclick="startEditMed('${m.id}')" title="Edit medication">✎</span>
+        <span class="bl-active-del" onclick="removeMedEntry('${m.id}')" title="Remove medication">×</span>
+      </div>
+      <div class="med-row-meta">${freqLabelFor(m)}${m.notes ? ' · ' + m.notes.replace(/</g,'&lt;') : ''}</div>
+      <div class="med-row-history-toggle" onclick="toggleMedHistory('${m.id}')">${isHistoryOpen ? '▾' : '▸'} Recent doses (${recent.length})</div>
+      ${isHistoryOpen ? `<div class="med-row-history">${renderDoseHistory(m, recent)}</div>` : ''}
+    </div>`;
+  };
+
+  const listHtml = meds.length === 0
+    ? `<div class="bl-empty">No medications tracked yet. Add allopurinol, naproxen, Cialis, OTC items like Tylenol/Advil/Aleve/Gravol — anything you want to log.</div>`
+    : meds.map(renderMedRow).join('');
+
+  const freqOpts = MED_FREQUENCY_TYPES.map(f => `<option value="${f.id}" ${fFreqType === f.id ? 'selected' : ''}>${f.label}</option>`).join('');
+  const colorChips = MED_COLORS.map(c => `
+    <label class="med-color-pick" style="--c:${_colorVar(c)}">
+      <input type="radio" name="med-color" value="${c}" ${fColor === c ? 'checked' : ''}>
+      <span class="med-color-swatch"></span>
+    </label>
+  `).join('');
+
+  const sectionLabel = editing ? 'Editing medication' : 'Add new medication';
+  const saveLabel = editing ? 'Update' : 'Add';
+  const cancelHandler = editing ? 'cancelEditMed()' : 'closePopup()';
+  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
+  const editBanner = editing ? `
+    <div class="bl-edit-banner">
+      <span>✎ Editing existing medication</span>
+      <button type="button" class="bl-edit-cancel" onclick="cancelEditMed()">Cancel edit</button>
+    </div>
+  ` : '';
+
+  return `
+    <div class="bl-section-label">Active medications</div>
+    <div class="med-list">${listHtml}</div>
+
+    <div class="bl-section-label">${sectionLabel}</div>
+    ${editBanner}
+    <div class="bl-form">
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Name</label>
+          <input type="text" id="med-name" class="bl-input" placeholder="Allopurinol, Naproxen, Tylenol, etc." value="${fName}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Type</label>
+          <select id="med-type" class="bl-input">
+            <option value="rx" ${fType === 'rx' ? 'selected' : ''}>Rx — prescription</option>
+            <option value="otc" ${fType === 'otc' ? 'selected' : ''}>OTC — over the counter</option>
+          </select>
+        </div>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Dose</label>
+          <input type="text" id="med-dose" class="bl-input" placeholder="e.g. 50mg, 220mg, 10mg" value="${fDose}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Frequency</label>
+          <select id="med-freq-type" class="bl-input" onchange="_updateMedFreqVisibility()">${freqOpts}</select>
+        </div>
+      </div>
+      <div class="bl-row" id="med-freq-value-row" style="${MED_FREQUENCY_TYPES.find(f => f.id === fFreqType).needsValue ? '' : 'display:none'}">
+        <label class="bl-label" id="med-freq-value-label">${MED_FREQUENCY_TYPES.find(f => f.id === fFreqType).valueLabel || 'value'}</label>
+        <input type="number" id="med-freq-value" class="bl-input" min="1" step="1" value="${fFreqValue}">
+      </div>
+      <div class="bl-row" id="med-weekly-days-row" style="${MED_FREQUENCY_TYPES.find(f => f.id === fFreqType).needsDays ? '' : 'display:none'}">
+        <label class="bl-label">Days of week</label>
+        <div class="med-weekday-row">
+          ${WEEKDAY_OPTIONS.map(d => `
+            <label class="med-weekday">
+              <input type="checkbox" class="med-weekday-input" value="${d.id}" ${fWeeklyDays.includes(d.id) ? 'checked' : ''}>
+              <span>${d.label}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Start date</label>
+          <input type="date" id="med-start-date" class="bl-input" value="${fStartDate}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">End date (optional)</label>
+          <input type="date" id="med-end-date" class="bl-input" value="${fEndDate}">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Color (for visual ID)</label>
+        <div class="med-color-row">${colorChips}</div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Notes (optional)</label>
+        <input type="text" id="med-notes" class="bl-input" placeholder="e.g. 'take with food', 'prescribed by Dr. X'" value="${fNotes}">
+      </div>
+      <div class="bl-row">
+        <label class="bl-flag">
+          <input type="checkbox" id="med-active" ${fActive ? 'checked' : ''}> Active (uncheck to archive)
+        </label>
+      </div>
+      <div class="bl-actions">
+        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
+        <button class="bl-save" onclick="submitMedEntry()">${saveLabel}</button>
+      </div>
+    </div>
+
+    <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
+      <strong>Tracking patterns Craig has:</strong> Allopurinol 50mg M/W/F/Sun (weekly_specific_days). Naproxen 220mg n_per_day = 2 (prescribed) — log only what's actually taken. Cialis as_needed. Cortisone shot one_time. OTC Tylenol/Advil/Aleve/Gravol all as_needed — no scheduled chiclet, just quick-log when used. The +Dose button captures the moment; edit ✎ on a dose row to backdate.
+    </div>
+  `;
+}
+
+function freqLabelFor(m) {
+  const cat = MED_FREQUENCY_TYPES.find(f => f.id === m.frequency_type);
+  if (!cat) return m.frequency_type;
+  if (m.frequency_type === 'every_n_days') return `every ${m.frequency_value} days`;
+  if (m.frequency_type === 'n_per_day') return `${m.frequency_value}× per day`;
+  if (m.frequency_type === 'weekly_specific_days') return (m.weekly_days || []).join('/').toUpperCase();
+  return cat.label;
+}
+
+function renderDoseHistory(med, doses) {
+  if (doses.length === 0) return `<div class="med-no-doses">No doses logged yet.</div>`;
+  return doses.map(d => {
+    const t = new Date(d.taken_at);
+    const dateStr = t.toISOString().slice(0, 10);
+    const timeStr = t.toTimeString().slice(0, 5);
+    const isEditing = _doseEditingId === d.id;
+    if (isEditing) {
+      const dateVal = dateStr;
+      const timeVal = timeStr;
+      return `<div class="med-dose-row med-dose-editing">
+        <input type="date" id="dose-edit-date-${d.id}" class="bl-input" value="${dateVal}" style="width:120px;font-size:11px;padding:4px 6px">
+        <input type="time" id="dose-edit-time-${d.id}" class="bl-input" value="${timeVal}" style="width:90px;font-size:11px;padding:4px 6px">
+        <input type="text" id="dose-edit-notes-${d.id}" class="bl-input" placeholder="notes" value="${(d.notes || '').replace(/"/g,'&quot;')}" style="flex:1;font-size:11px;padding:4px 6px">
+        <button class="bl-save" style="padding:4px 10px;font-size:10px" onclick="saveDoseEdit('${d.id}')">Save</button>
+        <button class="bl-cancel" style="padding:4px 10px;font-size:10px" onclick="cancelDoseEdit()">Cancel</button>
+      </div>`;
+    }
+    return `<div class="med-dose-row">
+      <span class="med-dose-time">${dateStr} ${timeStr}</span>
+      ${d.notes ? `<span class="med-dose-notes">${d.notes.replace(/</g,'&lt;')}</span>` : ''}
+      <span class="bl-active-edit" onclick="startEditDose('${d.id}')" title="Edit date/time/notes">✎</span>
+      <span class="bl-active-del" onclick="removeDoseEntry('${d.id}')" title="Remove this dose">×</span>
+    </div>`;
+  }).join('');
+}
+
+function _updateMedFreqVisibility() {
+  const ft = document.getElementById('med-freq-type').value;
+  const cat = MED_FREQUENCY_TYPES.find(f => f.id === ft);
+  const valueRow = document.getElementById('med-freq-value-row');
+  const daysRow = document.getElementById('med-weekly-days-row');
+  if (valueRow) {
+    valueRow.style.display = cat.needsValue ? '' : 'none';
+    if (cat.needsValue) {
+      const lbl = document.getElementById('med-freq-value-label');
+      if (lbl) lbl.textContent = cat.valueLabel || 'value';
+    }
+  }
+  if (daysRow) daysRow.style.display = cat.needsDays ? '' : 'none';
+}
+
+function submitMedEntry() {
+  const name = (document.getElementById('med-name').value || '').trim();
+  if (!name) { alert('Enter a medication name.'); return; }
+  const med_type = document.getElementById('med-type').value || 'otc';
+  const dose = (document.getElementById('med-dose').value || '').trim();
+  const frequency_type = document.getElementById('med-freq-type').value || 'as_needed';
+  const cat = MED_FREQUENCY_TYPES.find(f => f.id === frequency_type);
+  let frequency_value = null;
+  if (cat && cat.needsValue) {
+    frequency_value = parseInt(document.getElementById('med-freq-value').value, 10);
+    if (!frequency_value || frequency_value < 1) { alert('Enter a valid frequency value.'); return; }
+  }
+  let weekly_days = [];
+  if (cat && cat.needsDays) {
+    weekly_days = Array.from(document.querySelectorAll('.med-weekday-input:checked')).map(i => i.value);
+    if (weekly_days.length === 0) { alert('Pick at least one day of the week.'); return; }
+  }
+  const start_date = document.getElementById('med-start-date').value || new Date().toISOString().slice(0, 10);
+  const end_date = document.getElementById('med-end-date').value || null;
+  const notes = (document.getElementById('med-notes').value || '').trim();
+  const colorEl = document.querySelector('input[name="med-color"]:checked');
+  const color = colorEl ? colorEl.value : 'cyan';
+  const active = document.getElementById('med-active').checked;
+  const payload = { name, med_type, dose, frequency_type, frequency_value, weekly_days, start_date, end_date, notes, color, active };
+  if (_medEditingId) {
+    updateMedication(_medEditingId, payload);
+    _medEditingId = null;
+  } else {
+    addMedication(payload);
+  }
+  _renderBodyLogTab('meds');
+}
+
+function startEditMed(id) { _medEditingId = id; _renderBodyLogTab('meds'); }
+function cancelEditMed() { _medEditingId = null; _renderBodyLogTab('meds'); }
+function removeMedEntry(id) {
+  if (!confirm('Remove this medication AND all its dose history?')) return;
+  removeMedication(id);
+  _renderBodyLogTab('meds');
+}
+
+function markMedTakenNow(medId) {
+  addMedDose({ medication_id: medId });
+  _renderBodyLogTab('meds');
+}
+
+function toggleMedHistory(medId) {
+  _expandedMedHistory[medId] = !_expandedMedHistory[medId];
+  _renderBodyLogTab('meds');
+}
+
+function startEditDose(doseId) { _doseEditingId = doseId; _renderBodyLogTab('meds'); }
+function cancelDoseEdit() { _doseEditingId = null; _renderBodyLogTab('meds'); }
+function saveDoseEdit(doseId) {
+  const dateVal = document.getElementById('dose-edit-date-' + doseId).value;
+  const timeVal = document.getElementById('dose-edit-time-' + doseId).value;
+  const notes = document.getElementById('dose-edit-notes-' + doseId).value;
+  if (!dateVal || !timeVal) { alert('Enter both date and time.'); return; }
+  const takenAtLocal = new Date(dateVal + 'T' + timeVal + ':00');
+  updateMedDose(doseId, { taken_at: takenAtLocal.toISOString(), notes: notes });
+  _doseEditingId = null;
+  _renderBodyLogTab('meds');
+}
+function removeDoseEntry(doseId) {
+  if (!confirm('Remove this dose entry?')) return;
+  removeMedDose(doseId);
+  _renderBodyLogTab('meds');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CARE CADENCE UI (task #24, 2026-05-29)
+// ────────────────────────────────────────────────────────────────────────────
+// Tab in the Body popup managing recurring care templates (massage, dental,
+// haircut, etc.). Status derived from last_visit_date + cadence_weeks.
+// ════════════════════════════════════════════════════════════════════════════
+let _careEditingId = null;
+
+function buildCareHtml() {
+  const items = (typeof getActiveCareCadence === 'function') ? getActiveCareCadence() : [];
+  const editing = !!_careEditingId;
+  const editingItem = editing ? (_getCareCadence().entries.find(e => e.id === _careEditingId) || null) : null;
+
+  const itemRow = (item) => {
+    const status = careStatus(item);
+    const daysUntil = careDaysUntilDue(item);
+    const cat = CARE_CATEGORIES.find(c => c.id === item.category) || CARE_CATEGORIES[CARE_CATEGORIES.length - 1];
+    const statusBadge = (() => {
+      if (status === 'never') return `<span class="cc-status cc-status-never">no visits logged</span>`;
+      if (status === 'overdue') return `<span class="cc-status cc-status-overdue">${Math.abs(daysUntil)}d overdue</span>`;
+      if (status === 'due-soon') return `<span class="cc-status cc-status-due">due in ${daysUntil}d</span>`;
+      return `<span class="cc-status cc-status-ok">${daysUntil}d until due</span>`;
+    })();
+    const cadenceLabel = item.cadence_weeks % 4 === 0
+      ? `${item.cadence_weeks / 4} mo`
+      : `${item.cadence_weeks} wk`;
+    const costStr = item.last_visit_cost != null ? ` · $${Number(item.last_visit_cost).toFixed(2)}` : '';
+    return `<div class="cc-row cc-status-${status}">
+      <span class="cc-icon">${cat.icon}</span>
+      <div class="cc-text">
+        <div class="cc-name">${item.name.replace(/</g,'&lt;')}</div>
+        <div class="cc-meta">
+          <span>${cat.label}</span>
+          <span>· every ${cadenceLabel}</span>
+          ${item.last_visit_date ? `<span>· last ${item.last_visit_date}${costStr}</span>` : ''}
+        </div>
+      </div>
+      ${statusBadge}
+      <button class="cc-action-btn" onclick="_promptCareVisited('${item.id}')" title="Mark visited today">✓</button>
+      <span class="bl-active-edit" onclick="startEditCare('${item.id}')" title="Edit">✎</span>
+      <span class="bl-active-del" onclick="removeCareEntry('${item.id}')" title="Remove">×</span>
+    </div>`;
+  };
+
+  const listHtml = items.length === 0
+    ? `<div class="bl-empty">No recurring care items yet. Add things like massage therapy, dental cleaning, eye exam, haircut, annual physical — anything that recurs on a schedule.</div>`
+    : items.map(itemRow).join('');
+
+  // Form values (pre-filled if editing)
+  const fv = editingItem || {};
+  const fName = (fv.name || '').replace(/"/g,'&quot;');
+  const fCategory = fv.category || 'wellness';
+  const fCadence = fv.cadence_weeks || 12;
+  const fLastDate = fv.last_visit_date || '';
+  const fLastCost = fv.last_visit_cost != null ? fv.last_visit_cost : '';
+  const fNotes = (fv.notes || '').replace(/"/g,'&quot;');
+
+  const sectionLabel = editing ? 'Editing care item' : 'Add new care item';
+  const saveLabel = editing ? 'Update' : 'Add';
+  const cancelHandler = editing ? 'cancelEditCare()' : 'closePopup()';
+  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
+  const editBanner = editing ? `
+    <div class="bl-edit-banner">
+      <span>✎ Editing existing care item</span>
+      <button type="button" class="bl-edit-cancel" onclick="cancelEditCare()">Cancel edit</button>
+    </div>
+  ` : '';
+
+  return `
+    <div class="bl-section-label">Active care items</div>
+    <div class="bl-active-list">${listHtml}</div>
+
+    <div class="bl-section-label">${sectionLabel}</div>
+    ${editBanner}
+    <div class="bl-form">
+      <div class="bl-row">
+        <label class="bl-label">Name</label>
+        <input type="text" id="cc-name" class="bl-input" placeholder="e.g. Massage therapy, Dental cleaning, Haircut" value="${fName}">
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Category</label>
+          <select id="cc-category" class="bl-input">
+            ${CARE_CATEGORIES.map(c => `<option value="${c.id}" ${fCategory === c.id ? 'selected' : ''}>${c.icon} ${c.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Frequency (weeks)</label>
+          <input type="number" id="cc-cadence" class="bl-input" min="1" step="1" value="${fCadence}" placeholder="e.g. 4, 6, 12, 26, 52">
+        </div>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Last visit date (optional)</label>
+          <input type="date" id="cc-last-date" class="bl-input" value="${fLastDate}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Last visit cost CAD (optional)</label>
+          <input type="number" id="cc-last-cost" class="bl-input" min="0" step="0.01" value="${fLastCost}" placeholder="e.g. 90.00">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Notes (optional)</label>
+        <input type="text" id="cc-notes" class="bl-input" placeholder="e.g. preferred provider, scheduling notes" value="${fNotes}">
+      </div>
+      <div class="bl-actions">
+        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
+        <button class="bl-save" onclick="submitCareEntry()">${saveLabel}</button>
+      </div>
+    </div>
+
+    <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
+      <strong>Cadence ideas to start:</strong> Massage 4-6 weeks · Haircut 4-6 weeks · Dental cleaning 26 weeks (6 months) · Eye exam 104 weeks (2 years) · Annual physical 52 weeks · Blood work 26-52 weeks (your call).
+      <strong style="color:var(--cyan)">Tax tracking note:</strong> Massage by RMT (with doctor's note), dental, vision, prescription naproxen — all eligible for Canadian medical expense tax claim. Logging cost per visit means a sum at tax time.
+    </div>
+  `;
+}
+
+function submitCareEntry() {
+  const name = (document.getElementById('cc-name').value || '').trim();
+  if (!name) { alert('Enter a name for the care item.'); return; }
+  const category = document.getElementById('cc-category').value || 'other';
+  const cadence_weeks = parseInt(document.getElementById('cc-cadence').value, 10);
+  if (!cadence_weeks || cadence_weeks < 1) { alert('Enter a valid frequency in weeks.'); return; }
+  const last_visit_date = document.getElementById('cc-last-date').value || null;
+  const costStr = document.getElementById('cc-last-cost').value;
+  const last_visit_cost = (costStr && costStr.trim()) ? parseFloat(costStr) : null;
+  const notes = (document.getElementById('cc-notes').value || '').trim();
+  const payload = { name, category, cadence_weeks, last_visit_date, last_visit_cost, notes };
+  if (_careEditingId) {
+    updateCareCadence(_careEditingId, payload);
+    _careEditingId = null;
+  } else {
+    addCareCadence(payload);
+  }
+  _renderBodyLogTab('care');
+}
+
+function startEditCare(id) {
+  _careEditingId = id;
+  _renderBodyLogTab('care');
+}
+
+function cancelEditCare() {
+  _careEditingId = null;
+  _renderBodyLogTab('care');
+}
+
+function removeCareEntry(id) {
+  if (!confirm('Remove this care item?')) return;
+  removeCareCadence(id);
+  _renderBodyLogTab('care');
+}
+
+function _promptCareVisited(id) {
+  const item = _getCareCadence().entries.find(e => e.id === id);
+  if (!item) return;
+  const costStr = prompt(`Mark "${item.name}" visited today. Cost in CAD (optional, leave blank to skip):`, '');
+  if (costStr === null) return; // user cancelled
+  markCareVisited(id, costStr);
+  _renderBodyLogTab('care');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DOCTOR-VISIT SUMMARY (task #20, 2026-05-29)
+// ────────────────────────────────────────────────────────────────────────────
+// Opens a printable summary in a new window. Aggregates body_log + appointments
+// over a configurable date range (default 90 days), optionally filtered by body
+// part. Designed for printing to PDF via browser's print dialog and bringing
+// to a clinical visit.
+// ════════════════════════════════════════════════════════════════════════════
+function openDoctorVisitSummary(opts) {
+  opts = opts || {};
+  const daysBack = opts.daysBack || 90;
+  const partFilter = opts.part || null;
+  const cutoffStr = new Date(Date.now() - daysBack * 86400000).toISOString().slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Gather symptom data
+  const bodyData = (typeof _getBodyLog === 'function') ? _getBodyLog() : { entries: [] };
+  const symptoms = bodyData.entries.filter(e => {
+    if (e.date < cutoffStr) return false;
+    if (partFilter && e.part !== partFilter) return false;
+    return true;
+  }).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+  // Gather appointment data
+  const apptData = (typeof _getAppointments === 'function') ? _getAppointments() : { entries: [] };
+  const appointments = apptData.entries.filter(a => {
+    if (a.appointment_date < cutoffStr) return false;
+    if (partFilter && !(a.body_parts || []).includes(partFilter)) return false;
+    return true;
+  }).sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date));
+
+  // Group symptoms by (side + part) for trend display
+  const grouped = {};
+  symptoms.forEach(s => {
+    const sidePrefix = (!s.side || s.side === 'na') ? '' :
+      (s.side === 'both' ? 'Both ' : (s.side[0].toUpperCase() + s.side.slice(1) + ' '));
+    const key = sidePrefix + s.part;
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(s);
+  });
+  // Sort each group oldest → newest for trend visualization
+  Object.keys(grouped).forEach(k => grouped[k].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)));
+
+  // Flagged items
+  const flaggedItems = symptoms.filter(s => s.flag);
+
+  const escape = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const providerLabel = (id) => {
+    const pt = APPT_PROVIDER_TYPES.find(p => p.id === id);
+    return pt ? pt.label : 'Other';
+  };
+  const painCellColor = (pain) => pain >= 7 ? '#dc2626' : pain >= 4 ? '#ea580c' : pain > 0 ? '#16a34a' : '#666';
+
+  const dayDiff = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  const trendArrow = (entries) => {
+    if (entries.length < 2) return '';
+    const first = entries[0].pain;
+    const last = entries[entries.length - 1].pain;
+    const delta = last - first;
+    if (Math.abs(delta) < 1) return '→ stable';
+    return delta > 0 ? `↑ +${delta} (worsening)` : `↓ ${delta} (improving)`;
+  };
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Body Health Summary — ${today}${partFilter ? ' — ' + escape(partFilter) : ''}</title>
+<style>
+  @media print { @page { size: letter; margin: 0.5in; } body { font-size: 10pt; } .no-print { display: none !important; } }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #111; background: #fff; max-width: 7.5in; margin: 0.5in auto; padding: 0 0.25in;
+    line-height: 1.45;
+  }
+  h1 { font-size: 22pt; margin: 0 0 4px; }
+  h2 { font-size: 14pt; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #111; }
+  h3 { font-size: 11pt; margin: 12px 0 6px; }
+  .subtitle { color: #666; font-size: 10pt; margin: 0 0 16px; }
+  .controls { margin-bottom: 18px; padding: 10px; background: #f5f5f5; border-radius: 4px; }
+  .controls a { color: #2563eb; text-decoration: none; margin-right: 12px; font-size: 10pt; }
+  .controls a:hover { text-decoration: underline; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 12px 0; }
+  .stat { padding: 8px 10px; background: #f5f5f5; border-radius: 4px; }
+  .stat-value { font-size: 18pt; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 9pt; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .flagged-section { background: #fef2f2; border-left: 4px solid #dc2626; padding: 10px 14px; margin: 16px 0; }
+  .flagged-section h2 { border-bottom-color: #dc2626; color: #dc2626; margin-top: 0; }
+  .appt {
+    margin-bottom: 14px; padding: 10px 12px;
+    border: 1px solid #ddd; border-radius: 4px;
+    page-break-inside: avoid;
+  }
+  .appt-header { font-weight: 700; font-size: 11pt; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #ccc; }
+  .appt-date { color: #666; font-weight: 400; font-size: 10pt; }
+  .appt-fld { margin: 4px 0; font-size: 10pt; }
+  .appt-key { font-weight: 700; color: #555; text-transform: uppercase; font-size: 8pt; letter-spacing: 0.5px; display: inline-block; min-width: 110px; }
+  .site {
+    margin-bottom: 14px; padding: 10px 12px;
+    border: 1px solid #ddd; border-radius: 4px;
+    page-break-inside: avoid;
+  }
+  .site-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .site-title { font-weight: 700; font-size: 11pt; }
+  .site-trend { font-size: 9pt; color: #666; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; margin-top: 4px; }
+  th { text-align: left; background: #f5f5f5; padding: 4px 8px; font-weight: 700; border-bottom: 1px solid #ccc; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 4px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+  td.pain { font-weight: 700; font-variant-numeric: tabular-nums; }
+  td.note { color: #444; font-size: 9pt; }
+  .empty-msg { color: #888; font-style: italic; padding: 8px; }
+  .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #ccc; font-size: 9pt; color: #666; }
+  .flag-mark { color: #dc2626; font-weight: 700; }
+  .link-mark { color: #2563eb; font-size: 9pt; }
+</style>
+</head>
+<body>
+
+<div class="no-print controls">
+  <a href="#" onclick="window.print();return false;">🖨️ Print / Save as PDF</a>
+  <a href="#" onclick="window.close();return false;">✕ Close</a>
+  <span style="float:right;color:#888;font-size:9pt">Generated by Craig's Workout App</span>
+</div>
+
+<h1>Body Health Summary</h1>
+<p class="subtitle">Patient-maintained record · Generated ${today} · Last ${daysBack} days${partFilter ? ' · Filtered: ' + escape(partFilter) : ''}</p>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-value">${symptoms.length}</div>
+    <div class="stat-label">Symptom Entries</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">${appointments.length}</div>
+    <div class="stat-label">Appointments</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value" style="color:${flaggedItems.length > 0 ? '#dc2626' : '#111'}">${flaggedItems.length}</div>
+    <div class="stat-label">Flagged Items</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">${Object.keys(grouped).length}</div>
+    <div class="stat-label">Body Sites</div>
+  </div>
+</div>
+
+${flaggedItems.length > 0 ? `
+<div class="flagged-section">
+  <h2>⚑ Flagged for Clinical Follow-up</h2>
+  <table>
+    <tr><th>Body Site</th><th>Date</th><th>Pain</th><th>Stiff</th><th>Note</th></tr>
+    ${flaggedItems.map(s => {
+      const sidePrefix = (!s.side || s.side === 'na') ? '' : (s.side === 'both' ? 'Both ' : (s.side[0].toUpperCase() + s.side.slice(1) + ' '));
+      return `<tr>
+        <td><strong>${sidePrefix}${escape(s.part)}</strong></td>
+        <td>${s.date}</td>
+        <td class="pain" style="color:${painCellColor(s.pain)}">${s.pain}/10</td>
+        <td class="pain">${s.stiffness || 0}/10</td>
+        <td class="note">${escape(s.note) || '—'}</td>
+      </tr>`;
+    }).join('')}
+  </table>
+</div>
+` : ''}
+
+<h2>Recent Appointments</h2>
+${appointments.length === 0 ? '<p class="empty-msg">No appointments logged in this period.</p>' :
+  appointments.map(a => {
+    const linkedSymptomCount = symptoms.filter(s => s.appointment_id === a.id).length;
+    return `<div class="appt">
+      <div class="appt-header">
+        ${escape(providerLabel(a.provider_type))}${a.provider_name ? ' · ' + escape(a.provider_name) : ''}
+        <span class="appt-date"> — ${a.appointment_date}</span>
+        ${linkedSymptomCount > 0 ? `<span class="link-mark"> · ${linkedSymptomCount} linked symptom${linkedSymptomCount === 1 ? '' : 's'}</span>` : ''}
+      </div>
+      ${a.clinic_name ? `<div class="appt-fld"><span class="appt-key">Clinic</span> ${escape(a.clinic_name)}</div>` : ''}
+      ${(a.body_parts && a.body_parts.length) ? `<div class="appt-fld"><span class="appt-key">Body parts</span> ${a.body_parts.map(escape).join(', ')}</div>` : ''}
+      ${a.reason ? `<div class="appt-fld"><span class="appt-key">Reason</span> ${escape(a.reason)}</div>` : ''}
+      ${a.findings ? `<div class="appt-fld"><span class="appt-key">Findings</span> ${escape(a.findings)}</div>` : ''}
+      ${a.treatment ? `<div class="appt-fld"><span class="appt-key">Treatment</span> ${escape(a.treatment)}</div>` : ''}
+      ${a.recommendations ? `<div class="appt-fld"><span class="appt-key">Recommendations</span> ${escape(a.recommendations)}</div>` : ''}
+      ${a.follow_up_date ? `<div class="appt-fld"><span class="appt-key">Follow-up</span> ${a.follow_up_date}</div>` : ''}
+      ${a.notes ? `<div class="appt-fld"><span class="appt-key">Notes</span> ${escape(a.notes)}</div>` : ''}
+    </div>`;
+  }).join('')
+}
+
+<h2>Symptom History by Body Site</h2>
+${Object.keys(grouped).length === 0 ? '<p class="empty-msg">No symptom entries logged in this period.</p>' :
+  Object.keys(grouped).sort().map(key => {
+    const entries = grouped[key];
+    const latestPain = entries[entries.length - 1].pain;
+    const trend = trendArrow(entries);
+    const hasFlag = entries.some(e => e.flag);
+    return `<div class="site">
+      <div class="site-header">
+        <span class="site-title">${escape(key)}${hasFlag ? ' <span class="flag-mark">⚑</span>' : ''}</span>
+        <span class="site-trend">${entries.length} entries · latest ${latestPain}/10 · ${trend}</span>
+      </div>
+      <table>
+        <tr><th>Date</th><th>Pain</th><th>Stiff</th><th>Flag</th><th>Note</th></tr>
+        ${entries.map(e => `<tr>
+          <td>${e.date}</td>
+          <td class="pain" style="color:${painCellColor(e.pain)}">${e.pain}/10</td>
+          <td class="pain">${e.stiffness || 0}/10</td>
+          <td>${e.flag ? '<span class="flag-mark">⚑</span>' : ''}</td>
+          <td class="note">${escape(e.note) || '—'}</td>
+        </tr>`).join('')}
+      </table>
+    </div>`;
+  }).join('')
+}
+
+<div class="footer">
+  <p><strong>About this summary:</strong> This is a patient-maintained log of pain, stiffness, and clinical visits over the last ${daysBack} days. Pain (0-10) is subjective self-report. "Flag" indicates the patient marked the item for clinician follow-up. Linked symptoms reference appointments where they were discussed.</p>
+  <p><strong>Not a clinical document.</strong> For pattern recognition and discussion at appointments only.</p>
+</div>
+
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    alert('Popup blocked. Please allow popups for this site and try again.');
+    return;
+  }
+  w.document.write(html);
+  w.document.close();
 }
 
 /* Mobile-portrait three-zone facelift. On screens ≤600px, only one .zone card body
@@ -7037,6 +8636,8 @@ function addBodyStateEntry(payload) {
     stiffness: Number(payload.stiffness) || 0,
     note: payload.note || '',
     flag: !!payload.flag,
+    appointment_id: payload.appointment_id || null,  // task #22 — symptom↔appointment link
+    event_time_local: payload.event_time_local || null,  // task #26 — HH:MM string for time-of-day
     created_at: new Date().toISOString()
   };
   data.entries.push(entry);
@@ -7051,6 +8652,35 @@ function removeBodyStateEntry(id) {
   data.entries = data.entries.filter(e => e.id !== id);
   _saveBodyLog(data);
   _syncDeleteBodyEntry(id);
+  // If the deleted entry was being edited, clear edit state to avoid a dangling pointer
+  if (_bodyEditingId === id) _bodyEditingId = null;
+}
+
+// In-place edit (task #21, 2026-05-25). Preserves original id, date, and created_at;
+// only the symptom values change. Sync is upsert via client_id, so updated_at on the
+// Supabase row bumps automatically via the trigger.
+function updateBodyStateEntry(id, payload) {
+  const data = _getBodyLog();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = data.entries[idx];
+  const updated = {
+    id: original.id,
+    // Task #26 — date is now editable (was previously preserved)
+    date: payload.date !== undefined ? payload.date : original.date,
+    created_at: original.created_at,  // log-time stays frozen
+    part: payload.part,
+    side: payload.side || 'na',
+    pain: Number(payload.pain) || 0,
+    stiffness: Number(payload.stiffness) || 0,
+    note: payload.note || '',
+    flag: !!payload.flag,
+    appointment_id: payload.appointment_id !== undefined ? payload.appointment_id : (original.appointment_id || null),
+    event_time_local: payload.event_time_local !== undefined ? payload.event_time_local : (original.event_time_local || null),
+  };
+  data.entries[idx] = updated;
+  _saveBodyLog(data);
+  _syncBodyEntryToSupabase(updated);
 }
 
 // Returns most-recent entry per (part, side) within daysWindow, sorted by recency.
@@ -7072,9 +8702,23 @@ function getActiveBodyItems(daysWindow) {
 // ── Supabase sync (write-through pattern) ──
 // localStorage is the cache + offline buffer; Supabase is the source of truth.
 // All errors are non-fatal — UI keeps working from the cache.
+// Task #22: resolve a local appointment client_id to its Supabase UUID.
+// Returns null if not found (linkage silently dropped). Used by body_log sync.
+async function _resolveAppointmentUuid(clientId) {
+  if (!clientId) return null;
+  if (typeof sbReady === 'undefined' || !sbReady) return null;
+  try {
+    const { data, error } = await sb.from('body_appointments')
+      .select('id').eq('client_id', clientId).maybeSingle();
+    if (error || !data) return null;
+    return data.id;
+  } catch (e) { return null; }
+}
+
 async function _syncBodyEntryToSupabase(entry) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
+    const apptUuid = await _resolveAppointmentUuid(entry.appointment_id);
     const { error } = await sb.from('body_log').upsert({
       client_id: entry.id,
       entry_date: entry.date,
@@ -7084,6 +8728,8 @@ async function _syncBodyEntryToSupabase(entry) {
       stiffness: entry.stiffness,
       note: entry.note,
       flag: entry.flag,
+      appointment_id: apptUuid,  // task #22 FK
+      event_time_local: entry.event_time_local || null,  // task #26 — HH:MM time-of-day
       created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
     if (error) console.warn('body_log upsert failed:', error);
@@ -7099,9 +8745,19 @@ async function _syncDeleteBodyEntry(clientId) {
 }
 
 // Pull authoritative state from Supabase, rebuild localStorage cache.
+// Task #22: also fetches body_appointments to build a UUID→client_id map for
+// translating body_log.appointment_id (UUID) back to local client_id.
 async function _refreshBodyLogFromSupabase() {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
+    // Fetch appointments first to build the UUID → client_id map
+    const apptMap = {};
+    try {
+      const { data: appts } = await sb.from('body_appointments').select('id, client_id');
+      if (Array.isArray(appts)) {
+        appts.forEach(a => { if (a.client_id) apptMap[a.id] = a.client_id; });
+      }
+    } catch (e) { /* non-fatal */ }
     const { data, error } = await sb.from('body_log')
       .select('*').order('created_at', { ascending: true });
     if (error) { console.warn('body_log fetch failed:', error); return; }
@@ -7115,6 +8771,8 @@ async function _refreshBodyLogFromSupabase() {
       stiffness: r.stiffness,
       note: r.note || '',
       flag: !!r.flag,
+      appointment_id: r.appointment_id ? (apptMap[r.appointment_id] || null) : null,
+      event_time_local: r.event_time_local || null,
       created_at: r.created_at
     }));
     _saveBodyLog({ entries: entries });
@@ -7212,6 +8870,34 @@ function removeAppointment(id) {
   data.entries = data.entries.filter(e => e.id !== id);
   _saveAppointments(data);
   _syncDeleteAppointment(id);
+  if (_apptEditingId === id) _apptEditingId = null;
+}
+
+// In-place edit for appointments (task #21). Preserves id + created_at; everything
+// else replaced. Supabase upsert via client_id triggers the row's updated_at bump.
+function updateAppointment(id, payload) {
+  const data = _getAppointments();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = data.entries[idx];
+  const updated = {
+    id: original.id,
+    created_at: original.created_at,
+    appointment_date: payload.appointment_date || original.appointment_date,
+    provider_type: payload.provider_type || 'doctor',
+    provider_name: payload.provider_name || '',
+    clinic_name: payload.clinic_name || '',
+    body_parts: payload.body_parts || [],
+    reason: payload.reason || '',
+    findings: payload.findings || '',
+    treatment: payload.treatment || '',
+    recommendations: payload.recommendations || '',
+    follow_up_date: payload.follow_up_date || null,
+    notes: payload.notes || '',
+  };
+  data.entries[idx] = updated;
+  _saveAppointments(data);
+  _syncAppointmentToSupabase(updated);
 }
 
 function getRecentAppointments(limit) {
@@ -7220,6 +8906,50 @@ function getRecentAppointments(limit) {
   return data.entries.slice()
     .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))
     .slice(0, limit);
+}
+
+// Task #23 (2026-05-29). Follow-up reminder helpers.
+// "Upcoming" = follow_up_date is in [today, today+daysAhead]
+// "Overdue" = follow_up_date passed AND no later appointment exists for the same body parts
+function getUpcomingFollowUps(daysAhead) {
+  daysAhead = daysAhead || 30;
+  const data = _getAppointments();
+  const today = new Date().toISOString().slice(0, 10);
+  const cutoffAhead = new Date(Date.now() + daysAhead * 86400000).toISOString().slice(0, 10);
+  return data.entries
+    .filter(a => a.follow_up_date && a.follow_up_date >= today && a.follow_up_date <= cutoffAhead)
+    .sort((a, b) => new Date(a.follow_up_date) - new Date(b.follow_up_date));
+}
+
+function getOverdueFollowUps() {
+  const data = _getAppointments();
+  const today = new Date().toISOString().slice(0, 10);
+  // Build a map of body_part → latest appointment date that mentioned it
+  const partLatestDate = {};
+  data.entries.forEach(a => {
+    (a.body_parts || []).forEach(p => {
+      if (!partLatestDate[p] || a.appointment_date > partLatestDate[p]) {
+        partLatestDate[p] = a.appointment_date;
+      }
+    });
+  });
+  return data.entries
+    .filter(a => a.follow_up_date && a.follow_up_date < today)
+    .filter(a => {
+      // Overdue if no later appointment exists for ANY of this appointment's body parts
+      // (Conservative: if any body part has a newer appointment, consider it followed-up)
+      const parts = a.body_parts || [];
+      if (parts.length === 0) return true; // no parts = can't tell, mark overdue
+      return !parts.some(p => partLatestDate[p] && partLatestDate[p] > a.appointment_date);
+    })
+    .sort((a, b) => new Date(a.follow_up_date) - new Date(b.follow_up_date));
+}
+
+// Returns today's follow-ups (date matches today) — for daily view banner
+function getTodaysFollowUps() {
+  const data = _getAppointments();
+  const today = new Date().toISOString().slice(0, 10);
+  return data.entries.filter(a => a.follow_up_date === today);
 }
 
 async function _syncAppointmentToSupabase(entry) {
@@ -7276,6 +9006,551 @@ async function _refreshAppointmentsFromSupabase() {
     }));
     _saveAppointments({ entries: entries });
   } catch (e) { console.warn('body_appointments refresh threw:', e); }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEDICATIONS + DOSES (task #26, 2026-05-29)
+// ────────────────────────────────────────────────────────────────────────────
+// medications: templates (name, dose, frequency rules).
+// medication_doses: each actual dose event with EDITABLE taken_at timestamp.
+// Same hybrid cache pattern. Dose-to-medication linkage uses client_id locally,
+// resolved to UUID at sync time (mirroring body_log.appointment_id pattern).
+// ════════════════════════════════════════════════════════════════════════════
+const MED_FREQUENCY_TYPES = [
+  { id: 'daily',                 label: 'Every day',                  needsValue: false, needsDays: false },
+  { id: 'every_n_days',          label: 'Every N days',               needsValue: true,  needsDays: false, valueLabel: 'days between doses' },
+  { id: 'n_per_day',             label: 'N times per day',            needsValue: true,  needsDays: false, valueLabel: 'doses per day' },
+  { id: 'weekly_specific_days',  label: 'Specific days of week',      needsValue: false, needsDays: true },
+  { id: 'as_needed',             label: 'As needed (no schedule)',    needsValue: false, needsDays: false },
+  { id: 'one_time',              label: 'One time only',              needsValue: false, needsDays: false },
+];
+
+const WEEKDAY_OPTIONS = [
+  { id: 'mon', label: 'Mon' }, { id: 'tue', label: 'Tue' }, { id: 'wed', label: 'Wed' },
+  { id: 'thu', label: 'Thu' }, { id: 'fri', label: 'Fri' }, { id: 'sat', label: 'Sat' }, { id: 'sun', label: 'Sun' },
+];
+
+const MED_COLORS = ['cyan','green','orange','purple','red','pink'];
+
+function _getMedications() {
+  try {
+    const raw = localStorage.getItem('medications');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    if (!p || !Array.isArray(p.entries)) return { entries: [] };
+    return p;
+  } catch (e) { return { entries: [] }; }
+}
+function _saveMedications(data) { localStorage.setItem('medications', JSON.stringify(data)); }
+
+function _getMedDoses() {
+  try {
+    const raw = localStorage.getItem('medication_doses');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    if (!p || !Array.isArray(p.entries)) return { entries: [] };
+    return p;
+  } catch (e) { return { entries: [] }; }
+}
+function _saveMedDoses(data) { localStorage.setItem('medication_doses', JSON.stringify(data)); }
+
+function addMedication(payload) {
+  const data = _getMedications();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const entry = {
+    id: id,
+    name: payload.name,
+    med_type: payload.med_type || 'otc',
+    dose: payload.dose || '',
+    frequency_type: payload.frequency_type || 'as_needed',
+    frequency_value: payload.frequency_value != null ? Number(payload.frequency_value) : null,
+    weekly_days: Array.isArray(payload.weekly_days) ? payload.weekly_days : [],
+    start_date: payload.start_date || new Date().toISOString().slice(0, 10),
+    end_date: payload.end_date || null,
+    notes: payload.notes || '',
+    active: payload.active !== false,
+    color: payload.color || 'cyan',
+    created_at: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  _saveMedications(data);
+  _syncMedicationToSupabase(entry);
+  return id;
+}
+
+function updateMedication(id, payload) {
+  const data = _getMedications();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = data.entries[idx];
+  const updated = {
+    id: original.id, created_at: original.created_at,
+    name: payload.name != null ? payload.name : original.name,
+    med_type: payload.med_type || original.med_type,
+    dose: payload.dose != null ? payload.dose : original.dose,
+    frequency_type: payload.frequency_type || original.frequency_type,
+    frequency_value: payload.frequency_value !== undefined ? (payload.frequency_value != null ? Number(payload.frequency_value) : null) : original.frequency_value,
+    weekly_days: Array.isArray(payload.weekly_days) ? payload.weekly_days : original.weekly_days,
+    start_date: payload.start_date !== undefined ? payload.start_date : original.start_date,
+    end_date: payload.end_date !== undefined ? payload.end_date : original.end_date,
+    notes: payload.notes != null ? payload.notes : original.notes,
+    active: payload.active !== undefined ? !!payload.active : original.active,
+    color: payload.color || original.color,
+  };
+  data.entries[idx] = updated;
+  _saveMedications(data);
+  _syncMedicationToSupabase(updated);
+}
+
+function removeMedication(id) {
+  const data = _getMedications();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveMedications(data);
+  // Cascade: remove local doses for this medication
+  const doses = _getMedDoses();
+  doses.entries = doses.entries.filter(d => d.medication_id !== id);
+  _saveMedDoses(doses);
+  _syncDeleteMedication(id);
+}
+
+function getActiveMedications() {
+  return _getMedications().entries
+    .filter(e => e.active !== false)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// ── Doses ──
+function addMedDose(payload) {
+  const data = _getMedDoses();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const entry = {
+    id: id,
+    medication_id: payload.medication_id,  // local medication client_id
+    taken_at: payload.taken_at || new Date().toISOString(),
+    dose_override: payload.dose_override || null,
+    notes: payload.notes || '',
+    created_at: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  _saveMedDoses(data);
+  _syncDoseToSupabase(entry);
+  return id;
+}
+
+function updateMedDose(id, payload) {
+  const data = _getMedDoses();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = data.entries[idx];
+  const updated = {
+    id: original.id, created_at: original.created_at,
+    medication_id: payload.medication_id !== undefined ? payload.medication_id : original.medication_id,
+    taken_at: payload.taken_at !== undefined ? payload.taken_at : original.taken_at,
+    dose_override: payload.dose_override !== undefined ? payload.dose_override : original.dose_override,
+    notes: payload.notes !== undefined ? payload.notes : original.notes,
+  };
+  data.entries[idx] = updated;
+  _saveMedDoses(data);
+  _syncDoseToSupabase(updated);
+}
+
+function removeMedDose(id) {
+  const data = _getMedDoses();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveMedDoses(data);
+  _syncDeleteDose(id);
+}
+
+function getDosesForMedication(medId, limit) {
+  limit = limit || 30;
+  return _getMedDoses().entries
+    .filter(d => d.medication_id === medId)
+    .sort((a, b) => new Date(b.taken_at) - new Date(a.taken_at))
+    .slice(0, limit);
+}
+
+// Is medication scheduled today? Returns true if it's a scheduled type and today matches.
+function medScheduledToday(med) {
+  if (!med.active) return false;
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  if (med.start_date && todayStr < med.start_date) return false;
+  if (med.end_date && todayStr > med.end_date) return false;
+  switch (med.frequency_type) {
+    case 'daily':
+    case 'n_per_day':
+      return true;
+    case 'every_n_days': {
+      if (!med.start_date || !med.frequency_value) return false;
+      const start = new Date(med.start_date + 'T12:00:00');
+      const t = new Date(todayStr + 'T12:00:00');
+      const daysDiff = Math.round((t - start) / 86400000);
+      return daysDiff >= 0 && daysDiff % med.frequency_value === 0;
+    }
+    case 'weekly_specific_days': {
+      const days = ['sun','mon','tue','wed','thu','fri','sat'];
+      const todayWeekday = days[today.getDay()];
+      return (med.weekly_days || []).includes(todayWeekday);
+    }
+    case 'as_needed':
+    case 'one_time':
+    default:
+      return false;
+  }
+}
+
+// Returns count of doses required today for a med (1 for daily/every_n_days, N for n_per_day).
+function medExpectedTodayCount(med) {
+  if (!medScheduledToday(med)) return 0;
+  if (med.frequency_type === 'n_per_day') return med.frequency_value || 1;
+  return 1;
+}
+
+// Returns count of doses logged today for a med.
+function medDosesTodayCount(medId) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  return _getMedDoses().entries.filter(d =>
+    d.medication_id === medId && d.taken_at && d.taken_at.slice(0, 10) === todayStr
+  ).length;
+}
+
+// Aggregate today's status across all active scheduled meds.
+// Returns { taken, expected, overdue } — overdue counts only scheduled meds with no doses today AFTER reasonable cutoff.
+function getTodaysMedStatus() {
+  const meds = getActiveMedications();
+  let taken = 0, expected = 0;
+  meds.forEach(m => {
+    const exp = medExpectedTodayCount(m);
+    if (exp > 0) {
+      expected += exp;
+      taken += Math.min(medDosesTodayCount(m.id), exp);
+    }
+  });
+  return { taken: taken, expected: expected, pending: Math.max(0, expected - taken) };
+}
+
+// ── Sync helpers ──
+async function _resolveMedicationUuid(clientId) {
+  if (!clientId || typeof sbReady === 'undefined' || !sbReady) return null;
+  try {
+    const { data, error } = await sb.from('medications').select('id').eq('client_id', clientId).maybeSingle();
+    if (error || !data) return null;
+    return data.id;
+  } catch (e) { return null; }
+}
+
+async function _syncMedicationToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('medications').upsert({
+      client_id: entry.id, name: entry.name, med_type: entry.med_type, dose: entry.dose,
+      frequency_type: entry.frequency_type, frequency_value: entry.frequency_value,
+      weekly_days: entry.weekly_days, start_date: entry.start_date, end_date: entry.end_date,
+      notes: entry.notes, active: entry.active, color: entry.color, created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('medications upsert failed:', error);
+  } catch (e) { console.warn('medications upsert threw:', e); }
+}
+
+async function _syncDeleteMedication(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('medications').delete().eq('client_id', clientId);
+    if (error) console.warn('medications delete failed:', error);
+  } catch (e) { console.warn('medications delete threw:', e); }
+}
+
+async function _syncDoseToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const medUuid = await _resolveMedicationUuid(entry.medication_id);
+    const { error } = await sb.from('medication_doses').upsert({
+      client_id: entry.id, medication_id: medUuid,
+      taken_at: entry.taken_at, dose_override: entry.dose_override, notes: entry.notes,
+      created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('medication_doses upsert failed:', error);
+  } catch (e) { console.warn('medication_doses upsert threw:', e); }
+}
+
+async function _syncDeleteDose(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('medication_doses').delete().eq('client_id', clientId);
+    if (error) console.warn('medication_doses delete failed:', error);
+  } catch (e) { console.warn('medication_doses delete threw:', e); }
+}
+
+async function _refreshMedicationsFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data, error } = await sb.from('medications').select('*').order('created_at', { ascending: true });
+    if (error) { console.warn('medications fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id, name: r.name, med_type: r.med_type, dose: r.dose,
+      frequency_type: r.frequency_type, frequency_value: r.frequency_value,
+      weekly_days: r.weekly_days || [], start_date: r.start_date, end_date: r.end_date,
+      notes: r.notes || '', active: r.active !== false, color: r.color || 'cyan',
+      created_at: r.created_at
+    }));
+    _saveMedications({ entries: entries });
+  } catch (e) { console.warn('medications refresh threw:', e); }
+}
+
+async function _refreshMedDosesFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    // Pull medications first to build UUID → client_id map
+    const medMap = {};
+    try {
+      const { data: meds } = await sb.from('medications').select('id, client_id');
+      if (Array.isArray(meds)) meds.forEach(m => { if (m.client_id) medMap[m.id] = m.client_id; });
+    } catch (e) {}
+    const { data, error } = await sb.from('medication_doses').select('*').order('taken_at', { ascending: false });
+    if (error) { console.warn('med_doses fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id,
+      medication_id: r.medication_id ? (medMap[r.medication_id] || null) : null,
+      taken_at: r.taken_at, dose_override: r.dose_override, notes: r.notes || '',
+      created_at: r.created_at
+    }));
+    _saveMedDoses({ entries: entries });
+  } catch (e) { console.warn('med_doses refresh threw:', e); }
+}
+
+async function _migrateLocalMedicationsToSupabase() {
+  if (localStorage.getItem('medications_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getMedications();
+  if (local.entries.length === 0) { localStorage.setItem('medications_sb_migrated', '1'); return; }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const { error } = await sb.from('medications').upsert({
+        client_id: e.id, name: e.name, med_type: e.med_type, dose: e.dose,
+        frequency_type: e.frequency_type, frequency_value: e.frequency_value,
+        weekly_days: e.weekly_days, start_date: e.start_date, end_date: e.end_date,
+        notes: e.notes, active: e.active, color: e.color, created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) { allOk = false; }
+    } catch (ex) { allOk = false; }
+  }
+  if (allOk) localStorage.setItem('medications_sb_migrated', '1');
+}
+
+async function _migrateLocalMedDosesToSupabase() {
+  if (localStorage.getItem('med_doses_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getMedDoses();
+  if (local.entries.length === 0) { localStorage.setItem('med_doses_sb_migrated', '1'); return; }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const medUuid = await _resolveMedicationUuid(e.medication_id);
+      const { error } = await sb.from('medication_doses').upsert({
+        client_id: e.id, medication_id: medUuid,
+        taken_at: e.taken_at, dose_override: e.dose_override, notes: e.notes,
+        created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) { allOk = false; }
+    } catch (ex) { allOk = false; }
+  }
+  if (allOk) localStorage.setItem('med_doses_sb_migrated', '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CARE CADENCE — recurring self-care + presentation tracker (task #24, 2026-05-29)
+// ────────────────────────────────────────────────────────────────────────────
+// Templates for recurring care items (massage, dental, haircut, eye exam, etc.)
+// with cadence + last visit date. Status (OK / due-soon / overdue) is derived.
+// Optional cost for Canadian medical-expense tax claim tracking.
+// Same hybrid cache pattern: localStorage + Supabase via client_id.
+// ════════════════════════════════════════════════════════════════════════════
+const CARE_CATEGORIES = [
+  { id: 'wellness',     label: 'Wellness',     icon: '💆' },  // Massage, acupuncture, etc.
+  { id: 'dental',       label: 'Dental',       icon: '🦷' },  // Cleaning, dentist
+  { id: 'vision',       label: 'Vision',       icon: '👓' },  // Eye exam
+  { id: 'presentation', label: 'Presentation', icon: '✂️' },  // Haircut, barber
+  { id: 'preventive',   label: 'Preventive',   icon: '🏥' },  // Annual physical, blood work
+  { id: 'other',        label: 'Other',        icon: '📝' },
+];
+
+function _getCareCadence() {
+  try {
+    const raw = localStorage.getItem('care_cadence');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    if (!p || !Array.isArray(p.entries)) return { entries: [] };
+    return p;
+  } catch (e) { return { entries: [] }; }
+}
+
+function _saveCareCadence(data) {
+  localStorage.setItem('care_cadence', JSON.stringify(data));
+}
+
+function addCareCadence(payload) {
+  const data = _getCareCadence();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const entry = {
+    id: id,
+    name: payload.name,
+    category: payload.category || 'other',
+    cadence_weeks: Number(payload.cadence_weeks) || 12,
+    last_visit_date: payload.last_visit_date || null,
+    last_visit_cost: payload.last_visit_cost != null ? Number(payload.last_visit_cost) : null,
+    active: payload.active !== false,
+    notes: payload.notes || '',
+    created_at: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  _saveCareCadence(data);
+  _syncCareCadenceToSupabase(entry);
+  return id;
+}
+
+function updateCareCadence(id, payload) {
+  const data = _getCareCadence();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = data.entries[idx];
+  const updated = {
+    id: original.id,
+    created_at: original.created_at,
+    name: payload.name != null ? payload.name : original.name,
+    category: payload.category || original.category,
+    cadence_weeks: Number(payload.cadence_weeks) || original.cadence_weeks,
+    last_visit_date: payload.last_visit_date !== undefined ? payload.last_visit_date : original.last_visit_date,
+    last_visit_cost: payload.last_visit_cost !== undefined ? payload.last_visit_cost : original.last_visit_cost,
+    active: payload.active !== undefined ? !!payload.active : original.active,
+    notes: payload.notes != null ? payload.notes : original.notes,
+  };
+  data.entries[idx] = updated;
+  _saveCareCadence(data);
+  _syncCareCadenceToSupabase(updated);
+}
+
+function removeCareCadence(id) {
+  const data = _getCareCadence();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveCareCadence(data);
+  _syncDeleteCareCadence(id);
+}
+
+// Mark a care item as visited today — bumps last_visit_date and optionally records cost.
+function markCareVisited(id, costStr) {
+  const today = new Date().toISOString().slice(0, 10);
+  const cost = (costStr && costStr.trim()) ? parseFloat(costStr) : null;
+  updateCareCadence(id, { last_visit_date: today, last_visit_cost: cost });
+}
+
+// Derive status for a care item.
+// Returns: 'ok' | 'due-soon' (within 2 weeks of due) | 'overdue' | 'never' (no last visit)
+function careStatus(item) {
+  if (!item.last_visit_date) return 'never';
+  const last = new Date(item.last_visit_date);
+  const due = new Date(last.getTime() + item.cadence_weeks * 7 * 86400000);
+  const today = new Date();
+  today.setHours(0,0,0,0); due.setHours(0,0,0,0);
+  const daysUntilDue = Math.round((due - today) / 86400000);
+  if (daysUntilDue < 0) return 'overdue';
+  if (daysUntilDue <= 14) return 'due-soon';
+  return 'ok';
+}
+
+function careDaysUntilDue(item) {
+  if (!item.last_visit_date) return null;
+  const last = new Date(item.last_visit_date);
+  const due = new Date(last.getTime() + item.cadence_weeks * 7 * 86400000);
+  const today = new Date();
+  today.setHours(0,0,0,0); due.setHours(0,0,0,0);
+  return Math.round((due - today) / 86400000);
+}
+
+function getActiveCareCadence() {
+  const data = _getCareCadence();
+  return data.entries.filter(e => e.active !== false)
+    .sort((a, b) => {
+      // Sort by status priority: overdue first, then due-soon, then ok, then never
+      const priority = { 'overdue': 0, 'due-soon': 1, 'ok': 2, 'never': 3 };
+      const aStat = careStatus(a);
+      const bStat = careStatus(b);
+      if (priority[aStat] !== priority[bStat]) return priority[aStat] - priority[bStat];
+      return a.name.localeCompare(b.name);
+    });
+}
+
+async function _syncCareCadenceToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('care_cadence').upsert({
+      client_id: entry.id,
+      name: entry.name,
+      category: entry.category,
+      cadence_weeks: entry.cadence_weeks,
+      last_visit_date: entry.last_visit_date,
+      last_visit_cost: entry.last_visit_cost,
+      active: entry.active,
+      notes: entry.notes,
+      created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('care_cadence upsert failed:', error);
+  } catch (e) { console.warn('care_cadence upsert threw:', e); }
+}
+
+async function _syncDeleteCareCadence(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('care_cadence').delete().eq('client_id', clientId);
+    if (error) console.warn('care_cadence delete failed:', error);
+  } catch (e) { console.warn('care_cadence delete threw:', e); }
+}
+
+async function _refreshCareCadenceFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data, error } = await sb.from('care_cadence')
+      .select('*').order('created_at', { ascending: true });
+    if (error) { console.warn('care_cadence fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id,
+      name: r.name,
+      category: r.category,
+      cadence_weeks: r.cadence_weeks,
+      last_visit_date: r.last_visit_date,
+      last_visit_cost: r.last_visit_cost,
+      active: r.active !== false,
+      notes: r.notes || '',
+      created_at: r.created_at
+    }));
+    _saveCareCadence({ entries: entries });
+  } catch (e) { console.warn('care_cadence refresh threw:', e); }
+}
+
+async function _migrateLocalCareCadenceToSupabase() {
+  if (localStorage.getItem('care_cadence_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getCareCadence();
+  if (local.entries.length === 0) {
+    localStorage.setItem('care_cadence_sb_migrated', '1');
+    return;
+  }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const { error } = await sb.from('care_cadence').upsert({
+        client_id: e.id, name: e.name, category: e.category,
+        cadence_weeks: e.cadence_weeks, last_visit_date: e.last_visit_date,
+        last_visit_cost: e.last_visit_cost, active: e.active, notes: e.notes,
+        created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) { allOk = false; console.warn('care migrate failed:', error); }
+    } catch (ex) { allOk = false; }
+  }
+  if (allOk) localStorage.setItem('care_cadence_sb_migrated', '1');
 }
 
 async function _migrateLocalAppointmentsToSupabase() {
@@ -7675,6 +9950,83 @@ const RESTAURANT_DB = {
   },
 
   // ════════════════════════════════════════════════════════════════════════
+  // RYUKO — Japanese restaurant in Calgary. Salmon-forward menu = excellent
+  // protein anchor for the cutting phase. Salmon box confirmed low sodium
+  // impact (no overnight weight spike post-meal 2026-05-28, Craig's data).
+  // Added 2026-05-29.
+  // ════════════════════════════════════════════════════════════════════════
+  ryuko: {
+    name: "Ryuko",
+    icon: '🍣',
+    aliases: ['ryuko', 'ryuko japanese'],
+    coachTips: [
+      'Salmon sashimi has the best protein-to-cal ratio on the menu',
+      'Sashimi/nigiri > rolls > tempura — order in that priority',
+      'Salmon box confirmed low-sodium impact (no overnight weight spike)',
+      'Soy sauce sparingly — drip on individual pieces, don\'t pour into the dish',
+    ],
+    items: [
+      // ── LIGHT (≤450 cal) — the high protein-to-cal picks ──
+      { id: 'salmon_sashimi_6', name: 'Salmon sashimi (6 pcs)',          cals: 180, tier: 'light', pick: true,  note: '~25g protein. Lowest cal per gram protein on the menu. Omega-3 anti-inflammatory bonus' },
+      { id: 'salmon_nigiri_4',  name: 'Salmon nigiri (4 pcs)',           cals: 280, tier: 'light', pick: true,  note: 'Rice doubles the cal but still ~20g protein. Pair with miso + edamame = ~500 cal solid meal' },
+      { id: 'edamame',          name: 'Edamame',                         cals: 130, tier: 'light', pick: true,  note: 'Best appetizer. ~12g plant protein, fiber, low sodium if lightly salted' },
+      { id: 'miso_soup',        name: 'Miso soup',                       cals: 50,  tier: 'light', pick: true,  note: 'Sodium load (~800mg) but minimal cal. Warming starter' },
+      { id: 'seaweed_salad',    name: 'Seaweed salad',                   cals: 100, tier: 'light',              note: 'Iodine + minerals. Sesame oil dressing adds ~30 cal' },
+      { id: 'cucumber_roll',    name: 'Cucumber roll (kappa, 6 pcs)',    cals: 150, tier: 'light',              note: 'Low protein (~4g) but lowest cal roll option' },
+      // ── MEDIUM (451-750 cal) — protein-anchored single meals ──
+      { id: 'salmon_box',       name: 'Salmon teriyaki box',             cals: 580, tier: 'med',   pick: true,  note: 'Craig\'s 2026-05-28 lunch — confirmed no overnight sodium spike. ~40g protein. Veggie + rice sides' },
+      { id: 'chicken_box',      name: 'Chicken teriyaki box',            cals: 620, tier: 'med',   pick: true,  note: '~38g protein, gout-safer than salmon if eating salmon repeatedly that week' },
+      { id: 'salmon_avo_roll',  name: 'Salmon avocado roll (8 pcs)',     cals: 460, tier: 'med',   pick: true,  note: 'Healthy fats + protein. Good single-roll meal with miso + edamame' },
+      { id: 'spicy_salmon_roll',name: 'Spicy salmon roll (8 pcs)',       cals: 480, tier: 'med',                note: 'Spicy mayo adds ~100 cal vs plain. Sodium higher from the sauce' },
+      { id: 'beef_box',         name: 'Beef teriyaki box',               cals: 700, tier: 'med',                note: 'High purine — gout watch. Marinade adds ~80 cal in sugar' },
+      { id: 'tempura_udon',     name: 'Tempura udon',                    cals: 620, tier: 'med',                note: 'Tempura is the cal driver (~300 cal alone). Udon is high carb, low protein' },
+      // ── HEAVY (>750 cal) — deficit-blowing plates ──
+      { id: 'tempura_combo',    name: 'Tempura combo plate',             cals: 900, tier: 'heavy',              note: 'Fried = fat. Shrimp tempura accounts for ~250 cal alone' },
+      { id: 'sushi_platter',    name: 'Sushi platter (10-12 pcs)',       cals: 800, tier: 'heavy',              note: 'Looks moderate but rice volume + dipping soy stack fast' },
+      { id: 'chicken_katsu',    name: 'Chicken katsu (panko-fried)',     cals: 850, tier: 'heavy',              note: 'Breading + fry = ~400 of the 850 cal. Sauce adds 100 more' },
+      { id: 'beef_short_rib',   name: 'Beef short rib bowl',             cals: 850, tier: 'heavy',              note: 'High purine for gout — skip if uric acid trending up' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // BAEKJEONG — Korean BBQ chain. The danger is structural: AYCE format
+  // makes portion control mechanically harder than ordering off a menu.
+  // Banchan (side dishes) are mostly veggies and act as a brake. Gout
+  // caveats: avoid anchovy-broth stews and minimize organ-adjacent cuts
+  // (galbi short ribs). Added 2026-05-29 after Craig's supper there.
+  // ════════════════════════════════════════════════════════════════════════
+  baekjeong: {
+    name: "Baekjeong",
+    icon: '🥩',
+    aliases: ['baekjeong', 'beakjeong', 'baek jeong'],
+    coachTips: [
+      'AYCE is the trap — order single-portion if you want portion control',
+      'Lean cuts (brisket, bulgogi) > fatty cuts (pork belly, short rib) for cal-to-protein',
+      'Banchan = veggies. Eat them between meat orders to slow tempo',
+      'Avoid anchovy-broth stews (myeolchi yuksu base) — high purine, gout flare risk',
+    ],
+    items: [
+      // ── LIGHT (≤450 cal) — gout-safe stew + side options ──
+      { id: 'soondubu_jjigae',  name: 'Soondubu jjigae (soft tofu stew)', cals: 350, tier: 'light', pick: true, note: 'Best gout choice — tofu base, no anchovy. ~20g protein from tofu + egg' },
+      { id: 'kimchi_jjigae',    name: 'Kimchi jjigae (regular)',          cals: 380, tier: 'light', pick: true, note: 'Confirm anchovy-free broth. Pork pieces add ~15g protein. Sodium high from kimchi' },
+      { id: 'gyeran_jjim',      name: 'Gyeran jjim (steamed egg)',        cals: 150, tier: 'light', pick: true, note: 'Protein-anchored appetizer. ~10g protein, low cal' },
+      { id: 'banchan_only',     name: 'Banchan (side dishes only)',       cals: 100, tier: 'light',             note: 'Pre-meal grazing — real veggie content, minimal cal. Eat first to slow main course tempo' },
+      { id: 'korean_cuke_salad',name: 'Korean cucumber salad',            cals: 80,  tier: 'light',             note: 'Sesame oil + gochugaru — flavorful, low cal' },
+      // ── MEDIUM (451-750 cal) — protein-anchored single-portion plays ──
+      { id: 'bibimbap_bulgogi', name: 'Bibimbap with bulgogi',            cals: 680, tier: 'med',   pick: true, note: 'Best balanced single meal — ~35g protein, veggies, rice. Skip the gochujang heap to save ~80 cal' },
+      { id: 'bibimbap_veg_egg', name: 'Bibimbap (veg, add egg)',          cals: 550, tier: 'med',   pick: true, note: 'Add fried egg for ~25g protein anchor. Stone-pot (dolsot) cooks rice crispy = ~50 extra cal' },
+      { id: 'bulgogi_single',   name: 'Bulgogi (single portion)',         cals: 600, tier: 'med',   pick: true, note: 'Marinated lean beef — ~40g protein. Marinade sugar adds ~80 cal' },
+      { id: 'kfc_soy_6',        name: 'Korean fried chicken — soy garlic (6 pcs)', cals: 700, tier: 'med',     note: 'Sodium VERY high — expect overnight water gain. ~30g protein but ~40g carb from glaze' },
+      { id: 'naengmyeon',       name: 'Naengmyeon (cold noodles)',        cals: 550, tier: 'med',               note: 'Buckwheat noodles, broth base. ~15g protein (mostly egg + meat slices)' },
+      // ── HEAVY (>750 cal) — single-order plates that blow the deficit ──
+      { id: 'samgyeopsal',      name: 'Pork belly samgyeopsal (single)',  cals: 950, tier: 'heavy',             note: 'Pork belly is ~70% fat by cal. Banchan can balance but meat is dense' },
+      { id: 'galbi_single',     name: 'Galbi (beef short ribs, single)',  cals: 850, tier: 'heavy',             note: 'HIGH purine — skip if gout flaring. Marinade sugar adds significant cal' },
+      { id: 'kfc_full',         name: 'Korean fried chicken (full, 12-14 pcs)', cals: 1400, tier: 'heavy',     note: 'A meal for 2 sold as a meal for 1. Sharing brings it to ~700 cal each' },
+      { id: 'ayce_90min',       name: 'Korean BBQ AYCE (90 min)',         cals: 1800, tier: 'heavy',           note: 'Average diner eats 1500-2500 cal in 90-min AYCE. Format makes self-regulation structurally hard' },
+    ],
+  },
+
+  // ════════════════════════════════════════════════════════════════════════
   // SUSHI (generic) — for local independents (Oichi, Sushi Aoi) where no
   // published nutrition data exists. Per-piece nigiri/sashimi and per-roll
   // maki estimates. Real meals tally up by tapping multiple items. Sushi
@@ -7843,6 +10195,54 @@ function addDietEvent(dateStr, tags, note, time, cals) {
 function removeDietEvent(dateStr, id) {
   const arr = getDietEvents(dateStr).filter(e => e.id !== id);
   _saveDietEvents(dateStr, arr);
+  // If the deleted entry was being edited, clear edit state
+  if (window._dietDraft && window._dietDraft[dateStr] && window._dietDraft[dateStr].editingId === id) {
+    window._dietDraft[dateStr] = { tags: {}, note: '', cals: '' };
+  }
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// In-place edit for diet events (task #21, 2026-05-25). localStorage only — no Supabase
+// table for diet_events. Preserves the entry's id and original time; only the tags,
+// note, and cals change. ⚠ realism: backfilled edits don't change the entry's `time`
+// field (which is the original logging time), so timing analysis remains accurate.
+function updateDietEvent(dateStr, id, payload) {
+  const arr = getDietEvents(dateStr).slice();
+  const idx = arr.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const original = arr[idx];
+  const calsNum = parseInt(payload.cals, 10);
+  arr[idx] = {
+    id: original.id,
+    time: original.time,
+    tags: Array.isArray(payload.tags) ? payload.tags : original.tags,
+    note: (payload.note || '').trim(),
+    cals: (isFinite(calsNum) && calsNum > 0) ? calsNum : 0,
+  };
+  _saveDietEvents(dateStr, arr);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// Enter edit mode for a diet event. Populates the draft (which drives the pills'
+// on/off state + input values), tags the editing id, and triggers a re-render so
+// the form picks up the new values automatically.
+function startEditDietEvent(dateStr, id) {
+  const arr = getDietEvents(dateStr);
+  const entry = arr.find(e => e.id === id);
+  if (!entry) return;
+  const tagsObj = {};
+  (entry.tags || []).forEach(t => { tagsObj[t] = true; });
+  window._dietDraft[dateStr] = {
+    tags: tagsObj,
+    note: entry.note || '',
+    cals: (entry.cals > 0) ? String(entry.cals) : '',
+    editingId: id
+  };
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+function cancelEditDietEvent(dateStr) {
+  window._dietDraft[dateStr] = { tags: {}, note: '', cals: '' };
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function getDietEventsRange(startDateStr, endDateStr) {
@@ -8169,9 +10569,14 @@ function commitDietEvent(dateStr) {
   const calsNum = parseInt(cals, 10);
   const hasCals = isFinite(calsNum) && calsNum > 0;
   if (selectedTags.length === 0 && !note.trim() && !hasCals) return;
-  // Reset draft BEFORE addDietEvent (which triggers re-render)
+  const editingId = d.editingId;
+  // Reset draft BEFORE add/update (which triggers re-render)
   window._dietDraft[dateStr] = { tags: {}, note: '', cals: '' };
-  addDietEvent(dateStr, selectedTags, note, undefined, calsNum);
+  if (editingId) {
+    updateDietEvent(dateStr, editingId, { tags: selectedTags, note: note, cals: calsNum });
+  } else {
+    addDietEvent(dateStr, selectedTags, note, undefined, calsNum);
+  }
 }
 
 // ── RESTAURANT PICKER ──
@@ -8411,6 +10816,7 @@ function buildDietEventStrip(dateStr) {
       ${tagIcons ? `<span class="de-event-icons">${tagIcons}</span>` : ''}
       <span class="de-event-note">${noteText}</span>
       ${calBadge}
+      <span class="de-event-edit" onclick="startEditDietEvent('${dateStr}','${e.id}')" title="Edit this meal">✎</span>
       <span class="de-event-del" onclick="removeDietEvent('${dateStr}','${e.id}')" title="Delete">×</span>
     </div>`;
   }).join('');
@@ -8424,9 +10830,19 @@ function buildDietEventStrip(dateStr) {
   `;
   const draftNote = (draft.note || '').replace(/"/g,'&quot;');
   const draftCals = (draft.cals || '').toString().replace(/"/g,'&quot;');
+  const editing = !!draft.editingId;
+  const headerLabel = editing ? '✎ Editing meal' : '🍽️ Log a meal';
+  const commitLabel = editing ? '+ Update' : '+ Log';
+  const editBanner = editing ? `
+    <div class="de-edit-banner">
+      <span>Changes will overwrite the original entry.</span>
+      <button type="button" class="de-edit-cancel" onclick="cancelEditDietEvent('${dateStr}')">Cancel edit</button>
+    </div>
+  ` : '';
   return `
     <div class="de-section">
-      <div class="de-header">🍽️ Log a meal</div>
+      <div class="de-header">${headerLabel}</div>
+      ${editBanner}
       <div class="de-pill-grid">${mealPills}</div>
       <div class="de-flag-label">Tag if applicable</div>
       <div class="de-pill-grid de-pill-grid-flags">${flagPills}</div>
@@ -8441,7 +10857,7 @@ function buildDietEventStrip(dateStr) {
           oninput="_getDraft('${dateStr}').cals=this.value"
           onkeydown="if(event.key==='Enter'){commitDietEvent('${dateStr}');event.preventDefault();}"
           value="${draftCals}">
-        <button class="de-log-btn" onclick="commitDietEvent('${dateStr}')">+ Log</button>
+        <button class="de-log-btn" onclick="commitDietEvent('${dateStr}')">${commitLabel}</button>
       </div>
       ${eventsBlock}
     </div>`;
@@ -8467,6 +10883,118 @@ const MORNING_TIME_CHIPS = [
   { hour: 19, label: '7pm' }, { hour: 20, label: '8pm' }, { hour: 21, label: '9pm' },
   { hour: 22, label: '10pm' }, { hour: 23, label: 'after 10' },
 ];
+
+// Task #13 (2026-05-25). Felt-rested and cognitive-load scales for AM/PM check-ins.
+// REST_LEVELS is 1-5 deliberately (separate from sleep duration — see CBT-I framing in
+// WorkoutApp-Feature-Log.md): captures SUBJECTIVE sleep quality. Someone can sleep 8h
+// and feel wrecked, or 5h and feel sharp. The divergence between duration and rested
+// rating is itself a stress / cognitive-load signal.
+const REST_LEVELS = [
+  { id: 1, label: 'Wrecked', desc: "Couldn't get going" },
+  { id: 2, label: 'Tired',   desc: 'Slow start, foggy' },
+  { id: 3, label: 'Decent',  desc: 'Functional' },
+  { id: 4, label: 'Good',    desc: 'Clear-headed' },
+  { id: 5, label: 'Sharp',   desc: 'Crystal' },
+];
+// LOAD_LEVELS is 1-4 (no neutral middle option — forces a directional answer).
+// Used twice: anticipated_load (morning forecast) and actual_load (evening reality).
+// The anticipated-vs-actual delta over time is the real signal.
+const LOAD_LEVELS = [
+  { id: 1, label: 'Light',    desc: 'Open headspace' },
+  { id: 2, label: 'Moderate', desc: 'Normal demands' },
+  { id: 3, label: 'Heavy',    desc: 'Stacked, draining' },
+  { id: 4, label: 'Grinding', desc: 'Maxed, survival' },
+];
+
+// Task #16 (2026-05-29). Activity-level decision tree for the workout card.
+// Tier 1 (Stretch) = recovery day. Tier 4 (Push) = train hard.
+// Auto-suggested by inverse relationship to anticipated_load + body_log flags.
+// User can always override the suggestion.
+const ACTIVITY_LEVELS = [
+  { id: 1, icon: '🛌', label: 'Stretch only', desc: 'Recovery — stretches only',          color: 'var(--purple)' },
+  { id: 2, icon: '🚶', label: 'Light',        desc: 'Walk + stretch, no resistance work',  color: 'var(--cyan)'   },
+  { id: 3, icon: '💪', label: 'Normal',       desc: 'Regular session, normal volume',      color: 'var(--green)'  },
+  { id: 4, icon: '🔥', label: 'Push',         desc: 'Train hard, max effort',              color: 'var(--orange)' },
+];
+
+// Suggest an activity level from today's anticipated_load + active body_log flags.
+// High cognitive load → lower activity. Flagged active injuries → lower activity.
+// Returns 1-4. Used to pre-fill the activity level selector if user hasn't picked.
+function suggestActivityLevel(dateStr) {
+  const d = (DB_CACHE.daily && DB_CACHE.daily[dateStr]) || {};
+  const ant = Number(d.anticipated_load) || 0; // 1-4 (1=light, 4=grinding)
+  let suggested = 3; // default Normal
+  if (ant === 4) suggested = 1;       // Grinding day → recovery
+  else if (ant === 3) suggested = 2;  // Heavy day → light only
+  else if (ant === 2) suggested = 3;  // Moderate → normal
+  else if (ant === 1) suggested = 3;  // Light load doesn't mean push; default normal
+  // Active body flags lower the suggestion by 1 tier (cap at 1)
+  if (typeof getActiveBodyItems === 'function') {
+    const items = getActiveBodyItems(14);
+    const flagged = items.some(it => it.flag);
+    const highPain = items.some(it => it.pain >= 6);
+    if (flagged || highPain) suggested = Math.max(1, suggested - 1);
+  }
+  return suggested;
+}
+
+function setActivityLevel(dateStr, level) {
+  if (!level || level < 1 || level > 4) return;
+  dbSaveDaily(dateStr, 'activity_level', level);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+function clearActivityLevel(dateStr) {
+  dbSaveDaily(dateStr, 'activity_level', null);
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// Build the decision tree UI at the top of the workout card.
+// Returns HTML string. Renders selected level highlighted, others dimmed,
+// or a suggestion banner if no level chosen yet.
+function buildActivityDecisionTree(dateStr) {
+  const d = (DB_CACHE.daily && DB_CACHE.daily[dateStr]) || {};
+  const chosen = Number(d.activity_level) || 0;
+  const suggested = chosen ? null : suggestActivityLevel(dateStr);
+  const chips = ACTIVITY_LEVELS.map(lvl => {
+    const isChosen = chosen === lvl.id;
+    const isSuggested = !chosen && suggested === lvl.id;
+    const isDimmed = chosen && lvl.id > chosen;
+    const cls = ['adt-chip'];
+    if (isChosen) cls.push('chosen');
+    if (isSuggested) cls.push('suggested');
+    if (isDimmed) cls.push('dimmed');
+    return `<div class="${cls.join(' ')}" style="--adt-color:${lvl.color}"
+      onclick="setActivityLevel('${dateStr}',${lvl.id})"
+      title="${lvl.desc}">
+      <div class="adt-icon">${lvl.icon}</div>
+      <div class="adt-label">${lvl.label}</div>
+    </div>`;
+  }).join('');
+  const headerHint = chosen
+    ? `<span class="adt-hint">Today: <strong>${ACTIVITY_LEVELS.find(x => x.id === chosen).label}</strong> <span class="adt-clear" onclick="clearActivityLevel('${dateStr}')" title="Clear today's activity level">×</span></span>`
+    : (suggested ? `<span class="adt-hint">Suggested: <strong>${ACTIVITY_LEVELS.find(x => x.id === suggested).label}</strong> based on today's anticipated load + body flags</span>` : `<span class="adt-hint">Pick today's capacity</span>`);
+  return `
+    <div class="adt-wrap">
+      <div class="adt-header">
+        <span class="adt-title">⚡ Today's capacity</span>
+        ${headerHint}
+      </div>
+      <div class="adt-row">${chips}</div>
+    </div>
+  `;
+}
+
+// Task #14 (2026-05-25). Late-evening downshift triggers — CBT-I-informed sleep
+// behaviors. Tracked instead of sleep duration because treating duration as a
+// target backfires (sleep performance anxiety). These are the actionable levers.
+// Stored as JSONB in daily_log.sleep_behaviors with boolean values keyed by id.
+const SLEEP_BEHAVIORS = [
+  { id: 'caffeine_off_by_2pm',    icon: '☕', label: 'Caffeine cutoff',  desc: 'No caffeine after ~2pm' },
+  { id: 'no_late_exercise',       icon: '🏃', label: 'No late exercise', desc: 'No workout after 9pm' },
+  { id: 'screens_dim_by_10pm',    icon: '📱', label: 'Screens down',     desc: 'Dim / off ~30-60 min before bed' },
+  { id: 'winddown_ritual',        icon: '🌙', label: 'Wind-down ritual', desc: 'Reading, stretching, lights low' },
+];
 // Per-day flag to avoid re-popping during the same morning
 function _morningPromptShownToday() {
   const today = new Date().toISOString().slice(0,10);
@@ -8490,11 +11018,18 @@ function _shouldAutoFireMorningPrompt() {
 }
 function openMorningPrompt(opts) {
   opts = opts || {};
+  const todayStr = new Date().toISOString().slice(0,10);
+  const yestStr = (function(){ const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
+  // Pre-fill from any already-saved values (so re-opening the prompt mid-morning
+  // doesn't lose what was already entered) — task #13 expansion 2026-05-25.
+  const today = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
   window._morningPromptState = {
-    todayStr: new Date().toISOString().slice(0,10),
-    yestStr: (function(){ const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })(),
+    todayStr: todayStr,
+    yestStr: yestStr,
     lastMealChoice: null,   // hour selected (or 'skip')
-    goalChoice: null,
+    goalChoice: today.daily_goal || null,
+    restedChoice: today.felt_rested || null,
+    anticipatedChoice: today.anticipated_load || null,
     missedExpanded: false,
   };
   const bd = document.getElementById('morning-prompt-backdrop');
@@ -8517,6 +11052,14 @@ function _mpSkipTime() {
 }
 function _mpSelectGoal(goalId) {
   window._morningPromptState.goalChoice = goalId;
+  renderMorningPrompt();
+}
+function _mpSelectRested(level) {
+  window._morningPromptState.restedChoice = level;
+  renderMorningPrompt();
+}
+function _mpSelectAnticipated(level) {
+  window._morningPromptState.anticipatedChoice = level;
   renderMorningPrompt();
 }
 function _mpToggleMissed() {
@@ -8544,6 +11087,14 @@ function _mpSubmit() {
   // 2. Today's goal
   if (s.goalChoice) {
     dbSaveDaily(s.todayStr, 'daily_goal', s.goalChoice);
+  }
+  // 3. Felt-rested (1-5) — cognitive load signal, separate from sleep duration
+  if (s.restedChoice) {
+    dbSaveDaily(s.todayStr, 'felt_rested', s.restedChoice);
+  }
+  // 4. Anticipated load (1-4) — morning forecast; evening prompt asks the actual
+  if (s.anticipatedChoice) {
+    dbSaveDaily(s.todayStr, 'anticipated_load', s.anticipatedChoice);
   }
   closeMorningPrompt();
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
@@ -8586,8 +11137,36 @@ function renderMorningPrompt() {
     ` : ''}
   `;
 
-  const canSubmit = (s.lastMealChoice !== null) && s.goalChoice;
+  // Felt-rested chips (task #13)
+  const restChips = REST_LEVELS.map(r =>
+    `<div class="mp-goal-chip ${s.restedChoice === r.id ? 'selected' : ''}" onclick="_mpSelectRested(${r.id})">
+      <div class="mp-goal-name">${r.label}</div>
+      <div class="mp-goal-desc">${r.desc}</div>
+    </div>`
+  ).join('');
+  // Anticipated load chips (task #13)
+  const anticipatedChips = LOAD_LEVELS.map(l =>
+    `<div class="mp-goal-chip ${s.anticipatedChoice === l.id ? 'selected' : ''}" onclick="_mpSelectAnticipated(${l.id})">
+      <div class="mp-goal-name">${l.label}</div>
+      <div class="mp-goal-desc">${l.desc}</div>
+    </div>`
+  ).join('');
+
+  // Submit gate: any of the four fields answered enables save. The original (lastMeal
+  // && goal) required both — too gatekeepy now that there are 4 questions. Any answer
+  // is signal worth saving; the rest can be skipped without ceremony.
+  const canSubmit = (s.lastMealChoice !== null) || s.goalChoice || s.restedChoice || s.anticipatedChoice;
   body.innerHTML = `
+    <div class="mp-section">
+      <div class="mp-section-label">How rested do you feel?</div>
+      <div class="mp-section-hint">Separate from how long you slept — this is the felt quality.</div>
+      <div class="mp-goal-grid mp-goal-grid-5">${restChips}</div>
+    </div>
+    <div class="mp-section">
+      <div class="mp-section-label">What's today looking like?</div>
+      <div class="mp-section-hint">A guess at the cognitive load — we'll check at the end of the day.</div>
+      <div class="mp-goal-grid mp-goal-grid-4">${anticipatedChips}</div>
+    </div>
     <div class="mp-section">
       <div class="mp-section-label">When did you stop eating yesterday?</div>
       <div class="mp-section-hint">Closes out your fasting window — pick the closest hour.</div>
@@ -8601,6 +11180,154 @@ function renderMorningPrompt() {
     ${missedLink}
     <div class="mp-footer">
       <button class="mp-done-btn" onclick="_mpSubmit()" ${canSubmit ? '' : 'disabled'}>Save & continue</button>
+    </div>
+  `;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// EVENING CHECK-IN PROMPT (task #13, 2026-05-25)
+// ────────────────────────────────────────────────────────────────────────────
+// Fires once after 8pm if today's actual_load is empty. Two questions:
+//   1. Actual load (1-4) — compare against this morning's anticipated for the delta
+//   2. One word for today — qualitative summary, builds a personal vocabulary
+//      of day-types over time (e.g. "drained", "decent", "wired", "fine")
+// Manual access via 🌙 button next to ☀️ Check-in on the meals card.
+// ════════════════════════════════════════════════════════════════════════════
+function _eveningPromptShownToday() {
+  const today = new Date().toISOString().slice(0,10);
+  return localStorage.getItem('evening_prompt_shown_' + today) === '1';
+}
+function _markEveningPromptShown() {
+  const today = new Date().toISOString().slice(0,10);
+  localStorage.setItem('evening_prompt_shown_' + today, '1');
+}
+function _shouldAutoFireEveningPrompt() {
+  // Fire if: after 8pm (before midnight), today's actual_load empty, not shown today.
+  const now = new Date();
+  const hr = now.getHours();
+  if (hr < 20 || hr >= 24) return false;
+  if (_eveningPromptShownToday()) return false;
+  const todayStr = now.toISOString().slice(0,10);
+  const d = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
+  return !d.actual_load;
+}
+function openEveningPrompt() {
+  const todayStr = new Date().toISOString().slice(0,10);
+  const d = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
+  // Parse sleep_behaviors — may be a JSON string, object, or missing
+  let behaviors = {};
+  if (d.sleep_behaviors) {
+    if (typeof d.sleep_behaviors === 'string') {
+      try { behaviors = JSON.parse(d.sleep_behaviors) || {}; } catch (e) { behaviors = {}; }
+    } else if (typeof d.sleep_behaviors === 'object') {
+      behaviors = Object.assign({}, d.sleep_behaviors);
+    }
+  }
+  window._eveningPromptState = {
+    todayStr: todayStr,
+    actualChoice: d.actual_load || null,
+    wordValue: d.day_word || '',
+    anticipated: d.anticipated_load || null,  // for "this morning you thought X" context
+    behaviors: behaviors,                      // task #14 — late-evening downshift triggers
+  };
+  const bd = document.getElementById('evening-prompt-backdrop');
+  if (!bd) return;
+  bd.classList.add('open');
+  _markEveningPromptShown();
+  renderEveningPrompt();
+}
+function closeEveningPrompt() {
+  const bd = document.getElementById('evening-prompt-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function _epSelectActual(level) {
+  window._eveningPromptState.actualChoice = level;
+  renderEveningPrompt();
+}
+function _epToggleBehavior(behaviorId) {
+  const s = window._eveningPromptState;
+  if (!s) return;
+  if (!s.behaviors) s.behaviors = {};
+  s.behaviors[behaviorId] = !s.behaviors[behaviorId];
+  if (!s.behaviors[behaviorId]) delete s.behaviors[behaviorId];
+  renderEveningPrompt();
+}
+function _epSyncWord() {
+  // Sync input value into state without re-rendering (preserves cursor position).
+  const inp = document.getElementById('ep-word');
+  if (inp && window._eveningPromptState) {
+    window._eveningPromptState.wordValue = (inp.value || '').trim().slice(0, 24);
+  }
+}
+function _epSubmit() {
+  const s = window._eveningPromptState;
+  if (!s) return;
+  if (s.actualChoice) dbSaveDaily(s.todayStr, 'actual_load', s.actualChoice);
+  // Always read directly from input on submit (in case _epSyncWord didn't fire)
+  const inp = document.getElementById('ep-word');
+  const word = inp ? (inp.value || '').trim().slice(0, 24) : (s.wordValue || '');
+  if (word) dbSaveDaily(s.todayStr, 'day_word', word);
+  // Task #14: write sleep behaviors as JSON object (Supabase JSONB column).
+  // Always write, even if empty, so an unchecked-all night is captured as "nothing done."
+  dbSaveDaily(s.todayStr, 'sleep_behaviors', s.behaviors || {});
+  closeEveningPrompt();
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+function renderEveningPrompt() {
+  const body = document.getElementById('evening-prompt-body');
+  const titleEl = document.getElementById('evening-prompt-title');
+  if (!body) return;
+  const s = window._eveningPromptState;
+  const now = new Date();
+  const hrLabel = now.toLocaleTimeString([], {hour:'numeric', hour12:true});
+  if (titleEl) titleEl.textContent = '🌙 Wind-down — ' + hrLabel;
+  // Show anticipated-vs-actual context line if morning was filled in
+  const antContext = s.anticipated ?
+    `<div class="mp-section-hint">This morning you anticipated: <strong>${LOAD_LEVELS.find(l => l.id === s.anticipated).label}</strong>.</div>` :
+    '<div class="mp-section-hint">No big analysis — just whatever lands first.</div>';
+  const loadChips = LOAD_LEVELS.map(l =>
+    `<div class="mp-goal-chip ${s.actualChoice === l.id ? 'selected' : ''}" onclick="_epSelectActual(${l.id})">
+      <div class="mp-goal-name">${l.label}</div>
+      <div class="mp-goal-desc">${l.desc}</div>
+    </div>`
+  ).join('');
+  const wordValue = (s.wordValue || '').replace(/"/g,'&quot;');
+  // Task #14 — late-evening downshift triggers as check-rows
+  const behaviorRows = SLEEP_BEHAVIORS.map(b => {
+    const checked = !!(s.behaviors && s.behaviors[b.id]);
+    return `<div class="ep-behavior-row ${checked ? 'checked' : ''}" onclick="_epToggleBehavior('${b.id}')">
+      <div class="ep-behavior-check">${checked ? '✓' : ''}</div>
+      <div class="ep-behavior-text">
+        <div class="ep-behavior-label">${b.icon} ${b.label}</div>
+        <div class="ep-behavior-desc">${b.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+  const behaviorCount = s.behaviors ? Object.keys(s.behaviors).filter(k => s.behaviors[k]).length : 0;
+  const canSubmit = !!s.actualChoice || !!(s.wordValue && s.wordValue.length) || behaviorCount > 0;
+  body.innerHTML = `
+    <div class="mp-section">
+      <div class="mp-section-label">How was today, actually?</div>
+      ${antContext}
+      <div class="mp-goal-grid mp-goal-grid-4">${loadChips}</div>
+    </div>
+    <div class="mp-section">
+      <div class="mp-section-label">One word for today</div>
+      <div class="mp-section-hint">First word that lands. No analysis. You can change it.</div>
+      <input type="text" id="ep-word" class="ep-word-input"
+        placeholder="e.g. drained · decent · wired · fine"
+        value="${wordValue}"
+        maxlength="24"
+        oninput="_epSyncWord()"
+        onkeydown="if(event.key==='Enter'){_epSubmit();event.preventDefault();}">
+    </div>
+    <div class="mp-section">
+      <div class="mp-section-label">Tonight's downshift triggers ${behaviorCount ? `<span class="ep-behavior-count">${behaviorCount}/${SLEEP_BEHAVIORS.length}</span>` : ''}</div>
+      <div class="mp-section-hint">Check what's already done or what you're committing to. Consistency over weeks matters more than any single night.</div>
+      <div class="ep-behavior-list">${behaviorRows}</div>
+    </div>
+    <div class="mp-footer">
+      <button class="mp-done-btn" onclick="_epSubmit()" ${canSubmit ? '' : 'disabled'}>Save & wind down</button>
     </div>
   `;
 }
@@ -10049,7 +12776,9 @@ function renderDaily() {
     }).join('')}
   </div>`;
 
-  wc.innerHTML = morningHtml + recommendedHtml + quickPickHtml + `
+  // Task #16 — activity decision tree at the top of the workout card
+  const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr) : '';
+  wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
     </div>
@@ -10149,7 +12878,8 @@ function renderDaily() {
             ).join('')}</div>
             ${ew ? `<span style="font-size:8px;font-weight:700;color:var(--cyan)">${ew}</span>` : ''}
             ${ifLabel ? `<span style="font-size:8px;font-weight:700;color:var(--purple)" title="Overnight fasting window: yesterday's last meal to today's first">${ifLabel}</span>` : ''}
-            <span class="mp-entry-btn" style="margin-left:auto;font-size:9px;padding:3px 8px" onclick="openMorningPrompt()" title="Open morning check-in (last meal, today's goal, missed yesterday)">☀️ Check-in</span>
+            <span class="mp-entry-btn" style="margin-left:auto;font-size:9px;padding:3px 8px" onclick="openMorningPrompt()" title="Morning check-in (rested, anticipated load, last meal, goal)">☀️ Check-in</span>
+            <span class="mp-entry-btn" style="font-size:9px;padding:3px 8px" onclick="openEveningPrompt()" title="Evening wind-down (actual load, one-word day)">🌙 Wind-down</span>
           `;
         })()}
       </div>
@@ -10281,6 +13011,25 @@ function renderDaily() {
         const _badge = _bn > 0 ? ` <span style="color:var(--red);font-weight:800">${_bn}</span>` : '';
         return `<div class="pill" style="cursor:pointer" onclick="openBodyLog()" title="Body log — pain, stiffness, injury tracking">🩹 <span class="pill-val" style="color:var(--text-muted)">Body</span>${_badge}</div>`;
       })()}
+      ${(() => {
+        // Task #23 — Follow-up pill: shows when today's date matches any appointment follow_up_date.
+        // Click opens body log on Summary tab where follow-ups list lives.
+        const _todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
+        if (_todayFollowUps.length === 0) return '';
+        return `<div class="pill" style="cursor:pointer;border-color:var(--orange);background:var(--orange-bg);animation:pulse 2s infinite" onclick="openBodyLog('summary')" title="Follow-up appointment due today">⏰ <span class="pill-val" style="color:var(--orange);font-weight:800">Follow-up today</span></div>`;
+      })()}
+      ${(() => {
+        // Task #26 — Meds pill: shows today's scheduled-med status (taken / expected).
+        // Only displays if at least one scheduled med exists. Click opens Meds tab.
+        if (typeof getTodaysMedStatus !== 'function') return '';
+        const ms = getTodaysMedStatus();
+        if (ms.expected === 0) return '';
+        const isComplete = ms.pending === 0;
+        const borderC = isComplete ? 'var(--green)' : 'var(--cyan)';
+        const bgC = isComplete ? 'var(--green-bg)' : 'var(--cyan-bg, rgba(34,211,238,0.10))';
+        const fontC = isComplete ? 'var(--green)' : 'var(--cyan)';
+        return `<div class="pill" style="cursor:pointer;border-color:${borderC};background:${bgC}" onclick="openBodyLog('meds')" title="Today's medications: ${ms.taken}/${ms.expected} taken, ${ms.pending} pending">💊 <span class="pill-val" style="color:${fontC};font-weight:800">Meds ${ms.taken}/${ms.expected}</span></div>`;
+      })()}
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
       <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
@@ -10291,11 +13040,14 @@ function renderDaily() {
     </div>
   `;
   restoreOpenSections(dateStr);
-  // Auto-fire morning check-in if conditions met (today's view only, 5-11am,
-  // yesterday's last_meal empty, not shown today). Slight delay so the user
-  // sees the dashboard for a beat before the popup appears.
-  if (currentDayOffset === 0 && _shouldAutoFireMorningPrompt()) {
-    setTimeout(() => { if (_shouldAutoFireMorningPrompt()) openMorningPrompt(); }, 600);
+  // Auto-fire check-in prompts on today's view only, with a slight delay so the
+  // dashboard paints first. Morning takes priority over evening if both eligible.
+  if (currentDayOffset === 0) {
+    if (_shouldAutoFireMorningPrompt()) {
+      setTimeout(() => { if (_shouldAutoFireMorningPrompt()) openMorningPrompt(); }, 600);
+    } else if (typeof _shouldAutoFireEveningPrompt === 'function' && _shouldAutoFireEveningPrompt()) {
+      setTimeout(() => { if (_shouldAutoFireEveningPrompt()) openEveningPrompt(); }, 600);
+    }
   }
 }
 
