@@ -5735,7 +5735,13 @@ function drawWeightProjectionChart(canvasId, weights, events) {
   canvas.width = w * dpr; canvas.height = h * dpr;
   ctx.scale(dpr, dpr);
 
-  const pad = { t: 10, b: 20, l: 36, r: 8 };
+  // Task #27 — reserved annotation strip ABOVE the data area for diet event markers.
+  // Previously markers were drawn inside the data area and visually conflicted with
+  // weight values (eye reads a flag-dot at the top of the y-axis as a weight value).
+  // Strip height is conditional on whether there are events to display.
+  const _hasEvents = !!(events && events.length);
+  const annoStripH = _hasEvents ? 12 : 0;  // 12px reserved above the chart for markers
+  const pad = { t: 10 + annoStripH, b: 20, l: 36, r: 8 };
   const cw = w - pad.l - pad.r, ch = h - pad.t - pad.b;
 
   // Build projection from first weight entry
@@ -5861,47 +5867,65 @@ function drawWeightProjectionChart(canvasId, weights, events) {
   });
 
   // ── Diet event markers (annotations) ──
-  // Draw small colored dots near the top of the chart at each event date.
-  // Colors mirror DIET_EVENT_TAGS so the weight chart shows when alcohol /
-  // restaurant / binge events happened, helping spot multi-day water/sodium
-  // bumps that follow them.
-  if (events && events.length && typeof DIET_EVENT_TAGS !== 'undefined') {
+  // Task #27: drawn in the dedicated annotation strip ABOVE the chart data area
+  // (pad.t was inflated by annoStripH to make room). Previously these sat inside
+  // the data area and visually conflicted with weight values.
+  if (_hasEvents && typeof DIET_EVENT_TAGS !== 'undefined') {
     const eventStartMs = startDate.getTime();
     const eventEndMs = endDate.getTime();
-    // Group by date so we stack dots vertically per day
+    const stripTop = 10;  // top edge of strip (matches the original outer pad.t)
+    // Group by date so we stack dots horizontally per day (within the strip)
     const byDate = {};
     events.forEach(e => {
       const t = new Date(e.date + 'T12:00:00').getTime();
       if (t < eventStartMs || t > eventEndMs) return;
       if (!byDate[e.date]) byDate[e.date] = [];
-      // One dot per tag on the event (or 1 generic dot if no tags)
+      // One marker per tag on the event (or 1 generic dot if no tags).
+      // Skip meal-type tags (breakfast/lunch/dinner/snack) — those are normal eating,
+      // not the deviation/correlation flags this annotation strip is meant for.
       const tags = (e.tags && e.tags.length) ? e.tags : ['note'];
-      tags.forEach(tagId => byDate[e.date].push(tagId));
+      tags.forEach(tagId => {
+        const tag = DIET_EVENT_TAGS.find(t => t.id === tagId);
+        if (tag && tag.kind === 'meal') return; // meal-type tag — not a flag
+        byDate[e.date].push(tagId);
+      });
+      if (byDate[e.date].length === 0) delete byDate[e.date];
     });
+    // Marker y: centered vertically in the annotation strip
+    const markerY = stripTop + Math.floor(annoStripH / 2);
     Object.keys(byDate).forEach(date => {
       const x = toX(date);
       const tagIds = byDate[date].slice(0, 4); // cap visual stack at 4
+      // Render dots side-by-side rather than vertical stack — they live in a narrow strip
+      const totalW = (tagIds.length - 1) * 5; // 5px spacing between centers
+      const startOffset = -totalW / 2;
       tagIds.forEach((tagId, idx) => {
         const tag = DIET_EVENT_TAGS.find(t => t.id === tagId);
         const color = tag ? getComputedColor(tag.color) : getComputedColor('var(--text-muted)');
-        const y = pad.t + 3 + idx * 4;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.arc(x + startOffset + idx * 5, markerY, 2, 0, Math.PI * 2);
         ctx.fill();
       });
-      // Thin vertical guide-line down to the chart so eye can correlate
+      // Thin vertical guide-line from the marker strip down into the data area
       ctx.strokeStyle = getComputedColor('var(--text-muted)');
       ctx.globalAlpha = 0.18;
       ctx.lineWidth = 0.5;
       ctx.setLineDash([1, 2]);
       ctx.beginPath();
-      ctx.moveTo(x, pad.t + 3 + tagIds.length * 4);
+      ctx.moveTo(x, markerY + 3);
       ctx.lineTo(x, pad.t + ch);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
     });
+    // Separator line between annotation strip and data area
+    ctx.strokeStyle = getComputedColor('var(--divider)');
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t - 1);
+    ctx.lineTo(w - pad.r, pad.t - 1);
+    ctx.stroke();
   }
 }
 
@@ -8553,7 +8577,14 @@ function setEnergy(dateStr, val) { setEnergyAM(dateStr, val); }
 function getSleep(dateStr) { return _getDailyField(dateStr, 'sleep'); }
 function setSleep(dateStr, val) { dbSaveDaily(dateStr, 'sleep', val); renderDaily(); }
 function getWeight(dateStr) { return _getDailyField(dateStr, 'weight'); }
-function setWeight(dateStr, val) { dbSaveDaily(dateStr, 'weight', val); renderDaily(); }
+function setWeight(dateStr, val) {
+  // Task #27 — refuse 0 / NaN / negative values (was silently storing 0.0 from accidental saves
+  // and creating phantom chart dots). Treat 0 or empty as "no weight today" → store NULL.
+  const num = Number(val);
+  const finalVal = (isFinite(num) && num > 0) ? num : null;
+  dbSaveDaily(dateStr, 'weight', finalVal);
+  renderDaily();
+}
 function getFirstMeal(dateStr) { return _getDailyField(dateStr, 'first_meal'); }
 function setFirstMeal(dateStr, val) { dbSaveDaily(dateStr, 'first_meal', val); renderDaily(); }
 function getLastMeal(dateStr) { return _getDailyField(dateStr, 'last_meal'); }
