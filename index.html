@@ -2917,7 +2917,6 @@
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-month" style="font-size:13px"></button>
       <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
-      <button class="nav-btn" onclick="openScheduleEditor()" title="Edit custody & schedule" style="font-size:13px" id="sched-edit-btn">🗓️</button>
       <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
@@ -2991,6 +2990,14 @@
       <button class="popup-close" onclick="closeSettings()">✕ Close</button>
     </div>
     <div class="popup-body" id="settings-body">
+      <!-- Schedule & custody. Moved here from the month-view nav 2026-08-14 —
+           it's configuration, not a view control, so it belongs with settings. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🗓️ Schedule &amp; custody</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Enter custody blocks, events and notes. Fill a date range, or edit day by day.</div>
+        <div id="settings-custody-coverage" style="margin-bottom:8px"></div>
+        <button onclick="closeSettings(); openScheduleEditor();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🗓️ Open schedule editor</button>
+      </div>
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">👤 Profile & TDEE</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">Estimates your daily energy expenditure (Mifflin-St Jeor BMR × activity multiplier). Honest caveat: formula estimates are ±300-500 cal off actual TDEE for most people — the activity guess is the biggest source of error. Treat the number as a starting point, not a precise target.</div>
@@ -3910,6 +3917,12 @@ async function openSettings() {
   refreshHealthStatus();
   await loadProfile();
   renderProfileSection();
+  // Surface custody runway inside Settings so the state is visible at the entry
+  // point, not only after opening the editor.
+  const covEl = document.getElementById('settings-custody-coverage');
+  if (covEl && typeof _schedCoverageHtml === 'function') {
+    covEl.innerHTML = _schedCoverageHtml().replace('id="sched-coverage"', '').replace('margin-bottom:14px', 'margin-bottom:0');
+  }
   document.getElementById('settings-backdrop').classList.add('open');
 }
 
@@ -4050,6 +4063,103 @@ function closeSettings() { document.getElementById('settings-backdrop').classLis
 
 let _schedEditorMonthOffset = 0;
 
+// ══════════════════════════════════════════════════════════════
+// CUSTODY SHARE / 40% THRESHOLD  (added 2026-08-14)
+// ══════════════════════════════════════════════════════════════
+// Section 9 of the Federal Child Support Guidelines lets a court depart from the
+// table amount where a parent has the child not less than 40% of the time over a
+// year — 146 days of 365. Dropping below that line has a financial consequence,
+// so this needs to be visible WHILE editing, not discovered in December.
+//
+// Deliberate design choices:
+//  • Unassigned days are counted as NOT Craig's. A blank day is not neutral; if
+//    the year ended today it would not count toward his share. Showing the
+//    optimistic number would be the dangerous direction to be wrong in.
+//  • Reports best case / worst case rather than one number, because with days
+//    still unassigned the honest answer is a range, and the range is what tells
+//    him whether the outcome is still recoverable.
+//  • This is an early-warning indicator, NOT a legal calculation. Courts differ
+//    on method (strict mathematical vs functional), the test is care and control
+//    rather than physical presence, overnights count in full while daytime-only
+//    visits are counted hourly, and whole-day C/L flags cannot capture a 3pm
+//    handover. The caveat is rendered in the UI, not just in this comment.
+const CUSTODY_THRESHOLD_PCT = 0.40;
+
+function getCustodyShare(year) {
+  year = year || new Date().getFullYear();
+  const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const totalDays = isLeap ? 366 : 365;
+  const thresholdDays = Math.ceil(totalDays * CUSTODY_THRESHOLD_PCT);
+
+  let craig = 0, lisa = 0;
+  const prefix = String(year) + '-';
+  Object.keys(CUSTODY_CALENDAR).forEach(d => {
+    if (d.indexOf(prefix) !== 0) return;
+    const v = CUSTODY_CALENDAR[d];
+    if (v === 'C') craig++;
+    else if (v === 'L') lisa++;
+  });
+  const unassigned = totalDays - craig - lisa;
+
+  const worstCaseDays = craig;                          // every blank day goes to Lisa
+  const bestCaseDays  = craig + Math.max(0, unassigned); // every blank day goes to Craig
+
+  let status;
+  if (worstCaseDays >= thresholdDays)      status = 'safe';      // clears even at worst
+  else if (bestCaseDays < thresholdDays)   status = 'below';     // cannot reach it
+  else                                     status = 'at_risk';   // still in play
+
+  return {
+    year, totalDays, thresholdDays, craig, lisa, unassigned,
+    worstCaseDays, bestCaseDays,
+    pctNow: craig / totalDays,
+    pctOfAssigned: (craig + lisa) ? craig / (craig + lisa) : 0,
+    daysShort: Math.max(0, thresholdDays - craig),
+    status,
+  };
+}
+
+// Compact status chip — used on the month view where space is tight.
+function custodyShareChipHtml(year) {
+  const s = getCustodyShare(year);
+  const tone = s.status === 'safe' ? 'green' : (s.status === 'below' ? 'red' : 'orange');
+  const icon = s.status === 'safe' ? '✓' : (s.status === 'below' ? '✕' : '!');
+  return `<span title="Craig ${s.craig} of ${s.totalDays} days in ${s.year}. 40% threshold = ${s.thresholdDays} days. Indicator only — not a legal calculation."
+    style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));color:var(--${tone});font-size:10px;font-weight:700;white-space:nowrap">
+    ${icon} ${s.year} custody ${(s.pctNow*100).toFixed(1)}% · ${s.craig}/${s.thresholdDays}d
+  </span>`;
+}
+
+// Full panel — used inside the schedule editor, updates live as days are edited.
+function custodySharePanelHtml(year) {
+  const s = getCustodyShare(year);
+  const tone = s.status === 'safe' ? 'green' : (s.status === 'below' ? 'red' : 'orange');
+  let headline, detail;
+  if (s.status === 'safe') {
+    headline = `✓ ${s.craig} days — above the ${s.thresholdDays}-day line`;
+    detail = `Holds even if all ${s.unassigned} unassigned day${s.unassigned === 1 ? '' : 's'} go to Lisa.`;
+  } else if (s.status === 'below') {
+    headline = `✕ ${s.craig} days — cannot reach ${s.thresholdDays} this year`;
+    detail = `Even taking all ${s.unassigned} remaining unassigned day${s.unassigned === 1 ? '' : 's'}, the maximum is ${s.bestCaseDays}.`;
+  } else {
+    headline = `! ${s.craig} days — ${s.daysShort} short of the ${s.thresholdDays}-day line`;
+    detail = `${s.unassigned} day${s.unassigned === 1 ? ' is' : 's are'} still unassigned. Take ${s.daysShort} or more and you clear it; leave them all to Lisa and the year closes at ${(s.worstCaseDays/s.totalDays*100).toFixed(1)}%.`;
+  }
+  return `<div id="custody-share-panel" style="padding:10px;border-radius:6px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));margin-bottom:14px">
+    <div style="color:var(--${tone});font-size:11.5px;font-weight:700;line-height:1.5">${headline}</div>
+    <div style="color:var(--text);font-size:10.5px;line-height:1.55;margin-top:4px">${detail}</div>
+    <div style="color:var(--text-muted);font-size:9.5px;line-height:1.5;margin-top:6px">
+      ${s.year}: Craig ${s.craig} · Lisa ${s.lisa} · unassigned ${s.unassigned} — ${(s.pctNow*100).toFixed(1)}% of the calendar year
+      (${(s.pctOfAssigned*100).toFixed(1)}% of assigned days only).
+    </div>
+    <div style="color:var(--text-muted);font-size:9.5px;line-height:1.5;margin-top:6px;border-top:1px solid var(--divider);padding-top:6px">
+      Indicator only, not a legal calculation. Courts differ on method, count care and control rather than presence,
+      and treat overnights differently from part-days — a whole-day flag can't capture a mid-afternoon handover.
+      Confirm anything that matters with your lawyer.
+    </div>
+  </div>`;
+}
+
 // Surfaces expiry on the daily view. Deliberately not dismissible: the whole
 // failure was that nothing said anything for 45 days. Threshold is 14 days of
 // remaining runway — enough lead time to ask Lisa without it being nagging.
@@ -4109,23 +4219,12 @@ function renderScheduleEditor() {
   const inputStyle = 'padding:6px 8px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box';
   const labelStyle = 'display:block;font-size:10px;color:var(--text-dim);margin-bottom:3px;font-weight:600';
 
-  // ── Coverage banner ────────────────────────────────────────
-  const cov = getCustodyCoverage();
-  let covHtml = '';
-  if (!cov.last) {
-    covHtml = `<div style="padding:10px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:600;margin-bottom:14px">
-      ⚠ No custody data loaded at all.</div>`;
-  } else {
-    const d = cov.daysAhead;
-    const tone = d < 0 ? 'red' : (d < 14 ? 'orange' : 'green');
-    const msg = d < 0
-      ? `⚠ Custody data ran out ${Math.abs(d)} days ago (last entry ${cov.last}). Days since then have no custody context — week tinting and the custody-aware nudges are running blank.`
-      : (d < 14
-        ? `⏳ Custody data runs through ${cov.last} — only ${d} day${d === 1 ? '' : 's'} ahead. Worth extending now.`
-        : `✓ Custody data runs through ${cov.last} — ${d} days ahead.`);
-    // --red-border isn't defined in any theme; fall back to --red.
-    covHtml = `<div style="padding:10px;border-radius:6px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));color:var(--${tone});font-size:11px;font-weight:600;line-height:1.5;margin-bottom:14px">${msg}</div>`;
-  }
+  // ── Coverage banner + 40% custody-share panel ──────────────
+  // The share panel is scoped to the year currently being edited, so paging to
+  // December shows the December-relevant year rather than always today's.
+  const covHtml = _schedCoverageHtml() + custodySharePanelHtml(
+    new Date(new Date().getFullYear(), new Date().getMonth() + _schedEditorMonthOffset, 1).getFullYear()
+  );
 
   // ── Range fill ─────────────────────────────────────────────
   // Custody arrives from Lisa as blocks ("Craig has them Aug 17-21"), so a
@@ -4164,20 +4263,12 @@ function renderScheduleEditor() {
   let rows = '';
   for (let day = 1; day <= daysInMonth; day++) {
     const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    const cur = CUSTODY_CALENDAR[dStr] || '';
     const dow = dowNames[new Date(year, month, day).getDay()];
     const isToday = dStr === todayStr;
-    const seg = [['C', 'Craig', 'green'], ['L', 'Lisa', 'pink'], ['', '–', 'text-dim']].map(([val, lbl, colr]) => {
-      const on = cur === val;
-      const bg = on ? (val === 'C' ? 'var(--green-bg)' : val === 'L' ? 'var(--pink-bg)' : 'var(--input-bg)') : 'transparent';
-      const fg = on ? (val === 'C' ? 'var(--green)' : val === 'L' ? 'var(--pink)' : 'var(--text)') : 'var(--text-muted)';
-      const bd = on ? (val === 'C' ? 'var(--green-border)' : val === 'L' ? 'var(--pink-border)' : 'var(--card-border)') : 'transparent';
-      return `<button onclick="schedSetDay('${dStr}','${val}')" style="padding:3px 7px;border-radius:5px;border:1px solid ${bd};background:${bg};color:${fg};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${lbl}</button>`;
-    }).join('');
 
     rows += `<div style="display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid var(--divider);${isToday ? 'background:var(--purple-bg);border-radius:5px' : ''}">
       <div style="min-width:52px;font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums">${dow} ${day}</div>
-      <div style="display:flex;gap:3px;flex-shrink:0">${seg}</div>
+      <div id="sched-seg-${dStr}" style="display:flex;gap:3px;flex-shrink:0">${_schedSegHtml(dStr)}</div>
       <input type="text" value="${(CSV_EVENTS[dStr] || '').replace(/"/g, '&quot;')}" placeholder="event"
         onchange="schedSetDayField('${dStr}','event',this.value)"
         style="${inputStyle};flex:1;min-width:0;font-size:11px;padding:4px 6px">
@@ -4207,12 +4298,65 @@ function renderScheduleEditor() {
   body.innerHTML = covHtml + rangeHtml + dayListHtml + footer;
 }
 
+// The three C / L / – buttons for one day. Shared by the full render and the
+// targeted single-row update so the two can't drift apart.
+function _schedSegHtml(dStr) {
+  const cur = CUSTODY_CALENDAR[dStr] || '';
+  return [['C','Craig'],['L','Lisa'],['','–']].map(([val, lbl]) => {
+    const on = cur === val;
+    const bg = on ? (val === 'C' ? 'var(--green-bg)' : val === 'L' ? 'var(--pink-bg)' : 'var(--input-bg)') : 'transparent';
+    const fg = on ? (val === 'C' ? 'var(--green)' : val === 'L' ? 'var(--pink)' : 'var(--text)') : 'var(--text-muted)';
+    const bd = on ? (val === 'C' ? 'var(--green-border)' : val === 'L' ? 'var(--pink-border)' : 'var(--card-border)') : 'transparent';
+    return `<button onclick="schedSetDay('${dStr}','${val}')" style="padding:3px 7px;border-radius:5px;border:1px solid ${bd};background:${bg};color:${fg};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${lbl}</button>`;
+  }).join('');
+}
+
 // Write one day's custody value, then persist.
+//
+// FIXED 2026-08-14: this used to call renderScheduleEditor(), which rebuilt the
+// whole popup body via innerHTML. That threw away the day-list's scrollTop, so
+// tapping "Lisa" on, say, Nov 18 snapped the list back to the 1st of the month —
+// making it near-impossible to correct a run of days. Now only the tapped row's
+// buttons and the coverage banner are repainted, so scroll position and any
+// half-typed event/notes text survive untouched.
 function schedSetDay(dStr, val) {
   if (val) CUSTODY_CALENDAR[dStr] = val;
   else delete CUSTODY_CALENDAR[dStr];
   _syncScheduleRowToSupabase(dStr);
-  renderScheduleEditor();
+  const seg = document.getElementById('sched-seg-' + dStr);
+  if (seg) seg.innerHTML = _schedSegHtml(dStr);
+  else renderScheduleEditor();   // row not on screen (month changed) — full repaint
+  _schedRefreshCoverage();
+}
+
+// Repaint just the coverage banner and the 40% share panel, without touching the
+// rest of the popup — so the custody percentage moves live as days are toggled,
+// which is the whole point of having it here rather than on a report screen.
+function _schedRefreshCoverage() {
+  const el = document.getElementById('sched-coverage');
+  if (el) el.outerHTML = _schedCoverageHtml();
+  const sp = document.getElementById('custody-share-panel');
+  if (sp) {
+    const y = new Date(new Date().getFullYear(), new Date().getMonth() + _schedEditorMonthOffset, 1).getFullYear();
+    sp.outerHTML = custodySharePanelHtml(y);
+  }
+  if (typeof refreshCustodyGapBanner === 'function') refreshCustodyGapBanner();
+}
+
+function _schedCoverageHtml() {
+  const cov = getCustodyCoverage();
+  if (!cov.last) {
+    return `<div id="sched-coverage" style="padding:10px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:600;margin-bottom:14px">⚠ No custody data loaded at all.</div>`;
+  }
+  const d = cov.daysAhead;
+  const tone = d < 0 ? 'red' : (d < 14 ? 'orange' : 'green');
+  const msg = d < 0
+    ? `⚠ Custody data ran out ${Math.abs(d)} days ago (last entry ${cov.last}). Days since then have no custody context — week tinting and the custody-aware nudges are running blank.`
+    : (d < 14
+      ? `⏳ Custody data runs through ${cov.last} — only ${d} day${d === 1 ? '' : 's'} ahead. Worth extending now.`
+      : `✓ Custody data runs through ${cov.last} — ${d} days ahead.`);
+  // --red-border isn't defined in any theme; fall back to --red.
+  return `<div id="sched-coverage" style="padding:10px;border-radius:6px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));color:var(--${tone});font-size:11px;font-weight:600;line-height:1.5;margin-bottom:14px">${msg}</div>`;
 }
 
 // Write one day's event/notes text, then persist. No re-render — that would
@@ -12282,6 +12426,20 @@ function buildActivityDecisionTree(dateStr) {
   const headerHint = chosen
     ? `<span class="adt-hint">Today: <strong>${ACTIVITY_LEVELS.find(x => x.id === chosen).label}</strong> <span class="adt-clear" onclick="clearActivityLevel('${dateStr}')" title="Clear today's activity level">×</span></span>`
     : (suggested ? `<span class="adt-hint">Suggested: <strong>${ACTIVITY_LEVELS.find(x => x.id === suggested).label}</strong> based on today's anticipated load + body flags</span>` : `<span class="adt-hint">Pick today's capacity</span>`);
+  // Morning exercise intent, echoed back (added 2026-08-14).
+  // A stated intention that never resurfaces is just a survey question. Showing it
+  // here closes the loop between "what I said I wanted at 6am" and the log itself.
+  // Phrased as a reminder, never as an accusation — if the day went differently
+  // that's information, not a failure, and the wording shouldn't imply otherwise.
+  let intentHtml = '';
+  if (d.exercise_intent && typeof EXERCISE_INTENTS !== 'undefined') {
+    const it = EXERCISE_INTENTS.find(x => x.id === d.exercise_intent);
+    if (it) {
+      intentHtml = `<div style="font-size:10.5px;color:var(--text-dim);padding:5px 2px 0;line-height:1.5">
+        This morning you wanted to: <strong style="color:var(--text)">${it.icon} ${it.label}</strong>
+      </div>`;
+    }
+  }
   return `
     <div class="adt-wrap">
       <div class="adt-header">
@@ -12289,6 +12447,7 @@ function buildActivityDecisionTree(dateStr) {
         ${headerHint}
       </div>
       <div class="adt-row">${chips}</div>
+      ${intentHtml}
     </div>
   `;
 }
@@ -12303,6 +12462,26 @@ const SLEEP_BEHAVIORS = [
   { id: 'screens_dim_by_10pm',    icon: '📱', label: 'Screens down',     desc: 'Dim / off ~30-60 min before bed' },
   { id: 'winddown_ritual',        icon: '🌙', label: 'Wind-down ritual', desc: 'Reading, stretching, lights low' },
 ];
+// Morning exercise intent (added 2026-08-14).
+// Craig described himself as driven and wanted to be asked what he WANTS to do,
+// rather than be told. Two things this buys us beyond the nudge itself:
+//   1. intent-vs-actual delta (compare against workout_log), the same shape of
+//      signal as anticipated_load vs actual_load
+//   2. a stated intention early in the day, which is the single most reliable
+//      predictor of whether the session happens
+// 'rest' is deliberately a first-class option, not an absence — choosing rest is
+// a decision, and logging it stops rest days reading as missed days.
+const EXERCISE_INTENTS = [
+  { id: 'row',        icon: '🚣', label: 'Row',       desc: 'Concept2' },
+  { id: 'walk',       icon: '🚶', label: 'Walk',      desc: 'Outdoor / easy' },
+  { id: 'gym',        icon: '🏋️', label: 'Gym',       desc: 'Machines / free weights' },
+  { id: 'kettlebell', icon: '🔔', label: 'Kettlebell', desc: 'At home' },
+  { id: 'home',       icon: '🏠', label: 'Home',      desc: 'Bodyweight' },
+  { id: 'yoga',       icon: '🧘', label: 'Yoga',      desc: 'Mobility / stretch' },
+  { id: 'rest',       icon: '🛌', label: 'Rest',      desc: 'Chosen, not missed' },
+  { id: 'undecided',  icon: '🤔', label: 'Undecided', desc: "See how the day goes" },
+];
+
 // Per-day flag to avoid re-popping during the same morning
 function _morningPromptShownToday() {
   const today = new Date().toISOString().slice(0,10);
@@ -12313,16 +12492,20 @@ function _markMorningPromptShown() {
   localStorage.setItem('morning_prompt_shown_' + today, '1');
 }
 function _shouldAutoFireMorningPrompt() {
-  // Fire if: 5am-11am local time, yesterday's last_meal empty, not shown today.
+  // Fire if: 5am-11am local time and not already shown today.
+  //
+  // CHANGED 2026-08-14. The old gate also required yesterday's last_meal to be
+  // empty, which meant the prompt silently stopped appearing on any morning
+  // Craig had closed out the previous evening — exactly the well-organised
+  // mornings where he'd have answered. Since the prompt now leads with weight,
+  // and Craig weighs himself every morning before doing anything else, the
+  // prompt needs to be there every morning. Last meal became one question
+  // among several; it shouldn't be the gatekeeper for all of them.
   const now = new Date();
   const hr = now.getHours();
   if (hr < 5 || hr >= 11) return false;
   if (_morningPromptShownToday()) return false;
-  const yest = new Date(now);
-  yest.setDate(yest.getDate() - 1);
-  const yestStr = yest.toISOString().slice(0,10);
-  const yestLM = getLastMeal(yestStr);
-  return !yestLM || yestLM === 0;
+  return true;
 }
 function openMorningPrompt(opts) {
   opts = opts || {};
@@ -12338,6 +12521,8 @@ function openMorningPrompt(opts) {
     goalChoice: today.daily_goal || null,
     restedChoice: today.felt_rested || null,
     anticipatedChoice: today.anticipated_load || null,
+    intentChoice: today.exercise_intent || null,
+    weightValue: (today.weight > 0 ? today.weight : null),
     missedExpanded: false,
   };
   const bd = document.getElementById('morning-prompt-backdrop');
@@ -12369,6 +12554,55 @@ function _mpSelectRested(level) {
 function _mpSelectAnticipated(level) {
   window._morningPromptState.anticipatedChoice = level;
   renderMorningPrompt();
+}
+function _mpSelectIntent(intentId) {
+  const s = window._morningPromptState;
+  // Tap the selected chip again to clear it — avoids being stuck with a
+  // mis-tap you can't undo without closing the prompt.
+  s.intentChoice = (s.intentChoice === intentId) ? null : intentId;
+  renderMorningPrompt();
+}
+// Weight is typed, not tapped, so this does NOT re-render — a re-render mid-entry
+// would blow away the input's focus and cursor position on iOS.
+function _mpWeightInput(val) {
+  const n = parseFloat(val);
+  window._morningPromptState.weightValue = (isFinite(n) && n > 0) ? n : null;
+  const d = document.getElementById('mp-weight-delta');
+  if (d) d.innerHTML = _mpWeightDeltaHtml();
+  const btn = document.querySelector('.mp-done-btn');
+  if (btn) btn.disabled = !_mpCanSubmit();
+}
+// Most recent weight BEFORE today, for the delta readout.
+function _mpPriorWeight() {
+  const s = window._morningPromptState;
+  if (!s || !DB_CACHE.daily) return null;
+  const prior = Object.keys(DB_CACHE.daily)
+    .filter(d => d < s.todayStr && DB_CACHE.daily[d] && DB_CACHE.daily[d].weight > 0)
+    .sort();
+  if (!prior.length) return null;
+  const d = prior[prior.length - 1];
+  return { date: d, weight: DB_CACHE.daily[d].weight };
+}
+function _mpWeightDeltaHtml() {
+  const s = window._morningPromptState;
+  const prior = _mpPriorWeight();
+  if (!prior) return '<span style="color:var(--text-muted)">No previous weight on record.</span>';
+  if (!s.weightValue) {
+    return `<span style="color:var(--text-muted)">Last: <b style="color:var(--text)">${prior.weight}</b> on ${prior.date}</span>`;
+  }
+  const delta = Math.round((s.weightValue - prior.weight) * 10) / 10;
+  // Deliberately neutral colouring. Day-to-day weight is mostly water, glycogen
+  // and gut content; a green/red judgement on overnight noise trains the wrong
+  // reaction. Trend lives on the chart, not here.
+  const arrow = delta === 0 ? '→' : (delta > 0 ? '↑' : '↓');
+  const sign = delta > 0 ? '+' : '';
+  return `<span style="color:var(--text-muted)">Last: <b style="color:var(--text)">${prior.weight}</b> (${prior.date}) · <b style="color:var(--text)">${arrow} ${sign}${delta}</b></span>`;
+}
+function _mpCanSubmit() {
+  const s = window._morningPromptState;
+  if (!s) return false;
+  return (s.lastMealChoice !== null) || !!s.goalChoice || !!s.restedChoice ||
+         !!s.anticipatedChoice || !!s.intentChoice || (s.weightValue > 0);
 }
 function _mpToggleMissed() {
   window._morningPromptState.missedExpanded = !window._morningPromptState.missedExpanded;
@@ -12403,6 +12637,15 @@ function _mpSubmit() {
   // 4. Anticipated load (1-4) — morning forecast; evening prompt asks the actual
   if (s.anticipatedChoice) {
     dbSaveDaily(s.todayStr, 'anticipated_load', s.anticipatedChoice);
+  }
+  // 5. Morning weight. Routed through setWeight() rather than dbSaveDaily so it
+  // inherits the 2026-06-16 zero/NaN guard that stopped phantom 0-weight rows.
+  if (s.weightValue > 0 && typeof setWeight === 'function') {
+    setWeight(s.todayStr, s.weightValue);
+  }
+  // 6. Exercise intent — compare later against what actually got logged.
+  if (s.intentChoice) {
+    dbSaveDaily(s.todayStr, 'exercise_intent', s.intentChoice);
   }
   closeMorningPrompt();
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
@@ -12463,8 +12706,38 @@ function renderMorningPrompt() {
   // Submit gate: any of the four fields answered enables save. The original (lastMeal
   // && goal) required both — too gatekeepy now that there are 4 questions. Any answer
   // is signal worth saving; the rest can be skipped without ceremony.
-  const canSubmit = (s.lastMealChoice !== null) || s.goalChoice || s.restedChoice || s.anticipatedChoice;
-  body.innerHTML = `
+  const canSubmit = _mpCanSubmit();
+
+  // Exercise intent chips (added 2026-08-14)
+  const intentChips = EXERCISE_INTENTS.map(x =>
+    `<div class="mp-goal-chip ${s.intentChoice === x.id ? 'selected' : ''}" onclick="_mpSelectIntent('${x.id}')">
+      <div class="mp-goal-name">${x.icon} ${x.label}</div>
+      <div class="mp-goal-desc">${x.desc}</div>
+    </div>`
+  ).join('');
+
+  // Weight — first section, because it's the first thing Craig does each morning.
+  // autofocus is deliberately NOT set: on iOS it yanks the keyboard up and covers
+  // the rest of the prompt before he's seen it.
+  const weightHtml = `
+    <div class="mp-section">
+      <div class="mp-section-label">Weight this morning</div>
+      <div class="mp-section-hint">Straight after waking, before food or coffee — same conditions each day is what makes the trend readable.</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="number" id="mp-weight-input" inputmode="decimal" step="0.1" min="1" max="600"
+          value="${s.weightValue || ''}" placeholder="lbs"
+          oninput="_mpWeightInput(this.value)"
+          style="width:120px;padding:12px 14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center;box-sizing:border-box">
+        <div id="mp-weight-delta" style="font-size:11px;line-height:1.5">${_mpWeightDeltaHtml()}</div>
+      </div>
+    </div>`;
+
+  body.innerHTML = weightHtml + `
+    <div class="mp-section">
+      <div class="mp-section-label">What do you want to do today?</div>
+      <div class="mp-section-hint">What you'd like to do, not what you should. Tap again to clear.</div>
+      <div class="mp-goal-grid mp-goal-grid-4">${intentChips}</div>
+    </div>
     <div class="mp-section">
       <div class="mp-section-label">How rested do you feel?</div>
       <div class="mp-section-hint">Separate from how long you slept — this is the felt quality.</div>
@@ -14763,9 +15036,17 @@ function renderMonth() {
   document.getElementById('month-grid').innerHTML = html;
 
   // Legend
+  // 40% custody-share chip (added 2026-08-14). Scoped to the year being viewed,
+  // NOT the month — the s.9 threshold is measured over a year, and a per-month
+  // percentage would be actively misleading (a light month is meaningless if the
+  // annual total clears). Deliberately not a per-day marker for the same reason.
+  const shareChip = (typeof custodyShareChipHtml === 'function')
+    ? `<div class="legend-item" onclick="openScheduleEditor()" style="cursor:pointer">${custodyShareChipHtml(year)}</div>`
+    : '';
   document.getElementById('month-legend').innerHTML = `
     <div class="legend-item"><div class="legend-dot craig"></div>Craig (${mCraigDays}d)</div>
     <div class="legend-item"><div class="legend-dot lisa"></div>Lisa (${mLisaDays}d)</div>
+    ${shareChip}
     <div class="legend-item">🚣 Row · 🏋️ Gym · 🧘 Yoga · 😴 Rest</div>
     <div class="legend-item"><span style="color:var(--cyan)">▂</span> No school</div>
     <div class="legend-item"><span style="color:#ff4444">▂</span> Stat holiday</div>
