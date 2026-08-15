@@ -494,7 +494,7 @@
   .time-display { font-size: 28px; color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 1px; text-align: center; justify-self: center; }
 
   /* ── Main Cards Grid ── */
-  .main-content { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding: 8px 24px 10px; flex: 1; min-height: 0; }
+  .main-content { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; padding: 8px 24px 10px; flex: 1; min-height: 0; }
 
   .card {
     background: var(--card);
@@ -1611,6 +1611,235 @@
     border-color: var(--text);
   }
 
+  /* Task #28 — Library tab styles */
+  .lib-filter-row {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .lib-filter-chip {
+    padding: 5px 10px; border-radius: 14px;
+    border: 1px solid var(--card-border); background: var(--input-bg);
+    color: var(--text-muted); font-size: 10px; font-weight: 700;
+    cursor: pointer; font-family: inherit;
+  }
+  .lib-filter-chip:hover { color: var(--text); }
+  .lib-filter-chip.active {
+    border-color: var(--cyan); background: var(--cyan); color: #000;
+  }
+  .lib-sub-card {
+    margin-bottom: 5px;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: var(--input-bg); overflow: hidden;
+  }
+  .lib-sub-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; cursor: pointer; user-select: none;
+    font-size: 11px;
+  }
+  .lib-sub-header:hover { background: var(--card-bg); }
+  .lib-sub-icon { font-size: 14px; flex-shrink: 0; }
+  .lib-sub-name { font-weight: 700; flex: 1; min-width: 0; color: var(--text); }
+  .lib-sub-class {
+    font-size: 9px; color: var(--text-muted);
+    padding: 1px 6px; border-radius: 6px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    white-space: nowrap;
+  }
+  .lib-tax-badge {
+    font-size: 8px; font-weight: 800; text-transform: uppercase;
+    padding: 1px 5px; border-radius: 3px; letter-spacing: 0.3px;
+    cursor: help;
+  }
+  .lib-tax-yes { background: var(--green); color: #000; }
+  .lib-tax-no { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+  .lib-sub-toggle { color: var(--text-muted); font-size: 12px; }
+  .lib-sub-body {
+    padding: 8px 12px 10px;
+    border-top: 1px dashed var(--card-border);
+    font-size: 11px; line-height: 1.5;
+  }
+  .lib-fld { margin-bottom: 5px; }
+  .lib-fld-warn { background: var(--orange-bg); padding: 5px 7px; border-radius: 4px; border-left: 2px solid var(--orange); margin-bottom: 5px; }
+  .lib-fld-note { color: var(--text-muted); font-style: italic; }
+  .lib-key {
+    font-weight: 700; color: var(--text-dim);
+    text-transform: uppercase; font-size: 9px;
+    letter-spacing: 0.5px; margin-right: 4px;
+    display: inline-block; min-width: 100px;
+  }
+  .lib-product-list {
+    margin-top: 8px; padding-top: 6px;
+    border-top: 1px dashed var(--card-border);
+  }
+  .lib-product-variance-label {
+    font-size: 9px; color: var(--orange); font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .lib-product-row {
+    padding: 5px 8px; margin-bottom: 3px;
+    background: var(--card-bg); border-radius: 4px;
+    font-size: 10px;
+  }
+  .lib-product-variance { border-left: 2px solid var(--orange); }
+  .lib-product-brand {
+    font-weight: 800; color: var(--cyan);
+  }
+  .lib-product-name { margin-left: 4px; }
+  .lib-product-dose { color: var(--text-muted); font-size: 9px; margin-top: 2px; }
+  .lib-product-notes { color: var(--text-muted); font-size: 9px; margin-top: 3px; font-style: italic; }
+  .lib-source { margin-top: 6px; font-size: 10px; }
+  .lib-source a { color: var(--cyan); text-decoration: none; }
+  .lib-source a:hover { text-decoration: underline; }
+
+  /* Task #29 — Providers tab styles */
+  .prov-card {
+    margin-bottom: 6px;
+    border: 1px solid var(--card-border); border-radius: 6px;
+    background: var(--input-bg); overflow: hidden;
+  }
+  .prov-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px dashed var(--card-border);
+    font-size: 11px;
+  }
+  .prov-icon { font-size: 14px; flex-shrink: 0; }
+  .prov-name { font-weight: 700; flex: 1; min-width: 0; color: var(--text); }
+  .prov-type {
+    font-size: 9px; color: var(--text-muted);
+    padding: 1px 6px; border-radius: 6px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    white-space: nowrap;
+  }
+  .prov-body { padding: 8px 12px; font-size: 11px; line-height: 1.5; }
+  .prov-fld { margin-bottom: 4px; }
+  .prov-fld a { color: var(--cyan); text-decoration: none; }
+  .prov-fld a:hover { text-decoration: underline; }
+  .prov-notes { color: var(--text-muted); font-style: italic; margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--card-border); }
+
+  /* Task #30 — Body card on daily view (4th zone) */
+  .card-icon.body { background: var(--red-bg); color: var(--red); }
+  .body-card-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; margin-bottom: 3px;
+    background: var(--input-bg);
+    border-radius: 4px;
+    font-size: 11px; cursor: pointer;
+    transition: background 0.12s;
+  }
+  .body-card-row:hover { background: var(--card-bg); }
+  .body-card-row.body-card-empty {
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+    color: var(--green);
+    font-style: italic;
+  }
+  .body-card-row.body-card-divider {
+    margin-top: 8px;
+    border-top: 1px dashed var(--card-border);
+    padding-top: 8px;
+    background: transparent;
+  }
+  .body-card-row.body-card-urgent {
+    background: var(--red-bg, rgba(220,38,38,0.08));
+    border-left: 3px solid var(--red);
+  }
+  .body-card-row.body-card-more {
+    color: var(--text-muted);
+    font-style: italic;
+    background: transparent;
+  }
+  .body-card-icon { font-size: 14px; flex-shrink: 0; }
+  .body-card-pain {
+    font-weight: 800; font-variant-numeric: tabular-nums;
+    min-width: 38px;
+  }
+  .body-card-label { flex: 1; min-width: 0; }
+  .body-card-aux {
+    font-size: 10px; color: var(--text-muted);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .body-card-footer {
+    margin-top: 8px; padding: 7px 10px;
+    text-align: center; cursor: pointer;
+    border-top: 1px dashed var(--card-border);
+    color: var(--cyan); font-size: 11px; font-weight: 700;
+  }
+  .body-card-footer:hover { background: var(--input-bg); border-radius: 4px; }
+
+  /* Grid layout for 4 zones (was 3) on wider screens */
+  @media (min-width: 1100px) {
+    .main-content {
+      grid-template-columns: 1fr 1fr 1fr 1fr !important;
+    }
+  }
+
+  /* Task #31 — Dynamic medication chiclets (top of Tasks card) */
+  .med-chiclets-section {
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px dashed var(--card-border);
+  }
+  .med-chiclets-label {
+    font-size: 9px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--text-dim);
+    margin-bottom: 5px;
+  }
+  .med-chiclets-row {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .med-chiclet {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 10px;
+    background: var(--input-bg);
+    border: 1.5px solid var(--card-border);
+    border-left: 3px solid var(--med-color, var(--cyan));
+    border-radius: 6px;
+    cursor: pointer; user-select: none;
+    font-size: 11px;
+    transition: background 0.12s, transform 0.08s, border-color 0.12s;
+  }
+  .med-chiclet:hover { background: var(--card-bg); border-color: var(--med-color, var(--cyan)); }
+  .med-chiclet:active { transform: scale(0.98); }
+  .med-chiclet-icon { font-size: 14px; flex-shrink: 0; }
+  .med-chiclet-name { font-weight: 700; color: var(--text); }
+  .med-chiclet-dose {
+    font-size: 10px; color: var(--text-muted);
+    padding: 1px 5px; border-radius: 8px;
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    font-variant-numeric: tabular-nums;
+  }
+  .med-chiclet-status {
+    margin-left: auto;
+    font-size: 10px; font-weight: 800; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 10px; letter-spacing: 0.3px;
+    background: var(--med-color, var(--cyan));
+    color: #000;
+    white-space: nowrap;
+  }
+  /* Completed state: chiclet looks "checked off" */
+  .med-chiclet.med-chiclet-done {
+    opacity: 0.65;
+    background: var(--green-bg);
+    border-left-color: var(--green);
+  }
+  .med-chiclet.med-chiclet-done .med-chiclet-status {
+    background: var(--green); color: #000;
+  }
+  /* Attention-required: bold outline + subtle animation */
+  .med-chiclet.med-chiclet-attention {
+    border-width: 2.5px;
+    border-color: var(--orange);
+    border-left-color: var(--orange);
+    background: var(--orange-bg);
+    box-shadow: 0 0 0 1px var(--orange-border, rgba(251,146,60,0.20));
+  }
+  .med-chiclet.med-chiclet-attention .med-chiclet-status {
+    background: var(--orange); color: #000;
+  }
+  .med-chiclet.med-chiclet-attention .med-chiclet-name {
+    color: var(--orange);
+  }
+
   /* Flag-row pills (smaller, dimmer — secondary affordance for context tags) */
   .de-flag-label {
     font-size: 9px; font-weight: 700; text-transform: uppercase;
@@ -2601,6 +2830,14 @@
     <button class="bf-exit" onclick="exitBackfillMode()">Back to today ›</button>
   </div>
 
+  <!-- Custody coverage warning. Silent expiry is the failure mode this catches:
+       between Jul 1 and Aug 14 2026 the app ran 45 days with no custody data
+       and nothing on screen said so. Added 2026-08-14. -->
+  <div class="backfill-banner hidden" id="custody-gap-banner" style="background:var(--orange-bg);border-color:var(--orange-border);color:var(--orange)">
+    <span class="bf-label" id="custody-gap-label"></span>
+    <button class="bf-exit" onclick="openScheduleEditor()">Update schedule ›</button>
+  </div>
+
   <div class="main-content">
     <!-- Workout Card -->
     <div class="card zone zone-active" data-zone="workout">
@@ -2627,6 +2864,15 @@
         <div class="card-title">Tasks</div>
       </div>
       <div class="card-body" id="schedule-card"></div>
+    </div>
+
+    <!-- Body Card (task #30, 2026-06-16) — promoted from bottom-bar pill to a daily-view section -->
+    <div class="card zone" id="body-card-wrapper" data-zone="body">
+      <div class="card-header" onclick="toggleZone(this, openBodyLog)">
+        <div class="card-icon body" style="background:var(--red-bg);color:var(--red)">🩹</div>
+        <div class="card-title">Body</div>
+      </div>
+      <div class="card-body" id="body-card"></div>
     </div>
   </div>
 
@@ -2671,6 +2917,7 @@
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-month" style="font-size:13px"></button>
       <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
+      <button class="nav-btn" onclick="openScheduleEditor()" title="Edit custody & schedule" style="font-size:13px" id="sched-edit-btn">🗓️</button>
       <button class="nav-btn" onclick="openSettings()" title="Settings" style="font-size:13px">⚙️</button>
     </div>
   </div>
@@ -2724,6 +2971,19 @@
 </div>
 
 <!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
+<!-- ═══════════════ SCHEDULE / CUSTODY EDITOR ═══════════════ -->
+<!-- Self-serve custody entry. Closes the recurring gap where custody data
+     expires and only an AI session could extend it. See feature log 2026-08-14. -->
+<div class="popup-backdrop" id="schedule-backdrop" onclick="if(event.target===this)closeScheduleEditor()">
+  <div class="popup" style="max-width:520px">
+    <div class="popup-header">
+      <div class="popup-title">🗓️ Schedule &amp; custody</div>
+      <button class="popup-close" onclick="closeScheduleEditor()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="schedule-editor-body"></div>
+  </div>
+</div>
+
 <div class="popup-backdrop" id="settings-backdrop" onclick="if(event.target===this)closeSettings()">
   <div class="popup" style="max-width:440px">
     <div class="popup-header">
@@ -3774,6 +4034,252 @@ async function saveProfileFromUI() {
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════════
+// SCHEDULE / CUSTODY EDITOR  (added 2026-08-14)
+// ══════════════════════════════════════════════════════════════
+// Why this exists: custody data has expired twice (Apr 30, then Jun 30) and
+// each refill required an AI session. Between Jul 1 and Aug 14 2026 the app
+// ran with a blank custody layer — week tinting, the custody strip, and the
+// custody-aware PM nudge all silently fell back to defaults while daily
+// logging continued. The data looked fine; the context was gone.
+//
+// Writes through to Supabase `schedule` (PK = date, so a plain upsert works)
+// and mutates the in-memory CUSTODY_CALENDAR / CSV_EVENTS / CSV_NOTES maps so
+// views repaint without a reload.
+
+let _schedEditorMonthOffset = 0;
+
+// Surfaces expiry on the daily view. Deliberately not dismissible: the whole
+// failure was that nothing said anything for 45 days. Threshold is 14 days of
+// remaining runway — enough lead time to ask Lisa without it being nagging.
+function refreshCustodyGapBanner() {
+  const el = document.getElementById('custody-gap-banner');
+  const label = document.getElementById('custody-gap-label');
+  if (!el || !label) return;
+  const cov = getCustodyCoverage();
+  if (cov.daysAhead === null) {
+    label.textContent = '🗓️ No custody schedule loaded.';
+    el.classList.remove('hidden');
+  } else if (cov.daysAhead < 0) {
+    label.textContent = `🗓️ Custody schedule ended ${cov.last} — ${Math.abs(cov.daysAhead)} days with no context logged.`;
+    el.classList.remove('hidden');
+  } else if (cov.daysAhead < 14) {
+    label.textContent = `🗓️ Custody schedule runs out in ${cov.daysAhead} day${cov.daysAhead === 1 ? '' : 's'} (${cov.last}).`;
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+  }
+}
+
+// How far the custody calendar currently reaches. Negative daysAhead = expired.
+function getCustodyCoverage() {
+  const dates = Object.keys(CUSTODY_CALENDAR).filter(d => CUSTODY_CALENDAR[d]).sort();
+  if (!dates.length) return { last: null, daysAhead: null };
+  const last = dates[dates.length - 1];
+  const msPerDay = 86400000;
+  const daysAhead = Math.round(
+    (new Date(last + 'T00:00:00') - new Date(ds(new Date()) + 'T00:00:00')) / msPerDay
+  );
+  return { last, daysAhead };
+}
+
+function openScheduleEditor() {
+  _schedEditorMonthOffset = (typeof currentMonthOffset === 'number') ? currentMonthOffset : 0;
+  renderScheduleEditor();
+  document.getElementById('schedule-backdrop').classList.add('open');
+}
+
+function closeScheduleEditor() {
+  document.getElementById('schedule-backdrop').classList.remove('open');
+  // Repaint whichever view is showing so edits land immediately.
+  if (typeof renderMonth === 'function' && currentView === 'month') renderMonth();
+  else if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+function schedEditorChangeMonth(delta) {
+  _schedEditorMonthOffset += delta;
+  renderScheduleEditor();
+}
+
+function renderScheduleEditor() {
+  const body = document.getElementById('schedule-editor-body');
+  if (!body) return;
+
+  const inputStyle = 'padding:6px 8px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:12px;font-family:inherit;box-sizing:border-box';
+  const labelStyle = 'display:block;font-size:10px;color:var(--text-dim);margin-bottom:3px;font-weight:600';
+
+  // ── Coverage banner ────────────────────────────────────────
+  const cov = getCustodyCoverage();
+  let covHtml = '';
+  if (!cov.last) {
+    covHtml = `<div style="padding:10px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:600;margin-bottom:14px">
+      ⚠ No custody data loaded at all.</div>`;
+  } else {
+    const d = cov.daysAhead;
+    const tone = d < 0 ? 'red' : (d < 14 ? 'orange' : 'green');
+    const msg = d < 0
+      ? `⚠ Custody data ran out ${Math.abs(d)} days ago (last entry ${cov.last}). Days since then have no custody context — week tinting and the custody-aware nudges are running blank.`
+      : (d < 14
+        ? `⏳ Custody data runs through ${cov.last} — only ${d} day${d === 1 ? '' : 's'} ahead. Worth extending now.`
+        : `✓ Custody data runs through ${cov.last} — ${d} days ahead.`);
+    // --red-border isn't defined in any theme; fall back to --red.
+    covHtml = `<div style="padding:10px;border-radius:6px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));color:var(--${tone});font-size:11px;font-weight:600;line-height:1.5;margin-bottom:14px">${msg}</div>`;
+  }
+
+  // ── Range fill ─────────────────────────────────────────────
+  // Custody arrives from Lisa as blocks ("Craig has them Aug 17-21"), so a
+  // range fill is the primary tool and per-day editing is the fixup tool.
+  const todayStr = ds(new Date());
+  const rangeHtml = `
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">Fill a range</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Schedules arrive as blocks. Set a start and end date, pick who has the kids, apply. Repeat for each block.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="${labelStyle}">Start</label><input type="date" id="sched-range-start" value="${todayStr}" style="${inputStyle};width:100%"></div>
+        <div><label style="${labelStyle}">End</label><input type="date" id="sched-range-end" value="${todayStr}" style="${inputStyle};width:100%"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label style="${labelStyle}">Who has the kids</label>
+          <select id="sched-range-custody" style="${inputStyle};width:100%">
+            <option value="C">Craig</option>
+            <option value="L">Lisa</option>
+            <option value="">— clear —</option>
+          </select>
+        </div>
+        <div><label style="${labelStyle}">Note (optional)</label><input type="text" id="sched-range-note" placeholder="e.g. Edmonton comp" style="${inputStyle};width:100%"></div>
+      </div>
+      <button onclick="schedApplyRange()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">Apply to range</button>
+      <div id="sched-range-status" style="font-size:10px;color:var(--text-muted);margin-top:6px;min-height:13px"></div>
+    </div>`;
+
+  // ── Per-day list for one month ─────────────────────────────
+  const now = new Date();
+  const viewDate = new Date(now.getFullYear(), now.getMonth() + _schedEditorMonthOffset, 1);
+  const year = viewDate.getFullYear(), month = viewDate.getMonth();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  let rows = '';
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const cur = CUSTODY_CALENDAR[dStr] || '';
+    const dow = dowNames[new Date(year, month, day).getDay()];
+    const isToday = dStr === todayStr;
+    const seg = [['C', 'Craig', 'green'], ['L', 'Lisa', 'pink'], ['', '–', 'text-dim']].map(([val, lbl, colr]) => {
+      const on = cur === val;
+      const bg = on ? (val === 'C' ? 'var(--green-bg)' : val === 'L' ? 'var(--pink-bg)' : 'var(--input-bg)') : 'transparent';
+      const fg = on ? (val === 'C' ? 'var(--green)' : val === 'L' ? 'var(--pink)' : 'var(--text)') : 'var(--text-muted)';
+      const bd = on ? (val === 'C' ? 'var(--green-border)' : val === 'L' ? 'var(--pink-border)' : 'var(--card-border)') : 'transparent';
+      return `<button onclick="schedSetDay('${dStr}','${val}')" style="padding:3px 7px;border-radius:5px;border:1px solid ${bd};background:${bg};color:${fg};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${lbl}</button>`;
+    }).join('');
+
+    rows += `<div style="display:flex;align-items:center;gap:6px;padding:5px 4px;border-bottom:1px solid var(--divider);${isToday ? 'background:var(--purple-bg);border-radius:5px' : ''}">
+      <div style="min-width:52px;font-size:10px;color:var(--text-dim);font-variant-numeric:tabular-nums">${dow} ${day}</div>
+      <div style="display:flex;gap:3px;flex-shrink:0">${seg}</div>
+      <input type="text" value="${(CSV_EVENTS[dStr] || '').replace(/"/g, '&quot;')}" placeholder="event"
+        onchange="schedSetDayField('${dStr}','event',this.value)"
+        style="${inputStyle};flex:1;min-width:0;font-size:11px;padding:4px 6px">
+      <input type="text" value="${(CSV_NOTES[dStr] || '').replace(/"/g, '&quot;')}" placeholder="notes"
+        onchange="schedSetDayField('${dStr}','notes',this.value)"
+        style="${inputStyle};flex:1;min-width:0;font-size:11px;padding:4px 6px">
+    </div>`;
+  }
+
+  const dayListHtml = `
+    <div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">Day by day</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="schedEditorChangeMonth(-1)" style="padding:3px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">‹</button>
+          <div style="font-size:11px;font-weight:700;color:var(--text);min-width:96px;text-align:center">${monthNames[month]} ${year}</div>
+          <button onclick="schedEditorChangeMonth(1)" style="padding:3px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12px;cursor:pointer;font-family:inherit">›</button>
+        </div>
+      </div>
+      <div style="max-height:340px;overflow-y:auto;-webkit-overflow-scrolling:touch">${rows}</div>
+    </div>`;
+
+  const footer = `<div style="font-size:10px;color:var(--text-muted);margin-top:14px;line-height:1.5;border-top:1px solid var(--divider);padding-top:10px">
+    Changes save immediately to Supabase. <b>craig_schedule.csv is only a fallback</b> for when Supabase is unreachable — it does not update from here, so it will drift. That's expected.
+  </div>`;
+
+  body.innerHTML = covHtml + rangeHtml + dayListHtml + footer;
+}
+
+// Write one day's custody value, then persist.
+function schedSetDay(dStr, val) {
+  if (val) CUSTODY_CALENDAR[dStr] = val;
+  else delete CUSTODY_CALENDAR[dStr];
+  _syncScheduleRowToSupabase(dStr);
+  renderScheduleEditor();
+}
+
+// Write one day's event/notes text, then persist. No re-render — that would
+// blur the field the user is tabbing through.
+function schedSetDayField(dStr, field, val) {
+  const target = field === 'event' ? CSV_EVENTS : CSV_NOTES;
+  if (val && val.trim()) target[dStr] = val.trim();
+  else delete target[dStr];
+  _syncScheduleRowToSupabase(dStr);
+}
+
+// Apply custody (and optional note) across an inclusive date range.
+async function schedApplyRange() {
+  const startStr = document.getElementById('sched-range-start').value;
+  const endStr = document.getElementById('sched-range-end').value;
+  const custody = document.getElementById('sched-range-custody').value;
+  const note = (document.getElementById('sched-range-note').value || '').trim();
+  const status = document.getElementById('sched-range-status');
+
+  if (!startStr || !endStr) { status.textContent = 'Pick both a start and an end date.'; return; }
+  if (endStr < startStr) { status.textContent = 'End date is before the start date.'; return; }
+
+  const dates = [];
+  const cursor = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  // Guard against a mistyped year producing a runaway loop.
+  while (cursor <= end && dates.length < 800) {
+    dates.push(ds(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  dates.forEach(d => {
+    if (custody) CUSTODY_CALENDAR[d] = custody;
+    else delete CUSTODY_CALENDAR[d];
+    if (note) CSV_NOTES[d] = note;
+  });
+
+  status.textContent = `Saving ${dates.length} day${dates.length === 1 ? '' : 's'}…`;
+  const ok = await _syncScheduleRowsToSupabase(dates);
+  status.textContent = ok
+    ? `✓ ${dates.length} day${dates.length === 1 ? '' : 's'} saved.`
+    : `Saved locally, but the Supabase write failed — check your connection and reopen this editor to confirm.`;
+  renderScheduleEditor();
+}
+
+// Single-row upsert. `schedule.date` is the primary key, so onConflict is clean.
+async function _syncScheduleRowToSupabase(dStr) {
+  return _syncScheduleRowsToSupabase([dStr]);
+}
+
+async function _syncScheduleRowsToSupabase(dates) {
+  if (!sbReady) { console.warn('Supabase not ready — schedule change held in memory only'); return false; }
+  try {
+    const rows = dates.map(d => ({
+      date: d,
+      custody: CUSTODY_CALENDAR[d] || '',
+      event: CSV_EVENTS[d] || '',
+      notes: CSV_NOTES[d] || ''
+    }));
+    const { error } = await sb.from('schedule').upsert(rows, { onConflict: 'date' });
+    if (error) throw error;
+    return true;
+  } catch (e) {
+    console.warn('schedule upsert failed', e);
+    return false;
+  }
+}
 
 async function migrateLocalBwToSupabase() {
   const statusEl = document.getElementById('bw-migrate-status');
@@ -6043,7 +6549,11 @@ let CUSTODY_CALENDAR = {};  // date -> "C" or "L"
 let CSV_EVENTS = {};        // date -> event text
 let CSV_NOTES = {};         // date -> notes text
 
-// 75 no-school weekdays (CBE 2025-2026 + stat holidays + summer break)
+// 99 no-school weekdays.
+// Jan–Jul 2026 = CBE 2025-26 calendar (unchanged).
+// Aug 2026–Jun 2027 = CBE 2026-27 instructional calendar, loaded 2026-08-14.
+// Correction in that load: 2026-08-31 was previously flagged no-school but it is
+// the FIRST DAY of school for students — removed.
 const NO_SCHOOL = new Set([
   "2026-01-01", "2026-01-02", "2026-01-30", "2026-02-12", "2026-02-13", "2026-02-16",
   "2026-02-27", "2026-03-23", "2026-03-24", "2026-03-25", "2026-03-26", "2026-03-27",
@@ -6055,9 +6565,13 @@ const NO_SCHOOL = new Set([
   "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-10",
   "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-17", "2026-08-18",
   "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-24", "2026-08-25", "2026-08-26",
-  "2026-08-27", "2026-08-28", "2026-08-31", "2026-09-07", "2026-10-12", "2026-11-11",
-  "2026-12-21", "2026-12-22", "2026-12-23", "2026-12-24", "2026-12-25", "2026-12-28",
-  "2026-12-29", "2026-12-30", "2026-12-31",
+  "2026-08-27", "2026-08-28", "2026-09-07", "2026-09-25", "2026-09-30", "2026-10-12",
+  "2026-10-23", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-27", "2026-12-21",
+  "2026-12-22", "2026-12-23", "2026-12-24", "2026-12-25", "2026-12-28", "2026-12-29",
+  "2026-12-30", "2026-12-31", "2027-01-01", "2027-01-29", "2027-02-11", "2027-02-12",
+  "2027-02-15", "2027-02-26", "2027-03-19", "2027-03-22", "2027-03-23", "2027-03-24",
+  "2027-03-25", "2027-03-26", "2027-03-29", "2027-04-30", "2027-05-21", "2027-05-24",
+  "2027-06-28", "2027-06-29", "2027-06-30",
 ]);
 
 async function loadScheduleCSV() {
@@ -6462,6 +6976,11 @@ function openBodyLog(tab) {
       if (typeof _refreshCareCadenceFromSupabase === 'function') await _refreshCareCadenceFromSupabase();
       if (typeof _refreshMedicationsFromSupabase === 'function') await _refreshMedicationsFromSupabase();
       if (typeof _refreshMedDosesFromSupabase === 'function') await _refreshMedDosesFromSupabase();
+      if (typeof _refreshLibraryFromSupabase === 'function') await _refreshLibraryFromSupabase();
+      if (typeof _migrateLocalProvidersToSupabase === 'function') await _migrateLocalProvidersToSupabase();
+      if (typeof _refreshProvidersFromSupabase === 'function') await _refreshProvidersFromSupabase();
+      // Task #31 — auto-migrate allopurinol from hardcoded chiclet to medication record
+      if (typeof _migrateAllopurinolToMedTracker === 'function') _migrateAllopurinolToMedTracker();
       const popupOpen = document.getElementById('popup-backdrop').classList.contains('open');
       const titleEl = document.getElementById('popup-title');
       const popupBody = document.getElementById('popup-body');
@@ -6483,12 +7002,14 @@ function _renderBodyLogTab(tab) {
     <div class="bl-tabs">
       <button type="button" class="bl-tab ${tab === 'symptoms' ? 'active' : ''}" onclick="_renderBodyLogTab('symptoms')">Symptoms</button>
       <button type="button" class="bl-tab ${tab === 'meds' ? 'active' : ''}" onclick="_renderBodyLogTab('meds')">Meds</button>
-      <button type="button" class="bl-tab ${tab === 'appointments' ? 'active' : ''}" onclick="_renderBodyLogTab('appointments')">Appointments</button>
+      <button type="button" class="bl-tab ${tab === 'library' ? 'active' : ''}" onclick="_renderBodyLogTab('library')">Library</button>
+      <button type="button" class="bl-tab ${tab === 'appointments' ? 'active' : ''}" onclick="_renderBodyLogTab('appointments')">Appts</button>
+      <button type="button" class="bl-tab ${tab === 'providers' ? 'active' : ''}" onclick="_renderBodyLogTab('providers')">Providers</button>
       <button type="button" class="bl-tab ${tab === 'care' ? 'active' : ''}" onclick="_renderBodyLogTab('care')">Care</button>
       <button type="button" class="bl-tab ${tab === 'summary' ? 'active' : ''}" onclick="_renderBodyLogTab('summary')">Summary</button>
     </div>
   `;
-  const realismHtml = (tab === 'summary' || tab === 'care' || tab === 'meds') ? '' : `
+  const realismHtml = (tab === 'summary' || tab === 'care' || tab === 'meds' || tab === 'library' || tab === 'providers') ? '' : `
     <div class="bl-realism">
       <strong>When to escalate:</strong> sustained pain ≥7 for 3+ days, pain that's
       getting worse not better, OR new neurological symptoms (numbness, tingling,
@@ -6500,6 +7021,8 @@ function _renderBodyLogTab(tab) {
     : tab === 'summary' ? buildSummaryHtml()
     : tab === 'care' ? buildCareHtml()
     : tab === 'meds' ? buildMedsHtml()
+    : tab === 'library' ? buildLibraryHtml()
+    : tab === 'providers' ? buildProvidersHtml()
     : buildSymptomsHtml();
   body.innerHTML = tabsHtml + tabContent + realismHtml;
 }
@@ -7435,6 +7958,537 @@ function removeDoseEntry(doseId) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// MED CHICLETS — dynamic daily-view medication chiclets (task #31, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// Replaces the hardcoded allopurinol chiclet. Renders chiclets for all
+// medications scheduled today (or pending one-time meds). Click logs a dose.
+// Bold outline when attention required: one-time pending, prescription
+// ending in ≤14 days, or scheduled doses still 0/N late in the day.
+// ════════════════════════════════════════════════════════════════════════════
+function buildTodaysMedChiclets(dateStr) {
+  if (typeof getActiveMedications !== 'function') return '';
+  const meds = getActiveMedications();
+  const todayStr = dateStr || new Date().toISOString().slice(0, 10);
+  const isToday = todayStr === new Date().toISOString().slice(0, 10);
+
+  // Filter to meds worth surfacing today
+  const showMeds = meds.filter(m => {
+    if (medScheduledToday(m)) return true;
+    if (m.frequency_type === 'as_needed' && isToday) return true; // quick-log access
+    if (m.frequency_type === 'one_time') {
+      // Show one-time meds until they've been administered at least once
+      const ever = _getMedDoses().entries.some(d => d.medication_id === m.id);
+      return !ever;
+    }
+    return false;
+  });
+
+  if (showMeds.length === 0) return '';
+
+  const nowHour = new Date().getHours();
+
+  const chiclets = showMeds.map(m => {
+    const expected = medExpectedTodayCount(m);
+    const taken = medDosesTodayCount(m.id);
+    const isComplete = expected > 0 && taken >= expected;
+
+    // Attention-required heuristics
+    const oneTimePending = m.frequency_type === 'one_time' && taken === 0 &&
+      !_getMedDoses().entries.some(d => d.medication_id === m.id);
+    const endingSoon = m.end_date && ((new Date(m.end_date).getTime() - Date.now()) / 86400000) <= 14
+                       && ((new Date(m.end_date).getTime() - Date.now()) / 86400000) >= 0;
+    const missedDoses = expected > 0 && taken === 0 && nowHour >= 18 && isToday;
+    const attentionRequired = oneTimePending || endingSoon || missedDoses;
+
+    const statusLabel = (() => {
+      if (m.frequency_type === 'as_needed') return 'as needed';
+      if (m.frequency_type === 'one_time') return (taken > 0 || _getMedDoses().entries.some(d => d.medication_id === m.id)) ? '✓ done' : 'PENDING';
+      if (isComplete) return `✓ ${taken}/${expected}`;
+      return `${taken}/${expected}`;
+    })();
+
+    const attentionReason = (() => {
+      if (!attentionRequired) return '';
+      if (oneTimePending) return 'One-time dose pending';
+      if (endingSoon) return 'Prescription ending soon (≤14d)';
+      if (missedDoses) return 'Scheduled doses still 0 — late in the day';
+      return 'Attention required';
+    })();
+
+    const colorVar = (typeof _colorVar === 'function') ? _colorVar(m.color) : 'var(--cyan)';
+    const classes = ['med-chiclet'];
+    if (attentionRequired) classes.push('med-chiclet-attention');
+    if (isComplete) classes.push('med-chiclet-done');
+
+    const safeDose = (m.dose || '').replace(/</g, '&lt;');
+    const safeName = (m.name || '').replace(/</g, '&lt;');
+
+    return `<div class="${classes.join(' ')}"
+      style="--med-color:${colorVar}"
+      onclick="quickLogMedDose('${m.id}')"
+      title="${attentionReason ? attentionReason + ' · ' : ''}Tap to log a dose">
+      <span class="med-chiclet-icon">💊</span>
+      <span class="med-chiclet-name">${safeName}</span>
+      ${m.dose ? `<span class="med-chiclet-dose">${safeDose}</span>` : ''}
+      <span class="med-chiclet-status">${statusLabel}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="med-chiclets-section">
+    <div class="med-chiclets-label">💊 Today's medications</div>
+    <div class="med-chiclets-row">${chiclets}</div>
+  </div>`;
+}
+
+function quickLogMedDose(medId) {
+  if (typeof addMedDose !== 'function') return;
+  const meds = (typeof _getMedications === 'function') ? _getMedications().entries : [];
+  const med = meds.find(m => m.id === medId);
+  // For one_time meds, confirm before logging (since this completes the prescription)
+  if (med && med.frequency_type === 'one_time') {
+    if (!confirm('Log this one-time dose now? This will mark "' + med.name + '" as administered.')) return;
+  }
+  addMedDose({ medication_id: medId });
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// One-shot migration: move the hardcoded allopurinol chiclet into the medications table.
+// Idempotent — only runs once, skips if Allopurinol med already exists.
+function _migrateAllopurinolToMedTracker() {
+  if (localStorage.getItem('allo_to_med_migrated') === '1') return;
+  if (typeof _getMedications !== 'function' || typeof addMedication !== 'function') return;
+  const meds = _getMedications();
+  if (meds.entries.some(m => m.name.toLowerCase().includes('allopurinol'))) {
+    localStorage.setItem('allo_to_med_migrated', '1');
+    return;
+  }
+  // Find seeded Allopurinol substance to link (optional)
+  const subs = (typeof _getSubstancesCache === 'function') ? _getSubstancesCache().entries : [];
+  const alloSub = subs.find(s => s.name === 'Allopurinol' && s.is_seeded);
+  addMedication({
+    name: 'Allopurinol',
+    med_type: 'rx',
+    dose: '50mg',
+    frequency_type: 'weekly_specific_days',
+    weekly_days: ['mon', 'wed', 'fri', 'sun'],
+    color: 'red',
+    notes: 'Migrated from hardcoded chiclet 2026-06-16. Per Craig profile: cognitive-regulation dose (50mg M/W/F/Sun), not gout dose. Reduced from 300mg in 2026.'
+  });
+  localStorage.setItem('allo_to_med_migrated', '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// BODY CARD (task #30, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// Compact daily-view body section that surfaces today's body state at a glance.
+// Click the card header or any row to drill into the Body popup detail view.
+// ════════════════════════════════════════════════════════════════════════════
+function buildBodyCardHtml() {
+  // Active body items (last 14 days)
+  const activeItems = (typeof getActiveBodyItems === 'function') ? getActiveBodyItems(14) : [];
+  // Today's meds status
+  const medStatus = (typeof getTodaysMedStatus === 'function') ? getTodaysMedStatus() : { taken: 0, expected: 0, pending: 0 };
+  // Today's follow-ups
+  const todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
+  // Upcoming follow-ups (next 14 days)
+  const upcomingFollowUps = (typeof getUpcomingFollowUps === 'function') ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== new Date().toISOString().slice(0,10)) : [];
+  // Overdue care
+  const careOverdue = (typeof getActiveCareCadence === 'function') ?
+    getActiveCareCadence().filter(c => typeof careStatus === 'function' && careStatus(c) === 'overdue') : [];
+  const careDueSoon = (typeof getActiveCareCadence === 'function') ?
+    getActiveCareCadence().filter(c => typeof careStatus === 'function' && careStatus(c) === 'due-soon') : [];
+
+  // ── Row helpers ──
+  const escapeHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+  const flaggedActive = activeItems.filter(i => i.flag).length;
+  const highPainActive = activeItems.filter(i => i.pain >= 6).length;
+
+  // ── Compact summary rows ──
+  let rows = [];
+
+  // Active body items
+  if (activeItems.length === 0) {
+    rows.push(`<div class="body-card-row body-card-empty" onclick="openBodyLog('symptoms')">
+      <span class="body-card-icon">✓</span>
+      <span class="body-card-label">No active body items</span>
+    </div>`);
+  } else {
+    const top3 = activeItems.slice(0, 3);
+    top3.forEach(it => {
+      const sideLabel = (!it.side || it.side === 'na') ? '' :
+        (it.side === 'both' ? 'Both ' : (it.side[0].toUpperCase() + it.side.slice(1) + ' '));
+      const painColor = it.pain >= 7 ? 'var(--red)' : it.pain >= 4 ? 'var(--orange)' : 'var(--green)';
+      rows.push(`<div class="body-card-row" onclick="openBodyLog('symptoms')">
+        <span class="body-card-pain" style="color:${painColor}">${it.pain}/10</span>
+        <span class="body-card-label">${sideLabel}${escapeHtml(it.part)}${it.flag ? ' ⚑' : ''}</span>
+        <span class="body-card-aux">${it.event_time_local ? it.event_time_local : ''}</span>
+      </div>`);
+    });
+    if (activeItems.length > 3) {
+      rows.push(`<div class="body-card-row body-card-more" onclick="openBodyLog('symptoms')">
+        <span class="body-card-label">+ ${activeItems.length - 3} more active items</span>
+      </div>`);
+    }
+  }
+
+  // Meds status
+  if (medStatus.expected > 0) {
+    const isComplete = medStatus.pending === 0;
+    const statusColor = isComplete ? 'var(--green)' : 'var(--cyan)';
+    rows.push(`<div class="body-card-row body-card-divider" onclick="openBodyLog('meds')">
+      <span class="body-card-icon">💊</span>
+      <span class="body-card-label">Meds today</span>
+      <span class="body-card-aux" style="color:${statusColor};font-weight:800">${medStatus.taken}/${medStatus.expected}${isComplete ? ' ✓' : ' pending'}</span>
+    </div>`);
+  }
+
+  // Today's follow-ups (highest priority)
+  if (todayFollowUps.length > 0) {
+    todayFollowUps.forEach(a => {
+      const prov = PROVIDER_TYPES.find(p => p.id === a.provider_type) || PROVIDER_TYPES[0];
+      rows.push(`<div class="body-card-row body-card-urgent" onclick="openBodyLog('appointments')">
+        <span class="body-card-icon">⏰</span>
+        <span class="body-card-label">Follow-up TODAY: ${prov.label}${a.provider_name ? ' · ' + escapeHtml(a.provider_name) : ''}</span>
+      </div>`);
+    });
+  }
+
+  // Upcoming follow-ups
+  if (upcomingFollowUps.length > 0) {
+    const next = upcomingFollowUps[0];
+    const prov = PROVIDER_TYPES.find(p => p.id === next.provider_type) || PROVIDER_TYPES[0];
+    const days = Math.round((new Date(next.follow_up_date) - new Date()) / 86400000);
+    rows.push(`<div class="body-card-row" onclick="openBodyLog('summary')">
+      <span class="body-card-icon">📅</span>
+      <span class="body-card-label">Next follow-up: ${prov.label}${next.provider_name ? ' · ' + escapeHtml(next.provider_name) : ''}</span>
+      <span class="body-card-aux">in ${days}d</span>
+    </div>`);
+  }
+
+  // Overdue care
+  if (careOverdue.length > 0) {
+    rows.push(`<div class="body-card-row body-card-urgent" onclick="openBodyLog('care')">
+      <span class="body-card-icon">🚨</span>
+      <span class="body-card-label">${careOverdue.length} care item${careOverdue.length === 1 ? '' : 's'} overdue</span>
+    </div>`);
+  } else if (careDueSoon.length > 0) {
+    rows.push(`<div class="body-card-row" onclick="openBodyLog('care')">
+      <span class="body-card-icon">⏰</span>
+      <span class="body-card-label">${careDueSoon.length} care item${careDueSoon.length === 1 ? '' : 's'} due soon</span>
+    </div>`);
+  }
+
+  // Footer action row — always present
+  rows.push(`<div class="body-card-footer" onclick="openBodyLog()">
+    <span class="body-card-footer-label">→ Open body log</span>
+  </div>`);
+
+  return rows.join('');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROVIDERS UI (task #29, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// CRUD for health care providers. Visible in Body popup as a tab.
+// ════════════════════════════════════════════════════════════════════════════
+let _providerEditingId = null;
+
+function buildProvidersHtml() {
+  const providers = (typeof getActiveProviders === 'function') ? getActiveProviders() : [];
+  const editing = !!_providerEditingId;
+  const editingItem = editing ? (_getProviders().entries.find(e => e.id === _providerEditingId) || null) : null;
+  const fv = editingItem || {};
+
+  const escapeAttr = (s) => String(s || '').replace(/"/g,'&quot;');
+  const escapeHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  const renderProviderCard = (p) => {
+    const pt = PROVIDER_TYPES.find(x => x.id === p.provider_type) || PROVIDER_TYPES[PROVIDER_TYPES.length - 1];
+    const contact = [
+      p.phone ? `📞 <a href="tel:${escapeAttr(p.phone)}">${escapeHtml(p.phone)}</a>` : '',
+      p.email ? `✉️ <a href="mailto:${escapeAttr(p.email)}">${escapeHtml(p.email)}</a>` : '',
+      p.website ? `🌐 <a href="${escapeAttr(p.website)}" target="_blank" rel="noopener">website</a>` : ''
+    ].filter(Boolean).join(' · ');
+    return `<div class="prov-card">
+      <div class="prov-header">
+        <span class="prov-icon">${pt.icon}</span>
+        <span class="prov-name">${escapeHtml(p.name)}</span>
+        <span class="prov-type">${pt.label}</span>
+        <span class="bl-active-edit" onclick="startEditProvider('${p.id}')" title="Edit">✎</span>
+        <span class="bl-active-del" onclick="removeProviderEntry('${p.id}')" title="Remove">×</span>
+      </div>
+      <div class="prov-body">
+        ${p.specialty ? `<div class="prov-fld"><span class="lib-key">Specialty</span> ${escapeHtml(p.specialty)}</div>` : ''}
+        ${p.clinic_name ? `<div class="prov-fld"><span class="lib-key">Clinic</span> ${escapeHtml(p.clinic_name)}</div>` : ''}
+        ${p.address ? `<div class="prov-fld"><span class="lib-key">Address</span> ${escapeHtml(p.address)}</div>` : ''}
+        ${contact ? `<div class="prov-fld"><span class="lib-key">Contact</span> ${contact}</div>` : ''}
+        ${p.notes ? `<div class="prov-fld prov-notes"><span class="lib-key">Notes</span> ${escapeHtml(p.notes)}</div>` : ''}
+      </div>
+    </div>`;
+  };
+
+  const listHtml = providers.length === 0
+    ? `<div class="bl-empty">No providers added yet. Add your GP, physio, dentist, optometrist, RMT, specialists — anyone you see for health care.</div>`
+    : providers.map(renderProviderCard).join('');
+
+  const sectionLabel = editing ? 'Editing provider' : 'Add provider';
+  const saveLabel = editing ? 'Update' : 'Add';
+  const cancelHandler = editing ? 'cancelEditProvider()' : 'closePopup()';
+  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
+  const editBanner = editing ? `
+    <div class="bl-edit-banner">
+      <span>✎ Editing existing provider</span>
+      <button type="button" class="bl-edit-cancel" onclick="cancelEditProvider()">Cancel edit</button>
+    </div>
+  ` : '';
+  const fType = fv.provider_type || 'doctor';
+
+  return `
+    <div class="bl-section-label">Active providers (${providers.length})</div>
+    <div>${listHtml}</div>
+
+    <div class="bl-section-label">${sectionLabel}</div>
+    ${editBanner}
+    <div class="bl-form">
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Name</label>
+          <input type="text" id="prov-name" class="bl-input" placeholder="e.g. Dr. Smith, RMT Jane Doe" value="${escapeAttr(fv.name)}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Type</label>
+          <select id="prov-type" class="bl-input">
+            ${PROVIDER_TYPES.map(t => `<option value="${t.id}" ${fType === t.id ? 'selected' : ''}>${t.icon} ${t.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Specialty / focus</label>
+          <input type="text" id="prov-specialty" class="bl-input" placeholder="e.g. Sports medicine, Hand surgery" value="${escapeAttr(fv.specialty)}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Clinic / location</label>
+          <input type="text" id="prov-clinic" class="bl-input" placeholder="e.g. Calgary Sports Med" value="${escapeAttr(fv.clinic_name)}">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Address</label>
+        <input type="text" id="prov-address" class="bl-input" placeholder="optional" value="${escapeAttr(fv.address)}">
+      </div>
+      <div class="bl-grid-2">
+        <div class="bl-row">
+          <label class="bl-label">Phone</label>
+          <input type="tel" id="prov-phone" class="bl-input" placeholder="e.g. 403-555-0123" value="${escapeAttr(fv.phone)}">
+        </div>
+        <div class="bl-row">
+          <label class="bl-label">Email</label>
+          <input type="email" id="prov-email" class="bl-input" placeholder="optional" value="${escapeAttr(fv.email)}">
+        </div>
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Website</label>
+        <input type="url" id="prov-website" class="bl-input" placeholder="optional" value="${escapeAttr(fv.website)}">
+      </div>
+      <div class="bl-row">
+        <label class="bl-label">Notes</label>
+        <input type="text" id="prov-notes" class="bl-input" placeholder="e.g. billing direct to insurance, prefers email, specialty notes" value="${escapeAttr(fv.notes)}">
+      </div>
+      <div class="bl-actions">
+        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
+        <button class="bl-save" onclick="submitProviderEntry()">${saveLabel}</button>
+      </div>
+    </div>
+
+    <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
+      <strong>How this helps:</strong> appointments, medications (prescriber), and recurring care can all link to providers here. Provider info shows up in the printable doctor-visit summary header — useful when introducing a new provider to your existing care team. Stays local to your Supabase; not shared.
+    </div>
+  `;
+}
+
+function submitProviderEntry() {
+  const name = (document.getElementById('prov-name').value || '').trim();
+  if (!name) { alert('Enter a provider name.'); return; }
+  const payload = {
+    name: name,
+    provider_type: document.getElementById('prov-type').value || 'doctor',
+    specialty: (document.getElementById('prov-specialty').value || '').trim(),
+    clinic_name: (document.getElementById('prov-clinic').value || '').trim(),
+    address: (document.getElementById('prov-address').value || '').trim(),
+    phone: (document.getElementById('prov-phone').value || '').trim(),
+    email: (document.getElementById('prov-email').value || '').trim(),
+    website: (document.getElementById('prov-website').value || '').trim(),
+    notes: (document.getElementById('prov-notes').value || '').trim(),
+    active: true
+  };
+  if (_providerEditingId) {
+    updateProvider(_providerEditingId, payload);
+    _providerEditingId = null;
+  } else {
+    addProvider(payload);
+  }
+  _renderBodyLogTab('providers');
+}
+
+function startEditProvider(id) { _providerEditingId = id; _renderBodyLogTab('providers'); }
+function cancelEditProvider() { _providerEditingId = null; _renderBodyLogTab('providers'); }
+function removeProviderEntry(id) {
+  if (!confirm('Remove this provider? Appointments and meds linked to this provider will be unlinked (records preserved).')) return;
+  removeProvider(id);
+  _renderBodyLogTab('providers');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUBSTANCE LIBRARY UI (task #28, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// Read-mostly library tab. Substances grouped by category, products listed
+// under their parent substance. Click a substance to expand pharmacology
+// details. Brand-variance section visible when a substance has multiple products.
+// ════════════════════════════════════════════════════════════════════════════
+let _libExpandedSubstance = {};  // {substanceId: bool} which substances have details expanded
+let _libFilterCategory = 'all';
+let _libSearchTerm = '';
+
+function buildLibraryHtml() {
+  const allSubs = (typeof getSubstances === 'function') ? getSubstances() : [];
+  const term = _libSearchTerm.trim().toLowerCase();
+  const filtered = allSubs.filter(s => {
+    if (_libFilterCategory !== 'all' && s.category !== _libFilterCategory) return false;
+    if (term) {
+      const haystack = (s.name + ' ' + (s.generic_name || '') + ' ' + (s.drug_class || '')).toLowerCase();
+      if (!haystack.includes(term)) return false;
+    }
+    return true;
+  });
+
+  // Group by category for display
+  const grouped = {};
+  filtered.forEach(s => {
+    if (!grouped[s.category]) grouped[s.category] = [];
+    grouped[s.category].push(s);
+  });
+
+  const filterChips = `<div class="lib-filter-row">
+    <button class="lib-filter-chip ${_libFilterCategory === 'all' ? 'active' : ''}" onclick="_libSetFilter('all')">All</button>
+    ${SUBSTANCE_CATEGORIES.map(c => `
+      <button class="lib-filter-chip ${_libFilterCategory === c.id ? 'active' : ''}" onclick="_libSetFilter('${c.id}')">${c.icon} ${c.label}</button>
+    `).join('')}
+  </div>`;
+
+  const searchBox = `<input type="text" id="lib-search" class="bl-input" placeholder="Search substances or drug class..." value="${term.replace(/"/g,'&quot;')}" oninput="_libSetSearch(this.value)" style="margin-bottom:8px">`;
+
+  const renderProductsForSub = (sub) => {
+    const products = getProductsForSubstance(sub.id);
+    if (products.length === 0) return '';
+    if (products.length === 1) {
+      const p = products[0];
+      return `<div class="lib-product-list">
+        <div class="lib-product-row">
+          <span class="lib-product-brand">${p.brand.replace(/</g,'&lt;')}</span>
+          <span class="lib-product-name">${p.product_name.replace(/</g,'&lt;')}</span>
+          ${p.dose_per_unit ? `<div class="lib-product-dose">${p.dose_per_unit.replace(/</g,'&lt;')}</div>` : ''}
+          ${p.notes ? `<div class="lib-product-notes">${p.notes.replace(/</g,'&lt;')}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    // Multiple products = brand-variance display
+    return `<div class="lib-product-list">
+      <div class="lib-product-variance-label">⚠ Multiple brands — content varies. Verify against your bottle.</div>
+      ${products.map(p => `
+        <div class="lib-product-row lib-product-variance">
+          <span class="lib-product-brand">${p.brand.replace(/</g,'&lt;')}</span>
+          <span class="lib-product-name">${p.product_name.replace(/</g,'&lt;')}</span>
+          ${p.dose_per_unit ? `<div class="lib-product-dose">${p.dose_per_unit.replace(/</g,'&lt;')}</div>` : ''}
+          ${p.notes ? `<div class="lib-product-notes">${p.notes.replace(/</g,'&lt;')}</div>` : ''}
+        </div>
+      `).join('')}
+    </div>`;
+  };
+
+  const renderSubstanceCard = (sub) => {
+    const isExpanded = !!_libExpandedSubstance[sub.id];
+    const cat = SUBSTANCE_CATEGORIES.find(c => c.id === sub.category) || SUBSTANCE_CATEGORIES[SUBSTANCE_CATEGORIES.length - 1];
+    const taxBadge = sub.tax_deductible_default
+      ? `<span class="lib-tax-badge lib-tax-yes" title="${cat.taxEligibleHint}">$ METC</span>`
+      : `<span class="lib-tax-badge lib-tax-no" title="${cat.taxEligibleHint}">not METC</span>`;
+    return `<div class="lib-sub-card ${isExpanded ? 'expanded' : ''}">
+      <div class="lib-sub-header" onclick="_libToggleSubstance('${sub.id}')">
+        <span class="lib-sub-icon">${cat.icon}</span>
+        <span class="lib-sub-name">${sub.name.replace(/</g,'&lt;')}</span>
+        ${sub.drug_class ? `<span class="lib-sub-class">${sub.drug_class.replace(/</g,'&lt;')}</span>` : ''}
+        ${taxBadge}
+        <span class="lib-sub-toggle">${isExpanded ? '▾' : '▸'}</span>
+      </div>
+      ${isExpanded ? `
+        <div class="lib-sub-body">
+          ${sub.mechanism_brief ? `<div class="lib-fld"><span class="lib-key">Mechanism</span> ${sub.mechanism_brief.replace(/</g,'&lt;')}</div>` : ''}
+          ${sub.timing_notes ? `<div class="lib-fld"><span class="lib-key">Timing</span> ${sub.timing_notes.replace(/</g,'&lt;')}</div>` : ''}
+          ${sub.interactions ? `<div class="lib-fld lib-fld-warn"><span class="lib-key">Interactions</span> ${sub.interactions.replace(/</g,'&lt;')}</div>` : ''}
+          ${sub.contraindications ? `<div class="lib-fld lib-fld-warn"><span class="lib-key">Contraindications</span> ${sub.contraindications.replace(/</g,'&lt;')}</div>` : ''}
+          ${sub.common_side_effects ? `<div class="lib-fld"><span class="lib-key">Side effects</span> ${sub.common_side_effects.replace(/</g,'&lt;')}</div>` : ''}
+          ${sub.notes ? `<div class="lib-fld lib-fld-note"><span class="lib-key">Notes</span> ${sub.notes.replace(/</g,'&lt;')}</div>` : ''}
+          ${renderProductsForSub(sub)}
+          ${sub.source_url ? `<div class="lib-source"><a href="${sub.source_url}" target="_blank" rel="noopener">More info ↗</a></div>` : ''}
+        </div>
+      ` : ''}
+    </div>`;
+  };
+
+  // Render in category order
+  let cardsHtml = '';
+  const catOrder = ['rx', 'otc', 'supplement', 'vitamin', 'mineral', 'food'];
+  catOrder.forEach(catId => {
+    if (!grouped[catId] || grouped[catId].length === 0) return;
+    const cat = SUBSTANCE_CATEGORIES.find(c => c.id === catId);
+    cardsHtml += `<div class="bl-section-label">${cat.icon} ${cat.label} (${grouped[catId].length})</div>`;
+    cardsHtml += grouped[catId].map(renderSubstanceCard).join('');
+  });
+
+  if (filtered.length === 0) {
+    cardsHtml = `<div class="bl-empty">No substances match your filter. ${allSubs.length === 0 ? 'Library will populate on next sync.' : 'Try a different category or search term.'}</div>`;
+  }
+
+  return `
+    ${searchBox}
+    ${filterChips}
+    ${cardsHtml}
+    <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
+      <strong>How to read this:</strong> the library shows curated pharmacology info. <strong>Verify against your actual product label</strong> — brand formulations change. The <strong>$ METC</strong> badge indicates Canadian Medical Expense Tax Credit eligibility (default). Most supplements are NOT METC-eligible without a doctor's prescription. Rx items, dental, vision, and physiotherapy are. When in doubt, verify with a CPA at tax time.
+    </div>
+  `;
+}
+
+function _libToggleSubstance(id) {
+  _libExpandedSubstance[id] = !_libExpandedSubstance[id];
+  _renderBodyLogTab('library');
+}
+
+function _libSetFilter(catId) {
+  _libFilterCategory = catId;
+  _renderBodyLogTab('library');
+}
+
+function _libSetSearch(val) {
+  _libSearchTerm = val || '';
+  // Don't re-render on every keystroke — would lose focus. Just store.
+  // Re-render on Enter or filter change.
+  if (val.length === 0 || val.length % 3 === 0) {
+    // Throttle: re-render every 3 chars or on clear
+    const focused = document.activeElement;
+    _renderBodyLogTab('library');
+    // Restore focus to search input
+    setTimeout(() => {
+      const el = document.getElementById('lib-search');
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    }, 10);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // CARE CADENCE UI (task #24, 2026-05-29)
 // ────────────────────────────────────────────────────────────────────────────
 // Tab in the Body popup managing recurring care templates (massage, dental,
@@ -7547,7 +8601,7 @@ function buildCareHtml() {
 
     <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
       <strong>Cadence ideas to start:</strong> Massage 4-6 weeks · Haircut 4-6 weeks · Dental cleaning 26 weeks (6 months) · Eye exam 104 weeks (2 years) · Annual physical 52 weeks · Blood work 26-52 weeks (your call).
-      <strong style="color:var(--cyan)">Tax tracking note:</strong> Massage by RMT (with doctor's note), dental, vision, prescription naproxen — all eligible for Canadian medical expense tax claim. Logging cost per visit means a sum at tax time.
+      <strong style="color:var(--cyan)">Canadian METC (medical expense tax credit) — accurate version:</strong> <strong>Eligible:</strong> dental, vision (exams + prescription glasses), physiotherapy, Rx meds, doctor visits. <strong>Not eligible by default:</strong> haircut (cosmetic), massage in Alberta/SK (RMT not recognized as authorized practitioner), supplements without a written Rx, gym memberships. <strong>Eligible WITH paperwork:</strong> RMT massage in AB/SK IF prescribed by a doctor for a specific medical condition. Logging cost per visit gives you the sum at tax time regardless — verify eligibility with a CPA.
     </div>
   `;
 }
@@ -7955,13 +9009,17 @@ const STRETCH_ROTATION = {
 // ROUTINE DETAILS — Exercises with YouTube links
 // ──────────────────────────────────────────────
 const ROUTINES = {
-  // ── Trigger finger rehab routine (added 2026-05-14) ──
-  // Right middle finger, conservative care phase. Tendon glides 3×/day, 5 reps each,
+  // ── Trigger finger routine (added 2026-05-14 · demoted to maintenance 2026-08-14) ──
+  // Right middle finger. Conservative care plateaued; corticosteroid injection was
+  // given and resolved the locking and pain. Mild painless catching persists, which
+  // is the expected partial-response state rather than a full resolution. Now 1×/day
+  // maintenance dosing. Original rehab-phase note follows:
+  // Tendon glides 3×/day, 5 reps each,
   // hold 3 sec, stop short of any triggering or sharp pain. Reassess at 6 weeks
   // (~2026-06-25): if no improvement, see a doctor — corticosteroid injection is the
   // next step before pulley release surgery. REMOVE this routine when symptoms resolve.
   trigger_finger: {
-    title: "Trigger Finger — Tendon Glides (3×/day)",
+    title: "Trigger Finger — Tendon Glides (1×/day maintenance)",
     exercises: [
       { name: "1. Straight hand", sets: "Hold 3s × 5", link: "https://www.youtube.com/watch?v=Tn5WcjpWoIo", detail: "All fingers extended, fully open, palm visible. The reset position. Breathe." },
       { name: "2. Hook fist", sets: "Hold 3s × 5", link: "https://www.youtube.com/watch?v=Tn5WcjpWoIo", detail: "ONLY the two finger joints bend (PIP + DIP). The MCP (base) joint stays straight — fingers form a hook/claw shape, not a fist." },
@@ -9037,6 +10095,225 @@ async function _refreshAppointmentsFromSupabase() {
     }));
     _saveAppointments({ entries: entries });
   } catch (e) { console.warn('body_appointments refresh threw:', e); }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROVIDERS — health care providers directory (task #29, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// Standalone provider records referenced from appointments, medications (as
+// prescriber), and care_cadence (as default provider). Free-text fallback on
+// the existing tables is preserved so old data isn't broken.
+// ════════════════════════════════════════════════════════════════════════════
+const PROVIDER_TYPES = [
+  { id: 'doctor',       label: 'Doctor / GP',     icon: '👨‍⚕️' },
+  { id: 'physio',       label: 'Physiotherapist', icon: '🏋️' },
+  { id: 'chiro',        label: 'Chiropractor',    icon: '🦴' },
+  { id: 'massage',      label: 'Massage Therapist', icon: '💆' },
+  { id: 'dentist',      label: 'Dentist',         icon: '🦷' },
+  { id: 'optometrist',  label: 'Optometrist',     icon: '👓' },
+  { id: 'specialist',   label: 'Specialist',      icon: '🔬' },
+  { id: 'neurologist',  label: 'Neurologist',     icon: '🧠' },
+  { id: 'psychiatrist', label: 'Psychiatrist',    icon: '🧠' },
+  { id: 'psychologist', label: 'Psychologist',    icon: '💭' },
+  { id: 'dietician',    label: 'Dietician',       icon: '🥗' },
+  { id: 'surgeon',      label: 'Surgeon',         icon: '🔪' },
+  { id: 'imaging',      label: 'Imaging',         icon: '📷' },
+  { id: 'other',        label: 'Other',           icon: '🩺' },
+];
+
+function _getProviders() {
+  try {
+    const raw = localStorage.getItem('providers');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    return (p && Array.isArray(p.entries)) ? p : { entries: [] };
+  } catch (e) { return { entries: [] }; }
+}
+function _saveProviders(data) { localStorage.setItem('providers', JSON.stringify(data)); }
+
+function addProvider(payload) {
+  const data = _getProviders();
+  const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+  const entry = {
+    id: id,
+    name: payload.name,
+    provider_type: payload.provider_type || 'doctor',
+    specialty: payload.specialty || '',
+    clinic_name: payload.clinic_name || '',
+    address: payload.address || '',
+    phone: payload.phone || '',
+    email: payload.email || '',
+    website: payload.website || '',
+    notes: payload.notes || '',
+    active: payload.active !== false,
+    created_at: new Date().toISOString()
+  };
+  data.entries.push(entry);
+  _saveProviders(data);
+  _syncProviderToSupabase(entry);
+  return id;
+}
+
+function updateProvider(id, payload) {
+  const data = _getProviders();
+  const idx = data.entries.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  const orig = data.entries[idx];
+  const updated = {
+    id: orig.id, created_at: orig.created_at,
+    name: payload.name != null ? payload.name : orig.name,
+    provider_type: payload.provider_type || orig.provider_type,
+    specialty: payload.specialty != null ? payload.specialty : orig.specialty,
+    clinic_name: payload.clinic_name != null ? payload.clinic_name : orig.clinic_name,
+    address: payload.address != null ? payload.address : orig.address,
+    phone: payload.phone != null ? payload.phone : orig.phone,
+    email: payload.email != null ? payload.email : orig.email,
+    website: payload.website != null ? payload.website : orig.website,
+    notes: payload.notes != null ? payload.notes : orig.notes,
+    active: payload.active !== undefined ? !!payload.active : orig.active,
+  };
+  data.entries[idx] = updated;
+  _saveProviders(data);
+  _syncProviderToSupabase(updated);
+}
+
+function removeProvider(id) {
+  const data = _getProviders();
+  data.entries = data.entries.filter(e => e.id !== id);
+  _saveProviders(data);
+  _syncDeleteProvider(id);
+}
+
+function getActiveProviders() {
+  return _getProviders().entries
+    .filter(e => e.active !== false)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function findProviderById(id) {
+  return _getProviders().entries.find(p => p.id === id) || null;
+}
+
+async function _syncProviderToSupabase(entry) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('providers').upsert({
+      client_id: entry.id, name: entry.name, provider_type: entry.provider_type,
+      specialty: entry.specialty, clinic_name: entry.clinic_name, address: entry.address,
+      phone: entry.phone, email: entry.email, website: entry.website,
+      notes: entry.notes, active: entry.active, created_at: entry.created_at
+    }, { onConflict: 'user_id,client_id' });
+    if (error) console.warn('providers upsert failed:', error);
+  } catch (e) { console.warn('providers upsert threw:', e); }
+}
+
+async function _syncDeleteProvider(clientId) {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { error } = await sb.from('providers').delete().eq('client_id', clientId);
+    if (error) console.warn('providers delete failed:', error);
+  } catch (e) { console.warn('providers delete threw:', e); }
+}
+
+async function _refreshProvidersFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data, error } = await sb.from('providers').select('*').order('created_at', { ascending: true });
+    if (error) { console.warn('providers fetch failed:', error); return; }
+    if (!Array.isArray(data)) return;
+    const entries = data.map(r => ({
+      id: r.client_id || r.id, name: r.name, provider_type: r.provider_type,
+      specialty: r.specialty || '', clinic_name: r.clinic_name || '',
+      address: r.address || '', phone: r.phone || '', email: r.email || '',
+      website: r.website || '', notes: r.notes || '',
+      active: r.active !== false, created_at: r.created_at
+    }));
+    _saveProviders({ entries: entries });
+  } catch (e) { console.warn('providers refresh threw:', e); }
+}
+
+async function _migrateLocalProvidersToSupabase() {
+  if (localStorage.getItem('providers_sb_migrated') === '1') return;
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  const local = _getProviders();
+  if (local.entries.length === 0) { localStorage.setItem('providers_sb_migrated', '1'); return; }
+  let allOk = true;
+  for (const e of local.entries) {
+    try {
+      const { error } = await sb.from('providers').upsert({
+        client_id: e.id, name: e.name, provider_type: e.provider_type,
+        specialty: e.specialty, clinic_name: e.clinic_name, address: e.address,
+        phone: e.phone, email: e.email, website: e.website,
+        notes: e.notes, active: e.active, created_at: e.created_at
+      }, { onConflict: 'user_id,client_id' });
+      if (error) allOk = false;
+    } catch (ex) { allOk = false; }
+  }
+  if (allOk) localStorage.setItem('providers_sb_migrated', '1');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUBSTANCE / PRODUCT LIBRARY (task #28, 2026-06-16)
+// ────────────────────────────────────────────────────────────────────────────
+// Curated read-mostly library of drug, OTC, and supplement information with
+// brand-specific products. Used for: pharmacology lookup, interaction awareness,
+// brand-variance comparison, Canadian METC tax-deduction flagging.
+// ════════════════════════════════════════════════════════════════════════════
+const SUBSTANCE_CATEGORIES = [
+  { id: 'rx',         label: 'Prescription',  icon: '💊', taxEligibleHint: 'METC eligible with Rx receipt' },
+  { id: 'otc',        label: 'OTC',           icon: '🩹', taxEligibleHint: 'Not METC eligible (unless prescribed)' },
+  { id: 'supplement', label: 'Supplement',    icon: '🌿', taxEligibleHint: 'Not METC eligible (recommendation ≠ prescription)' },
+  { id: 'vitamin',    label: 'Vitamin',       icon: '☀️', taxEligibleHint: 'Not METC eligible (unless prescribed)' },
+  { id: 'mineral',    label: 'Mineral',       icon: '⚙️', taxEligibleHint: 'Not METC eligible (unless prescribed)' },
+  { id: 'food',       label: 'Food',          icon: '🍽️', taxEligibleHint: 'Not METC eligible' },
+];
+
+function _getSubstancesCache() {
+  try {
+    const raw = localStorage.getItem('substances_cache');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    return (p && Array.isArray(p.entries)) ? p : { entries: [] };
+  } catch (e) { return { entries: [] }; }
+}
+function _saveSubstancesCache(data) { localStorage.setItem('substances_cache', JSON.stringify(data)); }
+
+function _getProductsCache() {
+  try {
+    const raw = localStorage.getItem('products_cache');
+    if (!raw) return { entries: [] };
+    const p = JSON.parse(raw);
+    return (p && Array.isArray(p.entries)) ? p : { entries: [] };
+  } catch (e) { return { entries: [] }; }
+}
+function _saveProductsCache(data) { localStorage.setItem('products_cache', JSON.stringify(data)); }
+
+async function _refreshLibraryFromSupabase() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  try {
+    const { data: subs, error: e1 } = await sb.from('substances').select('*').order('name', { ascending: true });
+    if (!e1 && Array.isArray(subs)) _saveSubstancesCache({ entries: subs });
+    const { data: prods, error: e2 } = await sb.from('products').select('*').order('brand', { ascending: true });
+    if (!e2 && Array.isArray(prods)) _saveProductsCache({ entries: prods });
+  } catch (e) { console.warn('library refresh threw:', e); }
+}
+
+function getSubstances(category) {
+  const all = _getSubstancesCache().entries;
+  if (category) return all.filter(s => s.category === category);
+  return all;
+}
+
+function getProductsForSubstance(substanceId) {
+  return _getProductsCache().entries.filter(p => p.substance_id === substanceId);
+}
+
+function findSubstanceById(id) {
+  return _getSubstancesCache().entries.find(s => s.id === id) || null;
+}
+
+function findProductById(id) {
+  return _getProductsCache().entries.find(p => p.id === id) || null;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -12638,6 +13915,7 @@ function scheduleRender(fn) {
 }
 
 function renderDaily() {
+  refreshCustodyGapBanner();
   const now = new Date();
   now.setDate(now.getDate() + currentDayOffset);
   const dateStr = ds(now);
@@ -12700,12 +13978,17 @@ function renderDaily() {
   }
 
   // Morning routine — always shown, clickable for details
-  // Trigger finger rehab — added 2026-05-14, REMOVE when symptoms resolve (~6 wks)
-  // Rowing-paused notice — added 2026-05-14, REMOVE when finger is cleared
+  // Trigger finger — DEMOTED 2026-08-14 after corticosteroid injection resolved the
+  // locking and pain (mild painless catching remains). Kept, not removed: a single
+  // injection resolves roughly 60-70% of cases at 6 months, but recurrence inside
+  // 12 months is common, and glides are near-zero cost to keep doing. Dropped from
+  // 3×/day rehab dosing to 1×/day maintenance and stripped the orange urgency border.
+  // NEXT CHECK ~2026-11-14 (3 months post-demotion): if catching has increased or
+  // locking has returned, that's a failed injection — back to the hand surgeon, and
+  // a second injection has lower success odds than the first.
   const morningHtml = `
     <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>
-    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer; border-left:3px solid var(--orange);" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(3×/day · pain-limit)</span></div>
-    <div style="margin-bottom:8px; padding:7px 10px; border-radius:6px; border-left:3px solid var(--orange); background:rgba(251,146,60,0.07); font-size:10px; color:var(--text-dim); line-height:1.4;">🟠 <strong style="color:var(--orange)">Rowing paused</strong> while right middle finger heals — sub walks or bike. Reassess <strong>~Jun 25</strong>.</div>`;
+    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(1×/day · maintenance)</span></div>`;
 
   // Recommended workout section
   let recommendedHtml = '';
@@ -12953,7 +14236,7 @@ function renderDaily() {
   const dow = now.getDay(); // 0=Sun ... 6=Sat
 
   let items = [];
-  if (allo) items.push({k:"allo",t:"AM",txt:"💊 Allopurinol 100mg",sub:""});
+  // Task #31 — allopurinol moved to medications table; chiclet rendered separately above the items list
   items.push({k:"morning",t:"AM",txt:"☀️ Morning stretch (~10 min)",sub:""});
   if (wo && wo.timing==="morning") items.push({k:"workout",t:"AM",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
   // Events/holidays now shown on the workout card instead
@@ -12975,7 +14258,9 @@ function renderDaily() {
   if (wo && wo.optional) items.push({k:"optional",t:"⚡",txt:wo.optional,sub:""});
   if (wo && wo.alt) items.push({k:"alt",t:"🔄",txt:wo.alt.replace(/^Alt:\s*/,''),sub:""});
 
-  document.getElementById('schedule-card').innerHTML = items.map(i=>{
+  // Task #31 — Today's medication chiclets rendered ABOVE the task items
+  const medChicletsHtml = (typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : '';
+  document.getElementById('schedule-card').innerHTML = medChicletsHtml + items.map(i=>{
     if (i.divider) return `<div class="options-divider">${i.txt}</div>`;
     const done = checked['s_'+i.k] ? 'done' : '';
     return `
@@ -12988,6 +14273,12 @@ function renderDaily() {
       </div>
     </div>`;
   }).join('') + buildTrackingSection(dateStr) + `<div class="card-footer"><div class="tomorrow-strip"><span class="tmr-label">Tomorrow</span> <span style="color:var(--${tmrCust.cls === 'lisa' ? 'pink' : tmrCust.cls === 'craig' ? 'green' : 'text-dim'})">${tmrCust.text}</span></div></div>`;
+
+  // Task #30 — Body card render
+  if (typeof buildBodyCardHtml === 'function') {
+    const bodyCardEl = document.getElementById('body-card');
+    if (bodyCardEl) bodyCardEl.innerHTML = buildBodyCardHtml();
+  }
 
   // Custody strip — 14 days, today is day 3 (index 2)
   const dows = ['S','M','T','W','T','F','S'];
@@ -13032,7 +14323,8 @@ function renderDaily() {
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
       <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
-      ${allo ? `<div class="pill" style="cursor:pointer" onclick="toggleAlloTask('${dateStr}')" title="Tap to check off medication">💊 <span class="pill-val red">Allo day</span></div>` : ''}
+      <!-- Task #31 — hardcoded allo pill removed; aggregate Meds X/Y pill below covers all meds dynamically -->
+
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
       ${currentDayOffset === 0 ? `<div class="pill" style="cursor:pointer;border-color:var(--orange-border);background:var(--orange-bg)" onclick="enterBackfillMode()" title="Fill in yesterday's gaps">📝 <span class="pill-val" style="color:var(--orange)">Catch up</span></div>` : ''}
       ${(() => {
@@ -13095,7 +14387,7 @@ function getDayProgress(dateStr) {
   const tasks = [];
   tasks.push({k:'morning', label:'☀️ Morning Stretch', show:true, pct:false});
   tasks.push({k:'stretch', label:'🧘 Stretch Session', show:true, pct:true});
-  if (isAlloDay(dateStr)) tasks.push({k:'allo', label:'💊 Allopurinol', show:true, pct:false});
+  // Task #31 — allopurinol moved to medications table (driven by med tracker, not hardcoded)
   if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true, pct:true});
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
