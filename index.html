@@ -2830,6 +2830,10 @@
     <button class="bf-exit" onclick="exitBackfillMode()">Back to today ›</button>
   </div>
 
+  <!-- Rest timer. Fixed to the viewport bottom so it stays visible while you
+       scroll the exercise list mid-session. Hidden until started. -->
+  <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -4px 14px rgba(0,0,0,0.35)"></div>
+
   <!-- Custody coverage warning. Silent expiry is the failure mode this catches:
        between Jul 1 and Aug 14 2026 the app ran 45 days with no custody data
        and nothing on screen said so. Added 2026-08-14. -->
@@ -2864,6 +2868,9 @@
         <div class="card-title">Tasks</div>
       </div>
       <div class="card-body" id="schedule-card"></div>
+      <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
+           reachable without a popup. Rendered by renderDayNotes(). -->
+      <div id="day-notes-host"></div>
     </div>
 
     <!-- Body Card (task #30, 2026-06-16) — promoted from bottom-bar pill to a daily-view section -->
@@ -2989,6 +2996,10 @@
       <div class="popup-title">⚙️ Settings</div>
       <button class="popup-close" onclick="closeSettings()">✕ Close</button>
     </div>
+    <!-- Settings tab strip (2026-08-14). Panes are assigned at runtime by
+         initSettingsTabs() reading each section's header text, so the existing
+         section markup below is untouched. -->
+    <div id="settings-tabstrip" style="display:flex;gap:4px;padding:0 14px 10px;flex-wrap:wrap;border-bottom:1px solid var(--divider)"></div>
     <div class="popup-body" id="settings-body">
       <!-- Schedule & custody. Moved here from the month-view nav 2026-08-14 —
            it's configuration, not a view control, so it belongs with settings. -->
@@ -3924,6 +3935,7 @@ async function openSettings() {
     covEl.innerHTML = _schedCoverageHtml().replace('id="sched-coverage"', '').replace('margin-bottom:14px', 'margin-bottom:0');
   }
   document.getElementById('settings-backdrop').classList.add('open');
+  initSettingsTabs();
 }
 
 // Render the Profile inputs inside the Settings popup body.
@@ -4049,6 +4061,77 @@ async function saveProfileFromUI() {
 function closeSettings() { document.getElementById('settings-backdrop').classList.remove('open'); }
 
 // ══════════════════════════════════════════════════════════════
+// SETTINGS TABS  (added 2026-08-14)
+// ══════════════════════════════════════════════════════════════
+// The settings popup had grown to five stacked sections in one long scroll.
+// Rather than rewrite the markup (fiddly and easy to break in a file this size),
+// panes are assigned at RUNTIME: initSettingsTabs walks the direct children of
+// #settings-body, reads each section's header text, and maps it to a tab. New
+// sections added later fall into 'data' automatically rather than vanishing —
+// failing visible beats failing hidden.
+const SETTINGS_TABS = [
+  { id: 'you',      label: '👤 You',       match: ['profile', 'tdee'] },
+  { id: 'schedule', label: '🗓️ Schedule',  match: ['schedule', 'custody'] },
+  { id: 'data',     label: '⌚ Data',       match: ['concept2', 'recent rows', 'apple health', 'import'] },
+];
+let _settingsTab = null;
+
+function _settingsTabFor(headerText) {
+  const t = (headerText || '').toLowerCase();
+  for (const tab of SETTINGS_TABS) {
+    if (tab.match.some(m => t.indexOf(m) !== -1)) return tab.id;
+  }
+  return 'data';   // unknown/new sections stay reachable
+}
+
+function initSettingsTabs() {
+  const body = document.getElementById('settings-body');
+  const strip = document.getElementById('settings-tabstrip');
+  if (!body || !strip) return;
+
+  // Tag each top-level section with the tab it belongs to.
+  Array.prototype.forEach.call(body.children, function (sec) {
+    if (sec.nodeType !== 1) return;
+    if (!sec.dataset.settingsTab) {
+      const head = sec.querySelector('div');
+      sec.dataset.settingsTab = _settingsTabFor(head ? head.textContent : '');
+    }
+  });
+
+  // Remember the last tab across opens — reopening Settings to hunt for the
+  // thing you were just looking at is the main cost of tabbing something.
+  if (!_settingsTab) {
+    try { _settingsTab = localStorage.getItem('settings_tab') || 'you'; }
+    catch (e) { _settingsTab = 'you'; }
+  }
+  if (!SETTINGS_TABS.some(t => t.id === _settingsTab)) _settingsTab = 'you';
+
+  strip.innerHTML = SETTINGS_TABS.map(t => {
+    const on = t.id === _settingsTab;
+    return `<button onclick="setSettingsTab('${t.id}')"
+      style="padding:6px 12px;border-radius:6px 6px 0 0;border:1px solid ${on ? 'var(--purple-border)' : 'transparent'};border-bottom:none;background:${on ? 'var(--purple-bg)' : 'transparent'};color:${on ? 'var(--purple)' : 'var(--text-muted)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${t.label}</button>`;
+  }).join('');
+
+  applySettingsTab();
+}
+
+function setSettingsTab(id) {
+  _settingsTab = id;
+  try { localStorage.setItem('settings_tab', id); } catch (e) {}
+  initSettingsTabs();
+}
+
+function applySettingsTab() {
+  const body = document.getElementById('settings-body');
+  if (!body) return;
+  Array.prototype.forEach.call(body.children, function (sec) {
+    if (sec.nodeType !== 1) return;
+    sec.style.display = (sec.dataset.settingsTab === _settingsTab) ? '' : 'none';
+  });
+  body.scrollTop = 0;
+}
+
+// ══════════════════════════════════════════════════════════════
 // SCHEDULE / CUSTODY EDITOR  (added 2026-08-14)
 // ══════════════════════════════════════════════════════════════
 // Why this exists: custody data has expired twice (Apr 30, then Jun 30) and
@@ -4119,14 +4202,53 @@ function getCustodyShare(year) {
   };
 }
 
-// Compact status chip — used on the month view where space is tight.
-function custodyShareChipHtml(year) {
-  const s = getCustodyShare(year);
-  const tone = s.status === 'safe' ? 'green' : (s.status === 'below' ? 'red' : 'orange');
-  const icon = s.status === 'safe' ? '✓' : (s.status === 'below' ? '✕' : '!');
-  return `<span title="Craig ${s.craig} of ${s.totalDays} days in ${s.year}. 40% threshold = ${s.thresholdDays} days. Indicator only — not a legal calculation."
+// Per-month share. Craig's chosen benchmark (2026-08-14): "as long as when I
+// enter a month it's over 40%, I'm happy."
+//
+// That rule is mathematically sound — if every month clears 40%, the year does
+// too, since the annual figure is just the day-weighted average of the months.
+// It holds on ONE condition: blank days must count against him. So the
+// denominator here is every day in the month, never just the assigned ones.
+// Counting assigned-days-only is what made 2026 read 42.5% when the calendar-year
+// figure was 38.9%.
+function getCustodyMonthShare(year, month /* 0-11 */) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prefix = `${year}-${String(month + 1).padStart(2, '0')}-`;
+  let craig = 0, lisa = 0;
+  Object.keys(CUSTODY_CALENDAR).forEach(d => {
+    if (d.indexOf(prefix) !== 0) return;
+    if (CUSTODY_CALENDAR[d] === 'C') craig++;
+    else if (CUSTODY_CALENDAR[d] === 'L') lisa++;
+  });
+  const blank = daysInMonth - craig - lisa;
+  const needed = Math.ceil(daysInMonth * CUSTODY_THRESHOLD_PCT);
+  return {
+    year, month, daysInMonth, craig, lisa, blank, needed,
+    pct: craig / daysInMonth,
+    short: Math.max(0, needed - craig),
+    ok: craig >= needed,
+  };
+}
+
+// Compact status chip for the month view. Month-scoped per Craig's benchmark,
+// with the annual figure carried in the tooltip as backstop context.
+function custodyShareChipHtml(year, month) {
+  const m = getCustodyMonthShare(year, month);
+  const y = getCustodyShare(year);
+  const tone = m.ok ? 'green' : (m.blank > 0 ? 'orange' : 'red');
+  const icon = m.ok ? '✓' : '!';
+  const tail = m.ok
+    ? `${m.craig}/${m.daysInMonth}d`
+    : (m.blank > 0
+        ? `${m.craig}/${m.daysInMonth}d · ${m.short} short, ${m.blank} unset`
+        : `${m.craig}/${m.daysInMonth}d · ${m.short} short`);
+  const title = `This month: Craig ${m.craig} of ${m.daysInMonth} days (needs ${m.needed} to clear 40%).`
+    + (m.blank ? ` ${m.blank} day(s) still unassigned — unassigned counts against you.` : '')
+    + ` ${y.year} to date: ${y.craig} days, ${(y.pctNow*100).toFixed(1)}%.`
+    + ` Indicator only, not a legal calculation.`;
+  return `<span title="${title}"
     style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));color:var(--${tone});font-size:10px;font-weight:700;white-space:nowrap">
-    ${icon} ${s.year} custody ${(s.pctNow*100).toFixed(1)}% · ${s.craig}/${s.thresholdDays}d
+    ${icon} ${(m.pct*100).toFixed(1)}% · ${tail}
   </span>`;
 }
 
@@ -4145,9 +4267,32 @@ function custodySharePanelHtml(year) {
     headline = `! ${s.craig} days — ${s.daysShort} short of the ${s.thresholdDays}-day line`;
     detail = `${s.unassigned} day${s.unassigned === 1 ? ' is' : 's are'} still unassigned. Take ${s.daysShort} or more and you clear it; leave them all to Lisa and the year closes at ${(s.worstCaseDays/s.totalDays*100).toFixed(1)}%.`;
   }
+  // Month-by-month strip. This is the autonomous check Craig asked for — every
+  // month evaluated at once, so a bad month announces itself instead of needing
+  // a calculator. Months with no data at all are shown muted rather than red;
+  // an unscheduled future month isn't a miss yet.
+  const monthNamesShort = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+  let anyUnder = false;
+  const strip = monthNamesShort.map((mn, mi) => {
+    const m = getCustodyMonthShare(year, mi);
+    const empty = (m.craig + m.lisa) === 0;
+    if (!empty && !m.ok) anyUnder = true;
+    const t = empty ? 'text-muted' : (m.ok ? 'green' : 'red');
+    const bg = empty ? 'transparent' : `var(--${t}-bg)`;
+    return `<div title="${['January','February','March','April','May','June','July','August','September','October','November','December'][mi]} ${year}: ${m.craig}/${m.daysInMonth} days = ${(m.pct*100).toFixed(1)}%${empty ? ' (not scheduled yet)' : ''}"
+      style="flex:1;text-align:center;padding:4px 0;border-radius:4px;background:${bg};color:var(--${t});font-size:9px;font-weight:700;line-height:1.3">
+      ${mn}<br><span style="font-size:8.5px;opacity:0.85">${empty ? '–' : (m.pct*100).toFixed(0)}</span>
+    </div>`;
+  }).join('');
+  const stripHtml = `<div style="margin-top:8px">
+    <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:3px">Every month at a glance — each needs 40%+ on its own${anyUnder ? ' · <b style="color:var(--red)">one or more months under</b>' : ''}</div>
+    <div style="display:flex;gap:2px">${strip}</div>
+  </div>`;
+
   return `<div id="custody-share-panel" style="padding:10px;border-radius:6px;background:var(--${tone}-bg);border:1px solid var(--${tone}-border, var(--${tone}));margin-bottom:14px">
     <div style="color:var(--${tone});font-size:11.5px;font-weight:700;line-height:1.5">${headline}</div>
     <div style="color:var(--text);font-size:10.5px;line-height:1.55;margin-top:4px">${detail}</div>
+    ${stripHtml}
     <div style="color:var(--text-muted);font-size:9.5px;line-height:1.5;margin-top:6px">
       ${s.year}: Craig ${s.craig} · Lisa ${s.lisa} · unassigned ${s.unassigned} — ${(s.pctNow*100).toFixed(1)}% of the calendar year
       (${(s.pctOfAssigned*100).toFixed(1)}% of assigned days only).
@@ -9191,6 +9336,16 @@ const ROUTINES = {
       { name: "Wrist Circles + Reverse Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arms out, rotate wrists 10 each way. Then reverse prayer: backs of hands together behind your back, fingers pointing DOWN, slowly slide hands up your spine, hold 20s." },
       // — STANDING (rise up, open the upper body) —
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall. Slow, full range. Loosens up after sleeping." },
+      // Added 2026-08-14. Distinct from Shoulder Rolls above: rolls move the
+      // SCAPULA, circles move the GLENOHUMERAL joint. Different structures, and
+      // with shoulder OA the glenohumeral range is the one that stiffens.
+      // Small-to-large progression is deliberate — starting at full range on a
+      // cold arthritic shoulder is how you provoke it.
+      { name: "Arm Circles (small → large)", sets: "10 small + 10 large, each way", link: "https://www.youtube.com/watch?v=140RTNMciH8", detail: "Arms out to the sides. Start with circles the size of a dinner plate, build to as large as stays comfortable. Both directions. STOP at the point it pinches — with OA, pain-free range is the range that's useful. Never force the top of the arc." },
+      // Finger pulley work moved into the daily routine 2026-08-14, replacing the
+      // separate 3×/day rehab entry point after the cortisone injection resolved
+      // the locking. Once daily is a maintenance dose, not rehab.
+      { name: "Finger Pulley Stretch + Tendon Glide", sets: "5 glides + 10s × 3", link: "https://www.youtube.com/watch?v=Tn5WcjpWoIo", detail: "Right middle finger. Run the five glide positions once (straight hand → hook fist → full fist → tabletop → straight fist), then gently pull the finger back toward the wrist with the other hand, 10s × 3. Mild catching is expected post-injection. If it starts LOCKING again, that's the signal to call the hand surgeon — don't wait it out." },
       { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
       { name: "Standing Arm Circles (Egoscue)", sets: "25 forward + 25 back", link: "https://www.youtube.com/watch?v=K0M_Bi-OgJ0", detail: "Arms straight out at shoulder height, palms down. Small circles, gradually bigger. Resets shoulder girdle." },
       { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace fingers overhead, palms up, lengthen and breathe. Big stretch to finish." },
@@ -9472,6 +9627,256 @@ const ROUTINES = {
 // ──────────────────────────────────────────────
 // GYM EQUIPMENT — machines & cardio for logging
 // ──────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// DAY NOTES  (added 2026-08-14)
+// ══════════════════════════════════════════════════════════════
+// Multiple categorised notes per day, backed by the `day_notes` table.
+//
+// ZERO OBLIGATION is the governing constraint, not a nice-to-have:
+//   • no streak counter, no "you haven't written today"
+//   • empty state is a single quiet line, never a prompt or a guilt trip
+//   • never auto-fires; Craig opens it when he has something to say
+// Every other surface in this app measures a gap — weight vs target, symptom
+// severity, med compliance, deficit adherence, custody vs a legal floor. This is
+// the only one that records that something was good. It stops working the moment
+// it becomes another thing to fail at.
+//
+// Hybrid cache, same as body_log: localStorage is the offline buffer, Supabase is
+// the source of truth, client_id is the dedup key.
+const DAY_NOTE_CATS = [
+  { id: 'together', icon: '👨‍👧‍👦', label: 'Together', color: 'green',  hint: 'Something you did with the kids' },
+  { id: 'win',      icon: '⭐',   label: 'Win',       color: 'cyan',   hint: 'Something that went well' },
+  { id: 'personal', icon: '📝',   label: 'Personal',  color: 'purple', hint: 'For you' },
+  { id: 'custody',  icon: '🔄',   label: 'Custody',   color: 'orange', hint: 'Trades, exceptions, handover changes' },
+];
+let DAY_NOTES = {};              // dateStr -> [note, ...]
+let _dnDraft = { cat: 'together', body: '', editingId: null };
+
+function _dnKey() { return 'day_notes_cache'; }
+function _dnLoadLocal() {
+  try { DAY_NOTES = JSON.parse(localStorage.getItem(_dnKey()) || '{}'); }
+  catch (e) { DAY_NOTES = {}; }
+}
+function _dnSaveLocal() {
+  try { localStorage.setItem(_dnKey(), JSON.stringify(DAY_NOTES)); } catch (e) {}
+}
+function getDayNotes(dateStr) { return (DAY_NOTES[dateStr] || []); }
+
+async function _dnFetch(dateStr) {
+  if (!sbReady) return;
+  try {
+    const { data, error } = await sb.from('day_notes').select('*').eq('note_date', dateStr);
+    if (error) throw error;
+    DAY_NOTES[dateStr] = (data || []).sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    _dnSaveLocal();
+    // Guard against clobbering something being typed right now.
+    const ae = document.activeElement;
+    if (!ae || ae.id !== 'dn-body-input') renderDayNotes(dateStr);
+  } catch (e) { console.warn('day_notes fetch failed', e); }
+}
+
+async function dnSave(dateStr) {
+  const input = document.getElementById('dn-body-input');
+  const body = (input ? input.value : '').trim();
+  if (!body) return;
+  const editing = _dnDraft.editingId;
+  const cid = editing || ('dn-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8));
+  const row = { note_date: dateStr, category: _dnDraft.cat, body: body, client_id: cid };
+
+  const list = DAY_NOTES[dateStr] || (DAY_NOTES[dateStr] = []);
+  const idx = list.findIndex(n => n.client_id === cid);
+  if (idx >= 0) list[idx] = Object.assign({}, list[idx], row);
+  else list.push(Object.assign({ created_at: new Date().toISOString() }, row));
+  _dnSaveLocal();
+
+  _dnDraft = { cat: _dnDraft.cat, body: '', editingId: null };
+  renderDayNotes(dateStr);
+
+  if (sbReady) {
+    try {
+      const { error } = await sb.from('day_notes').upsert([row], { onConflict: 'user_id,client_id' });
+      if (error) throw error;
+    } catch (e) { console.warn('day_notes save failed — kept locally', e); }
+  }
+}
+function dnEdit(dateStr, cid) {
+  const n = (DAY_NOTES[dateStr] || []).find(x => x.client_id === cid);
+  if (!n) return;
+  _dnDraft = { cat: n.category, body: n.body, editingId: cid };
+  renderDayNotes(dateStr);
+  const i = document.getElementById('dn-body-input');
+  if (i) { i.value = n.body; i.focus(); }
+}
+function dnCancelEdit(dateStr) {
+  _dnDraft = { cat: _dnDraft.cat, body: '', editingId: null };
+  renderDayNotes(dateStr);
+}
+async function dnDelete(dateStr, cid) {
+  DAY_NOTES[dateStr] = (DAY_NOTES[dateStr] || []).filter(n => n.client_id !== cid);
+  _dnSaveLocal();
+  if (_dnDraft.editingId === cid) _dnDraft = { cat: _dnDraft.cat, body: '', editingId: null };
+  renderDayNotes(dateStr);
+  if (sbReady) {
+    try { await sb.from('day_notes').delete().eq('client_id', cid); }
+    catch (e) { console.warn('day_notes delete failed', e); }
+  }
+}
+function dnSetCat(dateStr, cat) { _dnDraft.cat = cat; renderDayNotes(dateStr); }
+
+function buildDayNotesHtml(dateStr) {
+  const notes = getDayNotes(dateStr);
+  const catPills = DAY_NOTE_CATS.map(c => {
+    const on = _dnDraft.cat === c.id;
+    return `<button onclick="dnSetCat('${dateStr}','${c.id}')" title="${c.hint}"
+      style="padding:4px 8px;border-radius:6px;border:1px solid ${on ? `var(--${c.color}-border, var(--${c.color}))` : 'var(--card-border)'};background:${on ? `var(--${c.color}-bg)` : 'var(--input-bg)'};color:${on ? `var(--${c.color})` : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${c.icon} ${c.label}</button>`;
+  }).join('');
+
+  const rows = notes.map(n => {
+    const c = DAY_NOTE_CATS.find(x => x.id === n.category) || DAY_NOTE_CATS[0];
+    const safe = (n.body || '').replace(/</g, '&lt;');
+    return `<div style="display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:1px solid var(--divider)">
+      <span style="font-size:12px;flex-shrink:0" title="${c.label}">${c.icon}</span>
+      <div style="flex:1;min-width:0;font-size:11px;color:var(--text);line-height:1.5;white-space:pre-wrap;word-break:break-word">${safe}</div>
+      <button onclick="dnEdit('${dateStr}','${n.client_id}')" title="Edit" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:11px;padding:0 2px">✎</button>
+      <button onclick="dnDelete('${dateStr}','${n.client_id}')" title="Delete" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:12px;padding:0 2px">×</button>
+    </div>`;
+  }).join('');
+
+  // Empty state: one quiet line. Deliberately NOT a prompt, NOT a suggestion,
+  // NOT a count of days missed.
+  const empty = notes.length ? '' :
+    `<div style="font-size:10px;color:var(--text-muted);padding:4px 0 6px">Nothing noted for this day.</div>`;
+
+  const editing = !!_dnDraft.editingId;
+  return `
+    <div class="notes-section">
+      <div class="notes-label">🗒️ Notes</div>
+      ${empty}${rows}
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin:8px 0 6px">${catPills}</div>
+      ${editing ? `<div style="font-size:10px;color:var(--orange);font-weight:700;margin-bottom:4px">Editing — <span style="cursor:pointer;text-decoration:underline" onclick="dnCancelEdit('${dateStr}')">cancel</span></div>` : ''}
+      <div style="display:flex;gap:6px;align-items:flex-start">
+        <textarea id="dn-body-input" rows="2" placeholder="What happened?"
+          style="flex:1;min-width:0;padding:7px 9px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11.5px;font-family:inherit;resize:vertical;box-sizing:border-box">${(_dnDraft.body || '').replace(/</g, '&lt;')}</textarea>
+        <button onclick="dnSave('${dateStr}')"
+          style="padding:8px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">${editing ? 'Update' : '+ Add'}</button>
+      </div>
+    </div>`;
+}
+function renderDayNotes(dateStr) {
+  const host = document.getElementById('day-notes-host');
+  if (host) host.innerHTML = buildDayNotesHtml(dateStr);
+}
+
+// ══════════════════════════════════════════════════════════════
+// REST TIMER  (added 2026-08-14)
+// ══════════════════════════════════════════════════════════════
+// Craig's powerlifting friend claimed rest between sets affects lift capability
+// "as much as eating and sleep". Directionally right, magnitude overstated —
+// but worth building, because it's the cheapest lever here to fix.
+//
+// Evidence: Schoenfeld 2016 (trained men, 8 weeks, 1min vs 3min rest) found the
+// 3-minute group significantly better on 1RM squat and bench with greater quad
+// thickness. A 2024 Bayesian meta-analysis confirms the direction and sizes the
+// hypertrophy benefit as small. The mechanism is unglamorous: longer rest allows
+// phosphocreatine resynthesis and metabolite clearance, so the next set is
+// performed with more load and more reps. Short rest doesn't fail directly — it
+// quietly shrinks total volume, and volume drives adaptation.
+//
+// Honest framing for the UI: rest is a WITHIN-session lever. Sleep and energy
+// availability are system-wide. At 1-2 sessions/week in a deficit on 5-7h sleep,
+// sleep is still Craig's bigger lever. The app should not imply otherwise.
+//
+// Cost, stated so it isn't a surprise: 3-min rest roughly DOUBLES session length.
+const REST_PRESETS = [
+  { id: 'heavy',     secs: 180, label: '3 min', desc: 'Heavy compounds — press, squat, row' },
+  { id: 'accessory', secs: 120, label: '2 min', desc: 'Accessory work' },
+  { id: 'light',     secs: 75,  label: '75 s',  desc: 'Isolation, high-rep, finishers' },
+];
+// Exercises that get the long rest by default. Matched loosely on the label so
+// new machines with these words inherit sensible behaviour without extra config.
+const REST_COMPOUND_HINTS = ['press', 'squat', 'row', 'pulldown', 'deadlift', 'lunge', 'leg press'];
+
+let _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false };
+
+function _restDefaultSecsFor(label) {
+  const l = (label || '').toLowerCase();
+  return REST_COMPOUND_HINTS.some(h => l.indexOf(h) !== -1) ? 180 : 120;
+}
+
+function startRestTimer(secs, label) {
+  secs = secs || _restDefaultSecsFor(label);
+  _restTimer.target = secs;
+  _restTimer.remaining = secs;
+  _restTimer.label = label || '';
+  _restTimer.running = true;
+  if (_restTimer.id) clearInterval(_restTimer.id);
+  _restTimer.id = setInterval(_restTick, 1000);
+  renderRestTimer();
+}
+function stopRestTimer() {
+  if (_restTimer.id) clearInterval(_restTimer.id);
+  _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false };
+  renderRestTimer();
+}
+function adjustRestTimer(delta) {
+  if (!_restTimer.running) return;
+  _restTimer.remaining = Math.max(0, _restTimer.remaining + delta);
+  renderRestTimer();
+}
+function _restTick() {
+  if (!_restTimer.running) return;
+  _restTimer.remaining--;
+  // Keep counting into negative so overrun is visible rather than the timer
+  // just vanishing — knowing you rested 4:30 instead of 3:00 is useful data.
+  if (_restTimer.remaining === 0) _restRestCue();
+  renderRestTimer();
+}
+// Short beep + haptic. Generated via Web Audio so there's no asset to ship and
+// nothing to fail on a cold cache.
+function _restRestCue() {
+  try {
+    if (navigator.vibrate) navigator.vibrate([120, 60, 120]);
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+    osc.start(); osc.stop(ctx.currentTime + 0.5);
+    setTimeout(() => { try { ctx.close(); } catch (e) {} }, 800);
+  } catch (e) { /* audio blocked before user gesture — haptic still fires */ }
+}
+function _restFmt(s) {
+  const neg = s < 0; s = Math.abs(s);
+  return (neg ? '+' : '') + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+function renderRestTimer() {
+  const el = document.getElementById('rest-timer-bar');
+  if (!el) return;
+  if (!_restTimer.running) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const over = _restTimer.remaining < 0;
+  const tone = over ? 'green' : (_restTimer.remaining <= 10 ? 'orange' : 'cyan');
+  const pct = _restTimer.target > 0
+    ? Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) : 100;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px">
+      <div style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--${tone});min-width:66px">${_restFmt(_restTimer.remaining)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_restTimer.label || 'Rest'}</div>
+        <div style="font-size:9px;color:var(--text-muted)">${over ? 'Ready — extra rest is fine, note it if it was a lot' : 'Resting'}</div>
+        <div style="height:3px;border-radius:2px;background:var(--divider);margin-top:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
+        </div>
+      </div>
+      <button onclick="adjustRestTimer(30)" style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
+      <button onclick="stopRestTimer()" style="padding:4px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit">✕</button>
+    </div>`;
+}
+
 const GYM_CARDIO = [
   { id: 'treadmill', icon: '🏃', label: 'Treadmill', hasTime: true, hasDist: true, distUnit: 'mi' },
   { id: 'bike', icon: '🚴', label: 'Stationary Bike', hasTime: true, hasDist: true, distUnit: 'km' },
@@ -13955,7 +14360,12 @@ function buildGymExtras(dateStr, exSets) {
         '<span class="wlog-unit">×</span>' +
         '<input class="wlog-input" type="number" placeholder="sets" min="0" max="20" style="width:32px" value="' + (d.sets || '') + '" ' +
           'onchange="setExSet(\'' + dateStr + '\',\'' + ek + '\',\'sets\',parseFloat(this.value)||0)" onclick="event.stopPropagation()">' +
-        '<span class="wlog-unit">sets</span>';
+        '<span class="wlog-unit">sets</span>' +
+        // Per-set rest trigger (added 2026-08-14). Compound lifts default to the
+        // long rest, isolation work to the short one — see REST_PRESETS.
+        '<button onclick="event.stopPropagation();startRestTimer(null,\'' + m.label.replace(/'/g, "\\'") + '\')" ' +
+          'title="Start rest timer" ' +
+          'style="margin-left:4px;padding:2px 6px;border-radius:4px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10px;cursor:pointer;font-family:inherit;flex-shrink:0">⏱</button>';
       if (isDone) machineHtml += '<span style="color:var(--green);font-size:10px;margin-left:auto">✓</span>';
       machineHtml += '</div>';
       if (prev) machineHtml += prevDataLabel(prev);
@@ -14192,6 +14602,13 @@ function renderDaily() {
   const now = new Date();
   now.setDate(now.getDate() + currentDayOffset);
   const dateStr = ds(now);
+  // Day notes: paint from the local cache immediately, then refresh from
+  // Supabase in the background (the fetch guards against clobbering typing).
+  if (typeof renderDayNotes === 'function') {
+    if (!Object.keys(DAY_NOTES).length) _dnLoadLocal();
+    renderDayNotes(dateStr);
+    _dnFetch(dateStr);
+  }
   const cust = custodyInfo(dateStr);
   const woRaw = WORKOUT_PLANS[dateStr];
   const rowAdj = adjustRowWorkout(woRaw, dateStr);
@@ -15041,7 +15458,7 @@ function renderMonth() {
   // percentage would be actively misleading (a light month is meaningless if the
   // annual total clears). Deliberately not a per-day marker for the same reason.
   const shareChip = (typeof custodyShareChipHtml === 'function')
-    ? `<div class="legend-item" onclick="openScheduleEditor()" style="cursor:pointer">${custodyShareChipHtml(year)}</div>`
+    ? `<div class="legend-item" onclick="openScheduleEditor()" style="cursor:pointer">${custodyShareChipHtml(year, month)}</div>`
     : '';
   document.getElementById('month-legend').innerHTML = `
     <div class="legend-item"><div class="legend-dot craig"></div>Craig (${mCraigDays}d)</div>
