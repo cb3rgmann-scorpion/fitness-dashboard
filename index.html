@@ -2411,6 +2411,53 @@
   .ex-link { font-size: 10px; color: var(--purple); text-decoration: none; font-weight: 500; }
   .ex-link:hover { text-decoration: underline; color: #c4b5fd; }
 
+  /* ── Per-set entry (v1, 2026-05-10) ── */
+  /* Craig's actual training pattern is variable-weight auto-regulated sets.
+     Each row = one set with its own weight/reps + optional S/F/P flag. */
+  .exset-stack { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+  .exset-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 0;
+    font-size: 11px;
+  }
+  .exset-row .exset-label {
+    font-size: 9px; color: var(--text-muted);
+    min-width: 32px; text-align: right; font-weight: 600;
+  }
+  .exset-row .wlog-input {
+    width: 44px; text-align: center;
+  }
+  .exset-row .exset-x { color: var(--text-muted); font-size: 10px; }
+  .exset-row .exset-unit { font-size: 9px; color: var(--text-muted); }
+  .exset-flag-btn {
+    min-width: 20px; height: 22px; padding: 0 5px; margin-left: 4px;
+    font-size: 10px; font-weight: 700;
+    border-radius: 4px; border: 1px solid var(--card-border);
+    background: var(--input-bg); color: var(--text-muted);
+    cursor: pointer; user-select: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .exset-flag-btn:hover { border-color: var(--text-dim); }
+  .exset-flag-btn.flag-S { background: rgba(251,146,60,0.15); border-color: var(--orange); color: var(--orange); }
+  .exset-flag-btn.flag-F { background: rgba(248,113,113,0.15); border-color: var(--red); color: var(--red); }
+  .exset-flag-btn.flag-P { background: rgba(167,139,250,0.15); border-color: var(--purple); color: var(--purple); }
+  .exset-remove {
+    color: var(--text-muted); font-size: 12px; line-height: 1;
+    padding: 0 4px; cursor: pointer; margin-left: 2px;
+  }
+  .exset-remove:hover { color: var(--red); }
+  .exset-add-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 3px 10px; margin-top: 2px;
+    font-size: 10px; font-weight: 700;
+    border-radius: 4px; border: 1px dashed var(--card-border);
+    background: transparent; color: var(--text-dim);
+    cursor: pointer; user-select: none;
+    transition: all 0.15s;
+  }
+  .exset-add-btn:hover { border-color: var(--cyan); color: var(--cyan); border-style: solid; }
+
   /* ── Notes ── */
   .notes-section { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--divider); }
   .notes-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
@@ -3702,6 +3749,49 @@ function setWorkoutDist(dateStr, woId, val) {
 function setWorkoutSubtype(dateStr, woId, subtype) {
   setWorkoutLog(dateStr, woId, 'subtype', subtype);
   scheduleRender(renderDaily);
+}
+
+// ─── Walking scoreboard model (Craig, 2026-05-10) ─────────────────────────
+// Craig's own threshold model for what counts as "walking":
+//   < 1.8 km/day  → baseline daily movement, doesn't count as exercise
+//   1.8–5 km/day  → above baseline, ambient movement credit (walking-strip green)
+//   ≥ 5 km/day    → counts as walking-is-cardio (his pace ~11-12min/km ≈ 55-60min)
+//                  → earns the weekly Cardio 0/1 box on its own, no structured
+//                    session required
+// Rationale: walking has ~zero eccentric muscle damage and minimal HRV impact,
+// so it's daily-sustainable. Structured cardio (row/swim/jog) has real recovery
+// cost. Both are valid paths to the weekly Cardio check. See memory:
+// [[user_training_pattern]].
+const WALK_THRESHOLDS = { baseline: 1.8, cardio: 5.0 };
+function getWalkTier(km) {
+  if (km >= WALK_THRESHOLDS.cardio) return 'cardio';    // ≥ 5 km — earns cardio
+  if (km >= WALK_THRESHOLDS.baseline) return 'ambient'; // 1.8–5 km — you're moving
+  return 'below';                                       // < 1.8 km — baseline only
+}
+function getDayWalkKm(dateStr) {
+  const wlog = (typeof getWorkoutLog === 'function') ? getWorkoutLog(dateStr) : {};
+  const manual = (wlog.walk && wlog.walk.dist) ? wlog.walk.dist : 0;
+  // Future: sum health_workouts walks for the day and take max(manual, healthSum)
+  // once Apple Health walk aggregation is confirmed. For now manual wins.
+  return manual;
+}
+function isWalkingCardioDay(dateStr) {
+  return getDayWalkKm(dateStr) >= WALK_THRESHOLDS.cardio;
+}
+// Structured cardio counter — used by the weekly Cardio 0/1 scoreboard once built.
+// Returns true if any row/swim/jog/hike session was logged AND marked done.
+function isStructuredCardioDay(dateStr) {
+  const wlog = (typeof getWorkoutLog === 'function') ? getWorkoutLog(dateStr) : {};
+  const row = (wlog.row || {}).done;
+  const swim = (wlog.swim || {}).done;
+  // Walk with subtype jog/run/hike = structured; plain walk doesn't count here
+  const walk = wlog.walk || {};
+  const walkStructured = walk.done && ['jog', 'run', 'hike'].includes(walk.subtype);
+  return !!(row || swim || walkStructured);
+}
+// Convenience: earns weekly Cardio 0/1 either way.
+function isCardioEarnedDay(dateStr) {
+  return isStructuredCardioDay(dateStr) || isWalkingCardioDay(dateStr);
 }
 
 function getBodyExReps(dateStr, exKey) {
@@ -9438,8 +9528,10 @@ const ROUTINES = {
       { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Doorway chest stretch + cross-body shoulder + tricep overhead", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
-  gym_lower: {
-    title: "Gym — Lower Body",
+  // Intent A 'legs' — renamed from 'lower' on 2026-05-10. gym_lower alias
+  // added below for back-compat with existing wlog entries stored as subtype='lower'.
+  gym_legs: {
+    title: "Gym — Legs",
     exercises: [
       { name: "Warmup Cardio", sets: "8–12 min easy", link: "", detail: "Bike or easy row preferred — primes hips/knees/ankles. Logs to Row/Walk row.", muscleGroup: "warmup", _warmupCardio: true },
       { name: "Goblet Squat", sets: "3×10", link: "https://www.youtube.com/watch?v=MeIiIdhvXT4", detail: "Hold DB at chest, sit between heels, knees track toes", muscleGroup: "quads" },
@@ -9450,6 +9542,19 @@ const ROUTINES = {
       { name: "Calf Raises (Standing)", sets: "3×15", link: "https://www.youtube.com/watch?v=-M4-G8p8fmc", detail: "Pause 1s at top, full stretch at bottom", muscleGroup: "calves" },
       { name: "Dead Bug", sets: "3×8 each", link: "https://www.youtube.com/watch?v=I5xbsA71v1A", detail: "Core — press low back to floor, opposite arm/leg", muscleGroup: "core" },
       { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Hip flexor + figure-4 + standing quad", muscleGroup: "cooldown", _cooldown: true },
+    ]
+  },
+
+  // Intent A 'endurance' — new 2026-05-10. Long, low-intensity gym session for
+  // the ~monthly body-craved endurance day (per project_workout_pivot_v1 memory).
+  // Not a weekly nudge target; shows up as an option, not a scheduled workout.
+  gym_endurance: {
+    title: "Gym — Endurance",
+    exercises: [
+      { name: "Warmup Cardio", sets: "5 min easy", link: "", detail: "Anything — row, bike, treadmill. Just get warm. Logs to Row/Walk row.", muscleGroup: "warmup", _warmupCardio: true },
+      { name: "Main Cardio Block", sets: "30–60 min steady", link: "", detail: "Row, bike, or mixed. Zone 2 — conversational pace. This is the session. Just keep moving." },
+      { name: "Light Mobility Circuit", sets: "2 rounds", link: "", detail: "Optional post-cardio: 10 air squats + 10 arm circles + 10 hip circles + 30s dead hang. Wakes up joints without adding fatigue." },
+      { name: "Cooldown Walk", sets: "5 min", link: "", detail: "Easy walk on treadmill, let HR settle below 110", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
   row_steady: {
@@ -9620,6 +9725,13 @@ const ROUTINES = {
     ]
   }
 };
+
+// Intent-A alias (2026-05-10). Existing wlog entries with subtype='lower'
+// look up `ROUTINES.gym_lower`; the routine was renamed to `gym_legs`, so
+// this alias keeps those historical entries resolving to the same content.
+if (ROUTINES.gym_legs && !ROUTINES.gym_lower) {
+  ROUTINES.gym_lower = ROUTINES.gym_legs;
+}
 
 // ──────────────────────────────────────────────
 // OTHER WORKOUTS — Available workout types for logging
@@ -9926,13 +10038,23 @@ function getPrevExData(todayStr, exKey) {
 function prevDataLabel(prev) {
   if (!prev) return '';
   const d = prev.data;
+  const ago = Math.round((new Date(new Date().toDateString()) - new Date(prev.date)) / 86400000);
+  // Per-set entries → show each set individually (e.g. "130×9 / 120×10 / 130×8")
+  // so Craig can see his last auto-regulated pattern, not just an aggregate.
+  if (Array.isArray(d.entries) && d.entries.length > 0) {
+    const setStrs = d.entries.map(s => {
+      const flagTxt = s.flag ? `[${s.flag}]` : '';
+      return (s.w || 0) + '×' + (s.r || 0) + flagTxt;
+    });
+    return '<div style="font-size:8px;color:var(--purple);margin-top:1px">📋 Last: ' + setStrs.join(' / ') + ' <span style="color:var(--text-muted)">(' + ago + 'd ago)</span></div>';
+  }
+  // Legacy aggregate fallback (cardio, old strength data without .entries)
   const parts = [];
   if (d.weight) parts.push(d.weight + ' lbs');
   if (d.reps) parts.push(d.reps + ' reps');
   if (d.sets) parts.push(d.sets + ' sets');
   if (d.time) parts.push(d.time + ' min');
   if (d.dist) parts.push(d.dist + (d.distUnit || ''));
-  const ago = Math.round((new Date(new Date().toDateString()) - new Date(prev.date)) / 86400000);
   return '<div style="font-size:8px;color:var(--purple);margin-top:1px">📋 Last: ' + parts.join(' × ') + ' <span style="color:var(--text-muted)">(' + ago + 'd ago)</span></div>';
 }
 
@@ -9940,7 +10062,11 @@ const OTHER_WORKOUTS = [
   { id: 'row', icon: '🚣', label: 'Row', hasTime: true, hasDist: true, distUnit: 'm', types: ['steady', 'intervals'] },
   { id: 'walk', icon: '🚶', label: 'Walk', hasTime: true, hasDist: true, distUnit: 'km', types: ['walk', 'jog', 'run', 'hike'] },
   { id: 'swim', icon: '🏊', label: 'Swim', hasTime: true, hasDist: true, distUnit: 'm' },
-  { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['full', 'upper', 'lower'] },
+  // Intent A (2026-05-10, Craig-picked): Legs / Upper / Full / Endurance / Free.
+  // 'lower' → 'legs' rename; existing log entries with subtype='lower' still
+  // resolve because ROUTINES.gym_lower is kept as an alias to ROUTINES.gym_legs.
+  // 'free' has no routine — freeform log, no session-shape template.
+  { id: 'gym', icon: '🏋️', label: 'Gym', hasTime: true, hasDist: false, types: ['legs', 'upper', 'full', 'endurance', 'free'] },
   { id: 'bodyweight', icon: '💪', label: 'Body', hasTime: false, hasDist: false, types: ['full', 'upper', 'lower', 'simple'],
     exercises: [
       { key: 'pushups', label: 'Push-ups', icon: '🫸' },
@@ -13435,6 +13561,154 @@ function setExSet(dateStr, exKey, field, val) {
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
 }
 
+// ─── Per-set entries (v1, 2026-05-10) ─────────────────────────────────────
+// Craig's actual training pattern is variable-weight sets (e.g. 9×130 / 10×120 /
+// 8×130 auto-regulated around shoulder-OA form protection). The legacy shape
+// {weight, reps, sets} treats all sets as identical, losing that signal.
+//
+// New shape (additive, back-compat):
+//   exSets[exKey] = {
+//     weight, reps, sets, time, dist,       // legacy aggregate — kept synced for
+//                                           //   stats readers, prevExData, cardio
+//     entries: [                            // NEW: per-set for strength lifts
+//       { w: 130, r: 9,  flag: '' },
+//       { w: 120, r: 10, flag: 'S' },      // S=shoulder, F=form, P=pain, ''=std
+//       { w: 130, r: 8,  flag: '' },
+//     ]
+//   }
+//
+// If .entries is absent (old data), getExSetEntries synthesizes N identical
+// sets from the legacy aggregate. Writers keep both shapes in sync.
+
+// Read per-set entries; synthesize from legacy aggregate if missing.
+function getExSetEntries(dateStr, exKey) {
+  const all = getExSets(dateStr);
+  const data = all[exKey] || {};
+  if (Array.isArray(data.entries) && data.entries.length > 0) return data.entries;
+  // Legacy aggregate — synthesize N identical sets
+  const n = Math.max(1, parseInt(data.sets) || 1);
+  if (!data.weight && !data.reps) return [];
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    out.push({ w: data.weight || 0, r: data.reps || 0, flag: '' });
+  }
+  return out;
+}
+
+// Set a field (w / r / flag) on a specific set index. Migrates aggregate→entries
+// on first write, keeps aggregate synced so legacy readers keep working.
+function setExSetEntry(dateStr, exKey, idx, field, val) {
+  const all = getExSets(dateStr);
+  if (!all[exKey]) all[exKey] = {};
+  const data = all[exKey];
+  if (!Array.isArray(data.entries)) {
+    data.entries = getExSetEntries(dateStr, exKey);
+  }
+  while (data.entries.length <= idx) {
+    data.entries.push({ w: 0, r: 0, flag: '' });
+  }
+  data.entries[idx][field] = val;
+  // Sync legacy aggregate — first set is representative, .sets = count.
+  // Stats readers that compute volume = weight × reps × sets will get an
+  // approximate number; per-set-aware readers can compute exact volume from
+  // .entries. Both shapes carry information; neither is destroyed.
+  const first = data.entries[0] || {};
+  data.weight = first.w || 0;
+  data.reps = first.r || 0;
+  data.sets = data.entries.length;
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+}
+
+// Add a new empty set row. New set's weight defaults to the last set's weight
+// (common pattern: same load, next rep count).
+function addExSetRow(dateStr, exKey) {
+  const all = getExSets(dateStr);
+  if (!all[exKey]) all[exKey] = {};
+  if (!Array.isArray(all[exKey].entries)) {
+    all[exKey].entries = getExSetEntries(dateStr, exKey);
+  }
+  const last = all[exKey].entries[all[exKey].entries.length - 1];
+  all[exKey].entries.push({ w: last ? last.w : 0, r: 0, flag: '' });
+  all[exKey].sets = all[exKey].entries.length;
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
+  } else if (typeof renderDaily === 'function') {
+    scheduleRender(renderDaily);
+  }
+}
+
+// Remove a specific set row (used when a set was mis-entered). Keeps ≥ 1 set.
+function removeExSetRow(dateStr, exKey, idx) {
+  const all = getExSets(dateStr);
+  if (!all[exKey] || !Array.isArray(all[exKey].entries)) return;
+  if (all[exKey].entries.length <= 1) return; // don't remove the last set
+  all[exKey].entries.splice(idx, 1);
+  const first = all[exKey].entries[0] || {};
+  all[exKey].weight = first.w || 0;
+  all[exKey].reps = first.r || 0;
+  all[exKey].sets = all[exKey].entries.length;
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
+  } else if (typeof renderDaily === 'function') {
+    scheduleRender(renderDaily);
+  }
+}
+
+// Cycle a set's flag: '' → 'S' → 'F' → 'P' → ''.
+// S=shoulder (form-protective load drop, per user_training_pattern memory),
+// F=form (technique breakdown), P=pain (unrelated pain flare).
+function cycleExSetFlag(dateStr, exKey, idx) {
+  const cur = (getExSetEntries(dateStr, exKey)[idx] || {}).flag || '';
+  const next = cur === '' ? 'S' : cur === 'S' ? 'F' : cur === 'F' ? 'P' : '';
+  setExSetEntry(dateStr, exKey, idx, 'flag', next);
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
+  } else if (typeof renderDaily === 'function') {
+    scheduleRender(renderDaily);
+  }
+}
+
+// Render the per-set stack UI for a strength exercise (gym/kettlebell).
+// Each row: "set N" label · weight input · × · reps input · flag button · remove
+// Followed by a "+ add set" button.
+// If no entries exist yet, renders one blank row + add button so the user
+// can start entering immediately without a separate "start" action.
+function buildExSetStack(dateStr, exKey) {
+  const entries = getExSetEntries(dateStr, exKey);
+  const rows = entries.length > 0 ? entries : [{ w: 0, r: 0, flag: '' }];
+  const flagTip = { '': 'Tap to flag: S shoulder / F form / P pain',
+                    'S': 'Shoulder — form-protective load drop (tap to cycle)',
+                    'F': 'Form breakdown (tap to cycle)',
+                    'P': 'Pain (tap to cycle)' };
+  const rowsHtml = rows.map((s, idx) => {
+    const flagCls = s.flag ? ' flag-' + s.flag : '';
+    const flagLabel = s.flag || '·';
+    const canRemove = rows.length > 1;
+    return `<div class="exset-row" onclick="event.stopPropagation()">
+      <span class="exset-label">set ${idx + 1}</span>
+      <input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5"
+        value="${s.w || ''}"
+        onchange="setExSetEntry('${dateStr}','${exKey}',${idx},'w',parseFloat(this.value)||0)">
+      <span class="exset-x">×</span>
+      <input class="wlog-input" type="number" placeholder="reps" min="0" max="100"
+        value="${s.r || ''}"
+        onchange="setExSetEntry('${dateStr}','${exKey}',${idx},'r',parseFloat(this.value)||0)">
+      <span class="exset-flag-btn${flagCls}"
+        onclick="cycleExSetFlag('${dateStr}','${exKey}',${idx})"
+        title="${flagTip[s.flag || '']}">${flagLabel}</span>
+      ${canRemove ? `<span class="exset-remove"
+        onclick="removeExSetRow('${dateStr}','${exKey}',${idx})"
+        title="Remove this set">×</span>` : ''}
+    </div>`;
+  }).join('');
+  return `<div class="exset-stack">
+    ${rowsHtml}
+    <span class="exset-add-btn" onclick="event.stopPropagation();addExSetRow('${dateStr}','${exKey}')" title="Add another set">+ add set</span>
+  </div>`;
+}
+
 // ── EXERCISE SWAPS (per-date overrides) ──
 // Lets the user swap any gym exercise for an alternative from EXERCISE_BANK
 // without altering the underlying routine. Key: routineKey + '_' + idx.
@@ -14218,14 +14492,7 @@ function openRoutinePopup(routineKey, dateStr) {
             <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
-            ${showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
-              <input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" style="width:44px" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)">
-              <span class="wlog-unit">lbs</span>
-              <input class="wlog-input" type="number" placeholder="reps" min="0" max="100" style="width:40px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
-              <span class="wlog-unit">reps</span>
-              <input class="wlog-input" type="number" placeholder="sets" min="0" max="20" style="width:32px" value="${setData.sets || ''}" onchange="setExSet('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">
-              <span class="wlog-unit">sets</span>
-            </div>${prevDataLabel(getPrevExData(dateStr, exKey))}` : ''}
+            ${showGymTrack ? buildExSetStack(dateStr, exKey) + prevDataLabel(getPrevExData(dateStr, exKey)) : ''}
             ${showBwTrack && !showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
               <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
               <span class="wlog-unit">reps</span>
@@ -14710,7 +14977,10 @@ function renderDaily() {
   const otherWoHtml = OTHER_WORKOUTS.map(w => {
     const entry = wlog[w.id] || {};
     const isDone = entry.done;
-    const subtype = entry.subtype || (w.types ? w.types[0] : '');
+    let subtype = entry.subtype || (w.types ? w.types[0] : '');
+    // Intent-A migration (2026-05-10): 'lower' → 'legs' on display so old
+    // wlog entries stored as subtype='lower' still light up the right pill.
+    if (w.id === 'gym' && subtype === 'lower') subtype = 'legs';
     const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
       `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
     ).join('')}</div>` : '';
@@ -14718,8 +14988,13 @@ function renderDaily() {
     // routine popup directly on row tap. The previous inline-summary +
     // expand pattern was an extra step before reaching the actual tracker.
     // (Per Craig's UX feedback 2026-05-15 — match the eat-out picker pattern.)
+    // Intent A 'free' (2026-05-10) = no template, freeform log — no popup opens.
     let popupRoutineKey = '';
-    if (w.id === 'gym')              popupRoutineKey = (subtype === 'full' || !subtype) ? 'gym' : 'gym_' + subtype;
+    if (w.id === 'gym') {
+      if (subtype === 'free')                         popupRoutineKey = '';
+      else if (subtype === 'full' || !subtype)        popupRoutineKey = 'gym';
+      else                                            popupRoutineKey = 'gym_' + subtype;
+    }
     else if (w.id === 'bodyweight')  popupRoutineKey = (subtype === 'full' || !subtype) ? 'bodyweight' : 'bodyweight_' + subtype;
     else if (w.id === 'kettlebell')  popupRoutineKey = 'kettlebell_' + (subtype || 'circuits');
 
@@ -14942,6 +15217,12 @@ function renderDaily() {
   if (todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
   if (wo && wo.timing==="evening") items.push({k:"workout",t:"PM",txt:"🌙 "+wo.label,sub:wo.target});
   items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Session",sub:"Any tier — quick, standard, yoga, or deep"});
+  // Kegels — daily-floor pelvic floor training. Added 2026-05-10 from
+  // Craig-Health-Profile.md ("Pelvic floor training" section). Protocol per
+  // Dorey et al. 2004 (BJU Int) RCT: 40% regained normal erectile function
+  // after 3 months. Two rep schemes matter: long holds (slow-twitch) +
+  // quick flicks (fast-twitch endurance).
+  items.push({k:"kegels",t:"🔁",txt:"💪 Kegels",sub:"10s hold × 10 × 3/day + quick flicks × 10 × 2/day — internal 'lift', no glutes/abs"});
 
   // Optional/alt workout items — checkable, with divider
   if (wo && (wo.optional || wo.alt)) items.push({k:"_divider",t:"",txt:"— optional —",sub:"",divider:true});
@@ -15077,6 +15358,9 @@ function getDayProgress(dateStr) {
   const tasks = [];
   tasks.push({k:'morning', label:'☀️ Morning Stretch', show:true, pct:false});
   tasks.push({k:'stretch', label:'🧘 Stretch Session', show:true, pct:true});
+  // Kegels — daily-floor. Not in pct (pelvic floor training is additive, not a
+  // core-3 workout). Not shown in week view (`show:false`) to keep the strip tight.
+  tasks.push({k:'kegels', label:'💪 Kegels', show:false, pct:false});
   // Task #31 — allopurinol moved to medications table (driven by med tracker, not hardcoded)
   if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true, pct:true});
   const noteForDay = CSV_NOTES[dateStr] || '';
