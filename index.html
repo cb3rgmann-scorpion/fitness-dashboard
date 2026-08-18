@@ -3024,6 +3024,17 @@
 </div>
 
 <!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
+<!-- ═══════════════ MUSCLE-GROUP EXERCISE PICKER (task #8) ═══════════════ -->
+<div class="popup-backdrop" id="muscle-picker-backdrop" onclick="if(event.target===this)closeMusclePicker()">
+  <div class="popup" style="max-width:460px">
+    <div class="popup-header">
+      <div class="popup-title" id="muscle-picker-title">💪 What do you want to work?</div>
+      <button class="popup-close" onclick="closeMusclePicker()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="muscle-picker-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ SCHEDULE / CUSTODY EDITOR ═══════════════ -->
 <!-- Self-serve custody entry. Closes the recurring gap where custody data
      expires and only an AI session could extend it. See feature log 2026-08-14. -->
@@ -3055,6 +3066,13 @@
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Enter custody blocks, events and notes. Fill a date range, or edit day by day.</div>
         <div id="settings-custody-coverage" style="margin-bottom:8px"></div>
         <button onclick="closeSettings(); openScheduleEditor();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🗓️ Open schedule editor</button>
+      </div>
+      <!-- Check-in question toggles (2026-08-18). Lives in the "You" tab — these
+           are personal preferences, not data config. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">☀️ Profile — check-in questions</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Choose what the morning and evening prompts ask. Fewer questions get answered more often than more questions do.</div>
+        <div id="checkin-prefs-body"></div>
       </div>
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">👤 Profile & TDEE</div>
@@ -4054,6 +4072,7 @@ async function openSettings() {
     covEl.innerHTML = _schedCoverageHtml().replace('id="sched-coverage"', '').replace('margin-bottom:14px', 'margin-bottom:0');
   }
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
+  if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
   document.getElementById('settings-backdrop').classList.add('open');
   initSettingsTabs();
 }
@@ -9952,6 +9971,230 @@ function renderDayNotes(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// MUSCLE-GROUP EXERCISE PICKER  (task #8, 2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// Craig's actual problem, in his words: "I walk around the gym feeling 'I want to
+// work my triceps, how do I do this?!?' then find a cable machine and do some rope
+// pulls." The old GYM_MACHINES list is an INVENTORY — it answers "what machines
+// exist", not "what should I do for this muscle". It also breaks the moment he
+// switches gyms, and he hasn't settled on one.
+//
+// Design settled with him 2026-08-18:
+//   • Anatomy is the entry point (he thinks "triceps"), movement pattern is the
+//     organising layer underneath.
+//   • Exercise + rep range + rest interval. NO sets, NO target load — the May 2026
+//     pivot retired prescriptive programming because he stopped following it.
+//   • Show ALL equipment alternatives and let him pick. No gym setup step, no
+//     per-session "what's free" prompt.
+//   • The 22-machine logging rows stay. This is the way IN; those are how he logs.
+//   • 3-4 suggestions per muscle, "show more" for the rest. This is a decision aid
+//     for thirty seconds standing in a gym, not an exercise database.
+//
+// Each exercise carries its OWN rest interval, replacing REST_COMPOUND_HINTS
+// keyword matching (a stopgap for the hardcoded machine list).
+//
+// `flags` drive injury cues, not blocks — Craig self-modifies and blocking would
+// just get ignored:
+//   grip     → trigger finger. Post-cortisone the pain signal is MUTED, so the
+//              usual "stop when it hurts" feedback loop is unreliable.
+//   overhead → shoulder OA. Pain-free range only.
+//   spine    → loaded lumbar flexion/extension; he has lower-back history.
+const MUSCLE_GROUPS = [
+  { id: 'chest',     icon: '🫁', label: 'Chest',      pattern: 'push' },
+  { id: 'shoulders', icon: '🦾', label: 'Shoulders',  pattern: 'push' },
+  { id: 'triceps',   icon: '💪', label: 'Triceps',    pattern: 'push' },
+  { id: 'back',      icon: '🔙', label: 'Back',       pattern: 'pull' },
+  { id: 'lats',      icon: '🪽', label: 'Lats',       pattern: 'pull' },
+  { id: 'reardelts', icon: '🎯', label: 'Rear delts', pattern: 'pull' },
+  { id: 'biceps',    icon: '💪', label: 'Biceps',     pattern: 'pull' },
+  { id: 'quads',     icon: '🦵', label: 'Quads',      pattern: 'squat' },
+  { id: 'hamstrings',icon: '🦵', label: 'Hamstrings', pattern: 'hinge' },
+  { id: 'glutes',    icon: '🍑', label: 'Glutes',     pattern: 'hinge' },
+  { id: 'calves',    icon: '🦶', label: 'Calves',     pattern: 'squat' },
+  { id: 'core',      icon: '🎯', label: 'Core',       pattern: 'core' },
+];
+
+const EQUIP_LABEL = {
+  cable: 'Cable', db: 'Dumbbell', machine: 'Machine',
+  bar: 'Barbell', bw: 'Bodyweight', kb: 'Kettlebell',
+};
+
+// reps = suggested range only. rest = seconds. No sets, deliberately.
+const EX_LIB = [
+  // ── CHEST ──
+  { m:'chest', name:'Chest press (machine)', equip:'machine', reps:'8-12', rest:180, cue:'Elbows ~45° from the torso, not flared to 90°. Easier on the shoulder joint.' },
+  { m:'chest', name:'Dumbbell bench press', equip:'db', reps:'8-12', rest:180, cue:'Lower until the elbows are level with the torso, no deeper. Full stretch at the bottom is where shoulders get cranky.' },
+  { m:'chest', name:'Cable chest fly', equip:'cable', reps:'12-15', rest:120, cue:'Slight elbow bend held throughout. Squeeze, don\'t slam.' },
+  { m:'chest', name:'Push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands slightly wider than shoulders. Elevate the hands if the wrists complain.', flags:['grip'] },
+  { m:'chest', name:'Incline dumbbell press', equip:'db', reps:'8-12', rest:180, cue:'30-45° bench. Hits upper chest; steeper turns it into a shoulder press.' },
+
+  // ── SHOULDERS ──
+  { m:'shoulders', name:'Machine shoulder press', equip:'machine', reps:'8-12', rest:180, cue:'Stop short of lockout. Fixed path is kinder to an arthritic shoulder than free weight.', flags:['overhead'] },
+  { m:'shoulders', name:'Dumbbell lateral raise', equip:'db', reps:'12-15', rest:90, cue:'Lead with the elbow, thumb slightly down. Stop at shoulder height — above that is where OA bites.', flags:['overhead'] },
+  { m:'shoulders', name:'Cable lateral raise', equip:'cable', reps:'12-15', rest:90, cue:'Constant tension through the whole range. Lighter than you think.', flags:['overhead'] },
+  { m:'shoulders', name:'Front raise', equip:'db', reps:'12-15', rest:90, cue:'Only to shoulder height. Most people don\'t need direct front-delt work if they press.', flags:['overhead'] },
+
+  // ── TRICEPS ── (his stated example)
+  { m:'triceps', name:'Cable rope pushdown', equip:'cable', reps:'10-15', rest:120, cue:'Elbows pinned to your sides. Spread the rope at the bottom. This is the one you already gravitate to — it\'s a good default.' },
+  { m:'triceps', name:'Overhead cable extension', equip:'cable', reps:'10-15', rest:120, cue:'Stretches the long head, which pushdowns underwork. Lean forward slightly.', flags:['overhead'] },
+  { m:'triceps', name:'Tricep press (machine)', equip:'machine', reps:'10-15', rest:120, cue:'Good when you want to go heavy without stabilising.' },
+  { m:'triceps', name:'Dumbbell skull crusher', equip:'db', reps:'10-12', rest:120, cue:'Lower to the forehead or just behind. Elbows stay pointed at the ceiling.' },
+  { m:'triceps', name:'Close-grip push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands under the chest. Free, works anywhere.', flags:['grip'] },
+
+  // ── BACK / LATS ──
+  { m:'back', name:'Seated row (machine)', equip:'machine', reps:'8-12', rest:180, cue:'Chest up, pull to the navel, shoulder blades back and down.', flags:['grip'] },
+  { m:'back', name:'Cable row', equip:'cable', reps:'8-12', rest:180, cue:'Don\'t let the torso rock. If your grip fails before your back, use straps.', flags:['grip'] },
+  { m:'back', name:'Dumbbell single-arm row', equip:'db', reps:'8-12', rest:150, cue:'Brace on a bench. Lets you load one side hard without the lower back.', flags:['grip'] },
+  { m:'back', name:'Chest-supported row', equip:'machine', reps:'8-12', rest:180, cue:'Best row option if the lower back is grumbling — the pad does the bracing.', flags:['grip'] },
+  { m:'lats', name:'Lat pulldown', equip:'machine', reps:'8-12', rest:180, cue:'Pull the elbows down and back, not the bar to your chin. Lean back slightly.', flags:['grip'] },
+  { m:'lats', name:'Straight-arm pulldown', equip:'cable', reps:'12-15', rest:120, cue:'Arms almost locked. Isolates the lats without the biceps taking over.', flags:['grip'] },
+  { m:'lats', name:'Assisted pull-up', equip:'machine', reps:'6-10', rest:180, cue:'Use the assist rather than skipping it. Grip-heavy — watch the finger.', flags:['grip'] },
+
+  // ── REAR DELTS ──
+  { m:'reardelts', name:'Rear delt fly (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Almost always undertrained, and it counteracts a desk-bound day.' },
+  { m:'reardelts', name:'Cable face pull', equip:'cable', reps:'12-20', rest:90, cue:'Pull to the forehead, elbows high, externally rotate at the end. Best single movement for shoulder health.' },
+  { m:'reardelts', name:'Bent-over dumbbell fly', equip:'db', reps:'12-15', rest:90, cue:'Hinge forward, light weight, no swinging.' },
+
+  // ── BICEPS ──
+  { m:'biceps', name:'Dumbbell curl', equip:'db', reps:'10-12', rest:120, cue:'No elbow drift forward. Slow on the way down.', flags:['grip'] },
+  { m:'biceps', name:'Cable curl', equip:'cable', reps:'10-15', rest:120, cue:'Tension at the bottom, which dumbbells lose.', flags:['grip'] },
+  { m:'biceps', name:'Hammer curl', equip:'db', reps:'10-12', rest:120, cue:'Neutral grip. Kinder to the wrist and elbow, and hits the brachialis.', flags:['grip'] },
+  { m:'biceps', name:'Bicep curl (machine)', equip:'machine', reps:'10-15', rest:120, cue:'Fixed path — useful when your grip is the limiting factor.' },
+
+  // ── QUADS ──
+  { m:'quads', name:'Leg press', equip:'machine', reps:'10-15', rest:180, cue:'Don\'t let the lower back round off the pad at the bottom. Stop short of lockout.' },
+  { m:'quads', name:'Leg extension', equip:'machine', reps:'12-15', rest:120, cue:'Pause at the top. Ease off if the knees complain.' },
+  { m:'quads', name:'Goblet squat', equip:'kb', reps:'10-15', rest:150, cue:'Kettlebell at the chest, elbows inside the knees at the bottom. Grip-light because it rests on the chest.' },
+  { m:'quads', name:'Bodyweight / box squat', equip:'bw', reps:'15-20', rest:90, cue:'Sit back to a bench and stand. Zero equipment, works at home.' },
+  { m:'quads', name:'Smith machine squat', equip:'machine', reps:'8-12', rest:180, cue:'Fixed bar path takes the balance requirement out.', flags:['spine'] },
+
+  // ── HAMSTRINGS / GLUTES ──
+  { m:'hamstrings', name:'Leg curl (machine)', equip:'machine', reps:'10-15', rest:120, cue:'The main direct hamstring option. Control the return.' },
+  { m:'hamstrings', name:'Kettlebell Romanian deadlift', equip:'kb', reps:'10-12', rest:150, cue:'Push the hips back, minimal knee bend, feel the stretch behind the thigh. Stop when the back wants to round.', flags:['grip','spine'] },
+  { m:'hamstrings', name:'Dumbbell Romanian deadlift', equip:'db', reps:'10-12', rest:150, cue:'Same as above. Weights track close to the legs.', flags:['grip','spine'] },
+  { m:'glutes', name:'Hip thrust', equip:'bar', reps:'10-15', rest:150, cue:'Chin tucked, ribs down, squeeze at the top. Don\'t hyperextend the lower back.', flags:['spine'] },
+  { m:'glutes', name:'Cable kickback', equip:'cable', reps:'12-15', rest:90, cue:'Small range, hold the squeeze. Keep the torso still.' },
+  { m:'glutes', name:'Hip abductor (machine)', equip:'machine', reps:'15-20', rest:90, cue:'Glute medius. Boring, and genuinely useful for hip and knee stability.' },
+  { m:'glutes', name:'Kettlebell swing', equip:'kb', reps:'10-20', rest:150, cue:'Hip hinge, not a squat. Arms are rope. **Grip-heavy and ballistic — the highest-risk option here for the finger.**', flags:['grip','spine'] },
+
+  // ── CALVES ──
+  { m:'calves', name:'Calf raise (machine)', equip:'machine', reps:'12-20', rest:90, cue:'Full stretch at the bottom, pause at the top. Relevant to your ankle history.' },
+  { m:'calves', name:'Standing calf raise', equip:'bw', reps:'15-25', rest:60, cue:'Off a step, one leg at a time if bodyweight is easy.' },
+
+  // ── CORE ──
+  { m:'core', name:'Cable woodchop', equip:'cable', reps:'12-15', rest:90, cue:'Rotate from the trunk, arms fairly straight. Controlled — this isn\'t a speed movement.' },
+  { m:'core', name:'Plank', equip:'bw', reps:'30-60s', rest:60, cue:'Ribs down, glutes on. Quality beats duration; stop when form goes.' },
+  { m:'core', name:'Dead bug', equip:'bw', reps:'8-12 each side', rest:60, cue:'Lower back stays flat on the floor. Best core option if your back is sensitive.' },
+  { m:'core', name:'Ab crunch (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Loaded spinal flexion — skip it on any day the lower back is talking.', flags:['spine'] },
+  { m:'core', name:'Suitcase carry', equip:'kb', reps:'30-40m each side', rest:90, cue:'One kettlebell, walk tall, resist the lean. Very grip-intensive.', flags:['grip'] },
+];
+
+const EX_FLAG_NOTES = {
+  grip:     { icon:'👆', tone:'orange', text:'Grip-heavy — trigger finger. Cortisone muted the pain signal, so "it doesn\'t hurt" isn\'t proof it\'s fine. Watch for increased catching instead, and use straps if grip fails before the target muscle.' },
+  overhead: { icon:'🦾', tone:'orange', text:'Overhead / lateral range — shoulder OA. Work the pain-free range only; don\'t chase the top of the arc.' },
+  spine:    { icon:'⚠️', tone:'orange', text:'Loads the lower back. Skip on any day it\'s already complaining.' },
+};
+
+let _mpickMuscle = null, _mpickShowAll = false;
+
+function openMusclePicker(muscleId) {
+  _mpickMuscle = muscleId || null;
+  _mpickShowAll = false;
+  const bd = document.getElementById('muscle-picker-backdrop');
+  if (bd) bd.classList.add('open');
+  renderMusclePicker();
+}
+function closeMusclePicker() {
+  const bd = document.getElementById('muscle-picker-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function mpickSelect(id) { _mpickMuscle = id; _mpickShowAll = false; renderMusclePicker(); }
+function mpickBack()     { _mpickMuscle = null; renderMusclePicker(); }
+function mpickToggleAll() { _mpickShowAll = !_mpickShowAll; renderMusclePicker(); }
+
+// Log a suggested exercise into the same exercise-set store the machine rows use,
+// so history stays in one place rather than forking a second logging surface.
+function mpickLog(exName) {
+  const now = new Date();
+  now.setDate(now.getDate() + (typeof currentDayOffset === 'number' ? currentDayOffset : 0));
+  const dateStr = ds(now);
+  const key = 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  if (typeof setExSet === 'function') setExSet(dateStr, key, 'sets', 1);
+  startRestTimer(null, exName);
+  closeMusclePicker();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+function renderMusclePicker() {
+  const body = document.getElementById('muscle-picker-body');
+  const title = document.getElementById('muscle-picker-title');
+  if (!body) return;
+
+  // ── Step 1: which muscle ──
+  if (!_mpickMuscle) {
+    if (title) title.textContent = '💪 What do you want to work?';
+    const byPattern = {};
+    MUSCLE_GROUPS.forEach(m => { (byPattern[m.pattern] = byPattern[m.pattern] || []).push(m); });
+    const patternLabel = { push:'Push', pull:'Pull', squat:'Squat / knee', hinge:'Hinge / hip', core:'Core' };
+    body.innerHTML = Object.keys(byPattern).map(p => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:5px">${patternLabel[p] || p}</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+          ${byPattern[p].map(m => `<button onclick="mpickSelect('${m.id}')"
+            style="padding:12px 6px;border-radius:8px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;align-items:center">
+            <span style="font-size:17px">${m.icon}</span>${m.label}</button>`).join('')}
+        </div>
+      </div>`).join('') +
+      `<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--divider);padding-top:8px">
+        Grouped by movement pattern so a session stays balanced. Suggestions show every equipment option — pick whatever's free.
+      </div>`;
+    return;
+  }
+
+  // ── Step 2: suggestions for that muscle ──
+  const mg = MUSCLE_GROUPS.find(x => x.id === _mpickMuscle);
+  if (title) title.textContent = `${mg.icon} ${mg.label}`;
+  const all = EX_LIB.filter(e => e.m === _mpickMuscle);
+  const shown = _mpickShowAll ? all : all.slice(0, 4);
+
+  const cards = shown.map(e => {
+    const flags = (e.flags || []).map(f => {
+      const n = EX_FLAG_NOTES[f];
+      return n ? `<div style="display:flex;gap:5px;margin-top:5px;padding:5px 7px;border-radius:5px;background:var(--${n.tone}-bg);border:1px solid var(--${n.tone}-border, var(--${n.tone}))">
+        <span style="flex-shrink:0">${n.icon}</span>
+        <span style="font-size:9.5px;color:var(--${n.tone});line-height:1.45">${n.text}</span></div>` : '';
+    }).join('');
+    return `<div style="padding:9px 10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:7px">
+      <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${e.name}</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--purple-bg);color:var(--purple)">${EQUIP_LABEL[e.equip] || e.equip}</span>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:3px">
+        <b style="color:var(--text)">${e.reps}</b> reps · rest <b style="color:var(--text)">${e.rest >= 60 ? (e.rest/60) + ' min' : e.rest + 's'}</b>
+      </div>
+      <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:4px">${e.cue}</div>
+      ${flags}
+      <div style="display:flex;gap:5px;margin-top:7px">
+        <button onclick="mpickLog('${e.name.replace(/'/g, "\\'")}')"
+          style="flex:1;padding:6px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — start rest timer</button>
+        <button onclick="startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
+          style="padding:6px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10px;cursor:pointer;font-family:inherit">⏱</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <button onclick="mpickBack()" style="background:none;border:none;color:var(--cyan);font-size:11px;cursor:pointer;padding:0 0 8px;font-family:inherit">‹ All muscles</button>
+    ${cards}
+    ${all.length > 4 ? `<button onclick="mpickToggleAll()" style="width:100%;padding:7px;border-radius:6px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">${_mpickShowAll ? 'Show fewer' : `Show ${all.length - 4} more`}</button>` : ''}
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
+      Rep ranges are suggestions, not a program — pick a weight where the top of the range is hard but clean.
+      No set count on purpose. Rest matters more than most people think: it preserves the load and reps of your next set,
+      and that volume is what drives the adaptation.
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
 // REST TIMER  (added 2026-08-14)
 // ══════════════════════════════════════════════════════════════
 // Craig's powerlifting friend claimed rest between sets affects lift capability
@@ -13051,6 +13294,7 @@ function buildActivityDecisionTree(dateStr) {
       </div>
       <div class="adt-row">${chips}</div>
       ${intentHtml}
+      <button onclick="openMusclePicker()" style="width:100%;margin-top:8px;padding:9px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">💪 What do you want to work?</button>
     </div>
   `;
 }
@@ -13084,6 +13328,81 @@ const EXERCISE_INTENTS = [
   { id: 'rest',       icon: '🛌', label: 'Rest',      desc: 'Chosen, not missed' },
   { id: 'undecided',  icon: '🤔', label: 'Undecided', desc: "See how the day goes" },
 ];
+
+// ══════════════════════════════════════════════════════════════
+// CHECK-IN QUESTION PREFERENCES  (2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// Craig: "some of the questions are redundant. I want to be able to customize it
+// through settings."
+//
+// He's right, and some of the overlap was introduced the same day: the morning
+// prompt ended up asking what he's doing today THREE ways — exercise intent
+// (Row/Walk/Gym), daily goal (Maintain/Slow drop/Deficit/Push), and the capacity
+// tier on the workout card. `anticipated_load` also overlaps `daily_goal`.
+//
+// Deliberately per-question toggles rather than presets: which questions feel
+// redundant is personal and changes over time, and a preset would be one more
+// thing to disagree with.
+//
+// Turning a question OFF only stops it being ASKED. Historical data is never
+// deleted, and the underlying column stays — so re-enabling it later restores a
+// continuous series rather than starting a new one.
+const CHECKIN_QUESTIONS = [
+  { id:'weight',       prompt:'morning', label:'Weight',                 desc:'First thing, before food or coffee.' },
+  { id:'intent',       prompt:'morning', label:'What do you want to do?', desc:'Exercise intention. Overlaps "today\'s goal".' },
+  { id:'rested',       prompt:'morning', label:'How rested do you feel?', desc:'Felt quality, separate from hours slept.' },
+  { id:'anticipated',  prompt:'morning', label:"What's today looking like?", desc:'Anticipated cognitive load. Pairs with the evening "actually".' },
+  { id:'lastmeal',     prompt:'morning', label:'When did you stop eating?', desc:'Closes yesterday\'s eating window.' },
+  { id:'goal',         prompt:'morning', label:"What's your goal today?",  desc:'Maintain / Slow drop / Deficit / Push. Overlaps exercise intent.' },
+  { id:'missed',       prompt:'morning', label:'Missed-yesterday link',    desc:'Shows what yesterday is missing, with a jump link.' },
+  { id:'actualload',   prompt:'evening', label:'How was today, actually?', desc:'The anticipated-vs-actual delta is the real signal.' },
+  { id:'dayword',      prompt:'evening', label:'One word for today',       desc:'Builds a personal vocabulary of day-types.' },
+  { id:'behaviors',    prompt:'evening', label:'Wind-down triggers',       desc:'Caffeine cutoff, late exercise, screens, ritual.' },
+];
+
+let _checkinPrefs = null;
+function getCheckinPrefs() {
+  if (_checkinPrefs) return _checkinPrefs;
+  try { _checkinPrefs = JSON.parse(localStorage.getItem('checkin_prefs') || '{}'); }
+  catch (e) { _checkinPrefs = {}; }
+  return _checkinPrefs;
+}
+// Default ON — absent key means enabled, so this needs no migration.
+function isCheckinOn(id) { return getCheckinPrefs()[id] !== false; }
+function setCheckinOn(id, on) {
+  const p = getCheckinPrefs();
+  if (on) delete p[id]; else p[id] = false;
+  _checkinPrefs = p;
+  try { localStorage.setItem('checkin_prefs', JSON.stringify(p)); } catch (e) {}
+  renderCheckinPrefs();
+}
+function renderCheckinPrefs() {
+  const host = document.getElementById('checkin-prefs-body');
+  if (!host) return;
+  const group = (which, title) => {
+    const rows = CHECKIN_QUESTIONS.filter(q => q.prompt === which).map(q => {
+      const on = isCheckinOn(q.id);
+      return `<div onclick="setCheckinOn('${q.id}',${!on})"
+        style="display:flex;align-items:flex-start;gap:8px;padding:7px 6px;border-bottom:1px solid var(--divider);cursor:pointer">
+        <div style="width:16px;height:16px;border-radius:4px;flex-shrink:0;margin-top:1px;border:1.5px solid ${on ? 'var(--green)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'transparent'};color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${on ? '✓' : ''}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:600;color:${on ? 'var(--text)' : 'var(--text-muted)'}">${q.label}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${q.desc}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const offCount = CHECKIN_QUESTIONS.filter(q => q.prompt === which && !isCheckinOn(q.id)).length;
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:4px">${title}${offCount ? ` <span style="color:var(--text-muted);font-weight:400">— ${offCount} hidden</span>` : ''}</div>
+      ${rows}</div>`;
+  };
+  host.innerHTML = group('morning', '☀️ Morning check-in') + group('evening', '🌙 Wind-down') +
+    `<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--divider);padding-top:8px">
+      Hiding a question only stops it being asked — nothing already logged is deleted, and turning it back on resumes the same series.
+      <br><br><b style="color:var(--text-dim)">Known overlaps:</b> "What do you want to do?" and "What's your goal today?" both ask about the day ahead,
+      and the workout card asks a third time with its capacity tier. "What's today looking like?" overlaps "goal" too. Most people keep one of each pair.
+    </div>`;
+}
 
 // Per-day flag to avoid re-popping during the same morning
 function _morningPromptShownToday() {
@@ -13335,33 +13654,42 @@ function renderMorningPrompt() {
       </div>
     </div>`;
 
-  body.innerHTML = weightHtml + `
+  // Sections are gated by the per-question prefs set in Settings → You →
+  // Check-in questions. Hiding one stops it being asked; it never deletes data.
+  const on = (id) => (typeof isCheckinOn === 'function' ? isCheckinOn(id) : true);
+  body.innerHTML =
+    (on('weight') ? weightHtml : '') +
+    (on('intent') ? `
     <div class="mp-section">
       <div class="mp-section-label">What do you want to do today?</div>
       <div class="mp-section-hint">What you'd like to do, not what you should. Tap again to clear.</div>
       <div class="mp-goal-grid mp-goal-grid-4">${intentChips}</div>
-    </div>
+    </div>` : '') +
+    (on('rested') ? `
     <div class="mp-section">
       <div class="mp-section-label">How rested do you feel?</div>
       <div class="mp-section-hint">Separate from how long you slept — this is the felt quality.</div>
       <div class="mp-goal-grid mp-goal-grid-5">${restChips}</div>
-    </div>
+    </div>` : '') +
+    (on('anticipated') ? `
     <div class="mp-section">
       <div class="mp-section-label">What's today looking like?</div>
       <div class="mp-section-hint">A guess at the cognitive load — we'll check at the end of the day.</div>
       <div class="mp-goal-grid mp-goal-grid-4">${anticipatedChips}</div>
-    </div>
+    </div>` : '') +
+    (on('lastmeal') ? `
     <div class="mp-section">
       <div class="mp-section-label">When did you stop eating yesterday?</div>
       <div class="mp-section-hint">Closes out your fasting window — pick the closest hour.</div>
       <div class="mp-chip-grid">${timeChips}</div>
-    </div>
+    </div>` : '') +
+    (on('goal') ? `
     <div class="mp-section">
       <div class="mp-section-label">What's your goal today?</div>
       <div class="mp-section-hint">Sets how the day is framed. You can change this any time.</div>
       <div class="mp-goal-grid">${goalChips}</div>
-    </div>
-    ${missedLink}
+    </div>` : '') +
+    (on('missed') ? missedLink : '') + `
     <div class="mp-footer">
       <button class="mp-done-btn" onclick="_mpSubmit()" ${canSubmit ? '' : 'disabled'}>Save & continue</button>
     </div>
@@ -13489,12 +13817,16 @@ function renderEveningPrompt() {
   }).join('');
   const behaviorCount = s.behaviors ? Object.keys(s.behaviors).filter(k => s.behaviors[k]).length : 0;
   const canSubmit = !!s.actualChoice || !!(s.wordValue && s.wordValue.length) || behaviorCount > 0;
-  body.innerHTML = `
+  // Gated by Settings → You → Check-in questions, same as the morning prompt.
+  const on = (id) => (typeof isCheckinOn === 'function' ? isCheckinOn(id) : true);
+  body.innerHTML =
+    (on('actualload') ? `
     <div class="mp-section">
       <div class="mp-section-label">How was today, actually?</div>
       ${antContext}
       <div class="mp-goal-grid mp-goal-grid-4">${loadChips}</div>
-    </div>
+    </div>` : '') +
+    (on('dayword') ? `
     <div class="mp-section">
       <div class="mp-section-label">One word for today</div>
       <div class="mp-section-hint">First word that lands. No analysis. You can change it.</div>
@@ -13504,12 +13836,13 @@ function renderEveningPrompt() {
         maxlength="24"
         oninput="_epSyncWord()"
         onkeydown="if(event.key==='Enter'){_epSubmit();event.preventDefault();}">
-    </div>
+    </div>` : '') +
+    (on('behaviors') ? `
     <div class="mp-section">
       <div class="mp-section-label">Tonight's downshift triggers ${behaviorCount ? `<span class="ep-behavior-count">${behaviorCount}/${SLEEP_BEHAVIORS.length}</span>` : ''}</div>
       <div class="mp-section-hint">Check what's already done or what you're committing to. Consistency over weeks matters more than any single night.</div>
       <div class="ep-behavior-list">${behaviorRows}</div>
-    </div>
+    </div>` : '') + `
     <div class="mp-footer">
       <button class="mp-done-btn" onclick="_epSubmit()" ${canSubmit ? '' : 'disabled'}>Save & wind down</button>
     </div>
