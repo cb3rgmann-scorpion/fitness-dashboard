@@ -10246,13 +10246,18 @@ function _qolEnsureLibrary() {
   if (added) _qolSaveLocal();
   return added;
 }
-// Custom tasks can be deleted outright; library ones only go to standby, since
-// deleting them would just make them reappear on the next seed.
+// CHANGED 2026-08-18 (second correction): removing ANYTHING now sends it to
+// standby. The previous version deleted custom tasks outright while library ones
+// dropped to standby — a distinction Craig never asked for and which caught him
+// out immediately ("removed do-the-dishes, it didn't appear at the bottom").
+//
+// One rule, no exceptions: switching a task off always means standby. Permanent
+// deletion is a separate, deliberate action available only from the standby list,
+// so it can't happen by reflex while tidying up an active list.
 function qolDelete(clientId) {
   const t = QOL_TASKS.find(x => x.client_id === clientId);
   if (!t) return;
-  if (t.client_id.indexOf('qol-lib-') === 0) { qolToggleActive(clientId); return; }
-  if (!confirm('Delete "' + t.label + '"? Custom tasks are gone for good.')) return;
+  if (!confirm('Delete "' + t.label + '" permanently?\n\nIt will not come back. To keep it available for later, leave it on standby instead.')) return;
   QOL_TASKS = QOL_TASKS.filter(x => x.client_id !== clientId);
   _qolSaveLocal();
   if (sbReady) sb.from('qol_tasks').delete().eq('client_id', clientId)
@@ -10364,8 +10369,8 @@ function renderQolManage() {
         style="padding:3px 5px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-dim);font-size:9.5px;font-family:inherit">
         ${cadOpts.map(c => `<option value="${c}" ${t.cadence === c ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
       </select>
-      ${t.client_id.indexOf('qol-lib-') === 0 ? '' :
-        `<button onclick="qolDelete('${t.client_id}')" title="Delete custom task"
+      ${(t.active || t.client_id.indexOf('qol-lib-') === 0) ? '' :
+        `<button onclick="qolDelete('${t.client_id}')" title="Delete permanently"
           style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px">×</button>`}
     </div>`;
 
@@ -10394,7 +10399,8 @@ function renderQolManage() {
       </div>
     </div>
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:12px;border-top:1px solid var(--divider);padding-top:8px">
-      <b style="color:var(--text-dim)">Everything suggested stays on standby.</b> Switching a task off doesn't delete it — it drops back down to the standby list, ready whenever you want it again. Only your own custom tasks can be deleted outright.
+      <b style="color:var(--text-dim)">Switching a task off never deletes it.</b> It drops to the standby list below, ready whenever you want it back — including ones you added yourself.
+      To remove a custom task for good, set it to standby first, then use the <b>×</b> that appears there.
       <br><br>Only tasks that are <b>due</b> appear on the daily view, so a weekly job stays out of the way for the other six days.
     </div>`;
 }
