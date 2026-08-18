@@ -6848,7 +6848,7 @@ function drawWeightProjectionChart(canvasId, weights, events) {
     // Walk day by day; accumulate weight delta from each day's goal
     for (let t = startMs + 86400000; t <= endMs; t += 86400000) {
       const dt = new Date(t);
-      const dStr = dt.toISOString().slice(0,10);
+      const dStr = ds(dt);
       const goal = (DB_CACHE.daily[dStr] && DB_CACHE.daily[dStr].daily_goal) || 'maintain';
       const calDelta = goalToCalDelta(goal);   // negative = deficit
       const lbDelta = calDelta / 3500;          // negative = weight loss
@@ -7656,7 +7656,7 @@ function buildSymptomsHtml() {
       <div class="bl-grid-2">
         <div class="bl-row">
           <label class="bl-label">Date (when it happened)</label>
-          <input type="date" id="bl-event-date" class="bl-input" value="${new Date().toISOString().slice(0,10)}">
+          <input type="date" id="bl-event-date" class="bl-input" value="${ds(new Date())}">
         </div>
         <div class="bl-row">
           <label class="bl-label">Time (optional)</label>
@@ -7750,7 +7750,7 @@ function buildAppointmentsHtml() {
   const recentHtml = recent.length === 0
     ? `<div class="bl-empty">No appointments logged yet. Log clinician visits here so you can scroll back through them at your next appointment, or brief a new provider with recent history.</div>`
     : recent.map(buildAppointmentRow).join('');
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = ds(new Date());
   const editing = !!_apptEditingId;
   // Only reset draft when we're NOT editing — startEditAppointment populates _apptDraft.body_parts
   // from the entry before triggering this render.
@@ -7856,7 +7856,7 @@ function _toggleApptPart(part, checked) {
 // No forms, no edit state — this is a "what do I bring to the doctor?" view.
 function buildSummaryHtml() {
   const today = new Date();
-  const ds_ = d => d.toISOString().slice(0, 10);
+  const ds_ = d => ds(d);
   const todayStr = ds_(today);
 
   // ── helpers ──
@@ -8096,7 +8096,7 @@ function submitBodyLogEntry() {
   // Task #26 — editable event date + optional time-of-day
   const dateEl = document.getElementById('bl-event-date');
   const timeEl = document.getElementById('bl-event-time');
-  const eventDate = dateEl && dateEl.value ? dateEl.value : new Date().toISOString().slice(0, 10);
+  const eventDate = dateEl && dateEl.value ? dateEl.value : ds(new Date());
   const eventTime = timeEl && timeEl.value ? timeEl.value : null;
   const payload = { date: eventDate, event_time_local: eventTime, part: part, side: side, pain: pain, stiffness: stiff, note: note, flag: flag, appointment_id: appointment_id };
   if (_bodyEditingId) {
@@ -8268,7 +8268,7 @@ function buildMedsHtml() {
   const fFreqType = fv.frequency_type || 'as_needed';
   const fFreqValue = fv.frequency_value != null ? fv.frequency_value : '';
   const fWeeklyDays = Array.isArray(fv.weekly_days) ? fv.weekly_days : [];
-  const fStartDate = fv.start_date || new Date().toISOString().slice(0, 10);
+  const fStartDate = fv.start_date || ds(new Date());
   const fEndDate = fv.end_date || '';
   const fNotes = (fv.notes || '').replace(/"/g,'&quot;');
   const fColor = fv.color || 'cyan';
@@ -8427,7 +8427,7 @@ function renderDoseHistory(med, doses) {
   if (doses.length === 0) return `<div class="med-no-doses">No doses logged yet.</div>`;
   return doses.map(d => {
     const t = new Date(d.taken_at);
-    const dateStr = t.toISOString().slice(0, 10);
+    const dateStr = ds(t);
     const timeStr = t.toTimeString().slice(0, 5);
     const isEditing = _doseEditingId === d.id;
     if (isEditing) {
@@ -8482,7 +8482,7 @@ function submitMedEntry() {
     weekly_days = Array.from(document.querySelectorAll('.med-weekday-input:checked')).map(i => i.value);
     if (weekly_days.length === 0) { alert('Pick at least one day of the week.'); return; }
   }
-  const start_date = document.getElementById('med-start-date').value || new Date().toISOString().slice(0, 10);
+  const start_date = document.getElementById('med-start-date').value || ds(new Date());
   const end_date = document.getElementById('med-end-date').value || null;
   const notes = (document.getElementById('med-notes').value || '').trim();
   const colorEl = document.querySelector('input[name="med-color"]:checked');
@@ -8545,8 +8545,8 @@ function removeDoseEntry(doseId) {
 function buildTodaysMedChiclets(dateStr) {
   if (typeof getActiveMedications !== 'function') return '';
   const meds = getActiveMedications();
-  const todayStr = dateStr || new Date().toISOString().slice(0, 10);
-  const isToday = todayStr === new Date().toISOString().slice(0, 10);
+  const todayStr = dateStr || ds(new Date());
+  const isToday = todayStr === ds(new Date());
 
   // Filter to meds worth surfacing today
   const showMeds = meds.filter(m => {
@@ -8668,7 +8668,7 @@ function buildBodyCardHtml() {
   // Today's follow-ups
   const todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
   // Upcoming follow-ups (next 14 days)
-  const upcomingFollowUps = (typeof getUpcomingFollowUps === 'function') ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== new Date().toISOString().slice(0,10)) : [];
+  const upcomingFollowUps = (typeof getUpcomingFollowUps === 'function') ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== ds(new Date())) : [];
   // Overdue care
   const careOverdue = (typeof getActiveCareCadence === 'function') ?
     getActiveCareCadence().filter(c => typeof careStatus === 'function' && careStatus(c) === 'overdue') : [];
@@ -9240,8 +9240,8 @@ function openDoctorVisitSummary(opts) {
   opts = opts || {};
   const daysBack = opts.daysBack || 90;
   const partFilter = opts.part || null;
-  const cutoffStr = new Date(Date.now() - daysBack * 86400000).toISOString().slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
+  const cutoffStr = ds(new Date(Date.now() - daysBack * 86400000));
+  const today = ds(new Date());
 
   // Gather symptom data
   const bodyData = (typeof _getBodyLog === 'function') ? _getBodyLog() : { entries: [] };
@@ -10225,7 +10225,15 @@ async function loadUserProfile() {
 let STORAGE_MODE = 'db';
 let _sbRaw = null;
 
-const LOCAL_MODE_ALLOWED_TABLES = ['user_profiles'];
+// Tables that stay live even in local mode.
+//   user_profiles   — needed to know which modules to render at all
+//   app_suggestions — DELIBERATE EXCEPTION. Local users' health data never
+//                     reaches this database, but their improvement requests must,
+//                     or the people actually using the app have no way to be
+//                     heard. Because it punctures the isolation promise, the
+//                     suggestions UI says so in plain language rather than
+//                     quietly shipping text off-device.
+const LOCAL_MODE_ALLOWED_TABLES = ['user_profiles', 'app_suggestions'];
 
 function applyStorageMode(mode) {
   STORAGE_MODE = (mode === 'local') ? 'local' : 'db';
@@ -11293,7 +11301,7 @@ function addBodyStateEntry(payload) {
   const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const entry = {
     id: id,
-    date: payload.date || new Date().toISOString().slice(0, 10),
+    date: payload.date || ds(new Date()),
     part: payload.part,
     side: payload.side || 'na',
     pain: Number(payload.pain) || 0,
@@ -11578,8 +11586,8 @@ function getRecentAppointments(limit) {
 function getUpcomingFollowUps(daysAhead) {
   daysAhead = daysAhead || 30;
   const data = _getAppointments();
-  const today = new Date().toISOString().slice(0, 10);
-  const cutoffAhead = new Date(Date.now() + daysAhead * 86400000).toISOString().slice(0, 10);
+  const today = ds(new Date());
+  const cutoffAhead = ds(new Date(Date.now() + daysAhead * 86400000));
   return data.entries
     .filter(a => a.follow_up_date && a.follow_up_date >= today && a.follow_up_date <= cutoffAhead)
     .sort((a, b) => new Date(a.follow_up_date) - new Date(b.follow_up_date));
@@ -11587,7 +11595,7 @@ function getUpcomingFollowUps(daysAhead) {
 
 function getOverdueFollowUps() {
   const data = _getAppointments();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ds(new Date());
   // Build a map of body_part → latest appointment date that mentioned it
   const partLatestDate = {};
   data.entries.forEach(a => {
@@ -11612,7 +11620,7 @@ function getOverdueFollowUps() {
 // Returns today's follow-ups (date matches today) — for daily view banner
 function getTodaysFollowUps() {
   const data = _getAppointments();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ds(new Date());
   return data.entries.filter(a => a.follow_up_date === today);
 }
 
@@ -11948,7 +11956,7 @@ function addMedication(payload) {
     frequency_type: payload.frequency_type || 'as_needed',
     frequency_value: payload.frequency_value != null ? Number(payload.frequency_value) : null,
     weekly_days: Array.isArray(payload.weekly_days) ? payload.weekly_days : [],
-    start_date: payload.start_date || new Date().toISOString().slice(0, 10),
+    start_date: payload.start_date || ds(new Date()),
     end_date: payload.end_date || null,
     notes: payload.notes || '',
     active: payload.active !== false,
@@ -12056,7 +12064,7 @@ function getDosesForMedication(medId, limit) {
 function medScheduledToday(med) {
   if (!med.active) return false;
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const todayStr = ds(today);
   if (med.start_date && todayStr < med.start_date) return false;
   if (med.end_date && todayStr > med.end_date) return false;
   switch (med.frequency_type) {
@@ -12091,7 +12099,7 @@ function medExpectedTodayCount(med) {
 
 // Returns count of doses logged today for a med.
 function medDosesTodayCount(medId) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = ds(new Date());
   return _getMedDoses().entries.filter(d =>
     d.medication_id === medId && d.taken_at && d.taken_at.slice(0, 10) === todayStr
   ).length;
@@ -12324,7 +12332,7 @@ function removeCareCadence(id) {
 
 // Mark a care item as visited today — bumps last_visit_date and optionally records cost.
 function markCareVisited(id, costStr) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = ds(new Date());
   const cost = (costStr && costStr.trim()) ? parseFloat(costStr) : null;
   updateCareCadence(id, { last_visit_date: today, last_visit_cost: cost });
 }
@@ -13134,7 +13142,7 @@ function getDietEventsRange(startDateStr, endDateStr) {
   const start = new Date(startDateStr + 'T12:00:00');
   const end = new Date(endDateStr + 'T12:00:00');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const ds_ = d.toISOString().slice(0,10);
+    const ds_ = ds(d);
     const evs = getDietEvents(ds_);
     evs.forEach(e => out.push({ ...e, date: ds_ }));
   }
@@ -13155,12 +13163,45 @@ function addSuggestion(note) {
   const text = (note || '').trim();
   if (!text) return;
   const list = getSuggestions();
-  list.push({ id: _newId(), ts: new Date().toISOString(), note: text });
+  const cid = _newId();
+  list.push({ id: cid, ts: new Date().toISOString(), note: text, synced: false });
   _saveSuggestions();
+  // Send to the cloud so Craig sees requests from every user, including
+  // device-only ones. localStorage stays the buffer — if the write fails the
+  // suggestion isn't lost, it just stays local and retries on the next open.
+  _syncSuggestion(cid, text);
+}
+
+async function _syncSuggestion(cid, text) {
+  if (!sbReady || !sb) return;
+  try {
+    const label = (USER_PROFILE && (USER_PROFILE.display_name || USER_PROFILE.email)) || '';
+    const { error } = await sb.from('app_suggestions')
+      .upsert([{ client_id: cid, note: text, user_label: label }], { onConflict: 'user_id,client_id' });
+    if (error) throw error;
+    const list = getSuggestions();
+    const row = list.find(s => s.id === cid);
+    if (row) { row.synced = true; _saveSuggestions(); }
+  } catch (e) {
+    console.warn('suggestion sync failed — kept locally, will retry', e);
+  }
+}
+
+// Retry anything that never made it up. Called when the popup opens, so a
+// suggestion written offline gets delivered the next time the app is online.
+function retryUnsyncedSuggestions() {
+  if (!sbReady) return;
+  getSuggestions().filter(s => !s.synced).forEach(s => _syncSuggestion(s.id, s.note));
 }
 function removeSuggestion(id) {
   DB_CACHE.suggestions = getSuggestions().filter(s => s.id !== id);
   _saveSuggestions();
+  // Remove the cloud copy too — deleting locally but leaving it in the database
+  // would mean a suggestion the user thinks they retracted still reaching Craig.
+  if (sbReady && sb) {
+    sb.from('app_suggestions').delete().eq('client_id', id)
+      .then(r => { if (r && r.error) console.warn('suggestion delete failed', r.error); });
+  }
 }
 function clearSuggestions() {
   DB_CACHE.suggestions = [];
@@ -13172,6 +13213,7 @@ function openAppSuggestions() {
   const bd = document.getElementById('app-sugg-backdrop');
   if (!bd) return;
   bd.classList.add('open');
+  if (typeof retryUnsyncedSuggestions === 'function') retryUnsyncedSuggestions();
   renderAppSuggPopup();
   setTimeout(() => {
     const inp = document.getElementById('app-sugg-input');
@@ -13199,6 +13241,11 @@ function renderAppSuggPopup() {
     <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--divider)">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">
         Jot down ideas, bugs, or tweaks as they occur to you. Reviewed at the start of the next Claude session.
+      </div>
+      <!-- Disclosure. Local-mode users are told their data stays on-device, so
+           the one thing that DOESN'T has to be stated, not buried. -->
+      <div style="font-size:10px;color:var(--orange);background:var(--orange-bg);border:1px solid var(--orange-border, var(--orange));border-radius:5px;padding:6px 8px;margin-bottom:8px;line-height:1.5">
+        📤 <b>Notes here are sent to the app owner</b>${STORAGE_MODE === 'local' ? ' — the one thing on this screen that leaves your device' : ''}. Don\'t include anything private you wouldn\'t want shared. Delete a note to withdraw it.
       </div>
       <textarea id="app-sugg-input" placeholder="e.g. add export to CSV, the week view is cramped on phone..."
         onkeydown="if(event.key==='Enter'&&(event.metaKey||event.ctrlKey)){_submitAppSugg();event.preventDefault();}"
@@ -13991,11 +14038,11 @@ function renderCheckinPrefs() {
 
 // Per-day flag to avoid re-popping during the same morning
 function _morningPromptShownToday() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = ds(new Date());
   return localStorage.getItem('morning_prompt_shown_' + today) === '1';
 }
 function _markMorningPromptShown() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = ds(new Date());
   localStorage.setItem('morning_prompt_shown_' + today, '1');
 }
 function _shouldAutoFireMorningPrompt() {
@@ -14016,8 +14063,8 @@ function _shouldAutoFireMorningPrompt() {
 }
 function openMorningPrompt(opts) {
   opts = opts || {};
-  const todayStr = new Date().toISOString().slice(0,10);
-  const yestStr = (function(){ const d = new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
+  const todayStr = ds(new Date());
+  const yestStr = (function(){ const d = new Date(); d.setDate(d.getDate()-1); return ds(d); })();
   // Pre-fill from any already-saved values (so re-opening the prompt mid-morning
   // doesn't lose what was already entered) — task #13 expansion 2026-05-25.
   const today = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
@@ -14291,11 +14338,11 @@ function renderMorningPrompt() {
 // Manual access via 🌙 button next to ☀️ Check-in on the meals card.
 // ════════════════════════════════════════════════════════════════════════════
 function _eveningPromptShownToday() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = ds(new Date());
   return localStorage.getItem('evening_prompt_shown_' + today) === '1';
 }
 function _markEveningPromptShown() {
-  const today = new Date().toISOString().slice(0,10);
+  const today = ds(new Date());
   localStorage.setItem('evening_prompt_shown_' + today, '1');
 }
 function _shouldAutoFireEveningPrompt() {
@@ -14304,12 +14351,12 @@ function _shouldAutoFireEveningPrompt() {
   const hr = now.getHours();
   if (hr < 20 || hr >= 24) return false;
   if (_eveningPromptShownToday()) return false;
-  const todayStr = now.toISOString().slice(0,10);
+  const todayStr = ds(now);
   const d = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
   return !d.actual_load;
 }
 function openEveningPrompt() {
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = ds(new Date());
   const d = (DB_CACHE.daily && DB_CACHE.daily[todayStr]) || {};
   // Parse sleep_behaviors — may be a JSON string, object, or missing
   let behaviors = {};
@@ -14512,7 +14559,7 @@ function getCurrentPhase() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    const dStr = d.toISOString().slice(0,10);
+    const dStr = ds(d);
     const goal = (DB_CACHE.daily && DB_CACHE.daily[dStr] && DB_CACHE.daily[dStr].daily_goal) || '';
     if (goal) counts[goal] = (counts[goal] || 0) + 1;
   }
@@ -16290,7 +16337,7 @@ function renderDaily() {
           };
           // IF window = yesterday's last_meal → today's first_meal (overnight fast)
           const yest = new Date(dateStr + 'T12:00:00'); yest.setDate(yest.getDate() - 1);
-          const yestStr = yest.toISOString().slice(0, 10);
+          const yestStr = ds(yest);
           const yestLM = getLastMeal(yestStr);
           const ifHrs = (yestLM && fm) ? ((24 - yestLM) + fm) : null;
           const ifLabel = ifHrs ? `🌙 IF ${ifHrs}h` : '';
