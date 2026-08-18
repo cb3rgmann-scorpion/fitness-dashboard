@@ -2797,9 +2797,19 @@
     .popup { width: 95vw; max-height: 85vh; }
     .popup-content { padding: 12px; }
 
-    /* Custody strip */
-    .custody-strip { gap: 1px; flex-wrap: wrap; justify-content: center; }
-    .cs-box { width: 28px; height: 20px; font-size: 8px; border-radius: 3px; }
+    /* Custody strip.
+       Was 28×20px at font-size 8px — SMALLER text than desktop's 10px, on the
+       device with the least screen and the most glare. Reported by a real user
+       (2026-08-18) as unreadable on mobile.
+       The strip already wraps, so height costs one extra row at most, and
+       legibility is worth more than a row of vertical space on the one surface
+       that answers "who has the kids". */
+    .custody-strip { gap: 3px; flex-wrap: wrap; justify-content: center; }
+    .cs-box {
+      width: 34px; height: 30px; font-size: 12px; border-radius: 5px;
+      opacity: 0.75;              /* was 0.6 — low contrast compounded the size problem */
+    }
+    .cs-dow { font-size: 11px; }
 
     /* Tracking dots — bigger for touch */
     .track-dot { width: 24px; height: 24px; font-size: 10px; }
@@ -2813,7 +2823,10 @@
       padding: 8px 10px 12px;
     }
     .bottom-bar > div { margin-left: 0 !important; width: 100%; justify-content: center; flex-wrap: wrap; }
-    .custody-strip { flex-wrap: wrap; justify-content: center; gap: 2px; }
+    /* Narrow phones: same legibility fix, one notch down so 7 cells still fit a row. */
+    .custody-strip { flex-wrap: wrap; justify-content: center; gap: 3px; }
+    .cs-box { width: 32px; height: 28px; font-size: 11px; border-radius: 5px; opacity: 0.75; }
+    .cs-dow { font-size: 10px; }
     .pill { font-size: 10px; padding: 5px 10px; }
 
     .login-box { width: 290px; padding: 24px; }
@@ -2890,6 +2903,9 @@
     <button class="bf-exit" onclick="exitBackfillMode()">Back to today ›</button>
   </div>
 
+  <!-- Viewer-mode banner (Phase 2). Hidden unless data_owner_id is set. -->
+  <div id="viewer-banner" style="display:none"></div>
+
   <!-- Rest timer. Fixed to the viewport bottom so it stays visible while you
        scroll the exercise list mid-session. Hidden until started. -->
   <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -4px 14px rgba(0,0,0,0.35)"></div>
@@ -2930,7 +2946,7 @@
       <div class="card-body" id="schedule-card"></div>
       <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
            reachable without a popup. Rendered by renderDayNotes(). -->
-      <div id="qol-host"></div>
+      <div id="qol-host" data-writes="1"></div>
       <div id="day-notes-host" data-module="notes"></div>
     </div>
 
@@ -10207,14 +10223,41 @@ function qolToggleActive(clientId) {
   t.active = !t.active;
   _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
 }
-function qolAddFromLibrary(idx) {
-  const lib = QOL_LIBRARY[idx];
-  if (!lib) return;
-  if (QOL_TASKS.some(t => t.label === lib.label)) return;   // already added
-  const t = { client_id: 'qol-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
-              label: lib.label, icon: lib.icon, cadence: lib.cadence, active: true, last_done: null };
-  QOL_TASKS.push(t);
-  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
+// CHANGED 2026-08-18 per Craig: the original model was add-from-library /
+// remove-from-list, which meant removing a task made it vanish entirely instead
+// of returning to the suggestions. He wanted the simpler mental model — every
+// suggested task always EXISTS, sitting on standby, and you just flip it active.
+//
+// So the library is seeded as standby rows rather than being an "add" menu.
+// client_id is derived from the label (not random) so the same library task gets
+// the same id on every device and doesn't duplicate when two devices sync.
+function _qolSlug(label) {
+  return 'qol-lib-' + label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+function _qolEnsureLibrary() {
+  let added = false;
+  QOL_LIBRARY.forEach(lib => {
+    const cid = _qolSlug(lib.label);
+    if (QOL_TASKS.some(t => t.client_id === cid)) return;
+    QOL_TASKS.push({ client_id: cid, label: lib.label, icon: lib.icon,
+                     cadence: lib.cadence, active: false, last_done: null, from_library: true });
+    added = true;
+  });
+  if (added) _qolSaveLocal();
+  return added;
+}
+// Custom tasks can be deleted outright; library ones only go to standby, since
+// deleting them would just make them reappear on the next seed.
+function qolDelete(clientId) {
+  const t = QOL_TASKS.find(x => x.client_id === clientId);
+  if (!t) return;
+  if (t.client_id.indexOf('qol-lib-') === 0) { qolToggleActive(clientId); return; }
+  if (!confirm('Delete "' + t.label + '"? Custom tasks are gone for good.')) return;
+  QOL_TASKS = QOL_TASKS.filter(x => x.client_id !== clientId);
+  _qolSaveLocal();
+  if (sbReady) sb.from('qol_tasks').delete().eq('client_id', clientId)
+    .then(r => { if (r && r.error) console.warn('qol delete failed', r.error); });
+  renderQolManage(); renderQolTasks();
 }
 function qolAddCustom() {
   const inp = document.getElementById('qol-custom-label');
@@ -10308,29 +10351,35 @@ function renderQolManage() {
   if (!body) return;
   const cadOpts = [1,2,3,4,7,14,30,90];
 
-  const mine = QOL_TASKS.map(t => `
-    <div style="display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid var(--divider);${t.active ? '' : 'opacity:0.5'}">
+  _qolEnsureLibrary();
+
+  const row = t => `
+    <div style="display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid var(--divider);${t.active ? '' : 'opacity:0.55'}">
       <button onclick="qolToggleActive('${t.client_id}')"
         title="${t.active ? 'Move to standby' : 'Make active'}"
-        style="padding:3px 9px;border-radius:12px;border:1px solid ${t.active ? 'var(--green-border)' : 'var(--card-border)'};background:${t.active ? 'var(--green-bg)' : 'var(--input-bg)'};color:${t.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">${t.active ? 'Active' : 'Standby'}</button>
+        style="padding:3px 9px;border-radius:12px;border:1px solid ${t.active ? 'var(--green-border)' : 'var(--card-border)'};background:${t.active ? 'var(--green-bg)' : 'var(--input-bg)'};color:${t.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;min-width:56px">${t.active ? 'Active' : 'Standby'}</button>
       <span style="font-size:13px">${t.icon}</span>
-      <span style="flex:1;min-width:0;font-size:11px;color:var(--text)">${t.label}</span>
+      <span style="flex:1;min-width:0;font-size:11px;color:${t.active ? 'var(--text)' : 'var(--text-muted)'}">${t.label}</span>
       <select onchange="qolSetCadence('${t.client_id}', this.value)"
         style="padding:3px 5px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-dim);font-size:9.5px;font-family:inherit">
         ${cadOpts.map(c => `<option value="${c}" ${t.cadence === c ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
       </select>
-    </div>`).join('');
+      ${t.client_id.indexOf('qol-lib-') === 0 ? '' :
+        `<button onclick="qolDelete('${t.client_id}')" title="Delete custom task"
+          style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px">×</button>`}
+    </div>`;
 
-  const avail = QOL_LIBRARY.map((l, i) => ({ l, i }))
-    .filter(x => !QOL_TASKS.some(t => t.label === x.l.label))
-    .map(x => `<button onclick="qolAddFromLibrary(${x.i})"
-      style="padding:5px 9px;border-radius:14px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin:2px">＋ ${x.l.icon} ${x.l.label}</button>`).join('');
+  // Active first, then standby. One list, not two sections — the only difference
+  // between a suggestion and a task you're doing is which way the toggle points.
+  const active  = QOL_TASKS.filter(t => t.active);
+  const standby = QOL_TASKS.filter(t => !t.active);
 
   body.innerHTML = `
-    ${QOL_TASKS.length ? `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">Your tasks</div>${mine}` : ''}
-    <div style="margin-top:14px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:5px">Add from the list</div>
-      <div style="display:flex;flex-wrap:wrap">${avail || '<span style="font-size:10px;color:var(--text-muted)">All added.</span>'}</div>
+    ${active.length ? `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:4px">Active (${active.length})</div>${active.map(row).join('')}` : ''}
+    <div style="margin-top:${active.length ? 14 : 0}px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">Standby (${standby.length})</div>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">Tap <b>Standby</b> to switch one on. Nothing here is nagging you — it's just available.</div>
+      ${standby.map(row).join('')}
     </div>
     <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--divider)">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:5px">Or add your own</div>
@@ -10345,8 +10394,8 @@ function renderQolManage() {
       </div>
     </div>
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:12px;border-top:1px solid var(--divider);padding-top:8px">
-      <b style="color:var(--text-dim)">Standby, not delete.</b> Life phases change — a task you're not doing this month shouldn't have to be rebuilt in September.
-      Only tasks that are <b>due</b> appear on the daily view, so a weekly job stays out of the way for the other six days.
+      <b style="color:var(--text-dim)">Everything suggested stays on standby.</b> Switching a task off doesn't delete it — it drops back down to the standby list, ready whenever you want it again. Only your own custom tasks can be deleted outright.
+      <br><br>Only tasks that are <b>due</b> appear on the daily view, so a weekly job stays out of the way for the other six days.
     </div>`;
 }
 
@@ -10613,6 +10662,28 @@ function canSee(moduleId) {
 }
 function isAppAdmin() { return !!(USER_PROFILE && USER_PROFILE.is_admin); }
 
+// ── Phase 2: viewer mode ──────────────────────────────────────
+// A viewer's profile has data_owner_id set — they read someone else's data
+// rather than their own. RLS is what enforces this (they can SELECT the owner's
+// day_notes/schedule and nothing else); these helpers just stop the UI offering
+// actions that would fail, and make it obvious whose data is on screen.
+function isViewer() { return !!(USER_PROFILE && USER_PROFILE.data_owner_id); }
+
+function applyViewerMode() {
+  if (!isViewer()) return;
+  // Hide every control that writes. The database would reject these anyway —
+  // this stops a viewer tapping things that silently do nothing.
+  document.querySelectorAll('[data-writes]').forEach(el => { el.style.display = 'none'; });
+  const host = document.getElementById('viewer-banner');
+  if (host) {
+    const who = USER_PROFILE.owner_label || 'someone else';
+    host.style.display = 'block';
+    host.innerHTML = `<div style="padding:7px 12px;background:var(--purple-bg);border-bottom:1px solid var(--purple-border);color:var(--purple);font-size:11px;font-weight:700;text-align:center">
+      👁 Viewing ${who}'s shared items — read only
+    </div>`;
+  }
+}
+
 // Hide anything the current user has no module for. Called after each render;
 // selectors are data-attribute driven so new surfaces opt in by tagging markup
 // with data-module="…" rather than by editing this function.
@@ -10656,6 +10727,30 @@ async function adminToggleModule(userId, moduleId) {
     if (error) throw error;
   } catch (e) { console.warn('module grant failed', e); }
 }
+// Phase 2: flip a user between having their own data and viewing the admin's.
+async function adminToggleViewer(userId) {
+  const u = _adminUsers.find(x => x.id === userId);
+  if (!u || u.is_admin) return;
+  const becomingViewer = !u.data_owner_id;
+  if (becomingViewer && !confirm(
+      `Make ${u.display_name || u.email || 'this user'} a VIEWER of your account?\n\n` +
+      `They'll see YOUR notes and schedule read-only, for whichever of those modules you've granted — ` +
+      `instead of having data of their own.\n\n` +
+      `Health data (body log, medications, weight, mood) is never shared this way.`)) return;
+  if (!becomingViewer && !confirm(
+      `Switch ${u.display_name || u.email || 'this user'} back to their own data?\n\n` +
+      `They'll stop seeing yours and start with an empty account.`)) return;
+  const next = becomingViewer ? (USER_PROFILE && USER_PROFILE.id) : null;
+  u.data_owner_id = next;
+  // A viewer of Craig's account must be in db mode — there's nothing to view locally.
+  if (becomingViewer) u.storage_mode = 'db';
+  renderAdminPanel();
+  try {
+    await sb.from('user_profiles')
+      .update({ data_owner_id: next, storage_mode: u.storage_mode }).eq('id', userId);
+  } catch (e) { console.warn('viewer toggle failed', e); }
+}
+
 async function adminToggleStorage(userId) {
   const u = _adminUsers.find(x => x.id === userId);
   if (!u || u.is_admin) return;
@@ -10718,7 +10813,12 @@ function renderAdminPanel() {
         <button onclick="adminToggleActive('${u.id}')"
           style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:${u.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${u.active ? 'Active' : 'Disabled'}</button>
       </div>
-      <div style="margin-bottom:6px">${storageBtn}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+        ${storageBtn}
+        <button onclick="adminToggleViewer('${u.id}')" ${u.is_admin ? 'disabled' : ''}
+          title="${u.data_owner_id ? 'Reads YOUR notes and schedule, read-only.' : 'Has their own separate data.'}"
+          style="padding:4px 8px;border-radius:5px;border:1px solid ${u.data_owner_id ? 'var(--purple-border)' : 'var(--card-border)'};background:${u.data_owner_id ? 'var(--purple-bg)' : 'var(--input-bg)'};color:${u.data_owner_id ? 'var(--purple)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:${u.is_admin ? 'default' : 'pointer'};font-family:inherit;opacity:${u.is_admin ? 0.6 : 1}">${u.data_owner_id ? '👁 Views your data' : '👤 Has own data'}</button>
+      </div>
       <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">${u.email ? `<span style="color:var(--text-dim)">${u.email}</span> · ` : ''}Sees: ${scope}${(!u.modules || !u.modules.length) && !u.is_admin ? ' · <span style="color:var(--orange)">no modules yet — they see nothing</span>' : ''}</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
     </div>`;
@@ -16334,6 +16434,7 @@ function scheduleRender(fn) {
 function renderDaily() {
   refreshCustodyGapBanner();
   if (typeof applyModuleVisibility === 'function') applyModuleVisibility();
+  if (typeof applyViewerMode === 'function') applyViewerMode();
   const now = new Date();
   now.setDate(now.getDate() + currentDayOffset);
   const dateStr = ds(now);
@@ -16347,6 +16448,11 @@ function renderDaily() {
   // Recurring tasks — local cache paints immediately, DB refresh follows.
   if (typeof renderQolTasks === 'function') {
     if (!QOL_TASKS.length) _qolLoadLocal();
+    // Seed any library task that doesn't exist yet, on standby. Cheap and
+    // idempotent — client_id is derived from the label, so re-running can't
+    // duplicate. Not synced to the DB here: a standby row nobody has touched
+    // isn't worth 24 upserts on every load. It syncs when he activates one.
+    if (typeof _qolEnsureLibrary === 'function') _qolEnsureLibrary();
     renderQolTasks();
     if (!window._qolFetched) { window._qolFetched = true; qolFetch(); }
   }
@@ -17415,6 +17521,7 @@ async function refreshData(btn) {
   // render so a restricted user never sees a flash of modules they don't have.
   await loadUserProfile();
   applyModuleVisibility();
+  applyViewerMode();
   // Load exercises from Supabase (falls back to hardcoded ROUTINES)
   await loadRoutinesFromDB();
   // Try Supabase first, then CSV, then fallback
