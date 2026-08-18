@@ -3063,6 +3063,35 @@
         <button onclick="saveProfileFromUI()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%;margin-top:8px">💾 Save profile</button>
         <div id="profile-tdee-display" style="margin-top:10px;padding:10px;border-radius:6px;background:var(--input-bg);border:1px solid var(--card-border);font-size:11px;color:var(--text)"></div>
       </div>
+      <!-- QoL / home tasks (2026-05-10). User-editable list; adding a task
+           here surfaces it in the daily schedule card under "— 🏠 home —". -->
+      <div style="border-top:1px solid var(--divider);padding-top:12px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🏠 Home / QoL Tasks</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:10px;line-height:1.5">Daily and weekly life-admin tasks — make bed, dishes, bathrooms, laundry. They surface as check-off rows in your daily card. Weekly tasks stay visible but go quiet for 6 days after one check.</div>
+        <div id="qol-tasks-list" style="margin-bottom:10px"></div>
+        <div style="border-top:1px dashed var(--card-border);padding-top:10px;margin-top:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:6px">Add a task</div>
+          <div style="display:flex;gap:5px;align-items:center;margin-bottom:6px">
+            <input id="qol-add-icon" type="text" placeholder="🏠" maxlength="4"
+              style="width:38px;padding:6px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;text-align:center;font-family:inherit">
+            <input id="qol-add-label" type="text" placeholder="e.g. Water the plants"
+              onkeydown="if(event.key==='Enter'){_submitQolAdd();event.preventDefault();}"
+              style="flex:1;padding:6px 10px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:12px;font-family:inherit">
+            <select id="qol-add-cadence"
+              style="padding:6px 4px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
+              <option value="daily">Daily</option>
+              <option value="weekdays">Weekdays</option>
+              <option value="weekly">Weekly</option>
+            </select>
+            <button onclick="_submitQolAdd()"
+              style="padding:6px 12px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--card-border);text-align:right">
+          <button onclick="if(confirm('Reset the QoL task list to defaults? Your custom tasks will be lost.'))resetQolTasksToDefault()"
+            style="padding:5px 10px;border-radius:5px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">↻ Reset to defaults</button>
+        </div>
+      </div>
       <div style="border-top:1px solid var(--divider);padding-top:12px;margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🚣 Concept2 Logbook</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Enter your API token from <a href="https://log.concept2.com/developers/keys" target="_blank" style="color:var(--cyan)">log.concept2.com/developers/keys</a>. Stored locally only — never sent anywhere except Concept2.</div>
@@ -4024,8 +4053,50 @@ async function openSettings() {
   if (covEl && typeof _schedCoverageHtml === 'function') {
     covEl.innerHTML = _schedCoverageHtml().replace('id="sched-coverage"', '').replace('margin-bottom:14px', 'margin-bottom:0');
   }
+  if (typeof renderQolTasksList === 'function') renderQolTasksList();
   document.getElementById('settings-backdrop').classList.add('open');
   initSettingsTabs();
+}
+
+// ── QoL settings: render editable task list + add/remove UI ──
+function renderQolTasksList() {
+  const el = document.getElementById('qol-tasks-list');
+  if (!el) return;
+  const tasks = getQolTasks();
+  if (tasks.length === 0) {
+    el.innerHTML = '<div style="font-size:10px;color:var(--text-muted);font-style:italic;padding:8px 0">No QoL tasks yet — add one below or reset to defaults.</div>';
+    return;
+  }
+  const cadenceColor = { daily: 'var(--green)', weekdays: 'var(--cyan)', weekly: 'var(--purple)' };
+  el.innerHTML = tasks.map(t => {
+    const color = cadenceColor[t.cadence] || 'var(--text-muted)';
+    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--card-border);border-radius:5px;margin-bottom:4px;background:var(--input-bg)">
+      <span style="font-size:16px;min-width:20px;text-align:center">${t.icon || '✅'}</span>
+      <span style="flex:1;font-size:12px;color:var(--text);min-width:0;word-break:break-word">${(t.label || '').replace(/</g,'&lt;')}</span>
+      <select onchange="updateQolTask('${t.id}',{cadence:this.value});renderQolTasksList()"
+        style="padding:3px 4px;border-radius:4px;border:1px solid ${color};background:transparent;color:${color};font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">
+        <option value="daily"    ${t.cadence === 'daily'    ? 'selected' : ''}>Daily</option>
+        <option value="weekdays" ${t.cadence === 'weekdays' ? 'selected' : ''}>Weekdays</option>
+        <option value="weekly"   ${t.cadence === 'weekly'   ? 'selected' : ''}>Weekly</option>
+      </select>
+      <span onclick="if(confirm('Remove &quot;${(t.label || '').replace(/'/g,'').replace(/"/g,'')}&quot; from your QoL list?')){removeQolTask('${t.id}');renderQolTasksList();}"
+        title="Remove"
+        style="cursor:pointer;color:var(--text-muted);font-size:15px;line-height:1;padding:0 4px">×</span>
+    </div>`;
+  }).join('');
+}
+
+function _submitQolAdd() {
+  const iconEl = document.getElementById('qol-add-icon');
+  const labelEl = document.getElementById('qol-add-label');
+  const cadEl = document.getElementById('qol-add-cadence');
+  if (!labelEl || !labelEl.value.trim()) return;
+  addQolTask(labelEl.value, iconEl ? iconEl.value : '', cadEl ? cadEl.value : 'daily');
+  labelEl.value = '';
+  if (iconEl) iconEl.value = '';
+  if (cadEl) cadEl.value = 'daily';
+  renderQolTasksList();
+  labelEl.focus();
 }
 
 // Render the Profile inputs inside the Settings popup body.
@@ -4162,6 +4233,7 @@ function closeSettings() { document.getElementById('settings-backdrop').classLis
 const SETTINGS_TABS = [
   { id: 'you',      label: '👤 You',       match: ['profile', 'tdee'] },
   { id: 'schedule', label: '🗓️ Schedule',  match: ['schedule', 'custody'] },
+  { id: 'home',     label: '🏠 Home',      match: ['qol', 'home tasks', 'daily habits', 'home / qol'] },
   { id: 'data',     label: '⌚ Data',       match: ['concept2', 'recent rows', 'apple health', 'import'] },
 ];
 let _settingsTab = null;
@@ -13475,6 +13547,94 @@ const SUPPLEMENTS = [
   { id: 'creatine', icon: '💪', label: 'Creatine', quantities: ['3g', '5g'] },
 ];
 
+// ─── QoL / dopamine tasks (v1, 2026-05-10) ────────────────────────────────
+// Craig's ask: extend the check-off dopamine beyond fitness to home admin —
+// "make your bed", "dishes", "bathrooms". Uses the existing schedule check-row
+// pattern (`s_qol_<taskId>` in checked storage) so no new tracking infra.
+//
+// Cadence:
+//   - 'daily'     shows every day
+//   - 'weekdays'  shows Mon-Fri only
+//   - 'weekly'    shows every day but only needs 1 check per week to count
+//                 (check goes quiet for 6 days after — see isQolWeeklyDone)
+//
+// Task list is user-editable in Settings → 🏠 Home. Seed defaults below;
+// on first load or after a reset, users get this list. Personal edits are
+// stored in localStorage under 'qol_tasks_config'.
+const QOL_TASKS_DEFAULT = [
+  { id: 'makebed',   icon: '🛏️', label: 'Make bed',          cadence: 'daily' },
+  { id: 'dishes',    icon: '🍽️', label: 'Dishes',            cadence: 'daily' },
+  { id: 'counters',  icon: '🧽', label: 'Wipe counters',     cadence: 'daily' },
+  { id: 'dishwash',  icon: '🫧', label: 'Empty dishwasher',  cadence: 'weekdays' },
+  { id: 'bathroom',  icon: '🚿', label: 'Clean bathroom',    cadence: 'weekly' },
+  { id: 'laundry',   icon: '🧺', label: 'Laundry',           cadence: 'weekly' },
+  { id: 'trash',     icon: '🗑️', label: 'Take out trash',    cadence: 'weekly' },
+  { id: 'vacuum',    icon: '🧹', label: 'Vacuum',            cadence: 'weekly' },
+];
+function getQolTasks() {
+  try {
+    const stored = JSON.parse(localStorage.getItem('qol_tasks_config'));
+    if (Array.isArray(stored)) return stored; // allow empty array (user cleared list)
+  } catch (e) {}
+  return QOL_TASKS_DEFAULT.slice();
+}
+function saveQolTasks(tasks) {
+  localStorage.setItem('qol_tasks_config', JSON.stringify(tasks));
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+function addQolTask(label, icon, cadence) {
+  const clean = (label || '').trim();
+  if (!clean) return;
+  const tasks = getQolTasks().slice();
+  const id = 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  tasks.push({
+    id: id,
+    icon: (icon || '').trim() || '✅',
+    label: clean,
+    cadence: (cadence === 'weekly' || cadence === 'weekdays') ? cadence : 'daily'
+  });
+  saveQolTasks(tasks);
+}
+function removeQolTask(id) {
+  saveQolTasks(getQolTasks().filter(t => t.id !== id));
+}
+function updateQolTask(id, updates) {
+  const tasks = getQolTasks().map(t => t.id === id ? { ...t, ...updates } : t);
+  saveQolTasks(tasks);
+}
+function resetQolTasksToDefault() {
+  localStorage.removeItem('qol_tasks_config');
+  if (typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// For a weekly task, look back 7 days (inclusive of `dateStr`) — if any date
+// in that window has been checked, the task counts as done for the week.
+// Returns the ISO date string of the most recent check, or null if none.
+function qolWeeklyLastDone(dateStr, taskId) {
+  const d = new Date(dateStr + 'T12:00:00');
+  for (let i = 0; i < 7; i++) {
+    const dStr = ds(d);
+    const chk = (typeof getChecked === 'function') ? getChecked(dStr) : {};
+    if (chk['s_qol_' + taskId]) return dStr;
+    d.setDate(d.getDate() - 1);
+  }
+  return null;
+}
+
+// Which tasks should surface today? Filters by cadence:
+//   daily     → always
+//   weekdays  → only Mon-Fri
+//   weekly    → always shows (but display renders quiet-mode if already done this week)
+function getTodaysQolTasks(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const isWeekday = dow >= 1 && dow <= 5;
+  return getQolTasks().filter(t => {
+    if (t.cadence === 'weekdays') return isWeekday;
+    return true; // daily and weekly both surface
+  });
+}
+
 function getSupps(dateStr) {
   if (DB_CACHE.daily[dateStr] && DB_CACHE.daily[dateStr].supps) return DB_CACHE.daily[dateStr].supps;
   try { return JSON.parse(localStorage.getItem('supps_' + dateStr)) || {}; } catch(e) { return {}; }
@@ -15229,13 +15389,51 @@ function renderDaily() {
   if (wo && wo.optional) items.push({k:"optional",t:"⚡",txt:wo.optional,sub:""});
   if (wo && wo.alt) items.push({k:"alt",t:"🔄",txt:wo.alt.replace(/^Alt:\s*/,''),sub:""});
 
+  // QoL / dopamine tasks (v1, 2026-05-10) — non-fitness home admin with
+  // check-off dopamine (per feedback_dopamine_dim_others memory, extended
+  // beyond fitness). Weekly tasks show every day but go quiet after one
+  // check per rolling 7-day window. User-editable list in Settings → 🏠 Home.
+  const _qolTasks = (typeof getTodaysQolTasks === 'function') ? getTodaysQolTasks(dateStr) : [];
+  if (_qolTasks.length > 0) {
+    items.push({k:"_divider",t:"",txt:"— 🏠 home —",sub:"",divider:true});
+    _qolTasks.forEach(qt => {
+      let sub = '';
+      let quietDone = false;
+      if (qt.cadence === 'weekly') {
+        const lastDone = qolWeeklyLastDone(dateStr, qt.id);
+        if (lastDone && lastDone !== dateStr) {
+          // Done earlier this week — show a "done <N>d ago" hint and dim.
+          const dToday = new Date(dateStr + 'T12:00:00');
+          const dLast = new Date(lastDone + 'T12:00:00');
+          const daysAgo = Math.round((dToday - dLast) / 86400000);
+          sub = 'done ' + daysAgo + 'd ago · weekly';
+          quietDone = true;
+        } else {
+          sub = 'weekly';
+        }
+      } else if (qt.cadence === 'weekdays') {
+        sub = 'weekdays only';
+      }
+      items.push({
+        k: 'qol_' + qt.id,
+        t: qt.icon || '✅',
+        txt: qt.label,
+        sub: sub,
+        _qolQuiet: quietDone,
+      });
+    });
+  }
+
   // Task #31 — Today's medication chiclets rendered ABOVE the task items
   const medChicletsHtml = (typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : '';
   document.getElementById('schedule-card').innerHTML = medChicletsHtml + items.map(i=>{
     if (i.divider) return `<div class="options-divider">${i.txt}</div>`;
     const done = checked['s_'+i.k] ? 'done' : '';
+    // QoL weekly-done tasks render with reduced opacity so they don't feel
+    // like a pending todo — they've been handled this week already.
+    const rowStyle = i._qolQuiet ? ' style="opacity:0.4"' : '';
     return `
-    <div class="check-row ${done}">
+    <div class="check-row ${done}"${rowStyle}>
       <div class="sched-time">${i.t}</div>
       <div class="check-box" onclick="toggleScheduleItem(this.parentElement,'${dateStr}','s_${i.k}')">${done ? '✓' : ''}</div>
       <div class="check-text" ${i.popup ? `onclick="openRoutinePopup('${i.popup}','${dateStr}')" style="cursor:pointer"` : `onclick="toggleScheduleItem(this.parentElement,'${dateStr}','s_${i.k}')"`}>
