@@ -2930,6 +2930,7 @@
       <div class="card-body" id="schedule-card"></div>
       <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
            reachable without a popup. Rendered by renderDayNotes(). -->
+      <div id="qol-host"></div>
       <div id="day-notes-host" data-module="notes"></div>
     </div>
 
@@ -3037,6 +3038,17 @@
 </div>
 
 <!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
+<!-- ═══════════════ RECURRING TASKS — MANAGE ═══════════════ -->
+<div class="popup-backdrop" id="qol-backdrop" onclick="if(event.target===this)closeQolManage()">
+  <div class="popup" style="max-width:460px">
+    <div class="popup-header">
+      <div class="popup-title">🔁 Recurring tasks</div>
+      <button class="popup-close" onclick="closeQolManage()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="qol-manage-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ ADMIN — USER ACCESS ═══════════════ -->
 <div class="popup-backdrop" id="admin-backdrop" onclick="if(event.target===this)closeAdminPanel()">
   <div class="popup" style="max-width:480px">
@@ -5421,7 +5433,21 @@ async function ensureStatsData() {
   const before = JSON.stringify(_trackingLoaded);
   await ensureTrackingRange(start, end);
   // Only re-render if the cache actually grew — avoids a redundant repaint.
-  if (JSON.stringify(_trackingLoaded) !== before) renderStats();
+  //
+  // BUG FIX 2026-08-18 (second attempt): the first version called renderStats(),
+  // which does not exist — the function is renderStatsTab(). That threw a
+  // ReferenceError, so the repaint never happened and the year/month view kept
+  // showing whatever was cached at startup. The lesson: verify a function exists
+  // before calling it, especially in a catch-free async path where the error is
+  // swallowed into an unhandled rejection and nothing visibly breaks.
+  //
+  // collectStatsData() must re-run too — it builds _statsDayList and the derived
+  // row data FROM the cache, so repainting without rebuilding would just redraw
+  // the same stale numbers.
+  if (JSON.stringify(_trackingLoaded) !== before) {
+    if (typeof collectStatsData === 'function') collectStatsData();
+    if (typeof renderStatsTab === 'function') renderStatsTab();
+  }
 }
 
 function updateStatsPeriod() {
@@ -10075,6 +10101,253 @@ function buildDayNotesHtml(dateStr) {
 function renderDayNotes(dateStr) {
   const host = document.getElementById('day-notes-host');
   if (host) host.innerHTML = buildDayNotesHtml(dateStr);
+}
+
+// ══════════════════════════════════════════════════════════════
+// QUALITY-OF-LIFE TASKS  (task #14, 2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// A library of common recurring tasks Craig can switch ACTIVE or STANDBY, with
+// cadence so weekly items check off once a week instead of nagging daily.
+//
+// One row holds both the definition and the last completion, so "is it due" is
+// simply last_done + cadence_days <= today. Daily, every-N-days and weekly all
+// use the same comparison rather than three code paths.
+//
+// Design rules carried from the rest of the app:
+//   • STANDBY, not delete. Life phases change; a task you're not doing this month
+//     shouldn't have to be recreated from scratch in September.
+//   • Only DUE tasks are shown by default. A list of twelve things with eight
+//     already ticked is visual noise, and a permanent list of everything you
+//     could be doing reads as a standing accusation.
+//   • Dates written with ds() — local, never UTC. See today's timezone bug.
+const QOL_LIBRARY = [
+  // Daily
+  { label:'Vitamins / supplements', icon:'💊', cadence:1 },
+  { label:'Drink water',            icon:'💧', cadence:1 },
+  { label:'Floss',                  icon:'🦷', cadence:1 },
+  { label:'Get outside',            icon:'🌤️', cadence:1 },
+  { label:'Meditate / sit quietly', icon:'🧘', cadence:1 },
+  { label:'Read something',         icon:'📖', cadence:1 },
+  { label:'Tidy the kitchen',       icon:'🧽', cadence:1 },
+  { label:'Screens off by 10',      icon:'📱', cadence:1 },
+  { label:'Check in with the kids', icon:'💬', cadence:1 },
+  // Every few days
+  { label:'Laundry',                icon:'🧺', cadence:3 },
+  { label:'Meal prep',              icon:'🍱', cadence:3 },
+  { label:'Groceries',              icon:'🛒', cadence:4 },
+  // Weekly
+  { label:'Change the sheets',      icon:'🛏️', cadence:7 },
+  { label:'Vacuum',                 icon:'🧹', cadence:7 },
+  { label:'Water the plants',       icon:'🪴', cadence:7 },
+  { label:'Call parents',           icon:'📞', cadence:7 },
+  { label:'Plan the week',          icon:'🗓️', cadence:7 },
+  { label:'Weigh-in review',        icon:'⚖️', cadence:7 },
+  { label:'Bins out',               icon:'🗑️', cadence:7 },
+  // Longer
+  { label:'Pay bills',              icon:'💳', cadence:14 },
+  { label:'Wash the car',           icon:'🚗', cadence:14 },
+  { label:'Deep clean bathroom',    icon:'🚿', cadence:14 },
+  { label:'Back up photos',         icon:'📷', cadence:30 },
+  { label:'Review subscriptions',   icon:'🔁', cadence:90 },
+];
+
+let QOL_TASKS = [];
+
+function _qolSaveLocal() {
+  try { localStorage.setItem('qol_tasks', JSON.stringify(QOL_TASKS)); } catch (e) {}
+}
+function _qolLoadLocal() {
+  try { QOL_TASKS = JSON.parse(localStorage.getItem('qol_tasks') || '[]'); }
+  catch (e) { QOL_TASKS = []; }
+}
+async function qolFetch() {
+  if (!sbReady) return;
+  try {
+    const { data, error } = await sb.from('qol_tasks').select('*');
+    if (error) throw error;
+    if (data && data.length) {
+      QOL_TASKS = data.map(r => ({
+        client_id: r.client_id, label: r.label, icon: r.icon,
+        cadence: r.cadence_days, active: r.active, last_done: r.last_done,
+      }));
+      _qolSaveLocal();
+      renderQolTasks();
+    }
+  } catch (e) { console.warn('qol fetch failed', e); }
+}
+function _qolSync(t) {
+  if (!sbReady) return;
+  sb.from('qol_tasks').upsert([{
+    client_id: t.client_id, label: t.label, icon: t.icon,
+    cadence_days: t.cadence, active: t.active, last_done: t.last_done || null,
+  }], { onConflict: 'user_id,client_id' })
+    .then(r => { if (r && r.error) console.warn('qol sync failed', r.error); });
+}
+
+// Days until due. <= 0 means due now; null last_done means never done, so due.
+function qolDaysUntilDue(t) {
+  if (!t.last_done) return 0;
+  const done = new Date(t.last_done + 'T00:00:00');
+  const today = new Date(ds(new Date()) + 'T00:00:00');
+  const elapsed = Math.round((today - done) / 86400000);
+  return t.cadence - elapsed;
+}
+function qolIsDue(t) { return t.active && qolDaysUntilDue(t) <= 0; }
+
+function qolComplete(clientId) {
+  const t = QOL_TASKS.find(x => x.client_id === clientId);
+  if (!t) return;
+  // Toggle: tapping a just-completed task undoes it, for the inevitable mis-tap.
+  t.last_done = (t.last_done === ds(new Date())) ? null : ds(new Date());
+  _qolSaveLocal(); _qolSync(t); renderQolTasks();
+}
+function qolToggleActive(clientId) {
+  const t = QOL_TASKS.find(x => x.client_id === clientId);
+  if (!t) return;
+  t.active = !t.active;
+  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
+}
+function qolAddFromLibrary(idx) {
+  const lib = QOL_LIBRARY[idx];
+  if (!lib) return;
+  if (QOL_TASKS.some(t => t.label === lib.label)) return;   // already added
+  const t = { client_id: 'qol-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+              label: lib.label, icon: lib.icon, cadence: lib.cadence, active: true, last_done: null };
+  QOL_TASKS.push(t);
+  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
+}
+function qolAddCustom() {
+  const inp = document.getElementById('qol-custom-label');
+  const cad = document.getElementById('qol-custom-cadence');
+  const label = (inp ? inp.value : '').trim();
+  if (!label) return;
+  const t = { client_id: 'qol-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
+              label: label, icon: '✅', cadence: parseInt(cad ? cad.value : '1', 10) || 1,
+              active: true, last_done: null };
+  QOL_TASKS.push(t);
+  if (inp) inp.value = '';
+  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
+}
+function qolSetCadence(clientId, days) {
+  const t = QOL_TASKS.find(x => x.client_id === clientId);
+  if (!t) return;
+  t.cadence = parseInt(days, 10) || 1;
+  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
+}
+
+function _qolCadenceLabel(d) {
+  if (d === 1) return 'daily';
+  if (d === 7) return 'weekly';
+  if (d === 14) return 'every 2 weeks';
+  if (d === 30) return 'monthly';
+  if (d === 90) return 'quarterly';
+  return 'every ' + d + ' days';
+}
+
+// ── The strip on the daily view ───────────────────────────────
+function renderQolTasks() {
+  const host = document.getElementById('qol-host');
+  if (!host) return;
+  const active = QOL_TASKS.filter(t => t.active);
+  const due = active.filter(qolIsDue);
+  const doneToday = active.filter(t => t.last_done === ds(new Date()));
+
+  if (!active.length) {
+    host.innerHTML = `<div class="notes-section">
+      <div class="notes-label">🔁 Recurring</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Nothing set up yet.</div>
+      <button onclick="openQolManage()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ Choose tasks</button>
+    </div>`;
+    return;
+  }
+
+  const rows = due.map(t => `
+    <div onclick="qolComplete('${t.client_id}')"
+      style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--divider);cursor:pointer">
+      <div style="width:17px;height:17px;border-radius:5px;border:1.5px solid var(--card-border);flex-shrink:0"></div>
+      <span style="font-size:13px">${t.icon}</span>
+      <span style="flex:1;font-size:11.5px;color:var(--text)">${t.label}</span>
+      <span style="font-size:9px;color:var(--text-muted)">${_qolCadenceLabel(t.cadence)}</span>
+    </div>`).join('');
+
+  // Completed items collapse to a single quiet line rather than a list of ticks.
+  const doneLine = doneToday.length
+    ? `<div style="font-size:10px;color:var(--green);padding:6px 4px 0">✓ ${doneToday.map(t => t.icon).join(' ')} done today${doneToday.length > 1 ? ` (${doneToday.length})` : ''} <span style="color:var(--text-muted);cursor:pointer;text-decoration:underline" onclick="qolUndoLast()">undo</span></div>`
+    : '';
+
+  host.innerHTML = `<div class="notes-section">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="notes-label" style="margin:0">🔁 Recurring${due.length ? ` (${due.length})` : ''}</div>
+      <button onclick="openQolManage()" style="background:none;border:none;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit;text-decoration:underline">manage</button>
+    </div>
+    ${due.length ? rows : '<div style="font-size:10.5px;color:var(--green);padding:4px 0">✓ Nothing due today.</div>'}
+    ${doneLine}
+  </div>`;
+}
+function qolUndoLast() {
+  const today = ds(new Date());
+  const done = QOL_TASKS.filter(t => t.last_done === today);
+  if (!done.length) return;
+  const t = done[done.length - 1];
+  t.last_done = null;
+  _qolSaveLocal(); _qolSync(t); renderQolTasks();
+}
+
+// ── Manage popup ──────────────────────────────────────────────
+function openQolManage() {
+  const bd = document.getElementById('qol-backdrop');
+  if (bd) bd.classList.add('open');
+  renderQolManage();
+}
+function closeQolManage() {
+  const bd = document.getElementById('qol-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function renderQolManage() {
+  const body = document.getElementById('qol-manage-body');
+  if (!body) return;
+  const cadOpts = [1,2,3,4,7,14,30,90];
+
+  const mine = QOL_TASKS.map(t => `
+    <div style="display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid var(--divider);${t.active ? '' : 'opacity:0.5'}">
+      <button onclick="qolToggleActive('${t.client_id}')"
+        title="${t.active ? 'Move to standby' : 'Make active'}"
+        style="padding:3px 9px;border-radius:12px;border:1px solid ${t.active ? 'var(--green-border)' : 'var(--card-border)'};background:${t.active ? 'var(--green-bg)' : 'var(--input-bg)'};color:${t.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0">${t.active ? 'Active' : 'Standby'}</button>
+      <span style="font-size:13px">${t.icon}</span>
+      <span style="flex:1;min-width:0;font-size:11px;color:var(--text)">${t.label}</span>
+      <select onchange="qolSetCadence('${t.client_id}', this.value)"
+        style="padding:3px 5px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-dim);font-size:9.5px;font-family:inherit">
+        ${cadOpts.map(c => `<option value="${c}" ${t.cadence === c ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
+      </select>
+    </div>`).join('');
+
+  const avail = QOL_LIBRARY.map((l, i) => ({ l, i }))
+    .filter(x => !QOL_TASKS.some(t => t.label === x.l.label))
+    .map(x => `<button onclick="qolAddFromLibrary(${x.i})"
+      style="padding:5px 9px;border-radius:14px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-muted);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin:2px">＋ ${x.l.icon} ${x.l.label}</button>`).join('');
+
+  body.innerHTML = `
+    ${QOL_TASKS.length ? `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">Your tasks</div>${mine}` : ''}
+    <div style="margin-top:14px">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:5px">Add from the list</div>
+      <div style="display:flex;flex-wrap:wrap">${avail || '<span style="font-size:10px;color:var(--text-muted)">All added.</span>'}</div>
+    </div>
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--divider)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:5px">Or add your own</div>
+      <div style="display:flex;gap:6px">
+        <input type="text" id="qol-custom-label" placeholder="e.g. sharpen the kitchen knives"
+          onkeydown="if(event.key==='Enter')qolAddCustom()"
+          style="flex:1;min-width:0;padding:7px 9px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
+        <select id="qol-custom-cadence" style="padding:7px 5px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:10px;font-family:inherit">
+          ${cadOpts.map(c => `<option value="${c}" ${c === 7 ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
+        </select>
+        <button onclick="qolAddCustom()" style="padding:7px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Add</button>
+      </div>
+    </div>
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:12px;border-top:1px solid var(--divider);padding-top:8px">
+      <b style="color:var(--text-dim)">Standby, not delete.</b> Life phases change — a task you're not doing this month shouldn't have to be rebuilt in September.
+      Only tasks that are <b>due</b> appear on the daily view, so a weekly job stays out of the way for the other six days.
+    </div>`;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -16070,6 +16343,12 @@ function renderDaily() {
     if (!Object.keys(DAY_NOTES).length) _dnLoadLocal();
     renderDayNotes(dateStr);
     _dnFetch(dateStr);
+  }
+  // Recurring tasks — local cache paints immediately, DB refresh follows.
+  if (typeof renderQolTasks === 'function') {
+    if (!QOL_TASKS.length) _qolLoadLocal();
+    renderQolTasks();
+    if (!window._qolFetched) { window._qolFetched = true; qolFetch(); }
   }
   const cust = custodyInfo(dateStr);
   const woRaw = WORKOUT_PLANS[dateStr];
