@@ -65,6 +65,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Craig's Fitness Dashboard</title>
+
+<!-- ── PWA (task #11, 2026-08-18) ──────────────────────────────
+     All paths are RELATIVE. GitHub Pages serves this from
+     /fitness-dashboard/, so an absolute "/manifest.webmanifest"
+     would 404 and the app would silently fail to install. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0d1117">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<!-- iOS ignores the manifest; these are what give it a standalone window. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fitness">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -5340,6 +5353,49 @@ function changeStatsPeriod(delta) {
   updateStatsPeriod();
 }
 
+// ── Stats data-range loader (BUG FIX 2026-08-18) ──────────────
+// Symptom: the Yr toggle showed a "This Year" view whose weight chart only
+// spanned 07-01 to 08-11, with total distance / exercise / recovery all covering
+// six weeks rather than a year.
+//
+// Cause: startup calls loadTrackingData(current month ± 1) — about 3 months —
+// and NOTHING ever widened it. Year mode built a correct 365-day list, then read
+// every value out of a cache that only held recent days. Rowing looked right
+// because Concept2 syncs separately and fully, so the view mixed genuine yearly
+// figures with six-week ones, which is worse than being uniformly wrong.
+//
+// Fix: track what's actually cached and widen on demand.
+let _trackingLoaded = { start: null, end: null };
+
+async function ensureTrackingRange(startStr, endStr) {
+  if (!sbReady) return;
+  const haveStart = _trackingLoaded.start, haveEnd = _trackingLoaded.end;
+  if (haveStart && haveEnd && startStr >= haveStart && endStr <= haveEnd) return; // already covered
+  const newStart = haveStart ? (startStr < haveStart ? startStr : haveStart) : startStr;
+  const newEnd   = haveEnd   ? (endStr   > haveEnd   ? endStr   : haveEnd)   : endStr;
+  await loadTrackingData(newStart, newEnd);
+  _trackingLoaded = { start: newStart, end: newEnd };
+}
+
+// Widen the cache to whatever the current stats period needs, then re-render.
+async function ensureStatsData() {
+  const now = new Date();
+  let start, end;
+  if (_statsMode === 'year') {
+    const yr = now.getFullYear() + _statsYearOffset;
+    start = yr + '-01-01';
+    end   = yr + '-12-31';
+  } else {
+    const v = new Date(now.getFullYear(), now.getMonth() + _statsMonthOffset, 1);
+    start = ds(new Date(v.getFullYear(), v.getMonth(), 1));
+    end   = ds(new Date(v.getFullYear(), v.getMonth() + 1, 0));
+  }
+  const before = JSON.stringify(_trackingLoaded);
+  await ensureTrackingRange(start, end);
+  // Only re-render if the cache actually grew — avoids a redundant repaint.
+  if (JSON.stringify(_trackingLoaded) !== before) renderStats();
+}
+
 function updateStatsPeriod() {
   const now = new Date();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -5355,6 +5411,10 @@ function updateStatsPeriod() {
     document.getElementById('stats-title').textContent = '📊 ' + label;
   }
   collectStatsData();
+  // Render immediately from whatever is cached, then widen the cache in the
+  // background and repaint if it grew. Keeps the toggle feeling instant instead
+  // of blocking on a year-sized fetch.
+  if (typeof ensureStatsData === 'function') ensureStatsData();
 }
 
 function switchStatsTab(tab) {
@@ -9990,6 +10050,71 @@ function renderDayNotes(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// PWA — SERVICE WORKER REGISTRATION  (task #11, 2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// Registered from a relative path: GitHub Pages serves this app from
+// /fitness-dashboard/, and '/sw.js' would resolve to the domain root, 404, and
+// silently leave the app uninstallable.
+//
+// The update banner exists because service workers are the single most common
+// source of "I deployed a fix and it's still broken" — a new worker installs but
+// stays parked until every tab closes. This surfaces it and lets him take the
+// update immediately.
+function initPWA() {
+  if (!('serviceWorker' in navigator)) return;
+  // file:// has no service worker support; don't throw console noise locally.
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', () => {
+        // controller present = this is an UPDATE, not a first install.
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateBanner(reg);
+        }
+      });
+    });
+  }).catch(e => console.warn('SW registration failed', e));
+
+  // Reload once the new worker takes over, so the user lands on fresh code.
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  });
+
+  // Ask the browser to treat our storage as persistent. Matters a lot for the
+  // planned local-storage-only users (task #12) — without it, browsers evict
+  // under storage pressure and iOS clears after ~7 days of non-use.
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persisted().then(already => {
+      if (!already) navigator.storage.persist().then(granted => {
+        console.log('persistent storage:', granted ? 'granted' : 'denied');
+      });
+    }).catch(() => {});
+  }
+}
+
+function showUpdateBanner(reg) {
+  if (document.getElementById('pwa-update-bar')) return;
+  const bar = document.createElement('div');
+  bar.id = 'pwa-update-bar';
+  bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:9500;background:var(--cyan-bg,#0e3a44);border-bottom:1px solid var(--cyan,#22d3ee);color:var(--cyan,#22d3ee);font-size:11.5px;font-weight:700;padding:9px 12px;display:flex;align-items:center;gap:10px;font-family:inherit';
+  bar.innerHTML = '<span style="flex:1">A newer version is ready.</span>' +
+    '<button id="pwa-update-btn" style="padding:5px 12px;border-radius:6px;border:1px solid currentColor;background:transparent;color:inherit;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Update</button>' +
+    '<button id="pwa-update-dismiss" style="background:none;border:none;color:inherit;opacity:0.7;font-size:14px;cursor:pointer;padding:0 4px">✕</button>';
+  document.body.appendChild(bar);
+  document.getElementById('pwa-update-btn').onclick = function () {
+    if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+    else location.reload();
+  };
+  document.getElementById('pwa-update-dismiss').onclick = function () { bar.remove(); };
+}
+
+// ══════════════════════════════════════════════════════════════
 // USER PROFILES + MODULE PERMISSIONS  (Phase 1, 2026-08-18)
 // ══════════════════════════════════════════════════════════════
 // Craig grants individual modules to individual people. First real case: Sary,
@@ -10132,7 +10257,7 @@ function renderAdminPanel() {
         <button onclick="adminToggleActive('${u.id}')"
           style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:${u.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${u.active ? 'Active' : 'Disabled'}</button>
       </div>
-      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">Sees: ${scope}</div>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">${u.email ? `<span style="color:var(--text-dim)">${u.email}</span> · ` : ''}Sees: ${scope}${(!u.modules || !u.modules.length) && !u.is_admin ? ' · <span style="color:var(--orange)">no modules yet — they see nothing</span>' : ''}</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
     </div>`;
   }).join('');
@@ -10141,8 +10266,9 @@ function renderAdminPanel() {
     <div style="margin-top:12px;padding:10px;border-radius:7px;background:var(--input-bg);border:1px solid var(--card-border)">
       <div style="font-size:10.5px;font-weight:700;color:var(--text);margin-bottom:5px">➕ Adding someone</div>
       <div style="font-size:10px;color:var(--text-muted);line-height:1.55">
-        Create the account in <b>Supabase → Authentication → Users → Add user</b>, then reopen this panel —
-        they'll appear here and you can grant modules.
+        Create the account in <b>Supabase → Authentication → Users → Add user</b>, then reopen this panel.
+        A database trigger creates their profile automatically — they arrive with <b>no modules</b>, seeing
+        nothing until you grant something here.
         <br><br>
         There's no "create user" button on purpose: that needs the <code>service_role</code> key, and this app
         is served from a <b>public</b> repo. Shipping that key would hand anyone who reads the page source
@@ -10272,6 +10398,65 @@ const EX_LIB = [
   { m:'core', name:'Dead bug', equip:'bw', reps:'8-12 each side', rest:60, cue:'Lower back stays flat on the floor. Best core option if your back is sensitive.' },
   { m:'core', name:'Ab crunch (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Loaded spinal flexion — skip it on any day the lower back is talking.', flags:['spine'] },
   { m:'core', name:'Suitcase carry', equip:'kb', reps:'30-40m each side', rest:90, cue:'One kettlebell, walk tall, resist the lean. Very grip-intensive.', flags:['grip'] },
+
+  // ══ FREE WEIGHT / HOME BLOCK (added 2026-08-18) ══
+  // Kettlebell + bodyweight, so kid weeks aren't a training write-off.
+  // Grip flags matter more here than in the machine list: a kettlebell hangs off
+  // the fingers in a way a machine handle doesn't, and the trigger finger's pain
+  // signal is currently muted by the cortisone.
+
+  // ── CHEST ──
+  { m:'chest', name:'Kettlebell floor press', equip:'kb', reps:'8-12', rest:150, cue:'Lying on the floor. The floor stops the elbow going too deep, which makes this the shoulder-friendliest press you own.', flags:['grip'] },
+  { m:'chest', name:'Incline push-up', equip:'bw', reps:'12-20', rest:90, cue:'Hands on a counter or stair. Easier than floor push-ups — use it to get volume in when you\'re tired.' },
+  { m:'chest', name:'Decline push-up', equip:'bw', reps:'8-15', rest:120, cue:'Feet on a chair. Shifts load toward the upper chest and shoulders.', flags:['grip'] },
+
+  // ── SHOULDERS ──
+  { m:'shoulders', name:'Kettlebell strict press', equip:'kb', reps:'6-10', rest:180, cue:'Bell rests on the forearm, press straight up. Stop at the point the shoulder complains — don\'t fight for lockout.', flags:['grip','overhead'] },
+  { m:'shoulders', name:'Kettlebell halo', equip:'kb', reps:'8-10 each way', rest:90, cue:'Circle the bell around the head, slow and close. Excellent shoulder warm-up and mobility work; go light.', flags:['grip','overhead'] },
+  { m:'shoulders', name:'Pike push-up', equip:'bw', reps:'6-12', rest:120, cue:'Hips high, head toward the floor. The bodyweight overhead press. Hard on an arthritic shoulder — skip if it pinches.', flags:['overhead','grip'] },
+
+  // ── TRICEPS ──
+  { m:'triceps', name:'Kettlebell overhead extension', equip:'kb', reps:'10-12', rest:120, cue:'Two hands on one bell, lower behind the head. Elbows stay narrow.', flags:['grip','overhead'] },
+  { m:'triceps', name:'Bench dip', equip:'bw', reps:'8-15', rest:120, cue:'Hands on a chair behind you, feet out front. Keep the shoulders down and back — shrugging into it is what makes dips hurt.' },
+  { m:'triceps', name:'Diamond push-up', equip:'bw', reps:'6-15', rest:120, cue:'Hands together under the chest. Hardest bodyweight tricep option.', flags:['grip'] },
+
+  // ── BACK / LATS ──
+  { m:'back', name:'Kettlebell bent-over row', equip:'kb', reps:'8-12', rest:150, cue:'Hinge to about 45°, pull the bell to the hip. Back stays flat throughout.', flags:['grip','spine'] },
+  { m:'back', name:'Kettlebell renegade row', equip:'kb', reps:'6-10 each side', rest:150, cue:'Push-up position on two bells, row one at a time. Very demanding on grip and core — probably park this until the finger settles.', flags:['grip','spine'] },
+  { m:'back', name:'Inverted row', equip:'bw', reps:'8-15', rest:150, cue:'Under a table or a bar, body straight, pull the chest to it. The best bodyweight horizontal pull.', flags:['grip'] },
+  { m:'lats', name:'Kettlebell pullover', equip:'kb', reps:'10-12', rest:120, cue:'Lying down, bell over the chest, lower behind the head with slight elbow bend. Stop where the shoulder is comfortable.', flags:['grip','overhead'] },
+  { m:'lats', name:'Chin-up', equip:'bw', reps:'as many as clean', rest:180, cue:'Palms toward you. Grip-heavy and the single most demanding pull you own — watch the finger closely.', flags:['grip'] },
+
+  // ── REAR DELTS ──
+  { m:'reardelts', name:'Kettlebell high pull', equip:'kb', reps:'10-12', rest:120, cue:'Hinge, pull the bell to chest height with elbows leading. Explosive but controlled.', flags:['grip'] },
+  { m:'reardelts', name:'Prone Y-T-W raise', equip:'bw', reps:'8-10 each shape', rest:60, cue:'Face down on the floor, lift the arms into a Y, then T, then W. No weight needed. Genuinely useful after a desk day.' },
+
+  // ── BICEPS ──
+  { m:'biceps', name:'Kettlebell curl', equip:'kb', reps:'10-12', rest:120, cue:'The offset weight makes this harder than it looks. Elbows pinned.', flags:['grip'] },
+
+  // ── QUADS ──
+  { m:'quads', name:'Kettlebell front squat', equip:'kb', reps:'8-12', rest:180, cue:'One or two bells racked at the chest. The rack position does the bracing for you.', flags:['grip'] },
+  { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees. Relevant given the ankle history.', flags:['grip'] },
+  { m:'quads', name:'Bulgarian split squat', equip:'bw', reps:'8-15 each leg', rest:150, cue:'Rear foot on a chair. Brutal without any weight at all. Add a kettlebell only once bodyweight is easy.' },
+  { m:'quads', name:'Step-up', equip:'bw', reps:'10-15 each leg', rest:120, cue:'Onto a sturdy chair or stair. Drive through the heel of the top foot; don\'t push off the back leg.' },
+  { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.' },
+
+  // ── HAMSTRINGS / GLUTES ──
+  { m:'hamstrings', name:'Kettlebell single-leg deadlift', equip:'kb', reps:'8-10 each leg', rest:150, cue:'Bell in the opposite hand, hinge on one leg. Balance and hamstring in one. Start with no weight.', flags:['grip'] },
+  { m:'hamstrings', name:'Nordic curl (assisted)', equip:'bw', reps:'3-6', rest:180, cue:'Anchor the feet, lower slowly, push back up with the hands. Extremely hard — go partial range and expect soreness.' },
+  { m:'glutes', name:'Glute bridge', equip:'bw', reps:'15-20', rest:60, cue:'Feet close, squeeze at the top, ribs down. The safest posterior-chain option when the back is unhappy.' },
+  { m:'glutes', name:'Single-leg glute bridge', equip:'bw', reps:'10-15 each leg', rest:90, cue:'One foot up. Exposes the side-to-side difference most people don\'t know they have.' },
+  { m:'glutes', name:'Kettlebell sumo deadlift', equip:'kb', reps:'10-15', rest:150, cue:'Wide stance, bell between the feet. Easier on the back than a conventional pull.', flags:['grip','spine'] },
+
+  // ── CALVES ──
+  { m:'calves', name:'Kettlebell calf raise', equip:'kb', reps:'15-20', rest:60, cue:'Bell in one hand, off a step. Slow at the bottom.', flags:['grip'] },
+
+  // ── CORE ──
+  { m:'core', name:'Kettlebell Turkish get-up', equip:'kb', reps:'3-5 each side', rest:180, cue:'Floor to standing with the bell locked overhead. Superb full-body control work — but it means holding a weight overhead for a long time. Learn it with a shoe on your fist before any load.', flags:['grip','overhead'] },
+  { m:'core', name:'Kettlebell windmill', equip:'kb', reps:'5-8 each side', rest:120, cue:'Bell overhead, hinge sideways toward the opposite foot. Go very light and stop well short of your end range.', flags:['grip','overhead','spine'] },
+  { m:'core', name:'Side plank', equip:'bw', reps:'20-45s each side', rest:60, cue:'Stack the hips, don\'t let them sag. Trains the obliques without loading the spine into flexion.' },
+  { m:'core', name:'Bird dog', equip:'bw', reps:'8-12 each side', rest:60, cue:'Opposite arm and leg, slow. Anti-rotation. One of the few core moves that\'s good FOR a cranky lower back rather than bad for it.' },
+  { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.' },
 ];
 
 const EX_FLAG_NOTES = {
@@ -10280,11 +10465,44 @@ const EX_FLAG_NOTES = {
   spine:    { icon:'⚠️', tone:'orange', text:'Loads the lower back. Skip on any day it\'s already complaining.' },
 };
 
-let _mpickMuscle = null, _mpickShowAll = false;
+let _mpickMuscle = null, _mpickShowAll = false, _mpickWhere = 'all';
+
+// Where-am-I filter. The real question at home isn't "which muscle" but "what can
+// I do with what's in this room". Persisted, because the answer is usually the
+// same for a whole week at a time — kid weeks are home weeks.
+const MPICK_WHERE = [
+  { id:'all',  label:'Anywhere', equip:null },
+  { id:'gym',  label:'At the gym', equip:['machine','cable','bar','db'] },
+  { id:'home', label:'At home',    equip:['kb','bw','db'] },
+];
+function mpickSetWhere(id) {
+  _mpickWhere = id;
+  try { localStorage.setItem('mpick_where', id); } catch (e) {}
+  _mpickShowAll = false;
+  renderMusclePicker();
+}
+function _mpickEquipFilter() {
+  const w = MPICK_WHERE.find(x => x.id === _mpickWhere);
+  return (w && w.equip) || null;
+}
+function _mpickExercisesFor(muscleId) {
+  const eq = _mpickEquipFilter();
+  const all = EX_LIB.filter(e => e.m === muscleId);
+  if (!eq) return all;
+  return all.filter(e => eq.indexOf(e.equip) !== -1);
+}
+function _mpickWhereChips() {
+  return `<div style="display:flex;gap:4px;margin-bottom:10px">` + MPICK_WHERE.map(w => {
+    const on = _mpickWhere === w.id;
+    return `<button onclick="mpickSetWhere('${w.id}')"
+      style="flex:1;padding:6px;border-radius:6px;border:1px solid ${on ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${on ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${on ? 'var(--cyan)' : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${w.label}</button>`;
+  }).join('') + `</div>`;
+}
 
 function openMusclePicker(muscleId) {
   _mpickMuscle = muscleId || null;
   _mpickShowAll = false;
+  try { _mpickWhere = localStorage.getItem('mpick_where') || 'all'; } catch (e) { _mpickWhere = 'all'; }
   const bd = document.getElementById('muscle-picker-backdrop');
   if (bd) bd.classList.add('open');
   renderMusclePicker();
@@ -10321,7 +10539,7 @@ function renderMusclePicker() {
     const byPattern = {};
     MUSCLE_GROUPS.forEach(m => { (byPattern[m.pattern] = byPattern[m.pattern] || []).push(m); });
     const patternLabel = { push:'Push', pull:'Pull', squat:'Squat / knee', hinge:'Hinge / hip', core:'Core' };
-    body.innerHTML = Object.keys(byPattern).map(p => `
+    body.innerHTML = _mpickWhereChips() + Object.keys(byPattern).map(p => `
       <div style="margin-bottom:12px">
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:5px">${patternLabel[p] || p}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
@@ -10339,7 +10557,7 @@ function renderMusclePicker() {
   // ── Step 2: suggestions for that muscle ──
   const mg = MUSCLE_GROUPS.find(x => x.id === _mpickMuscle);
   if (title) title.textContent = `${mg.icon} ${mg.label}`;
-  const all = EX_LIB.filter(e => e.m === _mpickMuscle);
+  const all = _mpickExercisesFor(_mpickMuscle);
   const shown = _mpickShowAll ? all : all.slice(0, 4);
 
   const cards = shown.map(e => {
@@ -10370,7 +10588,8 @@ function renderMusclePicker() {
 
   body.innerHTML = `
     <button onclick="mpickBack()" style="background:none;border:none;color:var(--cyan);font-size:11px;cursor:pointer;padding:0 0 8px;font-family:inherit">‹ All muscles</button>
-    ${cards}
+    ${_mpickWhereChips()}
+    ${all.length ? cards : `<div style="padding:14px;border-radius:7px;background:var(--input-bg);border:1px dashed var(--card-border);font-size:11px;color:var(--text-muted);line-height:1.5;text-align:center">Nothing for ${mg.label} with that equipment.<br>Try <b style="color:var(--text)">Anywhere</b>.</div>`}
     ${all.length > 4 ? `<button onclick="mpickToggleAll()" style="width:100%;padding:7px;border-radius:6px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">${_mpickShowAll ? 'Show fewer' : `Show ${all.length - 4} more`}</button>` : ''}
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
       Rep ranges are suggestions, not a program — pick a weight where the top of the range is hard but clean.
@@ -16684,6 +16903,7 @@ document.addEventListener('click', (ev) => {
 // ── Refresh ──
 async function refreshData(btn) {
   if (btn) { btn.classList.add('spinning'); }
+  if (typeof initPWA === 'function' && !window._pwaInit) { window._pwaInit = true; initPWA(); }
   // Who is this, and what are they allowed to see? Must run before the first
   // render so a restricted user never sees a flash of modules they don't have.
   await loadUserProfile();
@@ -16705,6 +16925,8 @@ async function refreshData(btn) {
   const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   await loadTrackingData(ds(start), ds(end));
+  // Record what's cached so the stats view knows when it must widen the range.
+  _trackingLoaded = { start: ds(start), end: ds(end) };
 
   if (currentView === 'daily') renderDaily();
   else if (currentView === 'week') renderWeek();
