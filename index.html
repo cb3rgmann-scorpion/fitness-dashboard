@@ -3099,6 +3099,19 @@
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Grant individual modules to individual people. Someone with only Exercise sees the workout card and nothing else.</div>
         <button onclick="closeSettings(); openAdminPanel();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--purple-border);background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔑 Manage users</button>
       </div>
+      <!-- Backup / restore. Critical for device-only users, useful for everyone. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">💾 Backup</div>
+        <div id="storage-mode-note" style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5"></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="exportLocalData()" style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">⬇ Export a backup</button>
+          <label style="flex:1;padding:8px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center;box-sizing:border-box">
+            ⬆ Restore
+            <input type="file" accept="application/json" style="display:none"
+              onchange="if(this.files&&this.files[0])importLocalData(this.files[0])">
+          </label>
+        </div>
+      </div>
       <!-- Check-in question toggles (2026-08-18). Lives in the "You" tab — these
            are personal preferences, not data config. -->
       <div style="margin-bottom:16px">
@@ -4105,6 +4118,21 @@ async function openSettings() {
   }
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
+  // Storage-mode note — tells a device-only user plainly that a backup is the
+  // only thing standing between them and losing everything to a cache clear.
+  const smNote = document.getElementById('storage-mode-note');
+  if (smNote) {
+    if (STORAGE_MODE === 'local') {
+      getLocalStorageUsage().then(u => {
+        const mb = (u.lsBytes / 1048576).toFixed(2);
+        smNote.innerHTML = `<b style="color:var(--green)">📱 Your data is on this device only.</b> Nothing is sent to a server.
+          Using about <b>${mb} MB</b>${u.persisted === false ? ' · <span style="color:var(--orange)">storage is not marked persistent — the browser may clear it</span>' : (u.persisted ? ' · storage is persistent' : '')}.
+          <br><br><b style="color:var(--orange)">Export regularly.</b> Clearing browser data, uninstalling the app, or leaving it unused for a while can erase everything. A backup file is the only copy that survives that.`;
+      });
+    } else {
+      smNote.innerHTML = `☁️ Your data syncs to the database and is available on any device you sign in from. An export is still a useful offline copy.`;
+    }
+  }
   document.getElementById('settings-backdrop').classList.add('open');
   initSettingsTabs();
 }
@@ -10157,14 +10185,143 @@ async function loadUserProfile() {
     // rather than locking Craig out of his own app on a bad deploy. Safe because
     // RLS still scopes every table to auth.uid() regardless of what the UI shows.
     USER_PROFILE = data || { id: uid, display_name: '', is_admin: false,
-                             modules: APP_MODULES.map(m => m.id), data_owner_id: null, active: true };
+                             modules: APP_MODULES.map(m => m.id), data_owner_id: null,
+                             active: true, storage_mode: 'db' };
     try { localStorage.setItem('user_profile_cache', JSON.stringify(USER_PROFILE)); } catch (e) {}
+    // Apply BEFORE any other load runs, or a local user's first sync fires against
+    // the database before the wrapper is installed.
+    applyStorageMode(USER_PROFILE.storage_mode);
     return USER_PROFILE;
   } catch (e) {
     console.warn('profile load failed', e);
     try { USER_PROFILE = JSON.parse(localStorage.getItem('user_profile_cache') || 'null'); } catch (e2) {}
     return USER_PROFILE;
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+// LOCAL-ONLY STORAGE MODE  (task #12, 2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// Craig doesn't want friends' health data in his Supabase. Local-mode users keep
+// everything on-device and nothing of theirs reaches the database.
+//
+// WHY THIS IS A CLIENT WRAPPER rather than a check in each sync function:
+// there are a dozen-plus call sites (dbSaveDaily, setChecked, setExSet, body log,
+// schedule, day notes, workout log, medications, care cadence…) and more will be
+// added. Gating each one means a single forgotten site silently writes a local
+// user's health data into Craig's database — the exact outcome this feature
+// exists to prevent. Wrapping the client is ONE choke point that catches
+// everything, including code not yet written.
+//
+// Deliberately still live in local mode:
+//   • sb.auth        — they still sign in
+//   • user_profiles  — the app needs their module grants to render anything
+// Everything else returns an empty result, so existing code paths fall through to
+// their localStorage buffers without needing to know the mode exists.
+//
+// NOT a security boundary: a determined local user could re-enable writes by
+// editing client JS. It's an architectural guarantee about where data goes by
+// default, not an access control. RLS is still what protects Craig's rows.
+let STORAGE_MODE = 'db';
+let _sbRaw = null;
+
+const LOCAL_MODE_ALLOWED_TABLES = ['user_profiles'];
+
+function applyStorageMode(mode) {
+  STORAGE_MODE = (mode === 'local') ? 'local' : 'db';
+  if (!sb) return;
+  if (STORAGE_MODE !== 'local') {
+    if (_sbRaw) { sb.from = _sbRaw; _sbRaw = null; }   // restore if switched back
+    return;
+  }
+  if (_sbRaw) return;                                   // already wrapped
+  _sbRaw = sb.from.bind(sb);
+  sb.from = function (table) {
+    if (LOCAL_MODE_ALLOWED_TABLES.indexOf(table) !== -1) return _sbRaw(table);
+    return _localModeStub(table);
+  };
+  console.log('storage mode: LOCAL — table writes are disabled, data stays on this device');
+}
+
+// A thenable that mimics enough of the PostgREST builder for existing callers.
+// Every method returns `this`, and awaiting resolves to {data:[], error:null} —
+// which reads to existing code as "nothing in the database", so it falls back to
+// its localStorage copy exactly as it would offline.
+function _localModeStub(table) {
+  const result = { data: [], error: null, count: 0, status: 200, statusText: 'OK (local mode)' };
+  const stub = {
+    _table: table,
+    then(res, rej) { return Promise.resolve(result).then(res, rej); },
+    catch(f) { return Promise.resolve(result).catch(f); },
+    finally(f) { return Promise.resolve(result).finally(f); },
+    maybeSingle() { return Promise.resolve({ data: null, error: null }); },
+    single()      { return Promise.resolve({ data: null, error: null }); },
+  };
+  ['select','insert','update','upsert','delete','eq','neq','gt','gte','lt','lte',
+   'like','ilike','is','in','contains','order','limit','range','filter','match','not','or']
+    .forEach(m => { stub[m] = function () { return stub; }; });
+  return stub;
+}
+
+// Rough estimate of on-device usage, so a local user can see it filling up.
+async function getLocalStorageUsage() {
+  let lsBytes = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      lsBytes += (k.length + (localStorage.getItem(k) || '').length) * 2; // UTF-16
+    }
+  } catch (e) {}
+  let quota = null, usage = null, persisted = null;
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const est = await navigator.storage.estimate();
+      quota = est.quota; usage = est.usage;
+    }
+    if (navigator.storage && navigator.storage.persisted) persisted = await navigator.storage.persisted();
+  } catch (e) {}
+  return { lsBytes, quota, usage, persisted };
+}
+
+// ── Export / import ───────────────────────────────────────────
+// Non-negotiable for local mode. Browsers evict storage: iOS clears after ~7 days
+// of non-use, and "clear browsing data" or uninstalling the PWA wipes everything.
+// A local user who trains for eight months and loses the lot will blame the app,
+// not the eviction policy. Export is the difference between a design decision and
+// a time bomb.
+function exportLocalData() {
+  const dump = { _meta: { exported: new Date().toISOString(), app: 'fitness-dashboard', version: 1 } };
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      dump[k] = localStorage.getItem(k);
+    }
+  } catch (e) {}
+  const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'fitness-backup-' + ds(new Date()) + '.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+function importLocalData(file) {
+  const reader = new FileReader();
+  reader.onload = function () {
+    let dump;
+    try { dump = JSON.parse(reader.result); }
+    catch (e) { alert('That file isn\'t a valid backup.'); return; }
+    if (!dump || !dump._meta || dump._meta.app !== 'fitness-dashboard') {
+      alert('That doesn\'t look like a backup from this app.'); return;
+    }
+    const keys = Object.keys(dump).filter(k => k !== '_meta');
+    if (!confirm(`Restore ${keys.length} items from ${dump._meta.exported.slice(0,10)}?\n\nThis OVERWRITES anything currently on this device that shares a name.`)) return;
+    let n = 0;
+    keys.forEach(k => { try { localStorage.setItem(k, dump[k]); n++; } catch (e) {} });
+    alert(`Restored ${n} items. Reloading.`);
+    location.reload();
+  };
+  reader.readAsText(file);
 }
 
 // The UI gate. Absent profile = show everything (see fail-open note above).
@@ -10218,6 +10375,25 @@ async function adminToggleModule(userId, moduleId) {
     if (error) throw error;
   } catch (e) { console.warn('module grant failed', e); }
 }
+async function adminToggleStorage(userId) {
+  const u = _adminUsers.find(x => x.id === userId);
+  if (!u || u.is_admin) return;
+  const next = (u.storage_mode === 'db') ? 'local' : 'db';
+  if (next === 'db' && !confirm(
+      `Switch ${u.display_name || u.email || 'this user'} to storing data in YOUR database?\n\n` +
+      `You would then be holding their health information — symptoms, medications, weight, mood. ` +
+      `That carries real responsibility under privacy law, and it doesn't go away if you stop maintaining the app.\n\n` +
+      `Their existing on-device data will NOT be migrated.`)) return;
+  if (next === 'local' && !confirm(
+      `Switch ${u.display_name || u.email || 'this user'} to device-only storage?\n\n` +
+      `Anything of theirs already in your database will STAY there but stop being read or updated. ` +
+      `They start fresh on their device.`)) return;
+  u.storage_mode = next;
+  renderAdminPanel();
+  try { await sb.from('user_profiles').update({ storage_mode: next }).eq('id', userId); }
+  catch (e) { console.warn('storage mode change failed', e); }
+}
+
 async function adminToggleActive(userId) {
   const u = _adminUsers.find(x => x.id === userId);
   if (!u) return;
@@ -10248,6 +10424,10 @@ function renderAdminPanel() {
     const scope = u.data_owner_id
       ? `<span style="color:var(--orange)">viewer of another account</span>`
       : `<span style="color:var(--text-muted)">own data</span>`;
+    const localMode = (u.storage_mode || 'local') === 'local';
+    const storageBtn = `<button onclick="adminToggleStorage('${u.id}')" ${u.is_admin ? 'disabled' : ''}
+      title="${localMode ? 'Data stays on their device. Nothing of theirs reaches your database.' : 'Their data is stored in YOUR Supabase project — you are holding it.'}"
+      style="padding:4px 8px;border-radius:5px;border:1px solid ${localMode ? 'var(--green-border)' : 'var(--orange-border, var(--orange))'};background:${localMode ? 'var(--green-bg)' : 'var(--orange-bg)'};color:${localMode ? 'var(--green)' : 'var(--orange)'};font-size:9.5px;font-weight:700;cursor:${u.is_admin ? 'default' : 'pointer'};font-family:inherit;opacity:${u.is_admin ? 0.6 : 1}">${localMode ? '📱 On their device' : '☁️ In your database'}</button>`;
     return `<div style="padding:10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:8px;${u.active ? '' : 'opacity:0.55'}">
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
         <input type="text" value="${(u.display_name || '').replace(/"/g,'&quot;')}" placeholder="name"
@@ -10257,6 +10437,7 @@ function renderAdminPanel() {
         <button onclick="adminToggleActive('${u.id}')"
           style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:${u.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${u.active ? 'Active' : 'Disabled'}</button>
       </div>
+      <div style="margin-bottom:6px">${storageBtn}</div>
       <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">${u.email ? `<span style="color:var(--text-dim)">${u.email}</span> · ` : ''}Sees: ${scope}${(!u.modules || !u.modules.length) && !u.is_admin ? ' · <span style="color:var(--orange)">no modules yet — they see nothing</span>' : ''}</div>
       <div style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
     </div>`;
