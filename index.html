@@ -5763,7 +5763,8 @@ function renderOverviewStats(container) {
         '<div style="font-size:11px;font-weight:700;color:var(--green)">⚖️ Weight — ' + mWeightFirst + ' → ' + mWeightLast + ' lbs' +
           '<span style="font-weight:800;color:' + (mWeightLast <= mWeightFirst ? 'var(--green)' : 'var(--red)') + ';margin-left:4px">' +
           (mWeightLast - mWeightFirst > 0 ? '+' : '') + (mWeightLast - mWeightFirst).toFixed(1) + '</span></div>' +
-        '<div style="font-size:8px;color:var(--text-muted)"><span style="color:var(--orange)">━</span> intent (from daily goals) &nbsp;<span style="color:var(--red)">━</span> −2/wk max</div>' +
+        '<div style="font-size:8px;color:var(--text-muted)"><span style="color:var(--orange)">━</span> intent' +
+          (typeof weightRateTogglesHtml === 'function' ? weightRateTogglesHtml() : '') + '</div>' +
       '</div>' +
       '<canvas id="chart-weight-overview" style="width:100%;height:120px;display:block"></canvas>' +
     '</div>'
@@ -6851,6 +6852,47 @@ function drawLineChart(canvasId, data, colorVar, unit, invertBetter, minY, maxY)
   });
 }
 
+// ── Weight-rate reference lines (2026-08-18) ──────────────────
+// Craig: "I'd rather have 1.5lb/week. Or 2/1.5/1.0 to see how I track."
+//
+// −2.0 is deliberately styled as a RED CEILING rather than a goal. Losing faster
+// than that costs disproportionate lean mass, and at 1-2 lifting sessions a week
+// in a deficit he has limited protection against it. The 1.5 and 1.0 lines are
+// neutral grey on purpose — a steeper line is not a better one, and colouring
+// them like targets would quietly encourage chasing the fastest one.
+//
+// Default: 1.5 on (his stated preference) plus the 2.0 ceiling for context.
+const WEIGHT_RATE_LINES = [
+  { id:'r20', rate:2.0, label:'−2/wk max', color:'var(--red)',      def:true  },
+  { id:'r15', rate:1.5, label:'−1.5/wk',   color:'var(--text-dim)', def:true  },
+  { id:'r10', rate:1.0, label:'−1/wk',     color:'var(--text-dim)', def:false },
+];
+function isRateLineOn(id) {
+  try {
+    const raw = localStorage.getItem('weight_rate_lines');
+    if (raw) return (JSON.parse(raw) || []).indexOf(id) !== -1;
+  } catch (e) {}
+  const d = WEIGHT_RATE_LINES.find(r => r.id === id);
+  return !!(d && d.def);
+}
+function toggleRateLine(id) {
+  const on = WEIGHT_RATE_LINES.filter(r => isRateLineOn(r.id)).map(r => r.id);
+  const i = on.indexOf(id);
+  if (i >= 0) on.splice(i, 1); else on.push(id);
+  try { localStorage.setItem('weight_rate_lines', JSON.stringify(on)); } catch (e) {}
+  if (typeof renderStatsTab === 'function') renderStatsTab();
+}
+// Checkbox row rendered above the chart.
+function weightRateTogglesHtml() {
+  return WEIGHT_RATE_LINES.map(r => {
+    const on = isRateLineOn(r.id);
+    return `<span onclick="toggleRateLine('${r.id}')" title="Show or hide the ${r.label} reference line"
+      style="cursor:pointer;display:inline-flex;align-items:center;gap:3px;margin-left:7px;font-size:8px;color:${on ? r.color : 'var(--text-muted)'};opacity:${on ? 1 : 0.55}">
+      <span style="font-size:9px">${on ? '☑' : '☐'}</span>${r.label}
+    </span>`;
+  }).join('');
+}
+
 function drawWeightProjectionChart(canvasId, weights, events) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || weights.length === 0) return;
@@ -6943,23 +6985,38 @@ function drawWeightProjectionChart(canvasId, weights, events) {
     ctx.setLineDash([]);
   }
 
-  // Caution line (−2 lbs/week) — red dashed, kept as the medical safety zone
-  const cautionEndY = toY(startW - cautionRate * totalDays);
-  ctx.strokeStyle = getComputedColor('var(--red)');
-  ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
-  ctx.beginPath();
-  ctx.moveTo(pad.l, toY(startW));
-  ctx.lineTo(pad.l + cw, cautionEndY);
-  ctx.stroke();
-  ctx.setLineDash([]);
+  // ── Rate reference lines (2026-08-18) ──────────────────────
+  // Craig asked to compare his actual trend against several rates rather than
+  // only the −2/wk ceiling, and to be able to toggle them.
+  //
+  // −2/wk stays RED because it is a ceiling, not a goal: faster than that in his
+  // position means disproportionate lean-mass loss. The others are neutral grey
+  // so the chart doesn't imply that a steeper line is a better one.
+  const rateEndY = {};
+  WEIGHT_RATE_LINES.forEach(r => {
+    if (!isRateLineOn(r.id)) return;
+    const endY = toY(startW - (r.rate / 7) * totalDays);
+    rateEndY[r.id] = endY;
+    ctx.strokeStyle = getComputedColor(r.color);
+    ctx.lineWidth = r.id === 'r20' ? 1 : 1.2;
+    ctx.setLineDash(r.id === 'r20' ? [3, 4] : [5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pad.l, toY(startW));
+    ctx.lineTo(pad.l + cw, endY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  });
 
   // Line labels at right edge
   ctx.font = 'bold 7px Inter,sans-serif'; ctx.textAlign = 'right';
   ctx.fillStyle = getComputedColor('var(--orange)');
   const intentEndY = toY(intentEndW);
   ctx.fillText('intent', pad.l + cw - 2, intentEndY - 3);
-  ctx.fillStyle = getComputedColor('var(--red)');
-  ctx.fillText('−2/wk max', pad.l + cw - 2, cautionEndY + 9);
+  WEIGHT_RATE_LINES.forEach(r => {
+    if (rateEndY[r.id] === undefined) return;
+    ctx.fillStyle = getComputedColor(r.color);
+    ctx.fillText(r.label, pad.l + cw - 2, rateEndY[r.id] + 9);
+  });
 
   // Actual weight line — green
   ctx.strokeStyle = getComputedColor('var(--green)');
