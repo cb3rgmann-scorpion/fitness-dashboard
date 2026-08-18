@@ -2900,7 +2900,7 @@
     </div>
 
     <!-- Meals Card -->
-    <div class="card zone" data-zone="meals">
+    <div class="card zone" data-zone="meals" data-module="meals">
       <div class="card-header" onclick="toggleZone(this, openRecipeLibrary)" style="cursor:pointer" title="Open recipe library">
         <div class="card-icon meals">🥗</div>
         <div class="card-title">Meals & Supplements <span style="font-size:9px;color:var(--purple);font-weight:400">› recipes</span></div>
@@ -2917,11 +2917,11 @@
       <div class="card-body" id="schedule-card"></div>
       <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
            reachable without a popup. Rendered by renderDayNotes(). -->
-      <div id="day-notes-host"></div>
+      <div id="day-notes-host" data-module="notes"></div>
     </div>
 
     <!-- Body Card (task #30, 2026-06-16) — promoted from bottom-bar pill to a daily-view section -->
-    <div class="card zone" id="body-card-wrapper" data-zone="body">
+    <div class="card zone" id="body-card-wrapper" data-zone="body" data-module="body">
       <div class="card-header" onclick="toggleZone(this, openBodyLog)">
         <div class="card-icon body" style="background:var(--red-bg);color:var(--red)">🩹</div>
         <div class="card-title">Body</div>
@@ -3024,6 +3024,17 @@
 </div>
 
 <!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
+<!-- ═══════════════ ADMIN — USER ACCESS ═══════════════ -->
+<div class="popup-backdrop" id="admin-backdrop" onclick="if(event.target===this)closeAdminPanel()">
+  <div class="popup" style="max-width:480px">
+    <div class="popup-header">
+      <div class="popup-title">🔑 Users &amp; access</div>
+      <button class="popup-close" onclick="closeAdminPanel()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="admin-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ MUSCLE-GROUP EXERCISE PICKER (task #8) ═══════════════ -->
 <div class="popup-backdrop" id="muscle-picker-backdrop" onclick="if(event.target===this)closeMusclePicker()">
   <div class="popup" style="max-width:460px">
@@ -3066,6 +3077,14 @@
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Enter custody blocks, events and notes. Fill a date range, or edit day by day.</div>
         <div id="settings-custody-coverage" style="margin-bottom:8px"></div>
         <button onclick="closeSettings(); openScheduleEditor();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🗓️ Open schedule editor</button>
+      </div>
+      <!-- Admin: users & access. Hidden for everyone except admins — the section
+           is removed from the DOM by applyModuleVisibility(), and the underlying
+           user_profiles table is admin-only at the RLS level regardless. -->
+      <div style="margin-bottom:16px" data-module="admin">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🔑 Users &amp; access</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Grant individual modules to individual people. Someone with only Exercise sees the workout card and nothing else.</div>
+        <button onclick="closeSettings(); openAdminPanel();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--purple-border);background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔑 Manage users</button>
       </div>
       <!-- Check-in question toggles (2026-08-18). Lives in the "You" tab — these
            are personal preferences, not data config. -->
@@ -9971,6 +9990,172 @@ function renderDayNotes(dateStr) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// USER PROFILES + MODULE PERMISSIONS  (Phase 1, 2026-08-18)
+// ══════════════════════════════════════════════════════════════
+// Craig grants individual modules to individual people. First real case: Sary,
+// who wants workout tracking only and should see nothing else.
+//
+// Two axes:
+//   modules[]      — WHAT you can see
+//   data_owner_id  — WHOSE data you see (NULL = your own)
+// Phase 1 exercises only the NULL/own case. The viewer case (Craig's parents
+// seeing HIS photos, kids seeing HIS schedule) needs cross-user RLS and is
+// Phase 2 — the column exists so that work doesn't need another migration.
+//
+// SECURITY NOTE, important: this gate is a UI convenience, NOT a security
+// boundary. Anyone can edit client-side JS. What actually protects data is RLS
+// on each table. Hiding the Body card from Sary is a courtesy; the reason he
+// can't READ Craig's body_log is the auth.uid() policy on that table. Never move
+// a genuine access decision into this layer.
+const APP_MODULES = [
+  { id:'exercise', icon:'💪', label:'Exercise',   desc:'Workout card, logging, muscle picker, rest timer' },
+  { id:'meals',    icon:'🍽️', label:'Meals',      desc:'Meal log, recipes, restaurant picker' },
+  { id:'body',     icon:'🩹', label:'Body',       desc:'Symptoms, meds, appointments, providers' },
+  { id:'schedule', icon:'🗓️', label:'Schedule',   desc:'Week/month views, custody calendar' },
+  { id:'notes',    icon:'🗒️', label:'Notes',      desc:'Day notes and (later) photos' },
+  { id:'checkins', icon:'☀️', label:'Check-ins',  desc:'Morning and evening prompts' },
+  { id:'stats',    icon:'📊', label:'Stats',      desc:'Trends, rowing, cardio, health' },
+  { id:'admin',    icon:'🔑', label:'Admin',      desc:'Manage users and their access' },
+];
+
+let USER_PROFILE = null;
+
+async function loadUserProfile() {
+  if (!sbReady) return null;
+  try {
+    const { data: u } = await sb.auth.getUser();
+    const uid = u && u.user && u.user.id;
+    if (!uid) return null;
+    const { data, error } = await sb.from('user_profiles').select('*').eq('id', uid).maybeSingle();
+    if (error) throw error;
+    // No profile row = legacy/unprovisioned login. Fail OPEN to own-data-everything
+    // rather than locking Craig out of his own app on a bad deploy. Safe because
+    // RLS still scopes every table to auth.uid() regardless of what the UI shows.
+    USER_PROFILE = data || { id: uid, display_name: '', is_admin: false,
+                             modules: APP_MODULES.map(m => m.id), data_owner_id: null, active: true };
+    try { localStorage.setItem('user_profile_cache', JSON.stringify(USER_PROFILE)); } catch (e) {}
+    return USER_PROFILE;
+  } catch (e) {
+    console.warn('profile load failed', e);
+    try { USER_PROFILE = JSON.parse(localStorage.getItem('user_profile_cache') || 'null'); } catch (e2) {}
+    return USER_PROFILE;
+  }
+}
+
+// The UI gate. Absent profile = show everything (see fail-open note above).
+function canSee(moduleId) {
+  if (!USER_PROFILE || !USER_PROFILE.modules) return true;
+  if (USER_PROFILE.is_admin) return true;
+  return USER_PROFILE.modules.indexOf(moduleId) !== -1;
+}
+function isAppAdmin() { return !!(USER_PROFILE && USER_PROFILE.is_admin); }
+
+// Hide anything the current user has no module for. Called after each render;
+// selectors are data-attribute driven so new surfaces opt in by tagging markup
+// with data-module="…" rather than by editing this function.
+function applyModuleVisibility() {
+  document.querySelectorAll('[data-module]').forEach(function (el) {
+    const mods = (el.getAttribute('data-module') || '').split(/[ ,]+/).filter(Boolean);
+    const visible = mods.some(m => canSee(m));
+    el.style.display = visible ? '' : 'none';
+  });
+}
+
+// ── Admin screen ──────────────────────────────────────────────
+let _adminUsers = [];
+async function openAdminPanel() {
+  if (!isAppAdmin()) return;
+  document.getElementById('admin-backdrop').classList.add('open');
+  const body = document.getElementById('admin-body');
+  if (body) body.innerHTML = '<div style="font-size:11px;color:var(--text-muted)">Loading…</div>';
+  try {
+    const { data, error } = await sb.from('user_profiles').select('*').order('created_at');
+    if (error) throw error;
+    _adminUsers = data || [];
+  } catch (e) {
+    _adminUsers = [];
+    console.warn('admin load failed', e);
+  }
+  renderAdminPanel();
+}
+function closeAdminPanel() { document.getElementById('admin-backdrop').classList.remove('open'); }
+
+async function adminToggleModule(userId, moduleId) {
+  const u = _adminUsers.find(x => x.id === userId);
+  if (!u) return;
+  const mods = (u.modules || []).slice();
+  const i = mods.indexOf(moduleId);
+  if (i >= 0) mods.splice(i, 1); else mods.push(moduleId);
+  u.modules = mods;
+  renderAdminPanel();
+  try {
+    const { error } = await sb.from('user_profiles').update({ modules: mods }).eq('id', userId);
+    if (error) throw error;
+  } catch (e) { console.warn('module grant failed', e); }
+}
+async function adminToggleActive(userId) {
+  const u = _adminUsers.find(x => x.id === userId);
+  if (!u) return;
+  u.active = !u.active;
+  renderAdminPanel();
+  try { await sb.from('user_profiles').update({ active: u.active }).eq('id', userId); }
+  catch (e) { console.warn('active toggle failed', e); }
+}
+async function adminSetName(userId, name) {
+  const u = _adminUsers.find(x => x.id === userId);
+  if (!u) return;
+  u.display_name = name;
+  try { await sb.from('user_profiles').update({ display_name: name }).eq('id', userId); }
+  catch (e) { console.warn('rename failed', e); }
+}
+
+function renderAdminPanel() {
+  const body = document.getElementById('admin-body');
+  if (!body) return;
+  const rows = _adminUsers.map(u => {
+    const chips = APP_MODULES.filter(m => m.id !== 'admin').map(m => {
+      const on = (u.modules || []).indexOf(m.id) !== -1;
+      const locked = u.is_admin;
+      return `<button ${locked ? 'disabled' : ''} onclick="adminToggleModule('${u.id}','${m.id}')"
+        title="${m.desc}"
+        style="padding:4px 8px;border-radius:5px;border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};color:${on ? 'var(--green)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:${locked ? 'default' : 'pointer'};font-family:inherit;opacity:${locked ? 0.6 : 1}">${m.icon} ${m.label}</button>`;
+    }).join('');
+    const scope = u.data_owner_id
+      ? `<span style="color:var(--orange)">viewer of another account</span>`
+      : `<span style="color:var(--text-muted)">own data</span>`;
+    return `<div style="padding:10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:8px;${u.active ? '' : 'opacity:0.55'}">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">
+        <input type="text" value="${(u.display_name || '').replace(/"/g,'&quot;')}" placeholder="name"
+          onchange="adminSetName('${u.id}', this.value)"
+          style="flex:1;min-width:0;padding:5px 7px;border-radius:5px;border:1px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:11px;font-weight:700;font-family:inherit">
+        ${u.is_admin ? '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;background:var(--purple-bg);color:var(--purple)">🔑 ADMIN</span>' : ''}
+        <button onclick="adminToggleActive('${u.id}')"
+          style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:${u.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${u.active ? 'Active' : 'Disabled'}</button>
+      </div>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">Sees: ${scope}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">${chips}</div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = rows + `
+    <div style="margin-top:12px;padding:10px;border-radius:7px;background:var(--input-bg);border:1px solid var(--card-border)">
+      <div style="font-size:10.5px;font-weight:700;color:var(--text);margin-bottom:5px">➕ Adding someone</div>
+      <div style="font-size:10px;color:var(--text-muted);line-height:1.55">
+        Create the account in <b>Supabase → Authentication → Users → Add user</b>, then reopen this panel —
+        they'll appear here and you can grant modules.
+        <br><br>
+        There's no "create user" button on purpose: that needs the <code>service_role</code> key, and this app
+        is served from a <b>public</b> repo. Shipping that key would hand anyone who reads the page source
+        full access to the database.
+      </div>
+    </div>
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
+      Module toggles control what each person <b>sees</b>. What actually protects the data is row-level security
+      on each table — every row is tied to its owner and enforced by the database, not by this screen.
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
 // MUSCLE-GROUP EXERCISE PICKER  (task #8, 2026-08-18)
 // ══════════════════════════════════════════════════════════════
 // Craig's actual problem, in his words: "I walk around the gym feeling 'I want to
@@ -13739,6 +13924,15 @@ function openEveningPrompt() {
     todayStr: todayStr,
     actualChoice: d.actual_load || null,
     wordValue: d.day_word || '',
+    // Pre-fill tonight's note if one was already written, so reopening the prompt
+    // edits rather than silently starting a second entry.
+    noteValue: (function () {
+      try {
+        const list = (typeof DAY_NOTES !== 'undefined' && DAY_NOTES[todayStr]) || [];
+        const existing = list.find(n => n.client_id === 'dn-eve-' + todayStr);
+        return existing ? existing.body : '';
+      } catch (e) { return ''; }
+    })(),
     anticipated: d.anticipated_load || null,  // for "this morning you thought X" context
     behaviors: behaviors,                      // task #14 — late-evening downshift triggers
   };
@@ -13771,14 +13965,63 @@ function _epSyncWord() {
     window._eveningPromptState.wordValue = (inp.value || '').trim().slice(0, 24);
   }
 }
+
+// ── "How was today?" — merged word + note (2026-08-18) ────────
+// Craig asked for the one-word question to be more coherent and tied into notes.
+// Merged into ONE section rather than two, per his choice, but keeping a chip row
+// so the word still aggregates: free text alone meant "tired" / "Tired" /
+// "knackered" never grouped, which made the day-type series unreadable.
+//
+// The note field is phrased "anything worth keeping?" — NOT "name one fun thing".
+// That distinction is deliberate. A fun-thing question has no valid negative
+// answer, so on a flat day it becomes a small nightly failure. This wording lets
+// a blank be a real answer, which is the same zero-obligation rule day_notes was
+// built under.
+const DAY_WORDS = [
+  'good', 'decent', 'fine', 'calm', 'productive',
+  'flat', 'tired', 'drained', 'wired', 'heavy', 'scattered', 'rough',
+];
+
+function _epSelectWord(w) {
+  const s = window._eveningPromptState;
+  if (!s) return;
+  s.wordValue = (s.wordValue === w) ? '' : w;   // tap again to clear
+  renderEveningPrompt();
+}
+function _epSyncNote() {
+  const inp = document.getElementById('ep-note');
+  if (inp && window._eveningPromptState) window._eveningPromptState.noteValue = inp.value;
+}
 function _epSubmit() {
   const s = window._eveningPromptState;
   if (!s) return;
   if (s.actualChoice) dbSaveDaily(s.todayStr, 'actual_load', s.actualChoice);
   // Always read directly from input on submit (in case _epSyncWord didn't fire)
   const inp = document.getElementById('ep-word');
-  const word = inp ? (inp.value || '').trim().slice(0, 24) : (s.wordValue || '');
+  const word = (inp && inp.value.trim()) ? inp.value.trim().slice(0, 24) : (s.wordValue || '');
   if (word) dbSaveDaily(s.todayStr, 'day_word', word);
+
+  // Note → day_notes, so the evening prompt feeds the same store as the day page
+  // rather than being a separate silo. Category defaults by custody: on a Craig
+  // day it's most likely something with the kids, otherwise personal. Either way
+  // it's editable afterwards from the day notes row.
+  const noteEl = document.getElementById('ep-note');
+  const noteTxt = (noteEl ? noteEl.value : (s.noteValue || '')).trim();
+  if (noteTxt && typeof DAY_NOTES !== 'undefined') {
+    const cat = (typeof CUSTODY_CALENDAR !== 'undefined' && CUSTODY_CALENDAR[s.todayStr] === 'C')
+      ? 'together' : 'personal';
+    const cid = 'dn-eve-' + s.todayStr;   // stable id: re-submitting the same evening updates rather than duplicates
+    const list = DAY_NOTES[s.todayStr] || (DAY_NOTES[s.todayStr] = []);
+    const row = { note_date: s.todayStr, category: cat, body: noteTxt, client_id: cid };
+    const idx = list.findIndex(n => n.client_id === cid);
+    if (idx >= 0) list[idx] = Object.assign({}, list[idx], row);
+    else list.push(Object.assign({ created_at: new Date().toISOString() }, row));
+    if (typeof _dnSaveLocal === 'function') _dnSaveLocal();
+    if (typeof sbReady !== 'undefined' && sbReady) {
+      sb.from('day_notes').upsert([row], { onConflict: 'user_id,client_id' })
+        .then(r => { if (r && r.error) console.warn('evening note sync failed — kept locally', r.error); });
+    }
+  }
   // Task #14: write sleep behaviors as JSON object (Supabase JSONB column).
   // Always write, even if empty, so an unchecked-all night is captured as "nothing done."
   dbSaveDaily(s.todayStr, 'sleep_behaviors', s.behaviors || {});
@@ -13828,14 +14071,25 @@ function renderEveningPrompt() {
     </div>` : '') +
     (on('dayword') ? `
     <div class="mp-section">
-      <div class="mp-section-label">One word for today</div>
-      <div class="mp-section-hint">First word that lands. No analysis. You can change it.</div>
+      <div class="mp-section-label">How was today?</div>
+      <div class="mp-section-hint">A word, and anything you want to remember. Both optional.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
+        ${DAY_WORDS.map(w => {
+          const sel = (s.wordValue || '').toLowerCase() === w;
+          return `<button onclick="_epSelectWord('${w}')"
+            style="padding:5px 10px;border-radius:14px;border:1px solid ${sel ? 'var(--purple-border)' : 'var(--card-border)'};background:${sel ? 'var(--purple-bg)' : 'var(--input-bg)'};color:${sel ? 'var(--purple)' : 'var(--text-muted)'};font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">${w}</button>`;
+        }).join('')}
+      </div>
       <input type="text" id="ep-word" class="ep-word-input"
-        placeholder="e.g. drained · decent · wired · fine"
+        placeholder="…or type your own"
         value="${wordValue}"
         maxlength="24"
-        oninput="_epSyncWord()"
-        onkeydown="if(event.key==='Enter'){_epSubmit();event.preventDefault();}">
+        oninput="_epSyncWord()">
+      <textarea id="ep-note" rows="2"
+        placeholder="Anything worth keeping? A blank here is a fine answer."
+        oninput="_epSyncNote()"
+        style="width:100%;margin-top:6px;padding:8px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11.5px;font-family:inherit;resize:vertical;box-sizing:border-box">${(s.noteValue || '').replace(/</g, '&lt;')}</textarea>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.45">Anything you write is saved to that day's notes, where you can edit it later.</div>
     </div>` : '') +
     (on('behaviors') ? `
     <div class="mp-section">
@@ -15359,6 +15613,7 @@ function scheduleRender(fn) {
 
 function renderDaily() {
   refreshCustodyGapBanner();
+  if (typeof applyModuleVisibility === 'function') applyModuleVisibility();
   const now = new Date();
   now.setDate(now.getDate() + currentDayOffset);
   const dateStr = ds(now);
@@ -16429,6 +16684,10 @@ document.addEventListener('click', (ev) => {
 // ── Refresh ──
 async function refreshData(btn) {
   if (btn) { btn.classList.add('spinning'); }
+  // Who is this, and what are they allowed to see? Must run before the first
+  // render so a restricted user never sees a flash of modules they don't have.
+  await loadUserProfile();
+  applyModuleVisibility();
   // Load exercises from Supabase (falls back to hardcoded ROUTINES)
   await loadRoutinesFromDB();
   // Try Supabase first, then CSV, then fallback
