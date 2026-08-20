@@ -2879,7 +2879,7 @@
     <div style="display:flex;align-items:center;gap:14px">
       <div class="day-name" id="day-name"></div>
       <div class="date-full" id="date-full"></div>
-      <div class="custody-badge craig" id="custody-badge">
+      <div class="custody-badge craig" id="custody-badge" data-module="schedule">
         <div class="custody-dot"></div>
         <span class="custody-text"></span>
       </div>
@@ -2888,8 +2888,8 @@
     <div class="nav-btns">
       <button class="nav-btn" onclick="changeDay(-1)">‹</button>
       <button class="nav-btn" onclick="showDailyView()">Today</button>
-      <button class="nav-btn" onclick="showWeekView()">Week</button>
-      <button class="nav-btn" onclick="showMonthView()">Month</button>
+      <button class="nav-btn" onclick="showWeekView()" data-module="schedule">Week</button>
+      <button class="nav-btn" onclick="showMonthView()" data-module="schedule">Month</button>
       <button class="nav-btn" onclick="changeDay(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-daily" style="font-size:13px"></button>
       <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
@@ -2974,8 +2974,8 @@
     <div class="nav-btns">
       <button class="nav-btn" onclick="changeWeek(-1)">‹</button>
       <button class="nav-btn" onclick="showDailyView()">Today</button>
-      <button class="nav-btn" onclick="showWeekView()">Week</button>
-      <button class="nav-btn" onclick="showMonthView()">Month</button>
+      <button class="nav-btn" onclick="showWeekView()" data-module="schedule">Week</button>
+      <button class="nav-btn" onclick="showMonthView()" data-module="schedule">Month</button>
       <button class="nav-btn" onclick="changeWeek(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-week" style="font-size:13px"></button>
       <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
@@ -2996,8 +2996,8 @@
     <div class="nav-btns">
       <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
       <button class="nav-btn" onclick="showDailyView()">Today</button>
-      <button class="nav-btn" onclick="showWeekView()">Week</button>
-      <button class="nav-btn" onclick="showMonthView()">Month</button>
+      <button class="nav-btn" onclick="showWeekView()" data-module="schedule">Week</button>
+      <button class="nav-btn" onclick="showMonthView()" data-module="schedule">Month</button>
       <button class="nav-btn" onclick="changeMonth(1)">›</button>
       <button class="nav-btn theme" onclick="cycleTheme()" title="Switch theme" id="theme-btn-month" style="font-size:13px"></button>
       <button class="nav-btn" onclick="openAppSuggestions()" title="Suggestions for next session" style="font-size:13px">💡</button>
@@ -10725,6 +10725,25 @@ function canSee(moduleId) {
 }
 function isAppAdmin() { return !!(USER_PROFILE && USER_PROFILE.is_admin); }
 
+// Is this the person the hardcoded personal content actually belongs to?
+//
+// The app still contains health details written directly into markup — the
+// trigger-finger rehab entry, injury-specific cues, custody-aware nudges. Those
+// are Craig's, and before 2026-08-19 they rendered for every signed-in user.
+//
+// This is a STOPGAP. The correct fix is Phase B of the 2026-05-14 refactor plan:
+// injuries and personal context as per-user DATA, so everyone sees their own and
+// nobody sees anyone else's. Until then, treat any hardcoded health element as
+// requiring this guard — and assume the next one added will leak unless caught.
+//
+// Fails CLOSED: no profile yet (still loading) means don't render personal
+// content. Better a missing card for a moment than someone else's medical data.
+function isContentOwner() {
+  if (!USER_PROFILE) return false;
+  if (USER_PROFILE.data_owner_id) return false;   // viewers are never the owner
+  return !!USER_PROFILE.is_admin;
+}
+
 // ── Phase 2: viewer mode ──────────────────────────────────────
 // A viewer's profile has data_owner_id set — they read someone else's data
 // rather than their own. RLS is what enforces this (they can SELECT the owner's
@@ -11058,6 +11077,9 @@ const EX_LIB = [
 
   // ── BICEPS ──
   { m:'biceps', name:'Kettlebell curl', equip:'kb', reps:'10-12', rest:120, cue:'The offset weight makes this harder than it looks. Elbows pinned.', flags:['grip'] },
+  // "7-21" / 21s — requested 2026-08-19. One set = 21 reps in three blocks.
+  { m:'biceps', name:'21s (7-7-7 barbell curl)', equip:'bar', reps:'7 + 7 + 7 = 1 set', rest:150, cue:'Seven from full extension to halfway · seven from halfway to full contraction · seven full curls. No rest between blocks. Go MUCH lighter than a normal curl — about half. It fails from accumulated fatigue, not load, and the last seven are meant to be ugly. One or two sets is plenty; this is a finisher, not the main event.', flags:['grip'] },
+  { m:'biceps', name:'21s (dumbbell version)', equip:'db', reps:'7 + 7 + 7 = 1 set', rest:150, cue:'Same three blocks, one dumbbell per hand. Easier on the wrists than a straight bar, and you can drop one side if the grip goes before the biceps do.', flags:['grip'] },
 
   // ── QUADS ──
   { m:'quads', name:'Kettlebell front squat', equip:'kb', reps:'8-12', rest:180, cue:'One or two bells racked at the chest. The rack position does the bracing for you.', flags:['grip'] },
@@ -16586,9 +16608,18 @@ function renderDaily() {
   // NEXT CHECK ~2026-11-14 (3 months post-demotion): if catching has increased or
   // locking has returned, that's a failed injection — back to the hand surgeon, and
   // a second injection has lower success odds than the first.
+  // PRIVACY FIX 2026-08-19: the trigger-finger entry rendered for every user, so
+  // Sary was shown Craig's post-cortisone rehab protocol. That's Craig's medical
+  // information on a stranger's screen.
+  //
+  // Gated on isContentOwner() — a stopgap. The RIGHT fix is Phase B of the May
+  // refactor plan: injuries as per-user DATA rather than hardcoded markup, so
+  // each person sees their own rehab work and nobody sees anyone else's. Until
+  // that exists, every hardcoded personal-health element needs this guard, and
+  // the next one added will leak again unless someone remembers. Build Phase B.
   const morningHtml = `
     <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>
-    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(1×/day · maintenance)</span></div>`;
+    ${isContentOwner() ? `<div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(1×/day · maintenance)</span></div>` : ''}`;
 
   // Recommended workout section
   let recommendedHtml = '';
@@ -16676,14 +16707,22 @@ function renderDaily() {
     </div>`;
   }).join('');
 
-  // Custody-aware quick-log chips
+  // Custody-aware quick-log chips.
+  // PRIVACY FIX 2026-08-19: the "👧 Kids:" / "🆓 Free:" label leaks the custody
+  // state — a user without the schedule module could infer from the label alone
+  // whether Craig has his children that day. Users without that module get the
+  // neutral chip set and a neutral label instead.
+  // Same fail-closed rule as the custody strip — an unloaded profile must not
+  // reveal custody state through the chip label.
+  const _custodyAware = !!(typeof USER_PROFILE !== 'undefined' && USER_PROFILE) &&
+                        ((typeof canSee !== 'function') || canSee('schedule'));
   const custT = custodyType(dateStr);
-  const isKidDay2 = custT === 'C';
+  const isKidDay2 = _custodyAware && custT === 'C';
   const quickPicks = isKidDay2
     ? [{ id:'walk', label:'🚶 Walk', sub:'walk' }, { id:'bodyweight', label:'💪 Body', sub:'upper' }, { id:'yoga_session', label:'🧘 Yoga', sub:'' }]
     : [{ id:'gym', label:'🏋️ Gym', sub:'full' }, { id:'row', label:'🚣 Row', sub:'steady' }, { id:'walk', label:'🚶 Walk', sub:'walk' }];
   const quickPickHtml = `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:4px 0 6px">
-    <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${isKidDay2 ? '👧 Kids:' : '🆓 Free:'}</span>
+    <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${!_custodyAware ? '⚡ Quick:' : (isKidDay2 ? '👧 Kids:' : '🆓 Free:')}</span>
     ${quickPicks.map(p => {
       const done = (wlog[p.id] || {}).done;
       // Exercise-tracking chips (gym/body/kettlebell) open the routine popup
@@ -16933,8 +16972,23 @@ function renderDaily() {
   }
 
   // Custody strip — 14 days, today is day 3 (index 2)
+  //
+  // PRIVACY FIX 2026-08-19: this rendered for EVERY user, so Sary — who only has
+  // the Exercise module — could see which nights Craig's children are with which
+  // parent. Reported independently by Craig and by Sary himself.
+  // Now gated on the 'schedule' module. Belt and braces: also hidden for anyone
+  // who isn't the data owner, so a future module misconfiguration can't re-leak
+  // it. Custody is the most sensitive thing in this app; it fails closed.
   const dows = ['S','M','T','W','T','F','S'];
-  let csHtml = '<div class="custody-strip">';
+  // Note the deliberate difference from canSee() elsewhere: this requires a
+  // LOADED profile. canSee() fails open so a bad deploy can't lock Craig out of
+  // his own app — correct for a workout card, wrong for custody. Here an unknown
+  // user renders nothing, so there's no window during profile load where the
+  // children's schedule is on screen before we know who's looking.
+  const _canSeeCustody = !!(typeof USER_PROFILE !== 'undefined' && USER_PROFILE) &&
+                         ((typeof canSee !== 'function') || canSee('schedule'));
+  let csHtml = '<div class="custody-strip" data-module="schedule">';
+  if (!_canSeeCustody) csHtml = '<div class="custody-strip" data-module="schedule" style="display:none">';
   for (let ci = -2; ci <= 11; ci++) {
     const cd = new Date(now);
     cd.setDate(cd.getDate() + ci);
