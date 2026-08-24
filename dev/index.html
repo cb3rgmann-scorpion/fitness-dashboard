@@ -3172,6 +3172,9 @@
         <div style="font-size:calc(12px * var(--fs-scale, 1));color:var(--text-muted);margin-bottom:8px;line-height:1.5">Grant individual modules to individual people. Someone with only Exercise sees the workout card and nothing else.</div>
         <button onclick="closeSettings(); openAdminPanel();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--purple-border);background:var(--purple-bg);color:var(--purple);font-size:calc(12.5px * var(--fs-scale, 1));font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔑 Manage users</button>
       </div>
+      <div style="margin-top:18px;padding-top:12px;border-top:1px solid var(--divider)">
+        <div id="build-info" style="font-size:calc(10px * var(--fs-scale, 1));color:var(--text-muted);line-height:1.6"></div>
+      </div>
       <!-- Display (dev, 2026-08-22) -->
       <div style="margin-bottom:16px">
         <div style="font-size:calc(11px * var(--fs-scale, 1));font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">👁 Display</div>
@@ -3441,6 +3444,28 @@ function _envBanner() {
   b.style.cssText = 'position:sticky;top:0;z-index:9600;background:#7c3aed;color:#fff;font-size:calc(12.5px * var(--fs-scale, 1));font-weight:700;text-align:center;padding:4px 8px;letter-spacing:1px';
   b.textContent = 'DEV — separate storage, safe to break';
   document.body.insertBefore(b, document.body.firstChild);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// BUILD IDENTITY  (2026-08-22)
+// ══════════════════════════════════════════════════════════════
+// Craig: "I'm not sure if I just released to dev or to prod."
+//
+// TWO SEPARATE FACTS, and the distinction is the point:
+//
+//   BUILD_CHANNEL — baked into THIS FILE. Which copy is it.
+//   IS_DEV        — derived from the URL. Where is it running.
+//
+// If they disagree, the wrong file went to the wrong place — the exact mistake
+// URL-detection alone can never catch, because a dev build served from the prod
+// URL looks like prod to any check based on location.
+//
+// Bump APP_VERSION whenever this file changes. No build step, so it's manual.
+const APP_VERSION   = '2026.08.22-dev';
+const BUILD_CHANNEL = 'dev';
+function buildMismatch() {
+  return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
 }
 
 // ──────────────────────────────────────────────
@@ -4243,6 +4268,7 @@ async function openSettings() {
   }
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
   if (typeof renderDisplaySettings === 'function') renderDisplaySettings();
+  if (typeof renderBuildInfo === 'function') renderBuildInfo();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
   if (typeof loadTrainingPlan === 'function') loadTrainingPlan().then(() => {
     if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
@@ -11544,6 +11570,19 @@ function setFsStep(step) {
   applyFsStep(step);
   if (typeof renderDisplaySettings === 'function') renderDisplaySettings();
 }
+
+function renderBuildInfo() {
+  const el = document.getElementById('build-info');
+  if (!el) return;
+  const where = IS_DEV ? 'dev URL' : 'production URL';
+  const mismatch = buildMismatch();
+  el.innerHTML =
+    `<b style="color:var(--text-dim)">${BUILD_CHANNEL === 'dev' ? 'DEV' : 'PRODUCTION'} build</b> · v${APP_VERSION}<br>Running at the ${where}` +
+    (mismatch
+      ? `<div style="margin-top:6px;padding:7px 9px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-weight:700;line-height:1.5">⚠ Mismatch — a ${BUILD_CHANNEL} build is being served from the ${where}. The wrong file was uploaded.</div>`
+      : '');
+}
+
 function renderDisplaySettings() {
   const el = document.getElementById('display-settings-body');
   if (!el) return;
