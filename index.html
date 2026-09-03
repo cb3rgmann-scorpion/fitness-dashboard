@@ -2804,11 +2804,18 @@
        The strip already wraps, so height costs one extra row at most, and
        legibility is worth more than a row of vertical space on the one surface
        that answers "who has the kids". */
-    .custody-strip { gap: 3px; flex-wrap: wrap; justify-content: center; }
+    /* GRID, not flex-wrap (2026-08-19). Wrapping filled each row greedily, so a
+       14-day strip broke 10 + 4 — visually lopsided and impossible to scan.
+       Seven fixed columns give two even rows of a week each, and the cells size
+       themselves to the screen instead of being guessed at in pixels. That also
+       ends the too-small / too-big argument: on a 390px phone each cell gets
+       ~50px, wider than either previous guess. */
+    .custody-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px 4px; justify-items: stretch; }
     .cs-box {
-      width: 34px; height: 30px; font-size: 12px; border-radius: 5px;
+      width: 100%; height: 30px; font-size: 12px; border-radius: 5px;
       opacity: 0.75;              /* was 0.6 — low contrast compounded the size problem */
     }
+    .custody-strip > div { width: 100%; }
     .cs-dow { font-size: 11px; }
 
     /* Tracking dots — bigger for touch */
@@ -2823,9 +2830,10 @@
       padding: 8px 10px 12px;
     }
     .bottom-bar > div { margin-left: 0 !important; width: 100%; justify-content: center; flex-wrap: wrap; }
-    /* Narrow phones: same legibility fix, one notch down so 7 cells still fit a row. */
-    .custody-strip { flex-wrap: wrap; justify-content: center; gap: 3px; }
-    .cs-box { width: 32px; height: 28px; font-size: 11px; border-radius: 5px; opacity: 0.75; }
+    /* Narrow phones: same 7-column grid, slightly shorter cells. */
+    .custody-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px 4px; justify-items: stretch; }
+    .cs-box { width: 100%; height: 28px; font-size: 11px; border-radius: 5px; opacity: 0.75; }
+    .custody-strip > div { width: 100%; }
     .cs-dow { font-size: 10px; }
     .pill { font-size: 10px; padding: 5px 10px; }
 
@@ -2946,7 +2954,9 @@
       <div class="card-body" id="schedule-card"></div>
       <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
            reachable without a popup. Rendered by renderDayNotes(). -->
-      <div id="qol-host" data-writes="1"></div>
+<!-- #qol-host removed 2026-08-19: it was a duplicate of the QoL system that has
+     existed in Settings since 2026-05-10. Recurring tasks render as check-off
+     rows in the Tasks card via getTodaysQolTasks(), managed in Settings. -->
       <div id="day-notes-host" data-module="notes"></div>
     </div>
 
@@ -3054,16 +3064,8 @@
 </div>
 
 <!-- ═══════════════ SETTINGS POPUP ═══════════════ -->
-<!-- ═══════════════ RECURRING TASKS — MANAGE ═══════════════ -->
-<div class="popup-backdrop" id="qol-backdrop" onclick="if(event.target===this)closeQolManage()">
-  <div class="popup" style="max-width:460px">
-    <div class="popup-header">
-      <div class="popup-title">🔁 Recurring tasks</div>
-      <button class="popup-close" onclick="closeQolManage()">✕ Close</button>
-    </div>
-    <div class="popup-body" id="qol-manage-body"></div>
-  </div>
-</div>
+<!-- Duplicate "Recurring tasks" popup removed 2026-08-19 — merged into the
+     existing Settings → Home / QoL Tasks section. -->
 
 <!-- ═══════════════ ADMIN — USER ACCESS ═══════════════ -->
 <div class="popup-backdrop" id="admin-backdrop" onclick="if(event.target===this)closeAdminPanel()">
@@ -3073,6 +3075,19 @@
       <button class="popup-close" onclick="closeAdminPanel()">✕ Close</button>
     </div>
     <div class="popup-body" id="admin-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SESSION LOGGER (task #16) ═══════════════
+     Near-fullscreen on phones: one exercise at a time is the whole point, and
+     it structurally solves the "inputs are too small" complaint. -->
+<div class="popup-backdrop" id="session-backdrop" onclick="if(event.target===this)closeSessionScreen()">
+  <div class="popup" style="max-width:480px;width:96vw;max-height:92vh">
+    <div class="popup-header">
+      <div class="popup-title" id="session-title">Session</div>
+      <button class="popup-close" onclick="closeSessionScreen()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="session-body"></div>
   </div>
 </div>
 
@@ -3126,6 +3141,11 @@
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🔑 Users &amp; access</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Grant individual modules to individual people. Someone with only Exercise sees the workout card and nothing else.</div>
         <button onclick="closeSettings(); openAdminPanel();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--purple-border);background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔑 Manage users</button>
+      </div>
+      <!-- Training plan, equipment and discretion (2026-08-19). -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🏋️ Training</div>
+        <div id="training-settings-body"></div>
       </div>
       <!-- Backup / restore. Critical for device-only users, useful for everyone. -->
       <div style="margin-bottom:16px">
@@ -3237,6 +3257,7 @@
         <button onclick="migrateLocalBwToSupabase()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--orange-border,var(--input-border));background:var(--orange-bg,var(--input-bg));color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">📤 Migrate Local Reps → Database</button>
       </div>
     </div>
+    <div style="padding:10px 14px;border-top:1px solid var(--divider);font-size:calc(10px * var(--fs-scale, 1));color:var(--text-muted);line-height:1.6" id="build-info"></div>
   </div>
 </div>
 
@@ -3345,6 +3366,68 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script>
+
+// ══════════════════════════════════════════════════════════════
+// ENVIRONMENT — production vs dev  (2026-08-22)
+// ══════════════════════════════════════════════════════════════
+// Craig wanted a dev copy to test against without risking live data.
+//
+// THE TRAP THIS SOLVES: GitHub Pages serves everything from ONE origin, and
+// localStorage is scoped to the ORIGIN, not the path. A dev page at
+// /fitness-dashboard/dev/ would read and write exactly the same localStorage as
+// the real app — so testing a delete on dev would delete his real data.
+//
+// Fix: in dev, every localStorage key is transparently prefixed. Storage.prototype
+// is patched HERE, before any other code runs, so nothing downstream needs to know
+// which environment it's in.
+//
+// Detection is path-based, so the same file works in both places — no separate
+// build, no flag to remember to flip.
+const IS_DEV = /\/dev(\/|\.html|$)/.test(location.pathname) ||
+               location.hostname === 'localhost' ||
+               location.search.indexOf('dev=1') !== -1;
+const ENV_PREFIX = IS_DEV ? 'dev__' : '';
+
+if (IS_DEV) {
+  const P = Storage.prototype;
+  const _get = P.getItem, _set = P.setItem, _del = P.removeItem;
+  P.getItem    = function (k) { return _get.call(this, ENV_PREFIX + k); };
+  P.setItem    = function (k, v) { return _set.call(this, ENV_PREFIX + k, v); };
+  P.removeItem = function (k) { return _del.call(this, ENV_PREFIX + k); };
+  console.log('DEV environment — localStorage namespaced as "' + ENV_PREFIX + '"');
+}
+
+// Visible marker, because the single most dangerous state is not knowing which
+// copy you're looking at.
+function _envBanner() {
+  if (!IS_DEV) return;
+  const b = document.createElement('div');
+  b.style.cssText = 'position:sticky;top:0;z-index:9600;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;text-align:center;padding:4px 8px;letter-spacing:1px';
+  b.textContent = 'DEV — separate storage, safe to break';
+  document.body.insertBefore(b, document.body.firstChild);
+}
+
+
+// ══════════════════════════════════════════════════════════════
+// BUILD IDENTITY  (2026-08-22)
+// ══════════════════════════════════════════════════════════════
+// Craig: "I'm not sure if I just released to dev or to prod."
+//
+// TWO SEPARATE FACTS, and the distinction is the point:
+//
+//   BUILD_CHANNEL — baked into THIS FILE. Which copy is it.
+//   IS_DEV        — derived from the URL. Where is it running.
+//
+// If they disagree, the wrong file went to the wrong place — the exact mistake
+// URL-detection alone can never catch, because a dev build served from the prod
+// URL looks like prod to any check based on location.
+//
+// Bump APP_VERSION whenever this file changes. No build step, so it's manual.
+const APP_VERSION = '2026.09.03.01';
+const BUILD_CHANNEL = 'prod';
+function buildMismatch() {
+  return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
+}
 
 // ──────────────────────────────────────────────
 // SUPABASE CLIENT
@@ -4145,7 +4228,11 @@ async function openSettings() {
     covEl.innerHTML = _schedCoverageHtml().replace('id="sched-coverage"', '').replace('margin-bottom:14px', 'margin-bottom:0');
   }
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
+  if (typeof renderBuildInfo === 'function') renderBuildInfo();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
+  if (typeof loadTrainingPlan === 'function') loadTrainingPlan().then(() => {
+    if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
+  });
   // Storage-mode note — tells a device-only user plainly that a backup is the
   // only thing standing between them and losing everything to a cache clear.
   const smNote = document.getElementById('storage-mode-note');
@@ -4170,27 +4257,41 @@ function renderQolTasksList() {
   const el = document.getElementById('qol-tasks-list');
   if (!el) return;
   const tasks = getQolTasks();
-  if (tasks.length === 0) {
-    el.innerHTML = '<div style="font-size:10px;color:var(--text-muted);font-style:italic;padding:8px 0">No QoL tasks yet — add one below or reset to defaults.</div>';
-    return;
-  }
   const cadenceColor = { daily: 'var(--green)', weekdays: 'var(--cyan)', weekly: 'var(--purple)' };
-  el.innerHTML = tasks.map(t => {
+  const isSeeded = id => QOL_TASKS_DEFAULT.some(d => d.id === id) || QOL_SUGGESTIONS.some(s => s.id === id);
+
+  const row = t => {
     const color = cadenceColor[t.cadence] || 'var(--text-muted)';
-    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--card-border);border-radius:5px;margin-bottom:4px;background:var(--input-bg)">
-      <span style="font-size:16px;min-width:20px;text-align:center">${t.icon || '✅'}</span>
-      <span style="flex:1;font-size:12px;color:var(--text);min-width:0;word-break:break-word">${(t.label || '').replace(/</g,'&lt;')}</span>
+    const on = t.active !== false;
+    const safeLabel = (t.label || '').replace(/</g, '&lt;');
+    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--card-border);border-radius:5px;margin-bottom:4px;background:var(--input-bg);${on ? '' : 'opacity:0.55'}">
+      <button onclick="toggleQolActive('${t.id}')" title="${on ? 'Move to standby' : 'Make active'}"
+        style="padding:3px 8px;border-radius:11px;border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'transparent'};color:${on ? 'var(--green)' : 'var(--text-muted)'};font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;min-width:54px">${on ? 'Active' : 'Standby'}</button>
+      <span style="font-size:15px;min-width:20px;text-align:center">${t.icon || '✅'}</span>
+      <span style="flex:1;font-size:12px;color:${on ? 'var(--text)' : 'var(--text-muted)'};min-width:0;word-break:break-word">${safeLabel}</span>
       <select onchange="updateQolTask('${t.id}',{cadence:this.value});renderQolTasksList()"
         style="padding:3px 4px;border-radius:4px;border:1px solid ${color};background:transparent;color:${color};font-size:10px;font-weight:700;font-family:inherit;cursor:pointer">
         <option value="daily"    ${t.cadence === 'daily'    ? 'selected' : ''}>Daily</option>
         <option value="weekdays" ${t.cadence === 'weekdays' ? 'selected' : ''}>Weekdays</option>
         <option value="weekly"   ${t.cadence === 'weekly'   ? 'selected' : ''}>Weekly</option>
       </select>
-      <span onclick="if(confirm('Remove &quot;${(t.label || '').replace(/'/g,'').replace(/"/g,'')}&quot; from your QoL list?')){removeQolTask('${t.id}');renderQolTasksList();}"
-        title="Remove"
-        style="cursor:pointer;color:var(--text-muted);font-size:15px;line-height:1;padding:0 4px">×</span>
+      ${(!on && !isSeeded(t.id))
+        ? `<span onclick="if(confirm('Delete &quot;${(t.label||'').replace(/['\"]/g,'')}&quot; permanently? Leaving it on standby keeps it available.')){purgeQolTask('${t.id}')}"
+             title="Delete permanently" style="cursor:pointer;color:var(--text-muted);font-size:15px;line-height:1;padding:0 4px">×</span>`
+        : ''}
     </div>`;
-  }).join('');
+  };
+
+  const active  = tasks.filter(t => t.active !== false);
+  const standby = tasks.filter(t => t.active === false);
+
+  el.innerHTML =
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:4px">On your daily card (${active.length})</div>` +
+    (active.length ? active.map(row).join('')
+      : '<div style="font-size:10px;color:var(--text-muted);font-style:italic;padding:4px 0 8px">Nothing active — switch something on below.</div>') +
+    `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:12px 0 4px">Standby (${standby.length})</div>
+     <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">Available, not nagging you. Tap <b>Standby</b> to switch one on.</div>` +
+    standby.map(row).join('');
 }
 
 function _submitQolAdd() {
@@ -10176,292 +10277,8 @@ function renderDayNotes(dateStr) {
   if (host) host.innerHTML = buildDayNotesHtml(dateStr);
 }
 
-// ══════════════════════════════════════════════════════════════
-// QUALITY-OF-LIFE TASKS  (task #14, 2026-08-18)
-// ══════════════════════════════════════════════════════════════
-// A library of common recurring tasks Craig can switch ACTIVE or STANDBY, with
-// cadence so weekly items check off once a week instead of nagging daily.
-//
-// One row holds both the definition and the last completion, so "is it due" is
-// simply last_done + cadence_days <= today. Daily, every-N-days and weekly all
-// use the same comparison rather than three code paths.
-//
-// Design rules carried from the rest of the app:
-//   • STANDBY, not delete. Life phases change; a task you're not doing this month
-//     shouldn't have to be recreated from scratch in September.
-//   • Only DUE tasks are shown by default. A list of twelve things with eight
-//     already ticked is visual noise, and a permanent list of everything you
-//     could be doing reads as a standing accusation.
-//   • Dates written with ds() — local, never UTC. See today's timezone bug.
-const QOL_LIBRARY = [
-  // Daily
-  { label:'Vitamins / supplements', icon:'💊', cadence:1 },
-  { label:'Drink water',            icon:'💧', cadence:1 },
-  { label:'Floss',                  icon:'🦷', cadence:1 },
-  { label:'Get outside',            icon:'🌤️', cadence:1 },
-  { label:'Meditate / sit quietly', icon:'🧘', cadence:1 },
-  { label:'Read something',         icon:'📖', cadence:1 },
-  { label:'Tidy the kitchen',       icon:'🧽', cadence:1 },
-  { label:'Screens off by 10',      icon:'📱', cadence:1 },
-  { label:'Check in with the kids', icon:'💬', cadence:1 },
-  // Every few days
-  { label:'Laundry',                icon:'🧺', cadence:3 },
-  { label:'Meal prep',              icon:'🍱', cadence:3 },
-  { label:'Groceries',              icon:'🛒', cadence:4 },
-  // Weekly
-  { label:'Change the sheets',      icon:'🛏️', cadence:7 },
-  { label:'Vacuum',                 icon:'🧹', cadence:7 },
-  { label:'Water the plants',       icon:'🪴', cadence:7 },
-  { label:'Call parents',           icon:'📞', cadence:7 },
-  { label:'Plan the week',          icon:'🗓️', cadence:7 },
-  { label:'Weigh-in review',        icon:'⚖️', cadence:7 },
-  { label:'Bins out',               icon:'🗑️', cadence:7 },
-  // Longer
-  { label:'Pay bills',              icon:'💳', cadence:14 },
-  { label:'Wash the car',           icon:'🚗', cadence:14 },
-  { label:'Deep clean bathroom',    icon:'🚿', cadence:14 },
-  { label:'Back up photos',         icon:'📷', cadence:30 },
-  { label:'Review subscriptions',   icon:'🔁', cadence:90 },
-];
-
-let QOL_TASKS = [];
-
-function _qolSaveLocal() {
-  try { localStorage.setItem('qol_tasks', JSON.stringify(QOL_TASKS)); } catch (e) {}
-}
-function _qolLoadLocal() {
-  try { QOL_TASKS = JSON.parse(localStorage.getItem('qol_tasks') || '[]'); }
-  catch (e) { QOL_TASKS = []; }
-}
-async function qolFetch() {
-  if (!sbReady) return;
-  try {
-    const { data, error } = await sb.from('qol_tasks').select('*');
-    if (error) throw error;
-    if (data && data.length) {
-      QOL_TASKS = data.map(r => ({
-        client_id: r.client_id, label: r.label, icon: r.icon,
-        cadence: r.cadence_days, active: r.active, last_done: r.last_done,
-      }));
-      _qolSaveLocal();
-      renderQolTasks();
-    }
-  } catch (e) { console.warn('qol fetch failed', e); }
-}
-function _qolSync(t) {
-  if (!sbReady) return;
-  sb.from('qol_tasks').upsert([{
-    client_id: t.client_id, label: t.label, icon: t.icon,
-    cadence_days: t.cadence, active: t.active, last_done: t.last_done || null,
-  }], { onConflict: 'user_id,client_id' })
-    .then(r => { if (r && r.error) console.warn('qol sync failed', r.error); });
-}
-
-// Days until due. <= 0 means due now; null last_done means never done, so due.
-function qolDaysUntilDue(t) {
-  if (!t.last_done) return 0;
-  const done = new Date(t.last_done + 'T00:00:00');
-  const today = new Date(ds(new Date()) + 'T00:00:00');
-  const elapsed = Math.round((today - done) / 86400000);
-  return t.cadence - elapsed;
-}
-function qolIsDue(t) { return t.active && qolDaysUntilDue(t) <= 0; }
-
-function qolComplete(clientId) {
-  const t = QOL_TASKS.find(x => x.client_id === clientId);
-  if (!t) return;
-  // Toggle: tapping a just-completed task undoes it, for the inevitable mis-tap.
-  t.last_done = (t.last_done === ds(new Date())) ? null : ds(new Date());
-  _qolSaveLocal(); _qolSync(t); renderQolTasks();
-}
-function qolToggleActive(clientId) {
-  const t = QOL_TASKS.find(x => x.client_id === clientId);
-  if (!t) return;
-  t.active = !t.active;
-  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
-}
-// CHANGED 2026-08-18 per Craig: the original model was add-from-library /
-// remove-from-list, which meant removing a task made it vanish entirely instead
-// of returning to the suggestions. He wanted the simpler mental model — every
-// suggested task always EXISTS, sitting on standby, and you just flip it active.
-//
-// So the library is seeded as standby rows rather than being an "add" menu.
-// client_id is derived from the label (not random) so the same library task gets
-// the same id on every device and doesn't duplicate when two devices sync.
-function _qolSlug(label) {
-  return 'qol-lib-' + label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-function _qolEnsureLibrary() {
-  let added = false;
-  QOL_LIBRARY.forEach(lib => {
-    const cid = _qolSlug(lib.label);
-    if (QOL_TASKS.some(t => t.client_id === cid)) return;
-    QOL_TASKS.push({ client_id: cid, label: lib.label, icon: lib.icon,
-                     cadence: lib.cadence, active: false, last_done: null, from_library: true });
-    added = true;
-  });
-  if (added) _qolSaveLocal();
-  return added;
-}
-// CHANGED 2026-08-18 (second correction): removing ANYTHING now sends it to
-// standby. The previous version deleted custom tasks outright while library ones
-// dropped to standby — a distinction Craig never asked for and which caught him
-// out immediately ("removed do-the-dishes, it didn't appear at the bottom").
-//
-// One rule, no exceptions: switching a task off always means standby. Permanent
-// deletion is a separate, deliberate action available only from the standby list,
-// so it can't happen by reflex while tidying up an active list.
-function qolDelete(clientId) {
-  const t = QOL_TASKS.find(x => x.client_id === clientId);
-  if (!t) return;
-  if (!confirm('Delete "' + t.label + '" permanently?\n\nIt will not come back. To keep it available for later, leave it on standby instead.')) return;
-  QOL_TASKS = QOL_TASKS.filter(x => x.client_id !== clientId);
-  _qolSaveLocal();
-  if (sbReady) sb.from('qol_tasks').delete().eq('client_id', clientId)
-    .then(r => { if (r && r.error) console.warn('qol delete failed', r.error); });
-  renderQolManage(); renderQolTasks();
-}
-function qolAddCustom() {
-  const inp = document.getElementById('qol-custom-label');
-  const cad = document.getElementById('qol-custom-cadence');
-  const label = (inp ? inp.value : '').trim();
-  if (!label) return;
-  const t = { client_id: 'qol-' + Date.now() + '-' + Math.random().toString(36).slice(2,7),
-              label: label, icon: '✅', cadence: parseInt(cad ? cad.value : '1', 10) || 1,
-              active: true, last_done: null };
-  QOL_TASKS.push(t);
-  if (inp) inp.value = '';
-  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
-}
-function qolSetCadence(clientId, days) {
-  const t = QOL_TASKS.find(x => x.client_id === clientId);
-  if (!t) return;
-  t.cadence = parseInt(days, 10) || 1;
-  _qolSaveLocal(); _qolSync(t); renderQolManage(); renderQolTasks();
-}
-
-function _qolCadenceLabel(d) {
-  if (d === 1) return 'daily';
-  if (d === 7) return 'weekly';
-  if (d === 14) return 'every 2 weeks';
-  if (d === 30) return 'monthly';
-  if (d === 90) return 'quarterly';
-  return 'every ' + d + ' days';
-}
-
-// ── The strip on the daily view ───────────────────────────────
-function renderQolTasks() {
-  const host = document.getElementById('qol-host');
-  if (!host) return;
-  const active = QOL_TASKS.filter(t => t.active);
-  const due = active.filter(qolIsDue);
-  const doneToday = active.filter(t => t.last_done === ds(new Date()));
-
-  if (!active.length) {
-    host.innerHTML = `<div class="notes-section">
-      <div class="notes-label">🔁 Recurring</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Nothing set up yet.</div>
-      <button onclick="openQolManage()" style="padding:6px 12px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:10.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ Choose tasks</button>
-    </div>`;
-    return;
-  }
-
-  const rows = due.map(t => `
-    <div onclick="qolComplete('${t.client_id}')"
-      style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--divider);cursor:pointer">
-      <div style="width:17px;height:17px;border-radius:5px;border:1.5px solid var(--card-border);flex-shrink:0"></div>
-      <span style="font-size:13px">${t.icon}</span>
-      <span style="flex:1;font-size:11.5px;color:var(--text)">${t.label}</span>
-      <span style="font-size:9px;color:var(--text-muted)">${_qolCadenceLabel(t.cadence)}</span>
-    </div>`).join('');
-
-  // Completed items collapse to a single quiet line rather than a list of ticks.
-  const doneLine = doneToday.length
-    ? `<div style="font-size:10px;color:var(--green);padding:6px 4px 0">✓ ${doneToday.map(t => t.icon).join(' ')} done today${doneToday.length > 1 ? ` (${doneToday.length})` : ''} <span style="color:var(--text-muted);cursor:pointer;text-decoration:underline" onclick="qolUndoLast()">undo</span></div>`
-    : '';
-
-  host.innerHTML = `<div class="notes-section">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <div class="notes-label" style="margin:0">🔁 Recurring${due.length ? ` (${due.length})` : ''}</div>
-      <button onclick="openQolManage()" style="background:none;border:none;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit;text-decoration:underline">manage</button>
-    </div>
-    ${due.length ? rows : '<div style="font-size:10.5px;color:var(--green);padding:4px 0">✓ Nothing due today.</div>'}
-    ${doneLine}
-  </div>`;
-}
-function qolUndoLast() {
-  const today = ds(new Date());
-  const done = QOL_TASKS.filter(t => t.last_done === today);
-  if (!done.length) return;
-  const t = done[done.length - 1];
-  t.last_done = null;
-  _qolSaveLocal(); _qolSync(t); renderQolTasks();
-}
-
-// ── Manage popup ──────────────────────────────────────────────
-function openQolManage() {
-  const bd = document.getElementById('qol-backdrop');
-  if (bd) bd.classList.add('open');
-  renderQolManage();
-}
-function closeQolManage() {
-  const bd = document.getElementById('qol-backdrop');
-  if (bd) bd.classList.remove('open');
-}
-function renderQolManage() {
-  const body = document.getElementById('qol-manage-body');
-  if (!body) return;
-  const cadOpts = [1,2,3,4,7,14,30,90];
-
-  _qolEnsureLibrary();
-
-  const row = t => `
-    <div style="display:flex;align-items:center;gap:7px;padding:7px 4px;border-bottom:1px solid var(--divider);${t.active ? '' : 'opacity:0.55'}">
-      <button onclick="qolToggleActive('${t.client_id}')"
-        title="${t.active ? 'Move to standby' : 'Make active'}"
-        style="padding:3px 9px;border-radius:12px;border:1px solid ${t.active ? 'var(--green-border)' : 'var(--card-border)'};background:${t.active ? 'var(--green-bg)' : 'var(--input-bg)'};color:${t.active ? 'var(--green)' : 'var(--text-muted)'};font-size:9px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0;min-width:56px">${t.active ? 'Active' : 'Standby'}</button>
-      <span style="font-size:13px">${t.icon}</span>
-      <span style="flex:1;min-width:0;font-size:11px;color:${t.active ? 'var(--text)' : 'var(--text-muted)'}">${t.label}</span>
-      <select onchange="qolSetCadence('${t.client_id}', this.value)"
-        style="padding:3px 5px;border-radius:5px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text-dim);font-size:9.5px;font-family:inherit">
-        ${cadOpts.map(c => `<option value="${c}" ${t.cadence === c ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
-      </select>
-      ${(t.active || t.client_id.indexOf('qol-lib-') === 0) ? '' :
-        `<button onclick="qolDelete('${t.client_id}')" title="Delete permanently"
-          style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 2px">×</button>`}
-    </div>`;
-
-  // Active first, then standby. One list, not two sections — the only difference
-  // between a suggestion and a task you're doing is which way the toggle points.
-  const active  = QOL_TASKS.filter(t => t.active);
-  const standby = QOL_TASKS.filter(t => !t.active);
-
-  body.innerHTML = `
-    ${active.length ? `<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:4px">Active (${active.length})</div>${active.map(row).join('')}` : ''}
-    <div style="margin-top:${active.length ? 14 : 0}px">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">Standby (${standby.length})</div>
-      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:6px">Tap <b>Standby</b> to switch one on. Nothing here is nagging you — it's just available.</div>
-      ${standby.map(row).join('')}
-    </div>
-    <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--divider)">
-      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:5px">Or add your own</div>
-      <div style="display:flex;gap:6px">
-        <input type="text" id="qol-custom-label" placeholder="e.g. sharpen the kitchen knives"
-          onkeydown="if(event.key==='Enter')qolAddCustom()"
-          style="flex:1;min-width:0;padding:7px 9px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
-        <select id="qol-custom-cadence" style="padding:7px 5px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:10px;font-family:inherit">
-          ${cadOpts.map(c => `<option value="${c}" ${c === 7 ? 'selected' : ''}>${_qolCadenceLabel(c)}</option>`).join('')}
-        </select>
-        <button onclick="qolAddCustom()" style="padding:7px 12px;border-radius:6px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Add</button>
-      </div>
-    </div>
-    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:12px;border-top:1px solid var(--divider);padding-top:8px">
-      <b style="color:var(--text-dim)">Switching a task off never deletes it.</b> It drops to the standby list below, ready whenever you want it back — including ones you added yourself.
-      To remove a custom task for good, set it to standby first, then use the <b>×</b> that appears there.
-      <br><br>Only tasks that are <b>due</b> appear on the daily view, so a weekly job stays out of the way for the other six days.
-    </div>`;
-}
-
+// Duplicate QoL implementation removed 2026-08-19 — merged into the original
+// Settings-based system (see getQolTasks / renderQolTasksList).
 // ══════════════════════════════════════════════════════════════
 // PWA — SERVICE WORKER REGISTRATION  (task #11, 2026-08-18)
 // ══════════════════════════════════════════════════════════════
@@ -11246,6 +11063,1054 @@ function renderMusclePicker() {
 }
 
 // ══════════════════════════════════════════════════════════════
+// TRAINING PLAN, EQUIPMENT + VOLUME GUIDANCE  (2026-08-19)
+// ══════════════════════════════════════════════════════════════
+// Craig asked the app to hold the exercise-science knowledge so he doesn't have
+// to learn it. The rules below are the compressed version. Stated plainly so a
+// future session can argue with the reasoning rather than just the numbers:
+//
+// • SETS PER MUSCLE PER WEEK is the unit that matters, not per session.
+//   ~10-20/wk drives growth in someone eating and sleeping well. Craig is in a
+//   deficit on ~6.8h sleep at 44, so 6-10 is the honest band — enough to
+//   preserve and slowly build, not so much that recovery becomes the limiter.
+//
+// • FREQUENCY beats volume at his training frequency. A muscle trained 2x/week
+//   beats 1x at matched volume. At 1-2 sessions he should train FULL BODY every
+//   session; upper/lower splits only make sense at 4+ sessions.
+//
+// • RECOVERY is his limiter, not stimulus. More sets won't produce more result.
+//   Every "do more" suggestion is bounded; the app never says "one more" past
+//   the point it stops buying anything.
+//
+// • RECOMP is realistic for him and won't stay that way — untrained, body fat to
+//   spend, newly consistent. That window closes as he becomes trained.
+//
+// Custody drives session KIND: kids present (custody 'C') = home/kettlebell,
+// kids away ('L') = gym. That's what turns 2 sessions a week into ~4.
+const EQUIPMENT_OPTIONS = [
+  { id:'kb',            label:'Kettlebells',    icon:'🔔' },
+  { id:'db',            label:'Dumbbells',      icon:'🏋️' },
+  { id:'bar',           label:'Barbell',        icon:'🏋️' },
+  { id:'bench_flat',    label:'Flat bench',     icon:'🛋️' },
+  { id:'bench_incline', label:'Incline bench',  icon:'🛋️' },
+  { id:'bench_decline', label:'Decline bench',  icon:'🛋️' },
+  { id:'rack',          label:'Squat rack',     icon:'🗜️' },
+  { id:'pullup',        label:'Pull-up bar',    icon:'🚪' },
+  { id:'bands',         label:'Resistance bands', icon:'➰' },
+  { id:'machine',       label:'Machines',       icon:'⚙️' },
+  { id:'cable',         label:'Cable stack',    icon:'🔗' },
+  { id:'rower',         label:'Rower',          icon:'🚣' },
+  { id:'bike',          label:'Bike',           icon:'🚴' },
+  { id:'mat',           label:'Mat',            icon:'🧘' },
+];
+
+const TRAINING_PHASES = [
+  { id:'foundation', label:'Foundation', desc:'Movement quality, single-leg, carries, core. Builds the base and protects the ankle, shoulder and finger.' },
+  { id:'recomp',     label:'Recomp',     desc:'Slow cut with muscle gain. Full body twice a week, progressive overload.' },
+  { id:'definition', label:'Definition', desc:'Cut resumes, with more muscle underneath to reveal.' },
+  { id:'maintain',   label:'Maintain',   desc:'Hold what you have. Lower volume, no deficit.' },
+];
+
+let TRAINING_PLAN = null;
+
+async function loadTrainingPlan() {
+  try { TRAINING_PLAN = JSON.parse(localStorage.getItem('training_plan') || 'null'); } catch (e) {}
+  if (!sbReady) return TRAINING_PLAN;
+  try {
+    const { data } = await sb.from('training_plan').select('*').eq('active', true).limit(1);
+    if (data && data.length) {
+      TRAINING_PLAN = data[0];
+      try { localStorage.setItem('training_plan', JSON.stringify(TRAINING_PLAN)); } catch (e) {}
+    }
+  } catch (e) { console.warn('training plan load failed', e); }
+  if (!TRAINING_PLAN) TRAINING_PLAN = { goal:'functional', phase:'foundation', target_rate:-0.5, sets_min:6, sets_max:10 };
+  return TRAINING_PLAN;
+}
+
+function renderBuildInfo() {
+  const el = document.getElementById('build-info');
+  if (!el) return;
+  const where = IS_DEV ? 'dev URL' : 'production URL';
+  const mismatch = buildMismatch();
+  el.innerHTML =
+    `<b style="color:var(--text-dim)">${BUILD_CHANNEL === 'dev' ? 'DEV' : 'PRODUCTION'} build</b> · v${APP_VERSION}<br>Running at the ${where}` +
+    (mismatch
+      ? `<div style="margin-top:6px;padding:7px 9px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-weight:700;line-height:1.5">⚠ Mismatch — a ${BUILD_CHANNEL} build is being served from the ${where}. The wrong file was uploaded.</div>`
+      : '');
+}
+
+function renderTrainingSettings() {
+  const el = document.getElementById('training-settings-body');
+  if (!el) return;
+  const plan = TRAINING_PLAN || { phase:'foundation', sets_min:6, sets_max:10 };
+
+  const phases = TRAINING_PHASES.map(p => {
+    const on = plan.phase === p.id;
+    return `<div onclick="setTrainingPhase('${p.id}')"
+      style="padding:8px 10px;border-radius:7px;border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};margin-bottom:4px;cursor:pointer">
+      <div style="font-size:11.5px;font-weight:700;color:${on ? 'var(--green)' : 'var(--text)'}">${on ? '● ' : ''}${p.label}</div>
+      <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45;margin-top:2px">${p.desc}</div>
+    </div>`;
+  }).join('');
+
+  const equipRow = loc => EQUIPMENT_OPTIONS.map(o => {
+    const on = getEquipment(loc).indexOf(o.id) !== -1;
+    return `<button onclick="toggleEquipment('${loc}','${o.id}')"
+      style="padding:5px 8px;border-radius:13px;border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};color:${on ? 'var(--green)' : 'var(--text-muted)'};font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;margin:2px">${o.icon} ${o.label}</button>`;
+  }).join('');
+
+  const d = isDiscreet();
+  el.innerHTML = `
+    <div style="font-size:10px;color:var(--text-muted);margin-bottom:6px">Phase — change it when you're ready.</div>
+    ${phases}
+
+    <div style="margin-top:14px">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:3px">🏠 At home</div>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:5px">Used on days the kids are with you. Nothing ticked means bodyweight only.</div>
+      <div style="display:flex;flex-wrap:wrap">${equipRow('home')}</div>
+    </div>
+
+    <div style="margin-top:12px">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);margin-bottom:3px">🏢 At the gym</div>
+      <div style="font-size:9.5px;color:var(--text-muted);margin-bottom:5px">Leave everything unticked to see all options — sensible while you're still trying gyms.</div>
+      <div style="display:flex;flex-wrap:wrap">${equipRow('gym')}</div>
+    </div>
+
+    <div onclick="setDiscreet(${!d})"
+      style="margin-top:14px;padding:10px;border-radius:7px;border:1px solid ${d ? 'var(--purple-border)' : 'var(--card-border)'};background:${d ? 'var(--purple-bg)' : 'var(--input-bg)'};cursor:pointer">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:16px;height:16px;border-radius:4px;flex-shrink:0;border:1.5px solid ${d ? 'var(--purple)' : 'var(--card-border)'};background:${d ? 'var(--purple-bg)' : 'transparent'};color:var(--purple);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${d ? '✓' : ''}</div>
+        <span style="font-size:11.5px;font-weight:700;color:${d ? 'var(--purple)' : 'var(--text)'}">Discreet mode</span>
+      </div>
+      <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:5px">
+        Neutral exercise names, medications shown as initials, body log collapsed by default.
+        For using the app in a gym, a coffee shop, or around people.
+      </div>
+    </div>`;
+}
+
+function setTrainingPhase(phase) {
+  if (!TRAINING_PLAN) TRAINING_PLAN = { goal:'functional', target_rate:-0.5, sets_min:6, sets_max:10 };
+  TRAINING_PLAN.phase = phase;
+  try { localStorage.setItem('training_plan', JSON.stringify(TRAINING_PLAN)); } catch (e) {}
+  if (sbReady) sb.from('training_plan').update({ phase: phase }).eq('active', true).then(() => {});
+  if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
+}
+
+// ── Equipment ─────────────────────────────────────────────────
+function getEquipment(loc) {
+  const e = (USER_PROFILE && USER_PROFILE.equipment) || { home: [], gym: [] };
+  return (e[loc] || []);
+}
+function toggleEquipment(loc, id) {
+  if (!USER_PROFILE) return;
+  const e = USER_PROFILE.equipment || { home: [], gym: [] };
+  const list = (e[loc] || []).slice();
+  const i = list.indexOf(id);
+  if (i >= 0) list.splice(i, 1); else list.push(id);
+  e[loc] = list;
+  USER_PROFILE.equipment = e;
+  try { localStorage.setItem('user_profile_cache', JSON.stringify(USER_PROFILE)); } catch (err) {}
+  if (sbReady) sb.from('user_profiles').update({ equipment: e }).eq('id', USER_PROFILE.id).then(() => {});
+  renderTrainingSettings();
+}
+
+// Where is he training today? Kids present = home. This is the whole mechanism
+// behind raising his weekly frequency without needing more gym time.
+function sessionLocationFor(dateStr) {
+  if (typeof custodyType !== 'function') return 'gym';
+  return custodyType(dateStr) === 'C' ? 'home' : 'gym';
+}
+// Filter EX_LIB by what's actually available at that location.
+// Empty HOME list = bodyweight only. Empty GYM list = no filtering (see migration).
+function equipmentFilterFor(loc) {
+  const owned = getEquipment(loc);
+  if (loc === 'gym' && !owned.length) return null;
+  const allow = owned.slice();
+  allow.push('bw');                      // bodyweight always available
+  return allow;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STRENGTH SCORE — comparing across different exercises (2026-08-19)
+// ══════════════════════════════════════════════════════════════
+// Craig: "so I can tell if I'm doing similar (but different) exercises for a
+// muscle, if I'm improving."
+//
+// The problem: 130 lbs on a machine press, 130 on dumbbells and 15 push-ups are
+// not the same effort, so "is my chest getting stronger" is unanswerable if the
+// exercise varies — and it should vary.
+//
+// Two steps:
+//
+// 1. ESTIMATED 1RM collapses weight × reps into one number (Epley:
+//    w × (1 + r/30)). 130×9 = 169 and 120×12 = 168 — near-identical effort,
+//    correctly identified as such.
+//
+// 2. AN EQUIPMENT COEFFICIENT normalises across variants. A machine stabilises
+//    the load, so more weight moves for the same muscular demand; free weights
+//    make you stabilise it yourself.
+//
+// HONEST LIMITS, and they matter: these coefficients approximate a genuinely
+// messy thing. This will NOT give a true 1RM and cannot compare Craig to anyone
+// else. What it does reliably is track ONE person's trend over time, which is
+// the actual question. Don't let this number grow into a leaderboard.
+const EQUIP_COEF = {
+  machine: 0.90,   // fixed path; the seat and pad do the stabilising
+  cable:   0.95,   // constant tension, some stabilisation demand
+  bar:     1.05,   // both limbs together, but you own the bar path
+  db:      1.15,   // each side stabilises independently
+  kb:      1.15,   // offset load, same reason
+  bw:      1.00,   // load is bodyweight; leverage varies, treated as neutral
+};
+
+// Only movements that genuinely have variants need grouping. Everything else is
+// its own movement and needs no entry here.
+const MOVEMENT_GROUPS = {
+  chest_press:  ['Chest press (machine)','Dumbbell bench press','Incline dumbbell press','Kettlebell floor press','Smith machine bench','Push-up','Incline push-up','Decline push-up'],
+  chest_fly:    ['Cable chest fly'],
+  row:          ['Seated row (machine)','Cable row','Dumbbell single-arm row','Chest-supported row','Kettlebell bent-over row','Kettlebell renegade row','Inverted row'],
+  pulldown:     ['Lat pulldown','Straight-arm pulldown','Assisted pull-up','Chin-up','Kettlebell pullover'],
+  shoulder_press:['Machine shoulder press','Kettlebell strict press','Pike push-up'],
+  lateral_raise:['Dumbbell lateral raise','Cable lateral raise','Front raise'],
+  rear_delt:    ['Rear delt fly (machine)','Cable face pull','Bent-over dumbbell fly','Kettlebell high pull','Prone Y-T-W raise'],
+  curl:         ['Dumbbell curl','Cable curl','Hammer curl','Bicep curl (machine)','Kettlebell curl','21s (7-7-7 barbell curl)','21s (dumbbell version)'],
+  tricep_ext:   ['Cable rope pushdown','Overhead cable extension','Tricep press (machine)','Dumbbell skull crusher','Kettlebell overhead extension','Close-grip push-up','Bench dip','Diamond push-up'],
+  squat:        ['Leg press','Goblet squat','Bodyweight / box squat','Smith machine squat','Kettlebell front squat','Bulgarian split squat','Step-up','Wall sit'],
+  hinge:        ['Kettlebell Romanian deadlift','Dumbbell Romanian deadlift','Kettlebell single-leg deadlift','Kettlebell sumo deadlift','Kettlebell swing','Nordic curl (assisted)'],
+  leg_curl:     ['Leg curl (machine)'],
+  leg_ext:      ['Leg extension'],
+  glute:        ['Hip thrust','Glute bridge','Single-leg glute bridge','Cable kickback','Hip abductor (machine)'],
+  calf:         ['Calf raise (machine)','Standing calf raise','Kettlebell calf raise'],
+};
+
+function movementFor(exName) {
+  for (const mv in MOVEMENT_GROUPS) {
+    if (MOVEMENT_GROUPS[mv].indexOf(exName) !== -1) return mv;
+  }
+  return 'x_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_');
+}
+function variantsOf(movementId) {
+  const names = MOVEMENT_GROUPS[movementId] || [];
+  return EX_LIB.filter(e => names.indexOf(e.name) !== -1);
+}
+
+function e1RM(weight, reps) {
+  if (!weight || !reps) return 0;
+  if (reps === 1) return weight;
+  return weight * (1 + reps / 30);          // Epley
+}
+
+// ── The dumbbell trap ─────────────────────────────────────────
+// With two dumbbells you naturally enter the PER-HAND weight (45), not the total
+// (90). Score that raw and every switch from machine to free weights looks like
+// a strength drop — silently corrupting the exact trend this exists to measure.
+//
+// So bilateral two-implement work doubles the entered weight. It's per-EXERCISE,
+// not per-equipment: single-arm rows, suitcase carries and single-leg deadlifts
+// are genuinely one-sided and must NOT be doubled.
+const UNILATERAL_HINTS = ['single-arm', 'single-leg', 'suitcase', 'each side', 'each leg', 'split squat', 'step-up', 'renegade', 'windmill', 'get-up'];
+function isPerSideLoaded(ex) {
+  if (!ex) return false;
+  if (ex.equip !== 'db' && ex.equip !== 'kb') return false;
+  const n = (ex.name || '').toLowerCase();
+  return !UNILATERAL_HINTS.some(h => n.indexOf(h) !== -1);
+}
+// Weight actually moved, from what he typed.
+function effectiveWeight(weight, ex) {
+  return isPerSideLoaded(ex) ? weight * 2 : weight;
+}
+
+function strengthScore(weight, reps, equipOrEx) {
+  const ex = (equipOrEx && typeof equipOrEx === 'object') ? equipOrEx : null;
+  const equip = ex ? ex.equip : equipOrEx;
+  const coef = EQUIP_COEF[equip] !== undefined ? EQUIP_COEF[equip] : 1.0;
+  const w = ex ? effectiveWeight(weight, ex) : weight;
+  return Math.round(e1RM(w, reps) * coef);
+}
+// Best normalised score for a muscle on a given day.
+function bestScoreForMuscleOn(dateStr, muscleId) {
+  let sets = {};
+  try { sets = JSON.parse(localStorage.getItem('exsets_' + dateStr) || '{}'); } catch (e) {}
+  let best = 0;
+  Object.keys(sets).forEach(k => {
+    if (k.indexOf('gymex_') !== 0) return;
+    const ex = EX_LIB.find(e => 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') === k);
+    if (!ex || ex.m !== muscleId) return;
+    const entries = (sets[k] && sets[k].entries) || [];
+    entries.forEach(en => {
+      const s = strengthScore(en.w, en.r, ex);
+      if (s > best) best = s;
+    });
+  });
+  return best;
+}
+// Trend of best score per muscle across recent weeks.
+function getMuscleTrend(muscleId, weeks) {
+  weeks = weeks || 8;
+  const out = [];
+  const today = new Date();
+  for (let w = weeks - 1; w >= 0; w--) {
+    let best = 0, label = '';
+    for (let d = 0; d < 7; d++) {
+      const dt = new Date(today);
+      dt.setDate(dt.getDate() - (w * 7 + d));
+      const dStr = ds(dt);
+      if (!label) label = dStr;
+      const s = bestScoreForMuscleOn(dStr, muscleId);
+      if (s > best) best = s;
+    }
+    if (best) out.push({ week: label, score: best });
+  }
+  return out;
+}
+
+// "Is this working?" — the question Craig actually wants answered, phrased so a
+// good answer is said OUT LOUD rather than only flagging problems.
+function progressVerdict(muscleId) {
+  const t = getMuscleTrend(muscleId, 8);
+  if (t.length < 2) return { tone:'', text:'Not enough logged yet to see a trend. A few more sessions.' };
+  const first = t[0].score, last = t[t.length - 1].score;
+  const pct = first ? Math.round(((last - first) / first) * 100) : 0;
+  if (pct >= 5) {
+    return { tone:'green', text:`Up ${pct}% over ${t.length} weeks. It's working — keep doing what you're doing.` };
+  }
+  if (pct <= -5) {
+    return { tone:'orange', text:`Down ${Math.abs(pct)}% over ${t.length} weeks. In a deficit that can just be fatigue — check sleep and protein before changing the training.` };
+  }
+  // Flat. Distinguish "too early to tell" from a genuine stall.
+  if (t.length >= 4) {
+    return { tone:'orange', text:`Flat for ${t.length} weeks. Time to change something — add a set, add weight, or switch the variant.` };
+  }
+  return { tone:'', text:`Holding steady. Give it a couple more weeks before reading anything into it.` };
+}
+
+// Craig: "When I've done the same exercise at the same place a few times,
+// suggest a variant?" Rotation spreads joint stress and keeps things fresh —
+// though it matters far less than progressive overload, so this SUGGESTS and
+// never nags.
+function variantSuggestion(exName, loc) {
+  let count = 0;
+  const today = new Date();
+  const key = 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  for (let i = 0; i < 28; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    let sets = {};
+    try { sets = JSON.parse(localStorage.getItem('exsets_' + ds(d)) || '{}'); } catch (e) {}
+    if (sets[key] && ((sets[key].entries || []).length || sets[key].sets)) count++;
+  }
+  if (count < 3) return null;
+  const mv = movementFor(exName);
+  const allow = equipmentFilterFor(loc);
+  const alts = variantsOf(mv).filter(e => e.name !== exName && (!allow || allow.indexOf(e.equip) !== -1));
+  if (!alts.length) return null;
+  const pick = alts[Math.floor(Math.random() * alts.length)];
+  return { text:`That's ${count} sessions on this one. Try ${pick.name} for a change — same movement, different stress.`, name: pick.name };
+}
+
+// ── Volume: sets per muscle over the trailing 7 days ──────────
+function getWeeklyMuscleVolume() {
+  const out = {};
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const dStr = ds(d);
+    let sets = {};
+    try { sets = JSON.parse(localStorage.getItem('exsets_' + dStr) || '{}'); } catch (e) {}
+    Object.keys(sets).forEach(k => {
+      if (k.indexOf('gymex_') !== 0) return;
+      const data = sets[k] || {};
+      const n = Array.isArray(data.entries) ? data.entries.length : (parseInt(data.sets) || 0);
+      if (!n) return;
+      const ex = EX_LIB.find(e => 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') === k);
+      if (!ex) return;
+      out[ex.m] = (out[ex.m] || 0) + n;
+    });
+  }
+  return out;
+}
+
+// The guidance Craig asked for — "you've done enough", "one more", "stop".
+// Bounded on purpose: it will never encourage volume past the point it stops
+// buying anything, because his limiter is recovery.
+function setGuidance(muscleId, setsThisSession) {
+  const plan = TRAINING_PLAN || { sets_min: 6, sets_max: 10 };
+  const weekly = getWeeklyMuscleVolume()[muscleId] || 0;
+  if (weekly >= plan.sets_max) {
+    return { tone:'green', text:`That muscle's had ${weekly} sets this week — it's covered. Pick something else.` };
+  }
+  if (setsThisSession >= 5) {
+    return { tone:'orange', text:`Five sets in one go. Past this the extra sets aren't buying much — recovery is your limiter, not effort.` };
+  }
+  if (setsThisSession >= 3) {
+    return { tone:'green', text:`Three sets is the dose. More is optional, not better.` };
+  }
+  if (setsThisSession > 0) {
+    return { tone:'', text:`${weekly + setsThisSession} sets this week. Aiming for ${plan.sets_min}-${plan.sets_max} across the week.` };
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SESSION LOGGER  (task #16, 2026-08-19)
+// ══════════════════════════════════════════════════════════════
+// Craig: "I pick an exercise — fly on a machine — that's all I'm doing. It should
+// go full screen, set 1 weight/reps, timer, set 2, timer... then pick the next
+// exercise, or be suggested one."
+//
+// The old manual chart is a SPREADSHEET — 22 rows of tiny inputs. That's a review
+// interface. This is a DOING interface: one exercise, full screen, set by set.
+// The spreadsheet stays for fixing what got mistyped.
+//
+// Two decisions Craig made that shape everything here, both against the
+// recommendation, both right:
+//
+//  • MANUAL rest timer. An auto-timer fires while you're changing plates or
+//    talking to someone, and you learn to ignore it. He taps it when he actually
+//    starts resting.
+//  • A session PLAN he authors upfront (3-4 muscle groups) rather than the app
+//    picking. Read together: he accepts structure HE authored and rejects the app
+//    acting on his behalf mid-set. Do not "helpfully" automate inside a set.
+//
+// Sets are appended, never slotted — "add another set" is him saying "I'm going
+// again, here's the weight, here's the reps." The suggested count is a hint that
+// gates nothing.
+//
+// Set rows are stored INDIVIDUALLY (weight/reps/flag each) because Craig
+// auto-regulates around his shoulder. 130x9, 120x10 (shoulder), 130x8 is a story;
+// "3 sets @ 127 avg" is not.
+let SESSION = null;            // { client_id, date, plan[], done[], status }
+let _sessEx = null;            // exercise key currently open full-screen
+let _sessExName = '';
+
+function _sessSave() {
+  try { localStorage.setItem('workout_session', JSON.stringify(SESSION)); } catch (e) {}
+  if (!SESSION || !sbReady) return;
+  sb.from('workout_sessions').upsert([{
+    client_id: SESSION.client_id, session_date: SESSION.date,
+    plan: SESSION.plan, done: SESSION.done, status: SESSION.status,
+  }], { onConflict: 'user_id,client_id' })
+    .then(r => { if (r && r.error) console.warn('session sync failed', r.error); });
+}
+function _sessLoad() {
+  try { SESSION = JSON.parse(localStorage.getItem('workout_session') || 'null'); }
+  catch (e) { SESSION = null; }
+  // A session is for one day. Yesterday's abandoned plan shouldn't greet him.
+  if (SESSION && SESSION.date !== ds(new Date())) SESSION = null;
+  return SESSION;
+}
+
+function startSession(plan) {
+  SESSION = {
+    client_id: 'ws-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    date: ds(new Date()), plan: plan.slice(), done: [], status: 'active',
+  };
+  _sessSave();
+  renderSessionScreen();
+}
+function finishSession() {
+  if (!SESSION) return;
+  SESSION.status = 'finished';
+  _sessSave();
+  SESSION = null;
+  try { localStorage.removeItem('workout_session'); } catch (e) {}
+  closeSessionScreen();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// ══════════════════════════════════════════════════════════════
+// DISCREET MODE  (2026-08-19)
+// ══════════════════════════════════════════════════════════════
+// Craig: "on my app says 'kegels' so anyone walking by can see what I'm working
+// on. I'd like more discretion."
+//
+// The kegels are the symptom, not the problem. This app also shows medication
+// names, symptom logs, mood check-ins and a custody calendar — and he uses it in
+// gyms, in coffee shops, around his kids, and around his ex-wife's social circle
+// at dance competitions. The realistic exposure is his kids reading the custody
+// grid or someone glancing at a medication list, not a stranger reading "kegels".
+//
+// So this is a MODE covering that whole class, not a rename.
+//
+// NOTE: the kegels stay. Pelvic floor work is genuinely worthwhile for a 44-year-
+// old man — continence, and reasonable evidence for erectile function, relevant
+// given the ED association with daily naproxen already in his notes. The answer
+// is discretion, not deletion. Never quietly drop a useful exercise because its
+// name is awkward.
+const DISCREET_LABELS = {
+  'Kegels': 'Pelvic floor',
+  'Kegel': 'Pelvic floor',
+  'kegels': 'Pelvic floor',
+};
+
+function isDiscreet() {
+  if (USER_PROFILE && USER_PROFILE.discreet_mode !== undefined) return !!USER_PROFILE.discreet_mode;
+  try { return localStorage.getItem('discreet_mode') === '1'; } catch (e) { return false; }
+}
+function setDiscreet(on) {
+  if (USER_PROFILE) USER_PROFILE.discreet_mode = !!on;
+  try { localStorage.setItem('discreet_mode', on ? '1' : '0'); } catch (e) {}
+  if (sbReady && USER_PROFILE) {
+    sb.from('user_profiles').update({ discreet_mode: !!on }).eq('id', USER_PROFILE.id).then(() => {});
+  }
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
+}
+// Neutral label for anything with an awkward name.
+function discreetLabel(name) {
+  if (!isDiscreet()) return name;
+  return DISCREET_LABELS[name] || name;
+}
+// Medication names shortened to an initial in discreet mode — "A." rather than
+// "Allopurinol", which is one search away from a diagnosis.
+function discreetMed(name) {
+  if (!isDiscreet() || !name) return name;
+  return name.trim().charAt(0).toUpperCase() + '.';
+}
+
+// ══════════════════════════════════════════════════════════════
+// UNIFIED ACTIVITY LOG  (2026-08-19)
+// ══════════════════════════════════════════════════════════════
+// One write path for every kind of effort — a set of chest press, a 1km rowing
+// interval, a 30-second hamstring hold. Same shape: bounded effort, optional
+// load, optional duration, rest after.
+//
+// localStorage stays the immediate buffer (gyms have bad signal); Supabase is
+// the record. Before today, lifted sets never left the device at all.
+const ACT_KINDS = ['strength', 'cardio', 'stretch', 'mobility'];
+
+function _actKey(dateStr) { return 'activity_' + dateStr; }
+function getActivity(dateStr) {
+  try { return JSON.parse(localStorage.getItem(_actKey(dateStr)) || '[]'); }
+  catch (e) { return []; }
+}
+function _actSave(dateStr, rows) {
+  try { localStorage.setItem(_actKey(dateStr), JSON.stringify(rows)); } catch (e) {}
+}
+
+// Log one effort. Everything optional except kind + name.
+function logActivity(o) {
+  const dateStr = o.date || ds(new Date());
+  const rows = getActivity(dateStr);
+  const exKey = o.exercise_key || ('ex_' + (o.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''));
+  const setIndex = (o.set_index !== undefined) ? o.set_index
+    : rows.filter(r => r.exercise_key === exKey).length;
+  const row = {
+    client_id: o.client_id || ('al-' + dateStr + '-' + exKey + '-' + setIndex),
+    log_date: dateStr,
+    kind: o.kind || 'strength',
+    movement_id: o.movement_id || (typeof movementFor === 'function' ? movementFor(o.name || '') : ''),
+    exercise_key: exKey,
+    exercise_name: o.name || '',
+    muscle: o.muscle || '',
+    equip: o.equip || '',
+    set_index: setIndex,
+    weight: o.weight ?? null,
+    reps: o.reps ?? null,
+    distance_m: o.distance_m ?? null,
+    duration_s: o.duration_s ?? null,
+    side: o.side || '',
+    rest_s: o.rest_s ?? null,
+    flag: o.flag || '',
+    rpe: o.rpe ?? null,
+    notes: o.notes || '',
+    source: o.source || 'manual',
+    created_at: new Date().toISOString(),
+  };
+  const existing = rows.findIndex(r => r.client_id === row.client_id);
+  if (existing >= 0) rows[existing] = Object.assign({}, rows[existing], row);
+  else rows.push(row);
+  _actSave(dateStr, rows);
+
+  if (sbReady) {
+    const { created_at, ...payload } = row;
+    sb.from('activity_log').upsert([payload], { onConflict: 'user_id,client_id' })
+      .then(r => { if (r && r.error) console.warn('activity sync failed — kept locally', r.error); });
+  }
+  return row;
+}
+
+function removeActivity(dateStr, clientId) {
+  const rows = getActivity(dateStr).filter(r => r.client_id !== clientId);
+  _actSave(dateStr, rows);
+  if (sbReady) sb.from('activity_log').delete().eq('client_id', clientId).then(() => {});
+}
+
+async function fetchActivity(dateStr) {
+  if (!sbReady) return getActivity(dateStr);
+  try {
+    const { data, error } = await sb.from('activity_log').select('*')
+      .eq('log_date', dateStr).order('created_at');
+    if (error) throw error;
+    if (data) { _actSave(dateStr, data); return data; }
+  } catch (e) { console.warn('activity fetch failed', e); }
+  return getActivity(dateStr);
+}
+
+// Weekly totals across ALL kinds — the thing four separate stores made impossible.
+function getWeekLoad() {
+  const out = { strength_sets: 0, cardio_m: 0, cardio_s: 0, stretch_s: 0, byMuscle: {}, days: 0 };
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const rows = getActivity(ds(d));
+    if (rows.length) out.days++;
+    rows.forEach(r => {
+      if (r.kind === 'strength') {
+        out.strength_sets++;
+        if (r.muscle) out.byMuscle[r.muscle] = (out.byMuscle[r.muscle] || 0) + 1;
+      } else if (r.kind === 'cardio') {
+        out.cardio_m += Number(r.distance_m) || 0;
+        out.cardio_s += Number(r.duration_s) || 0;
+      } else {
+        out.stretch_s += Number(r.duration_s) || 0;
+      }
+    });
+  }
+  return out;
+}
+
+// ── Cardio intervals ──────────────────────────────────────────
+// Craig: "rowing, I can do 4 sets of 1km (each set has a timer) with a cool down
+// timer between them." Each interval is its own row, so 4x1km stays
+// distinguishable from one 4km piece.
+const CARDIO_MODES = [
+  { id:'row',       icon:'🚣', label:'Row',       unit:'m',  defDist:1000 },
+  { id:'treadmill', icon:'🏃', label:'Treadmill', unit:'km', defDist:1 },
+  { id:'walk',      icon:'🚶', label:'Walk',      unit:'km', defDist:2 },
+  { id:'run',       icon:'🏃', label:'Run',       unit:'km', defDist:3 },
+  { id:'bike',      icon:'🚴', label:'Bike',      unit:'km', defDist:5 },
+  { id:'swim',      icon:'🏊', label:'Swim',      unit:'m',  defDist:500 },
+  { id:'elliptical',icon:'🔄', label:'Elliptical',unit:'min',defDist:0 },
+  { id:'stairs',    icon:'🪜', label:'Stairs',    unit:'min',defDist:0 },
+];
+
+function logCardioInterval(modeId, distVal, minutes, seconds) {
+  const mode = CARDIO_MODES.find(m => m.id === modeId);
+  if (!mode) return;
+  const meters = mode.unit === 'km' ? (distVal * 1000) : (mode.unit === 'm' ? distVal : 0);
+  const secs = (parseInt(minutes, 10) || 0) * 60 + (parseInt(seconds, 10) || 0);
+  return logActivity({
+    kind: 'cardio', name: mode.label, exercise_key: 'cardio_' + mode.id,
+    movement_id: 'cardio_' + mode.id, equip: mode.id,
+    distance_m: meters || null, duration_s: secs || null,
+  });
+}
+
+// ── Per-set storage ───────────────────────────────────────────
+// localStorage stays the immediate buffer (works offline in a gym basement);
+// each set also upserts to Supabase. Before today, sets NEVER left the device.
+function getSessionSets(exKey) {
+  const dateStr = ds(new Date());
+  return (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+}
+function addSessionSet(exKey, exName, weight, reps, flag) {
+  const dateStr = ds(new Date());
+  const entries = getSessionSets(exKey).slice();
+  const idx = entries.length;
+  entries.push({ w: weight, r: reps, flag: flag || '' });
+
+  // Write through the existing per-set helper so the spreadsheet and every
+  // legacy stats reader keep working — it maintains the aggregate alongside.
+  if (typeof setExSetEntry === 'function') {
+    setExSetEntry(dateStr, exKey, idx, 'w', weight);
+    setExSetEntry(dateStr, exKey, idx, 'r', reps);
+    if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+  }
+  // Same set also lands in the unified activity log, so weekly load, muscle
+  // volume and the day review can see strength work alongside cardio and
+  // stretching without reading three different stores.
+  const exMeta = EX_LIB.find(e => e.name === exName) || {};
+  logActivity({
+    kind: 'strength', name: exName, exercise_key: exKey, set_index: idx,
+    muscle: exMeta.m || '', equip: exMeta.equip || '',
+    weight: weight, reps: reps, flag: flag || '',
+  });
+
+  // Rest belongs to the set BEFORE this one — it's the gap that preceded it.
+  const restedFor = _claimRest(exKey);
+  if (restedFor && idx > 0) {
+    const prev = getActivity(dateStr).find(r => r.exercise_key === exKey && r.set_index === idx - 1);
+    if (prev) logActivity(Object.assign({}, prev, {
+      name: prev.exercise_name, set_index: prev.set_index, rest_s: restedFor,
+    }));
+  }
+  if (SESSION && SESSION.done.indexOf(exKey) === -1) { SESSION.done.push(exKey); _sessSave(); }
+  renderExerciseScreen();
+}
+function removeSessionSet(exKey, idx) {
+  const dateStr = ds(new Date());
+  const all = (typeof getExSets === 'function') ? getExSets(dateStr) : {};
+  const data = all[exKey];
+  if (!data || !Array.isArray(data.entries)) return;
+  data.entries.splice(idx, 1);
+  const first = data.entries[0] || {};
+  data.weight = first.w || 0;
+  data.reps = first.r || 0;
+  data.sets = data.entries.length;
+  try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+  // Removing set 2 of 4 renumbers 3 and 4, so drop this exercise's rows for the
+  // day and re-log the survivors rather than trying to patch indices in place.
+  getActivity(dateStr)
+    .filter(r => r.exercise_key === exKey && r.set_index >= idx)
+    .forEach(r => removeActivity(dateStr, r.client_id));
+  const exMeta = EX_LIB.find(e => e.name === _sessExName) || {};
+  data.entries.slice(idx).forEach((e, i) => {
+    logActivity({
+      kind: 'strength', name: _sessExName, exercise_key: exKey, set_index: idx + i,
+      muscle: exMeta.m || '', equip: exMeta.equip || '',
+      weight: e.w, reps: e.r, flag: e.flag || '',
+    });
+  });
+  renderExerciseScreen();
+}
+
+// Hint only — never gates anything.
+function suggestedSetCount() { return 3; }
+
+// ── Screens ───────────────────────────────────────────────────
+let _sessPlanDraft = [];
+
+function openSessionScreen() {
+  _sessLoad();
+  _sessPlanDraft = SESSION ? SESSION.plan.slice() : [];
+  document.getElementById('session-backdrop').classList.add('open');
+  renderSessionScreen();
+}
+function closeSessionScreen() {
+  const bd = document.getElementById('session-backdrop');
+  if (bd) bd.classList.remove('open');
+  _sessEx = null;
+}
+function _sessTogglePlan(mid) {
+  const i = _sessPlanDraft.indexOf(mid);
+  if (i >= 0) _sessPlanDraft.splice(i, 1); else _sessPlanDraft.push(mid);
+  renderSessionScreen();
+}
+
+function renderSessionScreen() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+
+  // A: something is open full-screen
+  if (_sessEx === '__cardio__') { renderCardioScreen(); return; }
+  if (_sessEx === '__review__') { renderDayReview(); return; }
+  if (_sessEx) { renderExerciseScreen(); return; }
+
+  // B: no session yet → plan builder
+  if (!SESSION) {
+    if (title) title.textContent = 'Plan your session';
+    body.innerHTML = `
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Pick what you're working today. You can change it mid-session.</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
+        ${MUSCLE_GROUPS.map(m => {
+          const on = _sessPlanDraft.indexOf(m.id) !== -1;
+          const n = on ? _sessPlanDraft.indexOf(m.id) + 1 : 0;
+          return `<button onclick="_sessTogglePlan('${m.id}')"
+            style="position:relative;padding:12px 6px;border-radius:8px;border:1px solid ${on ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${on ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${on ? 'var(--cyan)' : 'var(--text)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;align-items:center">
+            ${on ? `<span style="position:absolute;top:3px;right:5px;font-size:9px;opacity:0.8">${n}</span>` : ''}
+            <span style="font-size:17px">${m.icon}</span>${m.label}</button>`;
+        }).join('')}
+      </div>
+      <button onclick="startSession(_sessPlanDraft)" ${_sessPlanDraft.length ? '' : 'disabled'}
+        style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;opacity:${_sessPlanDraft.length ? 1 : 0.5}">
+        Start${_sessPlanDraft.length ? ` — ${_sessPlanDraft.length} group${_sessPlanDraft.length > 1 ? 's' : ''}` : ''}</button>`;
+    return;
+  }
+
+  // C: session running → the plan, with progress
+  if (title) title.textContent = 'Session';
+  const dateStr = ds(new Date());
+  const groups = SESSION.plan.map(mid => {
+    const mg = MUSCLE_GROUPS.find(x => x.id === mid);
+    if (!mg) return '';
+    // Filter to what he actually has where he is. Kids home = kettlebells and
+    // bodyweight; kids away = gym. Suggesting a lat pulldown in his basement is
+    // the failure this prevents.
+    const loc = sessionLocationFor(dateStr);
+    const allow = equipmentFilterFor(loc);
+    let exs = _mpickExercisesFor(mid);
+    if (allow) exs = exs.filter(e => allow.indexOf(e.equip) !== -1);
+    if (!exs.length) exs = _mpickExercisesFor(mid).filter(e => e.equip === 'bw');
+    exs = exs.slice(0, 4);
+    const rows = exs.map(e => {
+      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const sets = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : [];
+      const doneCls = sets.length ? 'var(--green)' : 'var(--text)';
+      return `<div onclick="openExercise('${key}','${e.name.replace(/'/g, "\\'")}')"
+        style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-bottom:1px solid var(--divider);cursor:pointer">
+        <span style="font-size:12px;color:${doneCls};flex:1">${e.name}</span>
+        ${sets.length
+          ? `<span style="font-size:10px;font-weight:700;color:var(--green)">${sets.length} set${sets.length > 1 ? 's' : ''} ✓</span>`
+          : `<span style="font-size:9.5px;color:var(--text-muted)">${e.reps} · ${EQUIP_LABEL[e.equip] || e.equip}</span>`}
+        <span style="color:var(--text-muted);font-size:12px">›</span>
+      </div>`;
+    }).join('');
+    const anyDone = exs.some(e => {
+      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      return ((typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : []).length > 0;
+    });
+    return `<div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:${anyDone ? 'var(--green)' : 'var(--text-dim)'};text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">${mg.icon} ${mg.label}${anyDone ? ' ✓' : ''}</div>
+      ${rows}</div>`;
+  }).join('');
+
+  body.innerHTML = groups + `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Cardio</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${CARDIO_MODES.slice(0, 6).map(m => `<button onclick="openCardio('${m.id}')"
+          style="padding:7px 10px;border-radius:14px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">${m.icon} ${m.label}</button>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button onclick="SESSION=null;_sessPlanDraft=[];renderSessionScreen()"
+        style="flex:1;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Change plan</button>
+      <button onclick="_sessEx='__review__';renderDayReview()"
+        style="flex:1;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Today's log</button>
+      <button onclick="finishSession()"
+        style="flex:2;padding:9px;border-radius:7px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Finish session</button>
+    </div>`;
+}
+
+// ── Cardio interval screen ────────────────────────────────────
+let _cardioMode = 'row';
+function openCardio(modeId) {
+  _cardioMode = modeId || 'row';
+  _sessEx = '__cardio__';
+  document.getElementById('session-backdrop').classList.add('open');
+  renderCardioScreen();
+}
+function renderCardioScreen() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+  const mode = CARDIO_MODES.find(m => m.id === _cardioMode) || CARDIO_MODES[0];
+  if (title) title.textContent = mode.label;
+
+  const dateStr = ds(new Date());
+  const rows = getActivity(dateStr).filter(r => r.kind === 'cardio' && r.equip === mode.id);
+  const fmt = s => s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '—';
+  const dist = r => {
+    if (!r.distance_m) return '—';
+    return mode.unit === 'km' ? (r.distance_m / 1000).toFixed(2) + ' km' : Math.round(r.distance_m) + ' m';
+  };
+  const pace = r => {
+    if (!r.distance_m || !r.duration_s) return '';
+    const per500 = r.duration_s / (r.distance_m / 500);
+    return mode.id === 'row'
+      ? Math.floor(per500 / 60) + ':' + String(Math.round(per500 % 60)).padStart(2, '0') + '/500m'
+      : '';
+  };
+
+  const list = rows.map((r, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--divider)">
+      <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:38px">Int ${i + 1}</span>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">${dist(r)}</span>
+      <span style="font-size:13px;color:var(--text-dim)">${fmt(r.duration_s)}</span>
+      <span style="font-size:9.5px;color:var(--text-muted);flex:1">${pace(r)}</span>
+      <button onclick="removeActivity('${dateStr}','${r.client_id}');renderCardioScreen()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 3px">×</button>
+    </div>`).join('');
+
+  const totalM = rows.reduce((a, r) => a + (Number(r.distance_m) || 0), 0);
+  const totalS = rows.reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
+
+  body.innerHTML = `
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
+      ${CARDIO_MODES.map(m => `<button onclick="_cardioMode='${m.id}';renderCardioScreen()"
+        style="padding:5px 9px;border-radius:14px;border:1px solid ${m.id === mode.id ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${m.id === mode.id ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${m.id === mode.id ? 'var(--cyan)' : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${m.icon} ${m.label}</button>`).join('')}
+    </div>
+    ${list}
+    ${rows.length ? `<div style="font-size:10.5px;color:var(--green);padding:8px 0;line-height:1.5">${rows.length} interval${rows.length > 1 ? 's' : ''} · ${mode.unit === 'km' ? (totalM / 1000).toFixed(2) + ' km' : Math.round(totalM) + ' m'} · ${fmt(totalS)} total</div>` : ''}
+
+    <div style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);margin-top:6px">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Interval ${rows.length + 1}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
+        <input type="number" id="cd-dist" inputmode="decimal" placeholder="${mode.unit}" value="${mode.defDist || ''}" step="${mode.unit === 'km' ? '0.1' : '50'}"
+          style="flex:1;min-width:0;padding:13px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:20px;font-weight:700;font-family:inherit;text-align:center">
+        <input type="number" id="cd-min" inputmode="numeric" placeholder="min"
+          style="width:74px;padding:13px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:20px;font-weight:700;font-family:inherit;text-align:center">
+        <input type="number" id="cd-sec" inputmode="numeric" placeholder="sec" min="0" max="59"
+          style="width:74px;padding:13px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:20px;font-weight:700;font-family:inherit;text-align:center">
+      </div>
+      <button onclick="_cardioAdd()"
+        style="width:100%;padding:13px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        ${rows.length ? '+ Add another interval' : '+ Log interval 1'}</button>
+    </div>
+    <button onclick="startRestTimer(120,'${mode.label} — recovery')"
+      style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⏱ Start recovery</button>
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
+      Intervals are logged separately from a continuous piece — 4 × 1km and one 4km row train different things, so they're kept apart.
+    </div>`;
+}
+function _cardioAdd() {
+  const d = parseFloat((document.getElementById('cd-dist') || {}).value) || 0;
+  const m = (document.getElementById('cd-min') || {}).value;
+  const s = (document.getElementById('cd-sec') || {}).value;
+  if (!d && !m && !s) return;
+  logCardioInterval(_cardioMode, d, m, s);
+  renderCardioScreen();
+}
+
+function openExercise(key, name) {
+  _sessEx = key; _sessExName = name;
+  document.getElementById('session-backdrop').classList.add('open');
+  renderExerciseScreen();
+}
+function backToPlan() { _sessEx = null; renderSessionScreen(); }
+
+function renderExerciseScreen() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body || !_sessEx) return;
+  if (title) title.textContent = _sessExName;
+
+  const sets = getSessionSets(_sessEx);
+  const suggested = suggestedSetCount();
+  const ex = EX_LIB.find(e => e.name === _sessExName) || {};
+  const lastW = sets.length ? sets[sets.length - 1].w : '';
+
+  const FLAGS = [['', '—', 'var(--text-muted)'], ['S', 'Shoulder', 'var(--orange)'],
+                 ['F', 'Form', 'var(--orange)'], ['P', 'Pain', 'var(--red)']];
+
+  const rows = sets.map((s, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--divider)">
+      <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:34px">Set ${i + 1}</span>
+      <span style="font-size:9px;color:var(--text-muted);min-width:26px" title="Normalised strength score">${strengthScore(s.w, s.r, ex) || ''}</span>
+      <span style="font-size:15px;font-weight:700;color:var(--text)">${s.w}</span>
+      <span style="font-size:10px;color:var(--text-muted)">lbs ×</span>
+      <span style="font-size:15px;font-weight:700;color:var(--text)">${s.r}</span>
+      <span style="font-size:10px;color:var(--text-muted);flex:1">reps</span>
+      ${(function () {
+        const r = (getActivity(ds(new Date())).find(a => a.exercise_key === _sessEx && a.set_index === i) || {}).rest_s;
+        if (!r) return '';
+        const m = Math.floor(r / 60), sec = r % 60;
+        return `<span style="font-size:9px;color:var(--text-muted)" title="Rest taken after this set">⏱ ${m ? m + ':' + String(sec).padStart(2, '0') : r + 's'}</span>`;
+      })()}
+      ${s.flag ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${s.flag}</span>` : ''}
+      <button onclick="removeSessionSet('${_sessEx}',${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 3px">×</button>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    ${(function () {
+      const v = (typeof progressVerdict === 'function' && ex.m) ? progressVerdict(ex.m) : null;
+      if (!v || !v.text) return '';
+      const c = v.tone === 'green' ? 'var(--green)' : (v.tone === 'orange' ? 'var(--orange)' : 'var(--text-muted)');
+      const bg = v.tone === 'green' ? 'var(--green-bg)' : (v.tone === 'orange' ? 'var(--orange-bg)' : 'var(--input-bg)');
+      return `<div style="font-size:10.5px;color:${c};background:${bg};border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.5">${v.text}</div>`;
+    })()}
+    ${(function () {
+      const s = (typeof variantSuggestion === 'function') ? variantSuggestion(_sessExName, sessionLocationFor(ds(new Date()))) : null;
+      if (!s) return '';
+      return `<div style="font-size:10.5px;color:var(--cyan);background:var(--cyan-bg);border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.5">${s.text}</div>`;
+    })()}
+    ${ex.cue ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:var(--input-bg)">${ex.cue}</div>` : ''}
+    ${rows}
+    ${(function () {
+      const g = (typeof setGuidance === 'function') ? setGuidance(ex.m, sets.length) : null;
+      if (!g) return `<div style="font-size:10px;color:var(--text-muted);padding:6px 0 10px">Most people do about ${suggested} sets.</div>`;
+      const c = g.tone === 'green' ? 'var(--green)' : (g.tone === 'orange' ? 'var(--orange)' : 'var(--text-muted)');
+      const bg = g.tone === 'green' ? 'var(--green-bg)' : (g.tone === 'orange' ? 'var(--orange-bg)' : 'transparent');
+      return `<div style="font-size:10.5px;color:${c};background:${bg};border-radius:6px;padding:8px 10px;margin:6px 0 10px;line-height:1.5">${g.text}</div>`;
+    })()}
+
+    <div style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg)">
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Set ${sets.length + 1}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
+        <input type="number" id="sess-w" inputmode="decimal" placeholder="${(typeof isPerSideLoaded === 'function' && isPerSideLoaded(ex)) ? 'lbs each' : 'lbs'}" value="${lastW}"
+          style="flex:1;min-width:0;padding:14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center">
+        <span style="font-size:15px;color:var(--text-muted)">×</span>
+        <input type="number" id="sess-r" inputmode="numeric" placeholder="reps"
+          style="flex:1;min-width:0;padding:14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center">
+      </div>
+      <div style="display:flex;gap:4px;margin-bottom:9px">
+        ${FLAGS.map(([v, l, c]) => `<button onclick="window._sessFlag='${v}';renderExerciseScreen()"
+          style="flex:1;padding:6px 2px;border-radius:6px;border:1px solid ${(window._sessFlag || '') === v ? c : 'var(--card-border)'};background:${(window._sessFlag || '') === v ? 'var(--input-bg)' : 'transparent'};color:${(window._sessFlag || '') === v ? c : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`).join('')}
+      </div>
+      <button onclick="_sessAddSet()"
+        style="width:100%;padding:13px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        ${sets.length ? '+ Add another set' : '+ Log set 1'}</button>
+    </div>
+
+    <button onclick="startRestTimer(${ex.rest || 120},'${_sessExName.replace(/'/g, "\\'")}')"
+      style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
+      ⏱ Start rest — ${ex.rest ? (ex.rest >= 60 ? (ex.rest / 60) + ' min' : ex.rest + 's') : '2 min'}</button>
+    <div style="font-size:9.5px;color:var(--text-muted);text-align:center;margin-top:5px">Tap when you actually start resting.</div>`;
+}
+
+// ── Day review — the spreadsheet Craig asked to look back on ──
+// Everything logged that day, whatever kind, in one table. This is the payoff
+// for unifying the log: strength, cardio and stretching finally readable side by
+// side instead of living in three stores.
+function renderDayReview() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+  const dateStr = ds(new Date());
+  if (title) title.textContent = "Today's log";
+  const rows = getActivity(dateStr);
+  const wk = getWeekLoad();
+
+  const fmtDur = s => s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '';
+  const detail = r => {
+    if (r.kind === 'strength') return `${r.weight || '—'} × ${r.reps || '—'}`;
+    if (r.kind === 'cardio') {
+      const d = r.distance_m ? (r.distance_m >= 1000 ? (r.distance_m / 1000).toFixed(2) + ' km' : Math.round(r.distance_m) + ' m') : '';
+      return [d, fmtDur(r.duration_s)].filter(Boolean).join(' · ');
+    }
+    return fmtDur(r.duration_s) || '✓';
+  };
+  const kindIcon = { strength:'🏋️', cardio:'🏃', stretch:'🧘', mobility:'🤸' };
+
+  // Group by exercise so 4 intervals read as one block, not four orphan lines.
+  const byEx = {};
+  rows.forEach(r => { (byEx[r.exercise_key] = byEx[r.exercise_key] || []).push(r); });
+
+  const blocks = Object.keys(byEx).map(k => {
+    const set = byEx[k];
+    const first = set[0];
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
+        <span style="font-size:13px">${kindIcon[first.kind] || '•'}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text)">${first.exercise_name}</span>
+        <span style="font-size:9.5px;color:var(--text-muted)">${set.length} ${first.kind === 'cardio' ? 'interval' : 'set'}${set.length > 1 ? 's' : ''}</span>
+      </div>
+      ${set.map((r, i) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0 4px 20px;border-bottom:1px solid var(--divider)">
+        <span style="font-size:9.5px;color:var(--text-muted);min-width:30px">${i + 1}</span>
+        <span style="font-size:12px;color:var(--text);flex:1">${detail(r)}</span>
+        ${r.flag ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${r.flag}</span>` : ''}
+        <button onclick="removeActivity('${dateStr}','${r.client_id}');renderDayReview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 3px">×</button>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    ${rows.length ? blocks : '<div style="font-size:11px;color:var(--text-muted);padding:16px 0;text-align:center">Nothing logged today yet.</div>'}
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--divider);font-size:10.5px;color:var(--text-muted);line-height:1.7">
+      <b style="color:var(--text-dim)">This week</b><br>
+      ${wk.strength_sets} strength set${wk.strength_sets === 1 ? '' : 's'}${Object.keys(wk.byMuscle).length ? ' across ' + Object.keys(wk.byMuscle).length + ' muscle groups' : ''}<br>
+      ${wk.cardio_m ? (wk.cardio_m / 1000).toFixed(1) + ' km cardio' : 'No cardio logged'}${wk.cardio_s ? ' · ' + Math.round(wk.cardio_s / 60) + ' min' : ''}<br>
+      ${wk.stretch_s ? Math.round(wk.stretch_s / 60) + ' min stretching' : 'No stretching logged'} · active on ${wk.days} of 7 days
+    </div>`;
+}
+
+function _sessAddSet() {
+  const w = parseFloat((document.getElementById('sess-w') || {}).value);
+  const r = parseInt((document.getElementById('sess-r') || {}).value, 10);
+  if (!isFinite(w) || w <= 0 || !isFinite(r) || r <= 0) {
+    const el = document.getElementById('sess-r');
+    if (el) { el.style.borderColor = 'var(--red)'; setTimeout(() => { el.style.borderColor = 'var(--input-border)'; }, 1200); }
+    return;
+  }
+  addSessionSet(_sessEx, _sessExName, w, r, window._sessFlag || '');
+  window._sessFlag = '';   // flags are per-set, not sticky
+}
+
+// ══════════════════════════════════════════════════════════════
 // REST TIMER  (added 2026-08-14)
 // ══════════════════════════════════════════════════════════════
 // Craig's powerlifting friend claimed rest between sets affects lift capability
@@ -11281,20 +12146,54 @@ function _restDefaultSecsFor(label) {
   return REST_COMPOUND_HINTS.some(h => l.indexOf(h) !== -1) ? 180 : 120;
 }
 
+// Rest is MEASURED, not just displayed (fixed 2026-08-22).
+//
+// Craig asked whether stopping the timer at 30 seconds logs a 30-second rest. It
+// didn't — the timer was a countdown and nothing else, while activity_log.rest_s
+// sat unwritten.
+//
+// What actually gets recorded is the time from starting the rest to LOGGING THE
+// NEXT SET, not the time until the timer is dismissed. Tapping stop means he
+// stopped watching the clock; it doesn't mean he started lifting. If he stops at
+// 30s and goes again three minutes later, the honest number is three minutes.
+//
+// Both values are kept: `target` (what he intended) and the measured actual. The
+// gap between them is the interesting bit — the evidence says rest length is a
+// real lever, and this is what lets us eventually tell him whether his actual
+// rest matches what he meant to take, rather than me guessing.
+let _restPending = null;   // { exKey, startedAt, target }
+
 function startRestTimer(secs, label) {
   secs = secs || _restDefaultSecsFor(label);
   _restTimer.target = secs;
   _restTimer.remaining = secs;
   _restTimer.label = label || '';
   _restTimer.running = true;
+  _restTimer.startedAt = Date.now();
+  // Attach the rest to whatever exercise is open, so the next set can claim it.
+  _restPending = { exKey: (typeof _sessEx !== 'undefined' && _sessEx) || null,
+                   startedAt: Date.now(), target: secs };
   if (_restTimer.id) clearInterval(_restTimer.id);
   _restTimer.id = setInterval(_restTick, 1000);
   renderRestTimer();
 }
 function stopRestTimer() {
   if (_restTimer.id) clearInterval(_restTimer.id);
-  _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false };
+  _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false, startedAt: 0 };
   renderRestTimer();
+  // _restPending deliberately survives: dismissing the countdown isn't the end
+  // of resting. It's cleared when the next set is logged, or on leaving.
+}
+
+// Seconds of rest actually taken before the set being logged now.
+function _claimRest(exKey) {
+  if (!_restPending) return null;
+  if (_restPending.exKey && exKey && _restPending.exKey !== exKey) { _restPending = null; return null; }
+  const secs = Math.round((Date.now() - _restPending.startedAt) / 1000);
+  _restPending = null;
+  // Anything over 20 minutes isn't rest, it's him having left. Don't record noise.
+  if (secs < 2 || secs > 1200) return null;
+  return secs;
 }
 function adjustRestTimer(delta) {
   if (!_restTimer.running) return;
@@ -11911,16 +12810,41 @@ async function _refreshBodyLogFromSupabase() {
 
 // One-shot migration: if localStorage has entries and Supabase doesn't know about
 // them yet, push them up. Idempotent via client_id unique constraint.
+// REWRITTEN 2026-08-25 — this was a one-shot migration and it disabled itself
+// permanently on the very first open.
+//
+// The old logic: if localStorage was empty, set body_log_sb_migrated = '1' and
+// return. Craig opened the Body log before logging anything, so the flag was set
+// on an empty list and the migration never ran again. Everything after that
+// depended on per-entry syncs, which were themselves failing on a missing
+// (user_id, client_id) constraint. Three bugs stacked: flag set early, every
+// write rejected, no retry. Result: months of entries that never left his phone
+// while the UI reported success.
+//
+// Now it's a RECONCILE, not a migration: it runs whenever local has entries the
+// server doesn't, and there is no permanent "done" flag to get stuck on. Costs
+// one cheap id-only query per open; worth it to never lose data this way again.
 async function _migrateLocalBodyLogToSupabase() {
-  if (localStorage.getItem('body_log_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getBodyLog();
-  if (local.entries.length === 0) {
-    localStorage.setItem('body_log_sb_migrated', '1');
-    return;
+  if (!local.entries.length) return;
+
+  // Which client_ids does the server already have?
+  let known = new Set();
+  try {
+    const { data, error } = await sb.from('body_log').select('client_id');
+    if (error) throw error;
+    (data || []).forEach(r => known.add(r.client_id));
+  } catch (e) {
+    console.warn('body_log reconcile: could not read server state', e);
+    return;   // don't blind-push if we can't tell what's already there
   }
+  const missing = local.entries.filter(e => !known.has(e.id));
+  if (!missing.length) return;
+  console.log('body_log reconcile: pushing ' + missing.length + ' local entr' + (missing.length === 1 ? 'y' : 'ies'));
+
   let allOk = true;
-  for (const e of local.entries) {
+  for (const e of missing) {
     try {
       const { error } = await sb.from('body_log').upsert({
         client_id: e.id,
@@ -11933,10 +12857,14 @@ async function _migrateLocalBodyLogToSupabase() {
         flag: e.flag,
         created_at: e.created_at
       }, { onConflict: 'user_id,client_id' });
-      if (error) { console.warn('body_log migrate row failed:', error); allOk = false; }
-    } catch (ex) { console.warn('body_log migrate row threw:', ex); allOk = false; }
+      if (error) { console.warn('body_log reconcile row failed:', error); allOk = false; }
+    } catch (ex) { console.warn('body_log reconcile row threw:', ex); allOk = false; }
   }
-  if (allOk) localStorage.setItem('body_log_sb_migrated', '1');
+  // No permanent flag. If some rows failed, the next open retries just those —
+  // which is the property the old one-shot version lacked.
+  if (allOk) console.log('body_log reconcile: complete');
+  // Clear the stale flag from the old implementation so it can't confuse anyone.
+  try { localStorage.removeItem('body_log_sb_migrated'); } catch (e) {}
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -12274,10 +13202,9 @@ async function _refreshProvidersFromSupabase() {
 }
 
 async function _migrateLocalProvidersToSupabase() {
-  if (localStorage.getItem('providers_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getProviders();
-  if (local.entries.length === 0) { localStorage.setItem('providers_sb_migrated', '1'); return; }
+  if (!local.entries.length) return;
   let allOk = true;
   for (const e of local.entries) {
     try {
@@ -12290,7 +13217,7 @@ async function _migrateLocalProvidersToSupabase() {
       if (error) allOk = false;
     } catch (ex) { allOk = false; }
   }
-  if (allOk) localStorage.setItem('providers_sb_migrated', '1');
+  try { localStorage.removeItem('providers_sb_migrated'); } catch (e) {}
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -12670,10 +13597,9 @@ async function _refreshMedDosesFromSupabase() {
 }
 
 async function _migrateLocalMedicationsToSupabase() {
-  if (localStorage.getItem('medications_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getMedications();
-  if (local.entries.length === 0) { localStorage.setItem('medications_sb_migrated', '1'); return; }
+  if (!local.entries.length) return;
   let allOk = true;
   for (const e of local.entries) {
     try {
@@ -12686,14 +13612,13 @@ async function _migrateLocalMedicationsToSupabase() {
       if (error) { allOk = false; }
     } catch (ex) { allOk = false; }
   }
-  if (allOk) localStorage.setItem('medications_sb_migrated', '1');
+  try { localStorage.removeItem('medications_sb_migrated'); } catch (e) {}
 }
 
 async function _migrateLocalMedDosesToSupabase() {
-  if (localStorage.getItem('med_doses_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getMedDoses();
-  if (local.entries.length === 0) { localStorage.setItem('med_doses_sb_migrated', '1'); return; }
+  if (!local.entries.length) return;
   let allOk = true;
   for (const e of local.entries) {
     try {
@@ -12706,7 +13631,7 @@ async function _migrateLocalMedDosesToSupabase() {
       if (error) { allOk = false; }
     } catch (ex) { allOk = false; }
   }
-  if (allOk) localStorage.setItem('med_doses_sb_migrated', '1');
+  try { localStorage.removeItem('med_doses_sb_migrated'); } catch (e) {}
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -12880,13 +13805,9 @@ async function _refreshCareCadenceFromSupabase() {
 }
 
 async function _migrateLocalCareCadenceToSupabase() {
-  if (localStorage.getItem('care_cadence_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getCareCadence();
-  if (local.entries.length === 0) {
-    localStorage.setItem('care_cadence_sb_migrated', '1');
-    return;
-  }
+  if (!local.entries.length) return;
   let allOk = true;
   for (const e of local.entries) {
     try {
@@ -12899,17 +13820,13 @@ async function _migrateLocalCareCadenceToSupabase() {
       if (error) { allOk = false; console.warn('care migrate failed:', error); }
     } catch (ex) { allOk = false; }
   }
-  if (allOk) localStorage.setItem('care_cadence_sb_migrated', '1');
+  try { localStorage.removeItem('care_cadence_sb_migrated'); } catch (e) {}
 }
 
 async function _migrateLocalAppointmentsToSupabase() {
-  if (localStorage.getItem('body_appointments_sb_migrated') === '1') return;
   if (typeof sbReady === 'undefined' || !sbReady) return;
   const local = _getAppointments();
-  if (local.entries.length === 0) {
-    localStorage.setItem('body_appointments_sb_migrated', '1');
-    return;
-  }
+  if (!local.entries.length) return;
   let allOk = true;
   for (const e of local.entries) {
     try {
@@ -12931,7 +13848,7 @@ async function _migrateLocalAppointmentsToSupabase() {
       if (error) { allOk = false; console.warn('appt migrate row failed:', error); }
     } catch (ex) { allOk = false; console.warn('appt migrate row threw:', ex); }
   }
-  if (allOk) localStorage.setItem('body_appointments_sb_migrated', '1');
+  try { localStorage.removeItem('body_appointments_sb_migrated'); } catch (e) {}
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -14384,7 +15301,8 @@ function buildActivityDecisionTree(dateStr) {
       </div>
       <div class="adt-row">${chips}</div>
       ${intentHtml}
-      <button onclick="openMusclePicker()" style="width:100%;margin-top:8px;padding:9px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">💪 What do you want to work?</button>
+      <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
+      <button onclick="openMusclePicker()" style="width:100%;margin-top:5px;padding:7px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">Just browse exercises</button>
     </div>
   `;
 }
@@ -15063,13 +15981,60 @@ const QOL_TASKS_DEFAULT = [
   { id: 'trash',     icon: '🗑️', label: 'Take out trash',    cadence: 'weekly' },
   { id: 'vacuum',    icon: '🧹', label: 'Vacuum',            cadence: 'weekly' },
 ];
-function getQolTasks() {
-  try {
-    const stored = JSON.parse(localStorage.getItem('qol_tasks_config'));
-    if (Array.isArray(stored)) return stored; // allow empty array (user cleared list)
-  } catch (e) {}
-  return QOL_TASKS_DEFAULT.slice();
+// MERGED 2026-08-19. Task #14 was built as a SECOND, parallel QoL system without
+// checking that one had existed since 2026-05-10 — so Craig ended up with two
+// competing lists. This one survives because it's better integrated: completions
+// flow through the `checkboxes` table and count toward daily progress.
+//
+// Folded in from the duplicate: an `active` flag (standby instead of delete) and
+// a library of suggestions that always exist on standby. Removing a task now
+// means switching it off, not destroying it.
+//
+// The 24-item library from the duplicate is merged with the original 8 defaults.
+const QOL_SUGGESTIONS = [
+  { id:'vitamins',  icon:'💊', label:'Vitamins / supplements', cadence:'daily' },
+  { id:'water',     icon:'💧', label:'Drink water',            cadence:'daily' },
+  { id:'floss',     icon:'🦷', label:'Floss',                  cadence:'daily' },
+  { id:'outside',   icon:'🌤️', label:'Get outside',            cadence:'daily' },
+  { id:'meditate',  icon:'🧘', label:'Meditate / sit quietly', cadence:'daily' },
+  { id:'read',      icon:'📖', label:'Read something',         cadence:'daily' },
+  { id:'screens',   icon:'📱', label:'Screens off by 10',      cadence:'daily' },
+  { id:'kidscheck', icon:'💬', label:'Check in with the kids', cadence:'daily' },
+  { id:'mealprep',  icon:'🍱', label:'Meal prep',              cadence:'weekly' },
+  { id:'groceries', icon:'🛒', label:'Groceries',              cadence:'weekly' },
+  { id:'sheets',    icon:'🛏️', label:'Change the sheets',      cadence:'weekly' },
+  { id:'plants',    icon:'🪴', label:'Water the plants',       cadence:'weekly' },
+  { id:'callfolks', icon:'📞', label:'Call parents',           cadence:'weekly' },
+  { id:'planweek',  icon:'🗓️', label:'Plan the week',          cadence:'weekly' },
+  { id:'bills',     icon:'💳', label:'Pay bills',              cadence:'weekly' },
+  { id:'car',       icon:'🚗', label:'Wash the car',           cadence:'weekly' },
+];
+
+// Every default and suggestion always EXISTS. `active` decides whether it shows.
+function _qolSeedList(stored) {
+  const list = Array.isArray(stored) ? stored.slice() : [];
+  const seen = {};
+  list.forEach(t => { seen[t.id] = true; if (t.active === undefined) t.active = true; });
+  // Originals default to active only on a fresh install; suggestions start on standby.
+  QOL_TASKS_DEFAULT.forEach(d => {
+    if (seen[d.id]) return;
+    list.push(Object.assign({}, d, { active: !Array.isArray(stored) }));
+    seen[d.id] = true;
+  });
+  QOL_SUGGESTIONS.forEach(s => {
+    if (seen[s.id]) return;
+    list.push(Object.assign({}, s, { active: false }));
+  });
+  return list;
 }
+
+function getQolTasks() {
+  let stored = null;
+  try { stored = JSON.parse(localStorage.getItem('qol_tasks_config')); } catch (e) {}
+  return _qolSeedList(stored);
+}
+// Only tasks switched on reach the daily card.
+function getActiveQolTasks() { return getQolTasks().filter(t => t.active !== false); }
 function saveQolTasks(tasks) {
   localStorage.setItem('qol_tasks_config', JSON.stringify(tasks));
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
@@ -15087,8 +16052,24 @@ function addQolTask(label, icon, cadence) {
   });
   saveQolTasks(tasks);
 }
-function removeQolTask(id) {
+// Standby, not delete — the correction Craig asked for twice. Removing a task
+// from the daily list must never destroy it; it drops to standby, ready to come
+// back. Custom tasks can still be purged, but only from standby (see purgeQolTask).
+function removeQolTask(id) { setQolActive(id, false); }
+function setQolActive(id, on) {
+  saveQolTasks(getQolTasks().map(t => t.id === id ? Object.assign({}, t, { active: !!on }) : t));
+}
+function toggleQolActive(id) {
+  const t = getQolTasks().find(x => x.id === id);
+  if (t) setQolActive(id, t.active === false);
+  if (typeof renderQolTasksList === 'function') renderQolTasksList();
+}
+// Permanent removal, custom tasks only — a seeded one would just come back.
+function purgeQolTask(id) {
+  const isSeeded = QOL_TASKS_DEFAULT.some(d => d.id === id) || QOL_SUGGESTIONS.some(s => s.id === id);
+  if (isSeeded) { setQolActive(id, false); return; }
   saveQolTasks(getQolTasks().filter(t => t.id !== id));
+  if (typeof renderQolTasksList === 'function') renderQolTasksList();
 }
 function updateQolTask(id, updates) {
   const tasks = getQolTasks().map(t => t.id === id ? { ...t, ...updates } : t);
@@ -15121,7 +16102,8 @@ function getTodaysQolTasks(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const dow = d.getDay(); // 0=Sun..6=Sat
   const isWeekday = dow >= 1 && dow <= 5;
-  return getQolTasks().filter(t => {
+  // Only ACTIVE tasks surface (merge 2026-08-19) — standby ones stay in Settings.
+  return getActiveQolTasks().filter(t => {
     if (t.cadence === 'weekdays') return isWeekday;
     return true; // daily and weekly both surface
   });
@@ -16530,17 +17512,6 @@ function renderDaily() {
     renderDayNotes(dateStr);
     _dnFetch(dateStr);
   }
-  // Recurring tasks — local cache paints immediately, DB refresh follows.
-  if (typeof renderQolTasks === 'function') {
-    if (!QOL_TASKS.length) _qolLoadLocal();
-    // Seed any library task that doesn't exist yet, on standby. Cheap and
-    // idempotent — client_id is derived from the label, so re-running can't
-    // duplicate. Not synced to the DB here: a standby row nobody has touched
-    // isn't worth 24 upserts on every load. It syncs when he activates one.
-    if (typeof _qolEnsureLibrary === 'function') _qolEnsureLibrary();
-    renderQolTasks();
-    if (!window._qolFetched) { window._qolFetched = true; qolFetch(); }
-  }
   const cust = custodyInfo(dateStr);
   const woRaw = WORKOUT_PLANS[dateStr];
   const rowAdj = adjustRowWorkout(woRaw, dateStr);
@@ -17633,6 +18604,7 @@ document.addEventListener('click', (ev) => {
 // ── Refresh ──
 async function refreshData(btn) {
   if (btn) { btn.classList.add('spinning'); }
+  if (typeof _envBanner === 'function' && !window._envBannerDone) { window._envBannerDone = true; _envBanner(); }
   if (typeof initPWA === 'function' && !window._pwaInit) { window._pwaInit = true; initPWA(); }
   // Who is this, and what are they allowed to see? Must run before the first
   // render so a restricted user never sees a flash of modules they don't have.
