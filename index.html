@@ -3465,8 +3465,8 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.07.06';
-const BUILD_CHANNEL = 'dev';
+const APP_VERSION = '2026.09.08.05';
+const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
 }
@@ -7801,6 +7801,11 @@ function openBodyLog(tab) {
       if (typeof _refreshProvidersFromSupabase === 'function') await _refreshProvidersFromSupabase();
       // Task #31 — auto-migrate allopurinol from hardcoded chiclet to medication record
       if (typeof _migrateAllopurinolToMedTracker === 'function') _migrateAllopurinolToMedTracker();
+      // Idempotent and safe to run every load — it re-derives what's missing
+      // rather than latching a "done" flag, so late-arriving rows still land.
+      if (typeof _migrateSuppsToMedications === 'function') {
+        _migrateSuppsToMedications().then(n => { if (n) scheduleRender(renderDaily); });
+      }
       const popupOpen = document.getElementById('popup-backdrop').classList.contains('open');
       const titleEl = document.getElementById('popup-title');
       const popupBody = document.getElementById('popup-body');
@@ -9663,6 +9668,41 @@ ${flaggedItems.length > 0 ? `
 </div>
 ` : ''}
 
+<h2>Current Medications &amp; Supplements</h2>
+${(() => {
+  // Added 2026-09-08. This section did not exist, and supplements were tracked
+  // in a separate store the summary never touched — so a printout handed to a
+  // clinician omitted them entirely. That matters clinically: creatine raises
+  // serum creatinine and mimics renal impairment on a panel, omega-3 affects
+  // bleeding time, magnesium interacts with several drug classes.
+  const meds = (typeof getActiveMedications === 'function') ? getActiveMedications() : [];
+  if (!meds.length) return '<p class="empty-msg">No medications or supplements recorded.</p>';
+  const doses = (typeof _getMedDoses === 'function') ? _getMedDoses().entries : [];
+  const typeLabel = { rx:'Prescription', otc:'OTC', supplement:'Supplement', vitamin:'Vitamin', mineral:'Mineral', food:'Food' };
+  const rows = meds.map(m => {
+    const mine = doses.filter(d => d.medication_id === m.id && String(d.taken_at || '').slice(0, 10) >= cutoffStr);
+    const last = mine.map(d => String(d.taken_at || '').slice(0, 10)).sort().pop();
+    const freq = m.frequency_type === 'daily'
+      ? (m.frequency_value > 1 ? m.frequency_value + '× daily' : 'Daily')
+      : m.frequency_type === 'as_needed' ? 'As needed'
+      : m.frequency_type === 'one_time' ? 'One-time'
+      : m.frequency_type === 'weekly' ? 'Weekly' : (m.frequency_type || '—');
+    return `<tr>
+      <td><strong>${escape(m.name || '')}</strong></td>
+      <td>${escape(typeLabel[m.med_type] || m.med_type || '—')}</td>
+      <td>${escape(m.dose || '—')}</td>
+      <td>${escape(freq)}</td>
+      <td>${mine.length}</td>
+      <td>${last || '—'}</td>
+    </tr>`;
+  }).join('');
+  return `<table>
+    <tr><th>Name</th><th>Type</th><th>Dose</th><th>Schedule</th><th>Doses logged (${daysBack}d)</th><th>Last taken</th></tr>
+    ${rows}
+  </table>
+  <p style="font-size:11px;color:#555;margin-top:6px">Self-reported and patient-maintained. Doses logged reflects taps in the app, not pharmacy dispensing records.</p>`;
+})()}
+
 <h2>Recent Appointments</h2>
 ${appointments.length === 0 ? '<p class="empty-msg">No appointments logged in this period.</p>' :
   appointments.map(a => {
@@ -11116,10 +11156,14 @@ function renderMusclePicker() {
         <span style="flex-shrink:0">${n.icon}</span>
         <span style="font-size:9.5px;color:var(--${n.tone});line-height:1.45">${n.text}</span></div>` : '';
     }).join('');
-    return `<div style="padding:9px 10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:7px">
+    // Whole card is the tap target, not just the button underneath it. Craig
+    // read the card header as the thing you press and nothing happened.
+    const _go = `mpickDoing('${e.name.replace(/'/g, "\\'")}',${e.rest})`;
+    return `<div onclick="${_go}" style="padding:9px 10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:7px;cursor:pointer">
       <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
         <span style="font-size:12px;font-weight:700;color:var(--text)">${e.name}</span>
         <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--purple-bg);color:var(--purple)">${EQUIP_LABEL[e.equip] || e.equip}</span>
+        <span style="margin-left:auto;font-size:13px;color:var(--cyan)">›</span>
       </div>
       <div style="font-size:10px;color:var(--text-dim);margin-top:3px">
         <b style="color:var(--text)">${e.reps}</b> reps · rest <b style="color:var(--text)">${e.rest >= 60 ? (e.rest/60) + ' min' : e.rest + 's'}</b>
@@ -11127,9 +11171,9 @@ function renderMusclePicker() {
       <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:4px">${e.cue}</div>
       ${flags}
       <div style="display:flex;gap:5px;margin-top:7px">
-        <button onclick="mpickDoing('${e.name.replace(/'/g, "\\'")}',${e.rest})"
-          style="flex:1;padding:8px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — log sets</button>
-        <button onclick="startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
+        <button onclick="event.stopPropagation();${_go}"
+          style="flex:1;padding:8px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✓ Log this exercise</button>
+        <button onclick="event.stopPropagation();startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
           style="padding:8px 11px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit" title="Rest timer only">⏱</button>
       </div>
     </div>`;
@@ -13024,6 +13068,104 @@ function removeSessionSet(exKey, idx) {
 // Hint only — never gates anything.
 function suggestedSetCount() { return 3; }
 
+// ── Session presets + what's actually due (2026-09-08) ────────
+// Craig: "on the 'start a session' maybe at the top are some suggestions - like
+// 'upper / lower / whole body' type deal, and it highlights the muscles."
+//
+// The preset list is the easy half. The half worth building is picking WHICH
+// one to suggest, and that's answerable from the log rather than a fixed
+// rotation: suggest whatever has gone longest untrained.
+//
+// Why staleness and not volume: in a deficit, frequency protects muscle better
+// than piling sets onto one session. A group last hit 9 days ago is losing more
+// than a group at 5 sets instead of 8. So the sort key is days-since, not
+// sets-per-week.
+//
+// Never gates anything — it's a default, and he overrides it by tapping.
+const SESSION_PRESETS = [
+  { id:'upper', icon:'💪', label:'Upper',     groups:['chest','back','shoulders','lats','biceps','triceps'] },
+  { id:'lower', icon:'🦵', label:'Lower',     groups:['quads','hamstrings','glutes','calves'] },
+  { id:'full',  icon:'🔁', label:'Full body', groups:['chest','back','quads','hamstrings','core'] },
+  { id:'push',  icon:'🫸', label:'Push',      groups:['chest','shoulders','triceps'] },
+  { id:'pull',  icon:'🫷', label:'Pull',      groups:['back','lats','biceps','reardelts'] },
+];
+const STALE_DAYS = 7;   // past this, a group is flagged as due
+
+// { muscleId: daysSinceLastTrained }. Absent = not trained in the window.
+function muscleDaysAgo(lookback) {
+  lookback = lookback || 14;
+  const out = {};
+  const today = new Date();
+  for (let d = 0; d <= lookback; d++) {
+    const dt = new Date(today);
+    dt.setDate(dt.getDate() - d);
+    getActivity(ds(dt)).forEach(r => {
+      if (r.kind !== 'strength' || !r.muscle) return;
+      if (out[r.muscle] === undefined) out[r.muscle] = d;
+    });
+  }
+  return out;
+}
+
+// Untrained-in-window counts as 99 so a never-touched group dominates the sort.
+function _presetStaleness(p, seen) {
+  const vals = p.groups.map(g => seen[g] === undefined ? 99 : seen[g]);
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function suggestedPreset() {
+  const seen = muscleDaysAgo(14);
+  let best = SESSION_PRESETS[0], bestScore = -1;
+  SESSION_PRESETS.forEach(p => {
+    const s = _presetStaleness(p, seen);
+    if (s > bestScore) { bestScore = s; best = p; }
+  });
+  // Name the single stalest group — "because legs" is more use than a score.
+  let worst = null, worstD = -1;
+  best.groups.forEach(g => {
+    const d = seen[g] === undefined ? 99 : seen[g];
+    if (d > worstD) { worstD = d; worst = g; }
+  });
+  const mg = MUSCLE_GROUPS.find(m => m.id === worst);
+  const why = !mg ? ''
+    : worstD >= 99 ? `${mg.label} not trained in the last two weeks`
+    : worstD === 0 ? `${mg.label} trained today`
+    : `${mg.label} last trained ${worstD} day${worstD > 1 ? 's' : ''} ago`;
+  return { preset: best, why: why };
+}
+
+function _sessApplyPreset(id) {
+  const p = SESSION_PRESETS.find(x => x.id === id);
+  if (!p) return;
+  // Re-tapping the active preset clears it, so it toggles rather than trapping.
+  const same = p.groups.length === _sessPlanDraft.length
+    && p.groups.every(g => _sessPlanDraft.indexOf(g) !== -1);
+  _sessPlanDraft = same ? [] : p.groups.slice();
+  renderSessionScreen();
+}
+
+function sessionPresetsHtml() {
+  const { preset, why } = suggestedPreset();
+  const seen = muscleDaysAgo(14);
+  const chips = SESSION_PRESETS.map(p => {
+    const on = p.groups.length === _sessPlanDraft.length
+      && p.groups.every(g => _sessPlanDraft.indexOf(g) !== -1);
+    const sug = !on && p.id === preset.id;
+    return `<button onclick="_sessApplyPreset('${p.id}')"
+      style="flex:1;min-width:62px;padding:9px 4px;border-radius:8px;border:1px solid ${on ? 'var(--green-border)' : sug ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};color:${on ? 'var(--green)' : sug ? 'var(--cyan)' : 'var(--text-dim)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;align-items:center">
+      <span style="font-size:15px">${p.icon}</span>${p.label}</button>`;
+  }).join('');
+  const stale = MUSCLE_GROUPS
+    .filter(m => seen[m.id] === undefined || seen[m.id] >= STALE_DAYS)
+    .map(m => m.label);
+  return `
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px">${chips}</div>
+    <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-bottom:12px">
+      Suggested: <b style="color:var(--cyan)">${preset.label}</b>${why ? ` — ${why}` : ''}.
+      ${stale.length ? `<br>Due (${STALE_DAYS}d+): <span style="color:var(--orange)">${stale.join(', ')}</span>` : ''}
+    </div>`;
+}
+
 // ── Recent exercises (2026-09-07) ─────────────────────────────
 // Craig trains a fairly stable set of movements. Making him walk the muscle
 // picker or build a plan to log a lift he did on Tuesday is friction with no
@@ -13113,15 +13255,18 @@ function renderSessionScreen() {
   // B: no session yet → plan builder
   if (!SESSION) {
     if (title) title.textContent = 'Plan your session';
-    body.innerHTML = recentExercisesHtml(6) + `
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Or pick what you're working today. You can change it mid-session.</div>
+    const _stale = muscleDaysAgo(14);
+    body.innerHTML = sessionPresetsHtml() + recentExercisesHtml(4) + `
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Or pick individual groups. You can change it mid-session.</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
         ${MUSCLE_GROUPS.map(m => {
           const on = _sessPlanDraft.indexOf(m.id) !== -1;
           const n = on ? _sessPlanDraft.indexOf(m.id) + 1 : 0;
+          const due = _stale[m.id] === undefined || _stale[m.id] >= STALE_DAYS;
           return `<button onclick="_sessTogglePlan('${m.id}')"
             style="position:relative;padding:12px 6px;border-radius:8px;border:1px solid ${on ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${on ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${on ? 'var(--cyan)' : 'var(--text)'};font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;align-items:center">
-            ${on ? `<span style="position:absolute;top:3px;right:5px;font-size:9px;opacity:0.8">${n}</span>` : ''}
+            ${on ? `<span style="position:absolute;top:3px;right:5px;font-size:9px;opacity:0.8">${n}</span>`
+                 : due ? `<span title="Not trained in ${STALE_DAYS}+ days" style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--orange)"></span>` : ''}
             <span style="font-size:17px">${m.icon}</span>${m.label}</button>`;
         }).join('')}
       </div>
@@ -17434,14 +17579,135 @@ function getPhaseLabel(phaseId) {
   return g ? (g.icon + ' ' + g.name) : '⚖️ Maintain';
 }
 
-// ── SUPPLEMENT TRACKING ──
-const SUPPLEMENTS = [
-  { id: 'd3', icon: '💊', label: 'D3', quantities: ['1000 IU', '2000 IU', '5000 IU'] },
-  { id: 'omega3', icon: '🐟', label: 'Omega-3', quantities: ['1 cap', '2 caps'] },
-  { id: 'mag', icon: '🧲', label: 'Mag', quantities: ['200mg', '400mg'] },
-  { id: 'vitc', icon: '🍊', label: 'Vit C', quantities: ['500mg', '1000mg'] },
-  { id: 'creatine', icon: '💪', label: 'Creatine', quantities: ['3g', '5g'] },
+// ── SUPPLEMENT TRACKING — RETIRED 2026-09-08 ──────────────────────────────
+// These five were hardcoded, stored in daily_log.supps as a JSON blob, and read
+// by exactly one function: the pill row that drew them. The meds tab never saw
+// them and neither did openDoctorVisitSummary() — so a printout for a clinician
+// omitted every supplement Craig had been logging.
+//
+// That is not just untidy. Creatine raises serum creatinine and reads as renal
+// impairment on a panel; omega-3 affects bleeding time; magnesium interacts with
+// several drug classes. A medication list that silently drops them is worse than
+// no list, because it looks complete.
+//
+// The definitions survive only to migrate the history into `medications` /
+// `medication_doses`. Nothing renders from this array any more.
+const LEGACY_SUPPLEMENTS = [
+  { id: 'd3',       name: 'Vitamin D3', med_type: 'vitamin',    color: 'amber'  },
+  { id: 'omega3',   name: 'Omega-3',    med_type: 'supplement', color: 'cyan'   },
+  { id: 'mag',      name: 'Magnesium',  med_type: 'mineral',    color: 'purple' },
+  { id: 'vitc',     name: 'Vitamin C',  med_type: 'vitamin',    color: 'orange' },
+  { id: 'creatine', name: 'Creatine',   med_type: 'supplement', color: 'green'  },
 ];
+
+// Fold every historical supps_<date> entry into the medications system.
+//
+// NO LATCHING FLAG. _migrateAllopurinolToMedTracker above uses one, and that is
+// the exact pattern that made the Body module lose data: a one-shot flag set on
+// an empty list never retries, so anything arriving later is stranded. This is
+// idempotent instead — it re-derives what is missing every run and does nothing
+// when there is nothing to do, so it is safe to call on every load.
+async function _migrateSuppsToMedications() {
+  if (typeof _getMedications !== 'function' || typeof addMedication !== 'function') return 0;
+  if (typeof _getMedDoses !== 'function' || typeof addMedDose !== 'function') return 0;
+
+  // Collect date -> { suppId: qty } from EVERY place the old system wrote.
+  //
+  // Supabase first and unbounded: daily_log.supps is where the real history
+  // lives, and DB_CACHE only holds the days the UI happens to have loaded.
+  // Migrating from the cache would silently cover the last few weeks and lose
+  // the rest — files and caches describe a slice, the database describes all of
+  // it.
+  const merged = {};
+  const take = (dateStr, obj) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return;
+    if (!obj || typeof obj !== 'object' || !Object.keys(obj).length) return;
+    merged[dateStr] = Object.assign({}, obj, merged[dateStr] || {});
+  };
+
+  if (typeof sbReady !== 'undefined' && sbReady && typeof sb !== 'undefined' && sb) {
+    try {
+      const { data, error } = await sb.from('daily_log').select('date, supps').not('supps', 'is', null);
+      if (error) {
+        // Do not proceed on a partial view — a half-migration that then marks
+        // itself done is how data goes missing. Bail and retry next load.
+        console.warn('supplement migration: daily_log read failed, will retry next load', error);
+        return 0;
+      }
+      (data || []).forEach(row => {
+        let o = row.supps;
+        if (typeof o === 'string') { try { o = JSON.parse(o); } catch (e) { o = null; } }
+        take(row.date, o);
+      });
+    } catch (e) {
+      console.warn('supplement migration: daily_log read threw, will retry next load', e);
+      return 0;
+    }
+  }
+
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('supps_') !== 0) continue;
+      let obj = null;
+      try { obj = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+      take(k.slice(6), obj);
+    }
+  } catch (e) { /* localStorage is a bonus here, not the source */ }
+
+  if (typeof DB_CACHE !== 'undefined' && DB_CACHE.daily) {
+    Object.keys(DB_CACHE.daily).forEach(d => take(d, DB_CACHE.daily[d] && DB_CACHE.daily[d].supps));
+  }
+
+  const days = Object.keys(merged).sort().map(d => [d, merged[d]]);
+  if (!days.length) return 0;
+
+  const meds = _getMedications().entries;
+  const byName = {};
+  meds.forEach(m => { byName[String(m.name || '').toLowerCase()] = m; });
+
+  // Find-or-create the medication row, matching on name so an existing entry
+  // Craig already made by hand is reused rather than duplicated.
+  function medIdFor(legacy) {
+    const hit = byName[legacy.name.toLowerCase()];
+    if (hit) return hit.id;
+    const id = addMedication({
+      name: legacy.name, med_type: legacy.med_type, color: legacy.color,
+      frequency_type: 'daily', frequency_value: 1,
+      notes: 'Migrated from the supplement chiclets, 2026-09-08.',
+    });
+    byName[legacy.name.toLowerCase()] = { id: id, name: legacy.name };
+    return id;
+  }
+
+  // One dose per supplement per day is what the old blob could express.
+  const doseKey = d => String(d.medication_id) + '|' + String(d.taken_at || '').slice(0, 10);
+  const existing = {};
+  _getMedDoses().entries.forEach(d => { existing[doseKey(d)] = true; });
+
+  let added = 0;
+  days.forEach(([dateStr, obj]) => {
+    Object.keys(obj).forEach(suppId => {
+      const legacy = LEGACY_SUPPLEMENTS.find(s => s.id === suppId);
+      if (!legacy) return;
+      const medId = medIdFor(legacy);
+      const key = medId + '|' + dateStr;
+      if (existing[key]) return;           // already migrated, or logged by hand
+      addMedDose({
+        medication_id: medId,
+        // Noon local. Midnight would land on the previous day in Calgary once
+        // parsed as UTC — the same timezone bug that mis-filed 33 other sites.
+        taken_at: new Date(dateStr + 'T12:00:00').toISOString(),
+        dose_override: typeof obj[suppId] === 'string' ? obj[suppId] : null,
+        notes: 'Migrated from supplement chiclets',
+      });
+      existing[key] = true;
+      added++;
+    });
+  });
+  if (added) console.log('Supplement migration: ' + added + ' dose(s) folded into medication_doses.');
+  return added;
+}
 
 // ─── QoL / dopamine tasks (v1, 2026-05-10) ────────────────────────────────
 // Craig's ask: extend the check-off dopamine beyond fitness to home admin —
@@ -17600,59 +17866,14 @@ function getSupps(dateStr) {
   try { return JSON.parse(localStorage.getItem('supps_' + dateStr)) || {}; } catch(e) { return {}; }
 }
 
-function setSupp(dateStr, suppId, qty) {
-  // qty = null means untaken, string means taken with that quantity
-  if (!DB_CACHE.daily[dateStr]) DB_CACHE.daily[dateStr] = {};
-  const supps = DB_CACHE.daily[dateStr].supps || {};
-  if (qty === null) delete supps[suppId];
-  else supps[suppId] = qty;
-  DB_CACHE.daily[dateStr].supps = supps;
-  localStorage.setItem('supps_' + dateStr, JSON.stringify(supps));
-  // Save to Supabase (supps stored as JSON string in daily_log.supps column)
-  if (sbReady) {
-    sb.from('daily_log').upsert({ date: dateStr, supps: JSON.stringify(supps) }, { onConflict: 'date' })
-      .then(({error}) => { if (error) console.warn('DB supp save error:', error); });
-  }
-  scheduleRender(renderDaily);
-}
-
-function toggleSupp(dateStr, suppId) {
-  const supps = getSupps(dateStr);
-  if (supps[suppId]) {
-    // Already taken — untoggle it
-    setSupp(dateStr, suppId, null);
-  } else {
-    // Not taken — show quantity picker
-    const supp = SUPPLEMENTS.find(s => s.id === suppId);
-    if (!supp) return;
-    // Default to first quantity option
-    setSupp(dateStr, suppId, supp.quantities[0]);
-  }
-}
-
-function cycleSupp(dateStr, suppId) {
-  const supps = getSupps(dateStr);
-  const supp = SUPPLEMENTS.find(s => s.id === suppId);
-  if (!supp || !supps[suppId]) return;
-  const curIdx = supp.quantities.indexOf(supps[suppId]);
-  const nextIdx = (curIdx + 1) % supp.quantities.length;
-  setSupp(dateStr, suppId, supp.quantities[nextIdx]);
-}
-
-function buildSuppPills(dateStr) {
-  const supps = getSupps(dateStr);
-  return SUPPLEMENTS.map(s => {
-    const taken = supps[s.id];
-    const cls = taken ? 'supp-pill taken' : 'supp-pill';
-    const tip = taken ? taken + ' — click to remove, right-click to change dose' : 'Click to log ' + s.label;
-    const qtySpan = taken ? '<span class="supp-qty"> ' + taken + '</span>' : '';
-    return '<span class="' + cls + '"'
-      + ' onclick="toggleSupp(\'' + dateStr + '\',\'' + s.id + '\')"'
-      + ' oncontextmenu="event.preventDefault();cycleSupp(\'' + dateStr + '\',\'' + s.id + '\')"'
-      + ' title="' + tip + '"'
-      + '>' + s.icon + ' ' + s.label + qtySpan + '</span>';
-  }).join('');
-}
+// setSupp / toggleSupp / cycleSupp / buildSuppPills were deleted 2026-09-08.
+// They were the write and render half of the retired supplement blob. Leaving
+// them would have left live writers pointing at a store nothing reads — and
+// they referenced the removed SUPPLEMENTS const, so they would have thrown on
+// first use rather than failing visibly at review time.
+//
+// getSupps() is kept: _migrateSuppsToMedications() needs to read the old shape,
+// and read-only access to retired data is not a duplicate system.
 
 // Exercise ratings: -1 = frowny, 0 = neutral, 1 = smiley
 function getRatings(dateStr) {
@@ -19384,12 +19605,15 @@ function renderDaily() {
   // Meals card
   const waterCount = getWater(dateStr);
   const coffeeCount = getCoffee(dateStr);
+  // 2026-09-08 — supplements and medications are ONE system now. Body defines
+  // what should be taken; this card records what actually was. The old
+  // buildSuppPills() row rendered five hardcoded supplements into
+  // daily_log.supps, which nothing else on earth read — not the meds tab, not
+  // the doctor-visit summary.
   document.getElementById('meals-card').innerHTML = buildMealSuggestionsHeader(dateStr) + `
     <div class="card-footer">
+      ${(typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-        <div class="supp-row" style="flex:1;margin:0">
-          ${buildSuppPills(dateStr)}
-        </div>
         ${(() => {
           const weight = getWeight(dateStr);
           let prevWeight = 0;
@@ -19560,9 +19784,10 @@ function renderDaily() {
     });
   }
 
-  // Task #31 — Today's medication chiclets rendered ABOVE the task items
-  const medChicletsHtml = (typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : '';
-  document.getElementById('schedule-card').innerHTML = medChicletsHtml + items.map(i=>{
+  // Med chiclets used to render here AND (as hardcoded supplement pills) on the
+  // meals card — two rows, two stores, same question. They now live only on the
+  // meals card, which is where Craig tracks what he's taken.
+  document.getElementById('schedule-card').innerHTML = items.map(i=>{
     if (i.divider) return `<div class="options-divider">${i.txt}</div>`;
     const done = checked['s_'+i.k] ? 'done' : '';
     // QoL weekly-done tasks render with reduced opacity so they don't feel
