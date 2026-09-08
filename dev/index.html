@@ -3465,7 +3465,7 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.07.05-dev';
+const APP_VERSION = '2026.09.07.06-dev';
 const BUILD_CHANNEL = 'dev';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11052,28 +11052,29 @@ function mpickSelect(id) { _mpickMuscle = id; _mpickShowAll = false; renderMuscl
 function mpickBack()     { _mpickMuscle = null; renderMusclePicker(); }
 function mpickToggleAll() { _mpickShowAll = !_mpickShowAll; renderMusclePicker(); }
 
-// Log a suggested exercise into the same exercise-set store the machine rows use,
-// so history stays in one place rather than forking a second logging surface.
-function mpickLog(exName) {
-  const now = new Date();
-  now.setDate(now.getDate() + (typeof currentDayOffset === 'number' ? currentDayOffset : 0));
-  const dateStr = ds(now);
-  const key = (typeof exSlug === 'function') ? exSlug(exName)
-    : 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  if (typeof setExSet === 'function') setExSet(dateStr, key, 'sets', 1);
-  // Marker rows used to stop at localStorage — the original gymex_ black hole.
-  // Weight and reps are genuinely unknown here, so the row carries none; it
-  // still belongs in the log as "this movement was trained today".
-  if (typeof logActivity === 'function') {
-    const _m = (typeof EX_LIB !== 'undefined' && EX_LIB.find(e => e.name === exName)) || {};
-    logActivity({
-      date: dateStr, kind: 'strength', name: exName, exercise_key: key, set_index: 0,
-      muscle: _m.m || '', equip: _m.equip || '', source: 'quick',
-    });
-  }
-  startRestTimer(null, exName);
+// mpickLog() lived here until 2026-09-07. It wrote a marker row with a set
+// count but no weight and no reps, then closed the picker — a second logging
+// surface that recorded less than the real one. mpickDoing() replaces it by
+// opening the actual set-entry screen, so it was deleted rather than left
+// orphaned. A writer with no reader is how the gymex_ black hole started.
+
+// "Doing this" from the browse view (2026-09-07).
+//
+// It used to write a marker row with no weight and no reps, then close. So
+// browsing and logging were different acts — you could say "I did this" but not
+// say what you did. Now it opens the same per-exercise screen the session
+// logger uses: one set-entry surface, reached from anywhere.
+//
+// The rest timer still starts, because the button is pressed AFTER the set, not
+// before — you log the set you just finished while the clock runs. That's the
+// real sequence at a rack.
+function mpickDoing(exName, restSecs) {
+  const key = exSlug(exName);
+  _exNameCache[key] = exName;
   closeMusclePicker();
-  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  _sessReturnTo = 'picker';
+  openExercise(key, exName);
+  startRestTimer(restSecs || 120, exName);
 }
 
 function renderMusclePicker() {
@@ -11126,10 +11127,10 @@ function renderMusclePicker() {
       <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:4px">${e.cue}</div>
       ${flags}
       <div style="display:flex;gap:5px;margin-top:7px">
-        <button onclick="mpickLog('${e.name.replace(/'/g, "\\'")}')"
-          style="flex:1;padding:6px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — start rest timer</button>
+        <button onclick="mpickDoing('${e.name.replace(/'/g, "\\'")}',${e.rest})"
+          style="flex:1;padding:8px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — log sets</button>
         <button onclick="startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
-          style="padding:6px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10px;cursor:pointer;font-family:inherit">⏱</button>
+          style="padding:8px 11px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit" title="Rest timer only">⏱</button>
       </div>
     </div>`;
   }).join('');
@@ -11584,6 +11585,9 @@ function setGuidance(muscleId, setsThisSession) {
 let SESSION = null;            // { client_id, date, plan[], done[], status }
 let _sessEx = null;            // exercise key currently open full-screen
 let _sessExName = '';
+// Where the exercise screen was opened FROM, so Back returns there instead of
+// dumping a browsing user into the plan builder they never asked for.
+let _sessReturnTo = null;      // 'picker' | null
 
 function _sessSave() {
   try { localStorage.setItem('workout_session', JSON.stringify(SESSION)); } catch (e) {}
@@ -13088,6 +13092,7 @@ function closeSessionScreen() {
   const bd = document.getElementById('session-backdrop');
   if (bd) bd.classList.remove('open');
   _sessEx = null;
+  _sessReturnTo = null;   // stale return target would hijack the next open
 }
 function _sessTogglePlan(mid) {
   const i = _sessPlanDraft.indexOf(mid);
@@ -13224,7 +13229,7 @@ function renderCardioScreen() {
   const totalS = rows.reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
       ${CARDIO_MODES.map(m => `<button onclick="_cardioMode='${m.id}';renderCardioScreen()"
         style="padding:5px 9px;border-radius:14px;border:1px solid ${m.id === mode.id ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${m.id === mode.id ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${m.id === mode.id ? 'var(--cyan)' : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${m.icon} ${m.label}</button>`).join('')}
@@ -13266,7 +13271,17 @@ function openExercise(key, name) {
   document.getElementById('session-backdrop').classList.add('open');
   renderExerciseScreen();
 }
-function backToPlan() { _sessEx = null; renderSessionScreen(); }
+function backToPlan() {
+  if (_sessReturnTo === 'picker') {
+    _sessReturnTo = null;
+    _sessEx = null;
+    closeSessionScreen();
+    openMusclePicker(_mpickMuscle);
+    return;
+  }
+  _sessEx = null;
+  renderSessionScreen();
+}
 
 function renderExerciseScreen() {
   const body = document.getElementById('session-body');
@@ -13301,7 +13316,7 @@ function renderExerciseScreen() {
     </div>`).join('');
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     ${(function () {
       const v = (typeof progressVerdict === 'function' && ex.m) ? progressVerdict(ex.m) : null;
       if (!v || !v.text) return '';
@@ -13376,7 +13391,8 @@ function renderDayReview() {
     }
     return fmtDur(r.duration_s) || '✓';
   };
-  const kindIcon = { strength:'🏋️', cardio:'🏃', stretch:'🧘', mobility:'🤸' };
+  const kindIcon = { strength:'🏋️', cardio:'🏃', stretch:'🧘', mobility:'🤸', gym_time:'📍' };
+  const unitFor = k => k === 'cardio' ? 'interval' : k === 'gym_time' ? 'session' : 'set';
 
   // Group by exercise so 4 intervals read as one block, not four orphan lines.
   const byEx = {};
@@ -13389,7 +13405,7 @@ function renderDayReview() {
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
         <span style="font-size:13px">${kindIcon[first.kind] || '•'}</span>
         <span style="font-size:12px;font-weight:700;color:var(--text)">${first.exercise_name}</span>
-        <span style="font-size:9.5px;color:var(--text-muted)">${set.length} ${first.kind === 'cardio' ? 'interval' : 'set'}${set.length > 1 ? 's' : ''}</span>
+        <span style="font-size:9.5px;color:var(--text-muted)">${set.length} ${unitFor(first.kind)}${set.length > 1 ? 's' : ''}</span>
       </div>
       ${set.map((r, i) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0 4px 20px;border-bottom:1px solid var(--divider)">
         <span style="font-size:9.5px;color:var(--text-muted);min-width:30px">${i + 1}</span>
@@ -13401,7 +13417,7 @@ function renderDayReview() {
   }).join('');
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     ${rows.length ? blocks : '<div style="font-size:11px;color:var(--text-muted);padding:16px 0;text-align:center">Nothing logged today yet.</div>'}
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--divider);font-size:10.5px;color:var(--text-muted);line-height:1.7">
       <b style="color:var(--text-dim)">This week</b><br>
@@ -13584,6 +13600,143 @@ function renderRestTimer() {
   // viewport width. Read after innerHTML so offsetHeight reflects this render.
   document.body.classList.add('rest-active');
   document.documentElement.style.setProperty('--rest-bar-h', el.offsetHeight + 'px');
+}
+
+// ══════════════════════════════════════════════════════
+// "I'M AT THE GYM" CLOCK  (task #30, 2026-09-07)
+// ══════════════════════════════════════════════════════
+// Wall-clock time spent training. Craig asked for it; two honest caveats that
+// shaped the build:
+//
+// 1. TIME AT THE GYM IS A WEAK TRAINING METRIC. It counts queueing for a rack,
+//    scrolling, and talking. It is NOT work done, so it is logged under its own
+//    kind ('gym_time') and never enters strength volume or set counts.
+//    Where it IS useful for Craig specifically: his own pattern note says a 2hr
+//    gym leaves him shaky. Duration is a fatigue//systemic-load signal for him,
+//    and pairing it against how the next day feels is the actual payoff.
+//
+// 2. A MANUAL TIMER GETS LEFT RUNNING. He will drive home with it counting.
+//    So: elapsed is derived from a stored timestamp (never a tick counter, which
+//    dies when the phone sleeps or the PWA is evicted), and anything over
+//    GYMCLOCK_SANE_H prompts on return instead of silently logging a 9-hour
+//    workout. Nothing auto-logs; an implausible number is offered for correction.
+
+let GYMCLOCK = null;                 // { startedAt:<ms>, date:'YYYY-MM-DD' }
+let _gymClockTick = null;
+const GYMCLOCK_SANE_H = 4;           // beyond this, ask rather than assume
+
+function _gymClockSave() {
+  try {
+    if (GYMCLOCK) localStorage.setItem('gym_clock', JSON.stringify(GYMCLOCK));
+    else localStorage.removeItem('gym_clock');
+  } catch (e) {}
+}
+function _gymClockLoad() {
+  try { GYMCLOCK = JSON.parse(localStorage.getItem('gym_clock') || 'null'); }
+  catch (e) { GYMCLOCK = null; }
+  if (GYMCLOCK && !GYMCLOCK.startedAt) GYMCLOCK = null;
+  if (GYMCLOCK) _gymClockStartTicking();
+  return GYMCLOCK;
+}
+function gymClockElapsedS() {
+  if (!GYMCLOCK) return 0;
+  return Math.max(0, Math.round((Date.now() - GYMCLOCK.startedAt) / 1000));
+}
+function gymClockFmt(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? h + 'h ' + String(m).padStart(2, '0') + 'm'
+           : m + 'm ' + String(s % 60).padStart(2, '0') + 's';
+}
+function _gymClockStartTicking() {
+  if (_gymClockTick) clearInterval(_gymClockTick);
+  // 10s is plenty for a display reading in minutes, and cheap on battery.
+  _gymClockTick = setInterval(() => { renderGymClock(); }, 10000);
+}
+function _gymClockStopTicking() {
+  if (_gymClockTick) clearInterval(_gymClockTick);
+  _gymClockTick = null;
+}
+
+function gymClockStart() {
+  GYMCLOCK = { startedAt: Date.now(), date: ds(new Date()) };
+  _gymClockSave();
+  _gymClockStartTicking();
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// mins optional — used when the user corrects an implausible elapsed time.
+function gymClockStop(mins) {
+  if (!GYMCLOCK) return;
+  const secs = (mins !== undefined && mins !== null)
+    ? Math.round(Number(mins) * 60)
+    : gymClockElapsedS();
+  const dateStr = GYMCLOCK.date || ds(new Date());
+  GYMCLOCK = null;
+  _gymClockSave();
+  _gymClockStopTicking();
+  if (secs >= 60 && typeof logActivity === 'function') {
+    logActivity({
+      date: dateStr, kind: 'gym_time', name: 'Time training',
+      exercise_key: 'gym_time', set_index: 0,
+      duration_s: secs, source: 'clock',
+    });
+  }
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+function gymClockDiscard() {
+  GYMCLOCK = null;
+  _gymClockSave();
+  _gymClockStopTicking();
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// Total logged training time for a day, for the capacity card and day review.
+function gymTimeTodayS(dateStr) {
+  return getActivity(dateStr || ds(new Date()))
+    .filter(r => r.kind === 'gym_time')
+    .reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
+}
+
+function renderGymClock() {
+  const el = document.getElementById('gym-clock-host');
+  if (!el) return;
+  const loggedS = gymTimeTodayS();
+
+  if (!GYMCLOCK) {
+    el.innerHTML = `
+      <button onclick="gymClockStart()" style="width:100%;margin-top:5px;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+        📍 I'm at the gym${loggedS ? ` · ${gymClockFmt(loggedS)} logged today` : ''}</button>`;
+    return;
+  }
+
+  const s = gymClockElapsedS();
+  const over = s > GYMCLOCK_SANE_H * 3600;
+  if (over) {
+    // Do not silently log a 9-hour workout. Offer the likely truth instead.
+    el.innerHTML = `
+      <div style="margin-top:5px;padding:10px;border-radius:7px;border:1px solid var(--orange-border, var(--orange));background:var(--orange-bg)">
+        <div style="font-size:11px;font-weight:700;color:var(--orange)">Clock has run ${gymClockFmt(s)}</div>
+        <div style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-top:3px">That's longer than a session — it was probably left running. How long were you actually training?</div>
+        <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+          ${[45, 60, 75, 90, 120].map(m => `<button onclick="gymClockStop(${m})" style="flex:1;min-width:52px;padding:8px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${m}m</button>`).join('')}
+        </div>
+        <button onclick="gymClockDiscard()" style="width:100%;margin-top:5px;padding:7px;border-radius:6px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">Discard — I wasn't training</button>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="margin-top:5px;padding:10px 11px;border-radius:7px;border:1px solid var(--green-border);background:var(--green-bg);display:flex;align-items:center;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green);line-height:1.1">${gymClockFmt(s)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">At the gym${loggedS ? ` · ${gymClockFmt(loggedS)} earlier today` : ''}</div>
+      </div>
+      <button onclick="gymClockStop()" style="padding:10px 14px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Done</button>
+    </div>`;
 }
 
 const GYM_CARDIO = [
@@ -16633,6 +16786,7 @@ function buildActivityDecisionTree(dateStr) {
       </div>
       <div class="adt-row">${chips}</div>
       ${intentHtml}
+      <div id="gym-clock-host"></div>
       <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
       <button onclick="openMusclePicker()" style="width:100%;margin-top:5px;padding:7px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">Just browse exercises</button>
     </div>
@@ -19197,6 +19351,8 @@ function renderDaily() {
 
   // Task #16 — activity decision tree at the top of the workout card
   const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr) : '';
+  // #gym-clock-host lives inside adtHtml, so it only exists after this write —
+  // renderGymClock() is called at the end of this function, not here.
   wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
@@ -19527,6 +19683,9 @@ function renderDaily() {
     </div>
   `;
   restoreOpenSections(dateStr);
+  // The gym clock's host div is written by buildActivityDecisionTree above, so
+  // it can only be filled once wc.innerHTML has landed.
+  if (typeof renderGymClock === 'function') renderGymClock();
   // Auto-fire check-in prompts on today's view only, with a slight delay so the
   // dashboard paints first. Morning takes priority over evening if both eligible.
   if (currentDayOffset === 0) {
@@ -20129,6 +20288,9 @@ async function refreshData(btn) {
 document.addEventListener('DOMContentLoaded', async () => {
   loadTheme();
   initSupabase();
+  // Restore a gym clock left running through a reload, phone lock, or PWA
+  // eviction. Elapsed is derived from the stored timestamp, so nothing is lost.
+  if (typeof _gymClockLoad === 'function') _gymClockLoad();
 
   // Check for existing session
   const loggedIn = await checkAuth();
