@@ -2340,6 +2340,12 @@
   .popup-close:hover { background: var(--card-hover); color: var(--text); }
   .popup-body { padding: 16px 24px 20px; }
 
+  /* The rest timer is fixed to the viewport bottom at z-index 9000, above the
+     session popup. Once it got big enough to read at arm's length it also got
+     big enough to sit on top of the Log-set button, so reserve its measured
+     height while it's running. --rest-bar-h is set by renderRestTimer(). */
+  body.rest-active .popup-body { padding-bottom: calc(var(--rest-bar-h, 120px) + 20px); }
+
   /* ── Stats popup tabs ── */
   .stats-tabs { display: flex; gap: 4px; }
   .stats-tab {
@@ -2915,8 +2921,10 @@
   <div id="viewer-banner" style="display:none"></div>
 
   <!-- Rest timer. Fixed to the viewport bottom so it stays visible while you
-       scroll the exercise list mid-session. Hidden until started. -->
-  <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -4px 14px rgba(0,0,0,0.35)"></div>
+       scroll the exercise list mid-session. Hidden until started.
+       padding-bottom uses safe-area-inset so the buttons clear the iPhone home
+       indicator — at bottom:0 the dismiss button sat underneath it. -->
+  <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -6px 20px rgba(0,0,0,0.45);padding-bottom:env(safe-area-inset-bottom,0px)"></div>
 
   <!-- Custody coverage warning. Silent expiry is the failure mode this catches:
        between Jul 1 and Aug 14 2026 the app ran 45 days with no custody data
@@ -3457,7 +3465,7 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.07.03-dev';
+const APP_VERSION = '2026.09.07.05-dev';
 const BUILD_CHANNEL = 'dev';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11050,8 +11058,19 @@ function mpickLog(exName) {
   const now = new Date();
   now.setDate(now.getDate() + (typeof currentDayOffset === 'number' ? currentDayOffset : 0));
   const dateStr = ds(now);
-  const key = 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  const key = (typeof exSlug === 'function') ? exSlug(exName)
+    : 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   if (typeof setExSet === 'function') setExSet(dateStr, key, 'sets', 1);
+  // Marker rows used to stop at localStorage — the original gymex_ black hole.
+  // Weight and reps are genuinely unknown here, so the row carries none; it
+  // still belongs in the log as "this movement was trained today".
+  if (typeof logActivity === 'function') {
+    const _m = (typeof EX_LIB !== 'undefined' && EX_LIB.find(e => e.name === exName)) || {};
+    logActivity({
+      date: dateStr, kind: 'strength', name: exName, exercise_key: key, set_index: 0,
+      muscle: _m.m || '', equip: _m.equip || '', source: 'quick',
+    });
+  }
   startRestTimer(null, exName);
   closeMusclePicker();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
@@ -12943,9 +12962,12 @@ function addSessionSet(exKey, exName, weight, reps, flag) {
   // Write through the existing per-set helper so the spreadsheet and every
   // legacy stats reader keep working — it maintains the aggregate alongside.
   if (typeof setExSetEntry === 'function') {
-    setExSetEntry(dateStr, exKey, idx, 'w', weight);
-    setExSetEntry(dateStr, exKey, idx, 'r', reps);
-    if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+    _exSyncSuspended = true;   // this function logs the activity row itself, below
+    try {
+      setExSetEntry(dateStr, exKey, idx, 'w', weight);
+      setExSetEntry(dateStr, exKey, idx, 'r', reps);
+      if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+    } finally { _exSyncSuspended = false; }
   }
   // Same set also lands in the unified activity log, so weekly load, muscle
   // volume and the day review can see strength work alongside cardio and
@@ -12998,6 +13020,61 @@ function removeSessionSet(exKey, idx) {
 // Hint only — never gates anything.
 function suggestedSetCount() { return 3; }
 
+// ── Recent exercises (2026-09-07) ─────────────────────────────
+// Craig trains a fairly stable set of movements. Making him walk the muscle
+// picker or build a plan to log a lift he did on Tuesday is friction with no
+// payoff. Reads activity_log, which is now the only store, so anything logged
+// any way — session, inline, quick — shows up here.
+function recentExercises(limit, days) {
+  limit = limit || 8;
+  days = days || 28;
+  const seen = {};
+  const out = [];
+  const today = new Date();
+  for (let d = 0; d < days; d++) {
+    const dt = new Date(today);
+    dt.setDate(dt.getDate() - d);
+    const dateStr = ds(dt);
+    const rows = getActivity(dateStr).filter(r => r.kind === 'strength' && r.exercise_name);
+    rows.forEach(r => {
+      if (seen[r.exercise_key]) return;
+      seen[r.exercise_key] = true;
+      const sameEx = rows.filter(x => x.exercise_key === r.exercise_key);
+      const top = sameEx.reduce((a, x) => (Number(x.weight) || 0) > (Number(a.weight) || 0) ? x : a, sameEx[0]);
+      out.push({
+        key: r.exercise_key,
+        name: r.exercise_name,
+        daysAgo: d,
+        sets: sameEx.length,
+        weight: top && top.weight ? Number(top.weight) : null,
+        reps: top && top.reps ? Number(top.reps) : null,
+      });
+    });
+    if (out.length >= limit) break;
+  }
+  return out.slice(0, limit);
+}
+
+// Rendered on the plan builder and mid-session. One tap goes straight to the
+// set entry screen — no plan required to log one lift.
+function recentExercisesHtml(limit) {
+  const recent = recentExercises(limit || 6);
+  if (!recent.length) return '';
+  const chips = recent.map(r => {
+    const when = r.daysAgo === 0 ? 'today' : r.daysAgo === 1 ? 'yesterday' : r.daysAgo + 'd ago';
+    const last = (r.weight && r.reps) ? `${r.weight}×${r.reps}` : `${r.sets} set${r.sets > 1 ? 's' : ''}`;
+    return `<button onclick="openExercise('${r.key}','${String(r.name).replace(/'/g, "\\'")}')"
+      style="text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:11.5px;font-weight:600;color:var(--text)">${r.name}</span>
+      <span style="font-size:9.5px;color:var(--text-muted)">${last} · ${when}</span>
+    </button>`;
+  }).join('');
+  return `<div style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Recent</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">${chips}</div>
+  </div>`;
+}
+
 // ── Screens ───────────────────────────────────────────────────
 let _sessPlanDraft = [];
 
@@ -13031,8 +13108,8 @@ function renderSessionScreen() {
   // B: no session yet → plan builder
   if (!SESSION) {
     if (title) title.textContent = 'Plan your session';
-    body.innerHTML = `
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Pick what you're working today. You can change it mid-session.</div>
+    body.innerHTML = recentExercisesHtml(6) + `
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Or pick what you're working today. You can change it mid-session.</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
         ${MUSCLE_GROUPS.map(m => {
           const on = _sessPlanDraft.indexOf(m.id) !== -1;
@@ -13065,7 +13142,7 @@ function renderSessionScreen() {
     if (!exs.length) exs = _mpickExercisesFor(mid).filter(e => e.equip === 'bw');
     exs = exs.slice(0, 4);
     const rows = exs.map(e => {
-      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const key = exSlug(e.name);
       const sets = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : [];
       const doneCls = sets.length ? 'var(--green)' : 'var(--text)';
       return `<div onclick="openExercise('${key}','${e.name.replace(/'/g, "\\'")}')"
@@ -13078,7 +13155,7 @@ function renderSessionScreen() {
       </div>`;
     }).join('');
     const anyDone = exs.some(e => {
-      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const key = exSlug(e.name);
       return ((typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : []).length > 0;
     });
     return `<div style="margin-bottom:12px">
@@ -13086,7 +13163,7 @@ function renderSessionScreen() {
       ${rows}</div>`;
   }).join('');
 
-  body.innerHTML = groups + `
+  body.innerHTML = groups + recentExercisesHtml(4) + `
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Cardio</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -13469,25 +13546,44 @@ function _restFmt(s) {
 function renderRestTimer() {
   const el = document.getElementById('rest-timer-bar');
   if (!el) return;
-  if (!_restTimer.running) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (!_restTimer.running) {
+    el.style.display = 'none'; el.innerHTML = '';
+    document.body.classList.remove('rest-active');
+    return;
+  }
   const over = _restTimer.remaining < 0;
   const tone = over ? 'green' : (_restTimer.remaining <= 10 ? 'orange' : 'cyan');
   const pct = _restTimer.target > 0
     ? Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) : 100;
   el.style.display = 'block';
+  // Sized to be read at arm's length, from a bench, mid-set. The clock is the
+  // only thing that matters at a glance, so it gets the space; the label and
+  // status drop to secondary. clamp() keeps it large on a phone without it
+  // becoming absurd on a desktop window.
+  //
+  // Buttons are 46px tall — Apple's minimum touch target is 44px and the old
+  // 24px ones were genuinely hard to hit with sweaty hands. Progress moved to a
+  // full-bleed bar across the top edge so it reads peripherally, without having
+  // to focus on it.
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px">
-      <div style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--${tone});min-width:66px">${_restFmt(_restTimer.remaining)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:10px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_restTimer.label || 'Rest'}</div>
-        <div style="font-size:9px;color:var(--text-muted)">${over ? 'Ready — extra rest is fine, note it if it was a lot' : 'Resting'}</div>
-        <div style="height:3px;border-radius:2px;background:var(--divider);margin-top:4px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
-        </div>
+    <div style="height:6px;background:var(--divider);overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px 14px">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:var(--${tone})">${_restFmt(_restTimer.remaining)}</div>
+        <div style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px">${_restTimer.label || 'Rest'}</div>
+        <div style="font-size:11px;color:${over ? 'var(--green)' : 'var(--text-muted)'};font-weight:${over ? '700' : '400'};margin-top:1px">${over ? 'Ready — go' : 'Resting'}</div>
       </div>
-      <button onclick="adjustRestTimer(30)" style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
-      <button onclick="stopRestTimer()" style="padding:4px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit">✕</button>
+      <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
+        <button onclick="adjustRestTimer(30)" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
+        <button onclick="stopRestTimer()" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--${tone}-border, var(--card-border));background:${over ? 'var(--green-bg)' : 'var(--input-bg)'};color:${over ? 'var(--green)' : 'var(--text-dim)'};font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">${over ? 'Done' : 'Skip'}</button>
+      </div>
     </div>`;
+  // Measured, not guessed — the clock uses clamp() so the height varies with
+  // viewport width. Read after innerHTML so offsetHeight reflects this render.
+  document.body.classList.add('rest-active');
+  document.documentElement.style.setProperty('--rest-bar-h', el.offsetHeight + 'px');
 }
 
 const GYM_CARDIO = [
@@ -17429,6 +17525,150 @@ function setExSet(dateStr, exKey, field, val) {
   if (!sets[exKey]) sets[exKey] = {};
   sets[exKey][field] = val;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
+  syncCardioAggToActivity(dateStr, exKey);
+}
+
+// ─── One store for sets (2026-09-07) ──────────────────────────────────────
+// Two logging paths had grown up independently:
+//   * session logger  — key gymex_<slug>, writes activity_log -> Supabase
+//   * inline fields in the routine popup — key <routineKey>_<i>, writes
+//     exsets_ localStorage and NOTHING else
+// Same lift, two unrelated records, and the inline one never left the phone.
+// Craig hit it from the other side: "when I click 'log exercise' it brings me
+// up to a completely different gym exercise tracker."
+//
+// Same failure family as the gymex_ black hole and the Body module: a writer
+// with no reader. Fixed at the storage layer so every call site inherits it —
+// patching the call sites is what let the last one recur.
+//
+// exsets_ stays the offline buffer (gym basements have no signal);
+// activity_log is the source of truth.
+
+function exSlug(name) {
+  return 'gymex_' + String(name || '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+// Movement-identity key, migrating any data written under the old positional
+// key on read. Read-through rather than a one-shot migration pass: a one-shot
+// flag that latches on an empty list is precisely what silently ate the Body
+// module's data, and it never retried.
+function exSetKey(dateStr, routineKey, i, exName) {
+  if (!exName) return routineKey + '_' + i;
+  const modern = exSlug(exName);
+  _exNameCache[modern] = exName;
+  const legacy = routineKey + '_' + i;
+  const all = getExSets(dateStr);
+  const old = all[legacy];
+  const hasData = old && (Array.isArray(old.entries) ? old.entries.length : (old.weight || old.reps || old.time || old.dist));
+  if (!all[modern] && hasData) {
+    all[modern] = Object.assign({}, old, { name: exName });
+    delete all[legacy];
+    try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+    syncExSetsToActivity(dateStr, modern, exName);
+  }
+  return modern;
+}
+
+// Mirror entries[] into activity_log. client_id is deterministic
+// (al-<date>-<exKey>-<setIndex>), so repeat calls upsert in place instead of
+// piling up duplicates on every keystroke.
+// The inline writers (setExSetEntry, addExSetRow…) only ever receive a key, so
+// the name has to be recoverable from it or the sync silently no-ops — which is
+// how this whole class of bug starts. exSlug is deterministic, so a reverse
+// lookup against EX_LIB is exact; the de-slug is a last resort for movements
+// that live in ROUTINES but not EX_LIB.
+// Names seen this session, so a routine movement that isn't in EX_LIB keeps its
+// real label ("Lat pulldown (wide)") instead of a de-slugged approximation.
+const _exNameCache = {};
+
+function exNameForKey(exKey, data) {
+  if (data && data.name) return data.name;
+  if (_exNameCache[exKey]) return _exNameCache[exKey];
+  if (typeof EX_LIB !== 'undefined') {
+    const hit = EX_LIB.find(e => exSlug(e.name) === exKey);
+    if (hit) return hit.name;
+  }
+  if (/^gymex_/.test(exKey || '')) {
+    const words = exKey.replace(/^gymex_/, '').replace(/_/g, ' ').trim();
+    return words ? words.charAt(0).toUpperCase() + words.slice(1) : '';
+  }
+  return '';
+}
+
+// The session logger writes the aggregate AND logs the activity row itself.
+// Without this guard each set would fire three redundant Supabase upserts
+// (one per field written) before the real one — needless chatter on gym wifi.
+let _exSyncSuspended = false;
+
+function syncExSetsToActivity(dateStr, exKey, exName) {
+  if (_exSyncSuspended) return;
+  if (typeof logActivity !== 'function' || typeof getActivity !== 'function') return;
+  const all = getExSets(dateStr);
+  const data = all[exKey] || {};
+  const name = exName || exNameForKey(exKey, data);
+  if (!name) return;
+  if (data.name !== name) {
+    data.name = name;
+    try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+  }
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  const meta = (typeof EX_LIB !== 'undefined' && EX_LIB.find(e => e.name === name)) || {};
+  const existing = getActivity(dateStr).filter(r => r.exercise_key === exKey);
+  // Reps are what make a set a set. addExSetRow pre-fills the new row's weight
+  // from the previous set, so "has a weight" would log every half-typed row as
+  // a completed 130×0.
+  const filled = e => !!(e && Number(e.r) > 0);
+
+  entries.forEach((e, idx) => {
+    if (!filled(e)) return;  // a blank row the UI just added is not a logged set
+    const prev = existing.find(r => r.set_index === idx);
+    logActivity({
+      date: dateStr, kind: 'strength', name: name, exercise_key: exKey,
+      set_index: idx, muscle: meta.m || '', equip: meta.equip || '',
+      weight: e.w || null, reps: e.r || null, flag: e.flag || '',
+      rest_s: prev ? prev.rest_s : null,   // keep a rest that was actually measured
+      source: 'inline',
+    });
+  });
+  // Sets cleared or deleted in the UI must not linger in the log. Only ever
+  // prune rows this path wrote — a session-logged set for the same movement is
+  // not ours to delete.
+  existing
+    .filter(r => (r.source || '') === 'inline')
+    .filter(r => r.set_index >= entries.length || !filled(entries[r.set_index]))
+    .forEach(r => removeActivity(dateStr, r.client_id));
+}
+
+// The aggregate path (cardio machines in the gym popup: time / distance, no
+// entries[]). Same bug, same fix — these never left the device either.
+function syncCardioAggToActivity(dateStr, exKey) {
+  if (typeof logActivity !== 'function') return;
+  if (!/^gymcardio_|^gymmachine_/.test(exKey || '')) return;
+  const data = getExSets(dateStr)[exKey] || {};
+  // Apple Health already owns its own record of these; mirroring them here
+  // would double-count the same session.
+  if (data.source === 'apple_health') return;
+  const mins = parseFloat(data.time) || 0;
+  const dist = parseFloat(data.dist) || 0;
+  const label = data.name || exKey.replace(/^gym(cardio|machine)_/, '').replace(/_/g, ' ');
+  const existing = getActivity(dateStr).find(r => r.exercise_key === exKey);
+  if (!mins && !dist) {
+    if (existing && (existing.source || '') === 'inline') removeActivity(dateStr, existing.client_id);
+    return;
+  }
+  // dist is stored in whatever unit the machine uses — don't assume km.
+  const cid = exKey.replace(/^gymcardio_/, '');
+  const unit = data.distUnit
+    || (typeof GYM_CARDIO !== 'undefined' && (GYM_CARDIO.find(c => c.id === cid) || {}).distUnit)
+    || 'm';
+  const mult = unit === 'km' ? 1000 : unit === 'mi' ? 1609.34 : 1;
+  logActivity({
+    date: dateStr, kind: 'cardio', name: label, exercise_key: exKey, set_index: 0,
+    distance_m: dist ? Math.round(dist * mult) : null,
+    duration_s: mins ? Math.round(mins * 60) : null,
+    source: 'inline',
+  });
 }
 
 // ─── Per-set entries (v1, 2026-05-10) ─────────────────────────────────────
@@ -17487,6 +17727,7 @@ function setExSetEntry(dateStr, exKey, idx, field, val) {
   data.reps = first.r || 0;
   data.sets = data.entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  syncExSetsToActivity(dateStr, exKey);
 }
 
 // Add a new empty set row. New set's weight defaults to the last set's weight
@@ -17501,6 +17742,8 @@ function addExSetRow(dateStr, exKey) {
   all[exKey].entries.push({ w: last ? last.w : 0, r: 0, flag: '' });
   all[exKey].sets = all[exKey].entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  // No sync here on purpose. The new row inherits the previous set's weight but
+  // has no reps yet, so it isn't a performed set. It syncs when reps land on it.
   if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
     scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
   } else if (typeof renderDaily === 'function') {
@@ -17519,6 +17762,13 @@ function removeExSetRow(dateStr, exKey, idx) {
   all[exKey].reps = first.r || 0;
   all[exKey].sets = all[exKey].entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  // Removing set 2 of 4 renumbers 3 and 4. Drop this exercise's rows for the
+  // day and re-log the survivors — patching indices in place is how off-by-one
+  // logs happen.
+  getActivity(dateStr)
+    .filter(r => r.exercise_key === exKey)
+    .forEach(r => removeActivity(dateStr, r.client_id));
+  syncExSetsToActivity(dateStr, exKey);
   if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
     scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
   } else if (typeof renderDaily === 'function') {
@@ -17677,8 +17927,8 @@ function buildLiftInlineSummary(dateStr, woType, subtype) {
 
   const rows = exercises.map((ex, i) => {
     const key = 'r_' + routineKey + '_' + i;
-    const exKey = routineKey + '_' + i;
-    const setData = exSets[exKey] || {};
+    const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+    const setData = getExSets(dateStr)[exKey] || {};
     const isDone = !!checked[key];
     const nameLower = (ex.name || '').toLowerCase();
     const isWarmup = ex._warmupCardio || nameLower.includes('warmup');
@@ -18344,8 +18594,8 @@ function openRoutinePopup(routineKey, dateStr) {
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = routineKey + '_' + i;
-      const setData = exSets[exKey] || {};
+      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const setData = getExSets(dateStr)[exKey] || {};
       // Show reps/weight inputs based on routine type
       const _exNameLower = (ex.name || '').toLowerCase();
       const _isWarmup = ex._warmupCardio || _exNameLower.includes('warmup');
@@ -18406,8 +18656,8 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = routineKey + '_' + i;
-      const setData = exSets[exKey] || {};
+      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const setData = getExSets(dateStr)[exKey] || {};
       const showBwTrack = ex.trackReps;
       const timerSecs2 = parseTimerSeconds(ex.sets);
       const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div></div>` : '';
