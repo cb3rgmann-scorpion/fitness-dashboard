@@ -2340,6 +2340,12 @@
   .popup-close:hover { background: var(--card-hover); color: var(--text); }
   .popup-body { padding: 16px 24px 20px; }
 
+  /* The rest timer is fixed to the viewport bottom at z-index 9000, above the
+     session popup. Once it got big enough to read at arm's length it also got
+     big enough to sit on top of the Log-set button, so reserve its measured
+     height while it's running. --rest-bar-h is set by renderRestTimer(). */
+  body.rest-active .popup-body { padding-bottom: calc(var(--rest-bar-h, 120px) + 20px); }
+
   /* ── Stats popup tabs ── */
   .stats-tabs { display: flex; gap: 4px; }
   .stats-tab {
@@ -2915,8 +2921,10 @@
   <div id="viewer-banner" style="display:none"></div>
 
   <!-- Rest timer. Fixed to the viewport bottom so it stays visible while you
-       scroll the exercise list mid-session. Hidden until started. -->
-  <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -4px 14px rgba(0,0,0,0.35)"></div>
+       scroll the exercise list mid-session. Hidden until started.
+       padding-bottom uses safe-area-inset so the buttons clear the iPhone home
+       indicator — at bottom:0 the dismiss button sat underneath it. -->
+  <div id="rest-timer-bar" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:9000;background:var(--card-bg,#1a1a1a);border-top:1px solid var(--card-border);box-shadow:0 -6px 20px rgba(0,0,0,0.45);padding-bottom:env(safe-area-inset-bottom,0px)"></div>
 
   <!-- Custody coverage warning. Silent expiry is the failure mode this catches:
        between Jul 1 and Aug 14 2026 the app ran 45 days with no custody data
@@ -2962,7 +2970,7 @@
 
     <!-- Body Card (task #30, 2026-06-16) — promoted from bottom-bar pill to a daily-view section -->
     <div class="card zone" id="body-card-wrapper" data-zone="body" data-module="body">
-      <div class="card-header" onclick="toggleZone(this, openBodyLog)">
+      <div class="card-header" onclick="toggleZone(this, openSymptomEntry)">
         <div class="card-icon body" style="background:var(--red-bg);color:var(--red)">🩹</div>
         <div class="card-title">Body</div>
       </div>
@@ -3067,6 +3075,28 @@
 <!-- Duplicate "Recurring tasks" popup removed 2026-08-19 — merged into the
      existing Settings → Home / QoL Tasks section. -->
 
+<!-- ═══════════════ STRETCH & MOBILITY (task #25) ═══════════════ -->
+<div class="popup-backdrop" id="stretch-backdrop" onclick="if(event.target===this)closeStretch()">
+  <div class="popup" style="max-width:460px;width:96vw;max-height:92vh">
+    <div class="popup-header">
+      <div class="popup-title" id="stretch-title">Stretch &amp; mobility</div>
+      <button class="popup-close" onclick="closeStretch()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="stretch-body"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SYMPTOM / EPISODES (new core, 2026-09-03) ═══════════════ -->
+<div class="popup-backdrop" id="episode-backdrop" onclick="if(event.target===this)closeSymptomEntry()">
+  <div class="popup" style="max-width:460px;width:96vw;max-height:92vh">
+    <div class="popup-header">
+      <div class="popup-title" id="episode-title">Report a symptom</div>
+      <button class="popup-close" onclick="closeSymptomEntry()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="episode-body"></div>
+  </div>
+</div>
+
 <!-- ═══════════════ ADMIN — USER ACCESS ═══════════════ -->
 <div class="popup-backdrop" id="admin-backdrop" onclick="if(event.target===this)closeAdminPanel()">
   <div class="popup" style="max-width:480px">
@@ -3141,6 +3171,18 @@
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🔑 Users &amp; access</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Grant individual modules to individual people. Someone with only Exercise sees the workout card and nothing else.</div>
         <button onclick="closeSettings(); openAdminPanel();" style="padding:8px 16px;border-radius:6px;border:1px solid var(--purple-border);background:var(--purple-bg);color:var(--purple);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🔑 Manage users</button>
+      </div>
+      <!-- Known conditions (task #26, 2026-09-07) -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🩺 Known conditions</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">What you're dealing with. Movements that make each one worse get hidden rather than flagged.</div>
+        <button onclick="closeSettings(); openStretch('conditions');" style="padding:8px 16px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">🩺 Manage conditions</button>
+      </div>
+      <!-- Occupation (task #24, 2026-09-07) -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🧘 Work &amp; posture</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Your job loads your body in a pattern. Setting it changes which mobility and strengthening work gets prioritised.</div>
+        <div id="occupation-settings-body"></div>
       </div>
       <!-- Training plan, equipment and discretion (2026-08-19). -->
       <div style="margin-bottom:16px">
@@ -3423,8 +3465,8 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.03.01';
-const BUILD_CHANNEL = 'prod';
+const APP_VERSION = '2026.09.07.06';
+const BUILD_CHANNEL = 'dev';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
 }
@@ -4229,6 +4271,7 @@ async function openSettings() {
   }
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
   if (typeof renderBuildInfo === 'function') renderBuildInfo();
+  if (typeof renderOccupationSettings === 'function') renderOccupationSettings();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
   if (typeof loadTrainingPlan === 'function') loadTrainingPlan().then(() => {
     if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
@@ -8861,6 +8904,31 @@ function _migrateAllopurinolToMedTracker() {
 // Click the card header or any row to drill into the Body popup detail view.
 // ════════════════════════════════════════════════════════════════════════════
 function buildBodyCardHtml() {
+  // Episodes are the primary surface now (2026-09-03). The old part-first
+  // body_log list stays below for anything already recorded, but a symptom
+  // report starts here — one tap from the daily view.
+  if (!EPISODES.length) _epLoadLocal();
+  const openEps = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes() : [];
+  const epHtml =
+    `<div onclick="openSymptomEntry()" style="display:flex;align-items:center;gap:9px;padding:12px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border, var(--red));cursor:pointer;margin-bottom:8px;min-height:48px">
+       <span style="font-size:17px">🩹</span>
+       <span style="flex:1;font-size:13.5px;font-weight:700;color:var(--red)">Report a symptom</span>
+       <span style="color:var(--red)">›</span>
+     </div>` +
+    openEps.slice(0, 3).map(e => {
+      const evs = epEventsFor(e.client_id);
+      const last = evs[0];
+      const sev = last && last.severity ? EP_SEVERITY.find(s => s.v === last.severity) : null;
+      const days = Math.max(1, Math.round((new Date(ds(new Date())) - new Date(e.started_on)) / 86400000) + 1);
+      return `<div onclick="openSymptomEntry();_epSetScreen('detail','${e.client_id}')"
+        style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
+        <span style="flex:1;font-size:12.5px;color:var(--text)">${discreetLabel(e.condition)}${e.body_part ? ' · ' + e.body_part : ''}</span>
+        <span style="font-size:11px;color:var(--text-muted)">day ${days}</span>
+        ${sev ? `<span style="font-size:11px;font-weight:700;color:${sev.color}">${sev.label}</span>` : ''}
+      </div>`;
+    }).join('') +
+    (openEps.length > 3 ? `<div onclick="openSymptomEntry();_epSetScreen('list')" style="font-size:11.5px;color:var(--cyan);padding:7px 8px;cursor:pointer">+ ${openEps.length - 3} more ongoing</div>` : '');
+
   // Active body items (last 14 days)
   const activeItems = (typeof getActiveBodyItems === 'function') ? getActiveBodyItems(14) : [];
   // Today's meds status
@@ -8956,12 +9024,13 @@ function buildBodyCardHtml() {
     </div>`);
   }
 
-  // Footer action row — always present
+  // Footer action row — always present. The old body log is still reachable for
+  // meds, appointments, providers and care; symptoms now start with episodes.
   rows.push(`<div class="body-card-footer" onclick="openBodyLog()">
-    <span class="body-card-footer-label">→ Open body log</span>
+    <span class="body-card-footer-label">→ Meds, appointments &amp; care</span>
   </div>`);
 
-  return rows.join('');
+  return epHtml + rows.join('');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -10951,7 +11020,11 @@ function _mpickEquipFilter() {
 }
 function _mpickExercisesFor(muscleId) {
   const eq = _mpickEquipFilter();
-  const all = EX_LIB.filter(e => e.m === muscleId);
+  // Condition gate (2026-09-07): contraindicated movements are removed here, so
+  // every consumer of this function — muscle picker, session plan, variant
+  // suggestions — inherits it rather than each needing its own check.
+  const _cx = (typeof exContraindications === 'function') ? exContraindications() : { blocked: new Set() };
+  const all = EX_LIB.filter(e => e.m === muscleId && !_cx.blocked.has(e.name));
   if (!eq) return all;
   return all.filter(e => eq.indexOf(e.equip) !== -1);
 }
@@ -10979,17 +11052,29 @@ function mpickSelect(id) { _mpickMuscle = id; _mpickShowAll = false; renderMuscl
 function mpickBack()     { _mpickMuscle = null; renderMusclePicker(); }
 function mpickToggleAll() { _mpickShowAll = !_mpickShowAll; renderMusclePicker(); }
 
-// Log a suggested exercise into the same exercise-set store the machine rows use,
-// so history stays in one place rather than forking a second logging surface.
-function mpickLog(exName) {
-  const now = new Date();
-  now.setDate(now.getDate() + (typeof currentDayOffset === 'number' ? currentDayOffset : 0));
-  const dateStr = ds(now);
-  const key = 'gymex_' + exName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-  if (typeof setExSet === 'function') setExSet(dateStr, key, 'sets', 1);
-  startRestTimer(null, exName);
+// mpickLog() lived here until 2026-09-07. It wrote a marker row with a set
+// count but no weight and no reps, then closed the picker — a second logging
+// surface that recorded less than the real one. mpickDoing() replaces it by
+// opening the actual set-entry screen, so it was deleted rather than left
+// orphaned. A writer with no reader is how the gymex_ black hole started.
+
+// "Doing this" from the browse view (2026-09-07).
+//
+// It used to write a marker row with no weight and no reps, then close. So
+// browsing and logging were different acts — you could say "I did this" but not
+// say what you did. Now it opens the same per-exercise screen the session
+// logger uses: one set-entry surface, reached from anywhere.
+//
+// The rest timer still starts, because the button is pressed AFTER the set, not
+// before — you log the set you just finished while the clock runs. That's the
+// real sequence at a rack.
+function mpickDoing(exName, restSecs) {
+  const key = exSlug(exName);
+  _exNameCache[key] = exName;
   closeMusclePicker();
-  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  _sessReturnTo = 'picker';
+  openExercise(key, exName);
+  startRestTimer(restSecs || 120, exName);
 }
 
 function renderMusclePicker() {
@@ -11042,10 +11127,10 @@ function renderMusclePicker() {
       <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:4px">${e.cue}</div>
       ${flags}
       <div style="display:flex;gap:5px;margin-top:7px">
-        <button onclick="mpickLog('${e.name.replace(/'/g, "\\'")}')"
-          style="flex:1;padding:6px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — start rest timer</button>
+        <button onclick="mpickDoing('${e.name.replace(/'/g, "\\'")}',${e.rest})"
+          style="flex:1;padding:8px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✓ Doing this — log sets</button>
         <button onclick="startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
-          style="padding:6px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10px;cursor:pointer;font-family:inherit">⏱</button>
+          style="padding:8px 11px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit" title="Rest timer only">⏱</button>
       </div>
     </div>`;
   }).join('');
@@ -11137,6 +11222,23 @@ function renderBuildInfo() {
     (mismatch
       ? `<div style="margin-top:6px;padding:7px 9px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-weight:700;line-height:1.5">⚠ Mismatch — a ${BUILD_CHANNEL} build is being served from the ${where}. The wrong file was uploaded.</div>`
       : '');
+}
+
+
+function renderOccupationSettings() {
+  const el = document.getElementById('occupation-settings-body');
+  if (!el) return;
+  const cur = getOccupation();
+  el.innerHTML = OCCUPATIONS.map(o => {
+    const on = cur && cur.id === o.id;
+    const p = POSTURAL_PATTERNS[o.pattern] || {};
+    return `<div onclick="setOccupation('${on ? '' : o.id}')"
+      style="padding:11px;border-radius:8px;border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};margin-bottom:6px;cursor:pointer">
+      <div style="font-size:12.5px;font-weight:700;color:${on ? 'var(--green)' : 'var(--text)'}">${on ? '● ' : ''}${o.icon} ${o.label}</div>
+      <div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-top:3px">${(p.loads || []).join(' · ')}</div>
+    </div>`;
+  }).join('') +
+  `<div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:6px">Tap the selected one again to clear it. More occupations are easy to add \u2014 each maps to a posture pattern rather than being its own thing.</div>`;
 }
 
 function renderTrainingSettings() {
@@ -11292,7 +11394,8 @@ function movementFor(exName) {
 }
 function variantsOf(movementId) {
   const names = MOVEMENT_GROUPS[movementId] || [];
-  return EX_LIB.filter(e => names.indexOf(e.name) !== -1);
+  const cx = (typeof exContraindications === 'function') ? exContraindications() : { blocked: new Set() };
+  return EX_LIB.filter(e => names.indexOf(e.name) !== -1 && !cx.blocked.has(e.name));
 }
 
 function e1RM(weight, reps) {
@@ -11482,6 +11585,9 @@ function setGuidance(muscleId, setsThisSession) {
 let SESSION = null;            // { client_id, date, plan[], done[], status }
 let _sessEx = null;            // exercise key currently open full-screen
 let _sessExName = '';
+// Where the exercise screen was opened FROM, so Back returns there instead of
+// dumping a browsing user into the plan builder they never asked for.
+let _sessReturnTo = null;      // 'picker' | null
 
 function _sessSave() {
   try { localStorage.setItem('workout_session', JSON.stringify(SESSION)); } catch (e) {}
@@ -11516,6 +11622,1153 @@ function finishSession() {
   try { localStorage.removeItem('workout_session'); } catch (e) {}
   closeSessionScreen();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// ══════════════════════════════════════════════════════════════
+// STRETCH / MOBILITY LIBRARY  (task #23, 2026-09-07)
+// ══════════════════════════════════════════════════════════════
+// Replaces hardcoded routines with a queryable library.
+//
+// TWO PHYSIO PRINCIPLES BUILT IN, both routinely got wrong:
+//
+// 1. STIFFNESS LOCATION IS OFTEN NOT THE PROBLEM LOCATION. Tight hamstrings
+//    frequently trace to the hip or lumbar spine; a stiff shoulder is commonly a
+//    thoracic issue; ankle restriction refers upward. So a complaint maps to
+//    LIKELY CONTRIBUTORS, not to a stretch for the sore spot. Stretching what
+//    hurts treats the symptom.
+//
+// 2. STATIC STRETCHING BEFORE LIFTING REDUCES FORCE OUTPUT. Mobility work
+//    before, static holds after. `when` carries this and the UI respects it.
+//
+// `type`:  mobility = dynamic, pre-activity · static = held, post-activity
+//          strength = loaded work (the thing that actually fixes occupational pain)
+// `when`:  pre | post | any
+const STRETCH_REGIONS = [
+  { id:'neck',      label:'Neck',            icon:'🦒' },
+  { id:'shoulder',  label:'Shoulders',       icon:'🦾' },
+  { id:'thoracic',  label:'Upper back',      icon:'🔙' },
+  { id:'lowback',   label:'Lower back',      icon:'🪑' },
+  { id:'hip',       label:'Hips',            icon:'🦿' },
+  { id:'hamstring', label:'Hamstrings',      icon:'🦵' },
+  { id:'calf',      label:'Calves / ankles', icon:'🦶' },
+  { id:'wrist',     label:'Wrists / hands',  icon:'🖐️' },
+  { id:'chest',     label:'Chest',           icon:'🫁' },
+];
+
+// Complaint → what's usually actually driving it. Ordered most-likely first.
+const REGION_CONTRIBUTORS = {
+  hamstring: ['hip', 'lowback', 'hamstring'],
+  lowback:   ['hip', 'thoracic', 'hamstring', 'lowback'],
+  shoulder:  ['thoracic', 'chest', 'shoulder'],
+  neck:      ['thoracic', 'chest', 'shoulder', 'neck'],
+  wrist:     ['wrist', 'shoulder', 'thoracic'],
+  calf:      ['calf', 'hip'],
+  hip:       ['hip', 'lowback'],
+  thoracic:  ['thoracic', 'chest'],
+  chest:     ['chest', 'thoracic'],
+};
+
+const STRETCH_LIB = [
+  // ── Thoracic — the quiet driver behind most neck and shoulder complaints ──
+  { id:'t_ext_chair', region:'thoracic', type:'mobility', when:'any', name:'Thoracic extension over a chair',
+    dose:'8-10 slow reps', cue:'Mid-back against the chair edge, hands behind the head, breathe out as you extend. Move the upper back, not the lower — if you feel it in your lumbar, slide higher.' },
+  { id:'t_rot_open', region:'thoracic', type:'mobility', when:'any', name:'Open book rotation',
+    dose:'8 each side', cue:'On your side, knees bent, arms stacked. Open the top arm and follow it with your eyes. Let the ribcage rotate; keep the knees together.' },
+  { id:'t_catcow', region:'thoracic', type:'mobility', when:'pre', name:'Cat-cow',
+    dose:'10 reps', cue:'Slow, synced with breath. Segment by segment rather than one big arch.' },
+
+  // ── Chest ──
+  { id:'c_doorway', region:'chest', type:'static', when:'post', name:'Doorway pec stretch',
+    dose:'30s each side', cue:'Forearm on the frame, elbow at shoulder height, step through gently. Stop well short of a sharp pull at the front of the shoulder.', flags:['shoulder'] },
+  { id:'c_floor_angel', region:'chest', type:'mobility', when:'any', name:'Floor angels',
+    dose:'8-10 reps', cue:'On your back, arms sliding overhead, keeping wrists and lower back in contact. Only go as far as contact allows — the range is the point, not the reach.' },
+
+  // ── Shoulder ──
+  { id:'s_cars', region:'shoulder', type:'mobility', when:'pre', name:'Shoulder circles, small to large',
+    dose:'8 each direction', cue:'Start plate-sized, build only as far as stays comfortable. With arthritic change, pain-free range is the useful range.', flags:['shoulder'] },
+  { id:'s_sleeper', region:'shoulder', type:'static', when:'post', name:'Cross-body stretch',
+    dose:'30s each side', cue:'Arm across the chest, pull at the upper arm not the elbow. Gentler on the joint than the sleeper stretch.' },
+
+  // ── Neck ──
+  { id:'n_retract', region:'neck', type:'mobility', when:'any', name:'Chin tucks',
+    dose:'10 × 3s hold', cue:'Slide the head back over the shoulders, making a double chin. Not a nod. Directly counters the forward-head posture screens and hands-on work produce.' },
+  { id:'n_uppertrap', region:'neck', type:'static', when:'post', name:'Upper trap stretch',
+    dose:'30s each side', cue:'Ear toward shoulder, opposite hand tucked under the thigh to anchor. No pulling hard on the head.' },
+  { id:'n_levator', region:'neck', type:'static', when:'post', name:'Levator scapulae stretch',
+    dose:'30s each side', cue:'Turn the head 45° away, look down toward the armpit. This is the one that helps the knot at the top of the shoulder blade.' },
+
+  // ── Lower back / hip ──
+  { id:'h_hipflexor', region:'hip', type:'static', when:'post', name:'Half-kneeling hip flexor stretch',
+    dose:'30-45s each side', cue:'Squeeze the back glute FIRST, then shift forward slightly. Without the glute the pelvis just tips and you stretch the lower back instead.' },
+  { id:'h_9090', region:'hip', type:'mobility', when:'any', name:'90/90 hip switches',
+    dose:'8 each side', cue:'Sit with both knees at 90°, rotate side to side. Sit tall — the spine shouldn\'t do the work.' },
+  { id:'h_glutebridge', region:'hip', type:'strength', when:'any', name:'Glute bridge',
+    dose:'15-20 reps', cue:'Ribs down, squeeze at the top. Strength, not a stretch — and the safest posterior-chain option when the back is unhappy.' },
+  { id:'lb_birddog', region:'lowback', type:'strength', when:'any', name:'Bird dog',
+    dose:'8-12 each side', cue:'Opposite arm and leg, slow, hips level. Anti-rotation. One of the few things that is good FOR a cranky lower back rather than a risk to it.' },
+  { id:'lb_deadbug', region:'lowback', type:'strength', when:'any', name:'Dead bug',
+    dose:'8-12 each side', cue:'Lower back stays flat on the floor. Stop the moment it lifts.' },
+  { id:'lb_childs', region:'lowback', type:'static', when:'post', name:'Child\'s pose',
+    dose:'45-60s', cue:'Knees wide, sit back toward the heels, walk the hands forward. Breathe into the back of the ribs.' },
+
+  // ── Hamstring ──
+  { id:'ham_supine', region:'hamstring', type:'static', when:'post', name:'Supine hamstring stretch',
+    dose:'30s each side', cue:'On your back with a strap or towel, other leg bent with the foot down. Lying keeps the lower back out of it, which standing toe-touches do not.' },
+  { id:'ham_hinge', region:'hamstring', type:'mobility', when:'pre', name:'Hip hinge pattern',
+    dose:'10 reps', cue:'Hands on the hip creases, push the hips back with a long spine. This is the movement that protects the back when leaning over a table all day.' },
+
+  // ── Calf / ankle ──
+  { id:'cf_wall', region:'calf', type:'static', when:'post', name:'Wall calf stretch',
+    dose:'30s each side, both bent and straight knee', cue:'Straight knee targets gastroc, bent knee targets soleus. Do both — relevant given the ankle history.' },
+  { id:'cf_ankle_rock', region:'calf', type:'mobility', when:'pre', name:'Ankle rocks',
+    dose:'10 each side', cue:'Knee travels over the toes, heel stays down. Restores the ankle range that standing all day quietly removes.' },
+
+  // ── Wrist / hand — the massage-therapist career-enders ──
+  { id:'w_flexor', region:'wrist', type:'static', when:'post', name:'Forearm flexor stretch',
+    dose:'30s each side', cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gets loaded by every hour of hands-on work.' },
+  { id:'w_extensor', region:'wrist', type:'static', when:'post', name:'Forearm extensor stretch',
+    dose:'30s each side', cue:'Arm straight, palm down, gently press the back of the hand toward you.' },
+  { id:'w_nerve_glide', region:'wrist', type:'mobility', when:'any', name:'Median nerve glide',
+    dose:'5-8 slow reps', cue:'Arm out, palm up, extend the wrist and tip the head away. Should feel like a stretch, never like pins and needles — back off immediately if it tingles.' },
+  { id:'w_cmc_circ', region:'wrist', type:'mobility', when:'any', name:'Thumb CMC circles',
+    dose:'10 each direction', cue:'Slow circles at the base of the thumb, unloaded. The CMC joint is the classic career-ender in hands-on work; keeping it moving matters more than stretching it.' },
+  { id:'w_grip_endur', region:'wrist', type:'strength', when:'any', name:'Grip endurance holds',
+    dose:'3 × 30-45s, light', cue:'Sustained light squeeze on a ball, not maximum crush. Occupational hand pain is an ENDURANCE problem — the tissue is doing low-level work for hours, so train the same quality.' },
+  { id:'w_wrist_ext_str', region:'wrist', type:'strength', when:'any', name:'Wrist extensor strengthening',
+    dose:'2 × 15 each side, very light', cue:'Forearm supported, palm down, lift the hand against a light weight or band. Underused antagonist to all that gripping.' },
+
+  // ── Added for healthcare / lifting work (2026-09-07) ──
+  { id:'lb_sideplank', region:'lowback', type:'strength', when:'any', name:'Side plank',
+    dose:'20-45s each side', cue:'Stack the hips, don\'t let them sag. Trains the lateral core that resists being pulled sideways — which is what happens every time you take a patient\'s weight on one side.' },
+  { id:'lb_carry', region:'lowback', type:'strength', when:'any', name:'Suitcase carry',
+    dose:'30-40m each side', cue:'One heavy weight, walk tall, resist the lean. The closest thing in a gym to holding someone up with one arm, and it builds the exact endurance that protects the back.' },
+  { id:'cf_calfraise', region:'calf', type:'strength', when:'any', name:'Calf raises',
+    dose:'2 × 15-20', cue:'Off a step, full range, slow down. Standing tolerance is trainable — calves that fatigue at hour eight are why the feet and back start hurting.' },
+  { id:'cf_plantar', region:'calf', type:'static', when:'post', name:'Plantar fascia release',
+    dose:'60s each foot', cue:'Roll the arch over a ball, firm but not sharp. Best done first thing in the morning and at the end of a long shift.' },
+
+  // ── Scapular strength — the antagonist work that actually fixes posture ──
+  { id:'sc_ytw', region:'shoulder', type:'strength', when:'any', name:'Prone Y-T-W raises',
+    dose:'8-10 each shape', cue:'Face down, lift the arms into a Y, then T, then W. No weight needed. The single most useful thing after a day held in front of you.' },
+  { id:'sc_band_row', region:'shoulder', type:'strength', when:'any', name:'Band row',
+    dose:'2-3 × 12-15', cue:'Elbows to the ribs, shoulder blades back and down. Hold the end position for a beat.' },
+  { id:'sc_ext_rot', region:'shoulder', type:'strength', when:'any', name:'Band external rotation',
+    dose:'2 × 15 each side', cue:'Elbow tucked to the side, rotate the forearm out. Light — this is rotator cuff work, not a lift.', flags:['shoulder'] },
+  { id:'sc_facepull', region:'shoulder', type:'strength', when:'any', name:'Face pull',
+    dose:'2-3 × 15', cue:'Pull to the forehead, elbows high, rotate out at the end. Best single movement for shoulder health.' },
+];
+
+function stretchesFor(regionId, opts) {
+  opts = opts || {};
+  const regions = opts.includeContributors === false ? [regionId] : (REGION_CONTRIBUTORS[regionId] || [regionId]);
+  let out = STRETCH_LIB.filter(s => regions.indexOf(s.region) !== -1);
+  if (opts.when && opts.when !== 'any') out = out.filter(s => s.when === opts.when || s.when === 'any');
+  if (opts.type) out = out.filter(s => s.type === opts.type);
+  // Contraindication gate — blocked movements are REMOVED, not annotated. A
+  // warning next to a hamstring stretch doesn't help someone with sciatica who
+  // is already convinced their hamstrings are the problem.
+  if (opts.ignoreConditions !== true && typeof contraindications === 'function') {
+    const { blocked } = contraindications();
+    out = out.filter(s => !blocked.has(s.id));
+  }
+  // Movements the user's conditions actively recommend float to the top.
+  const helps = (typeof conditionHelps === 'function') ? conditionHelps() : [];
+  out.sort((a, b) => {
+    const ha = helps.indexOf(a.id) !== -1 ? 0 : 1;
+    const hb = helps.indexOf(b.id) !== -1 ? 0 : 1;
+    if (ha !== hb) return ha - hb;
+    // Otherwise keep contributor order — likely driver first, sore spot last.
+    return regions.indexOf(a.region) - regions.indexOf(b.region);
+  });
+  return out;
+}
+function stretchById(id) { return STRETCH_LIB.find(s => s.id === id); }
+
+// ══════════════════════════════════════════════════════════════
+// KNOWN CONDITIONS + CONTRAINDICATIONS  (task #26, 2026-09-07)
+// ══════════════════════════════════════════════════════════════
+// Phase B of the 2026-05-14 refactor plan, finally built.
+//
+// Conditions SUPPRESS movements, they don't just add them. That's the whole
+// point. Before this, someone reporting tight hamstrings got hamstring stretches
+// — which is the commonest way to worsen sciatica, because that "tightness" is a
+// protectively irritated nerve, not a short muscle.
+//
+// `redFlags` are not decoration. Cauda equina is measured in hours, and median
+// nerve compression with thenar wasting is a "this month, not next year"
+// problem. These are surfaced BEFORE any exercise content.
+//
+// NOT A DIAGNOSTIC TOOL. Conditions are self-declared. Everything here assumes
+// someone has already worked out what they have, or is describing what they've
+// been told. Where the cause changes the treatment — sciatica direction most of
+// all — the app asks rather than guesses.
+const CONDITIONS = [
+  {
+    id:'sciatica', icon:'⚡', label:'Sciatica / nerve pain down the leg', region:'lowback',
+    redFlags:[
+      'Numbness in the saddle area — inner thighs, groin or buttocks',
+      'Any change in bladder or bowel control',
+      'Weakness in both legs',
+      'Worsening weakness, especially the foot dropping',
+    ],
+    redFlagAction:'These point to cauda equina syndrome. Emergency department, today — not a GP appointment. Rare, but it is measured in hours.',
+    guidance:[
+      'Keep moving. Bed rest makes sciatica worse — walking is usually the single most useful thing.',
+      'Watch which way the pain travels. Moving OUT of the leg and toward the back is good, even if the back feels briefly worse. Travelling further down the leg means stop.',
+      'Most cases settle in 6-12 weeks without any intervention.',
+    ],
+    // Direction is asked, not assumed: disc cases usually prefer extension,
+    // stenosis flexion, and the wrong one provokes symptoms.
+    screening:{
+      key:'direction',
+      question:'Which feels better?',
+      options:[
+        { v:'extension', label:'Leaning back / lying face down', note:'Common with disc-related sciatica.' },
+        { v:'flexion',   label:'Leaning forward / sitting',      note:'Common with spinal stenosis.' },
+        { v:'unknown',   label:'Not sure yet',                   note:'Try both gently and watch which way the leg pain goes.' },
+      ],
+    },
+    helpsIfExtension:['lb_birddog','lb_deadbug','h_glutebridge'],
+    helpsIfFlexion:['lb_childs','h_9090','lb_deadbug'],
+    helps:['lb_birddog','lb_deadbug'],
+    // The critical bit — these get hidden, not annotated.
+    avoid:['ham_supine','ham_hinge','lb_childs'],
+    avoidNote:'Hamstring stretches are suppressed. With sciatica that tight feeling is nerve, not muscle — stretching it tensions an already irritated nerve and typically makes things worse.',
+  },
+  {
+    id:'shoulder_oa', icon:'🦾', label:'Shoulder arthritis / impingement', region:'shoulder',
+    redFlags:['Sudden loss of the ability to lift the arm at all', 'Deformity or severe pain after a fall'],
+    redFlagAction:'A sudden inability to raise the arm can mean a significant tear. Get it looked at.',
+    guidance:[
+      'Pain-free range is the useful range. Chasing the end of the arc gains nothing and costs a flare.',
+      'Strengthening the rotator cuff and scapular muscles does more than stretching the joint.',
+      'Overhead work is not banned — it just needs to be earned and kept below the pinch point.',
+    ],
+    helps:['sc_ext_rot','sc_ytw','sc_band_row','sc_facepull','t_ext_chair','s_cars'],
+    avoid:['c_doorway'],
+    avoidNote:'Aggressive doorway pec stretching at shoulder height is suppressed — it drives the joint into the position that tends to provoke impingement.',
+  },
+  {
+    id:'carpal_tunnel', icon:'🖐️', label:'Carpal tunnel / wrist nerve symptoms', region:'wrist',
+    redFlags:['Constant numbness that never lets up', 'Visible wasting at the base of the thumb', 'Dropping things without meaning to'],
+    redFlagAction:'Constant numbness or thumb-muscle wasting means the nerve is being damaged rather than irritated. That needs assessment soon — recovery gets less complete the longer it runs.',
+    guidance:[
+      'A neutral wrist splint at night is one of the better-evidenced conservative measures. Symptoms are usually worst overnight because the wrist curls.',
+      'Nerve glides, gently. If it tingles, you have gone too far — back off rather than pushing through.',
+      'Break up sustained gripping. Duration matters more than force.',
+    ],
+    helps:['w_nerve_glide','w_cmc_circ','w_wrist_ext_str','sc_ytw'],
+    avoid:['w_grip_endur','w_flexor'],
+    avoidNote:'Sustained grip holds and end-range flexor stretching are suppressed — both raise pressure inside the carpal tunnel.',
+  },
+  {
+    id:'trigger_finger', icon:'👆', label:'Trigger finger', region:'wrist',
+    redFlags:['A finger locked in a bent position that will not straighten'],
+    redFlagAction:'A finger stuck bent needs a hand specialist rather than more self-management.',
+    guidance:[
+      'Tendon glides keep it moving without forcing it through the catch.',
+      'Post-injection, mild painless catching is the expected partial response, not a failure.',
+      'The pain signal is muted for weeks after cortisone, so grip load needs judgement rather than feel.',
+    ],
+    helps:['w_cmc_circ','w_flexor','w_extensor'],
+    avoid:['w_grip_endur'],
+    avoidNote:'Sustained grip work is suppressed while this is active — it loads the exact tendon that is catching.',
+  },
+  {
+    id:'gout', icon:'🦶', label:'Gout', region:'calf',
+    redFlags:['A hot, very swollen joint with fever or feeling generally unwell'],
+    redFlagAction:'A hot swollen joint with fever is a septic joint until proven otherwise. That is an emergency, not a wait-and-see.',
+    guidance:[
+      'During a flare: do not exercise the joint. Elevate it, keep it cool, keep drinking.',
+      'Do not start, stop or change urate-lowering medication mid-flare — it can prolong things.',
+      'Between flares there are no movement restrictions at all.',
+    ],
+    helps:['cf_ankle_rock','cf_wall'],
+    avoid:[],
+    flareSuppress:true,
+    avoidNote:'During an active flare all lower-limb work is hidden. Between flares nothing is restricted.',
+  },
+  {
+    id:'ankle_instability', icon:'🦿', label:'Ankle instability / past sprain', region:'calf',
+    redFlags:['Unable to bear weight after a fresh injury'],
+    redFlagAction:'Inability to weight-bear after a sprain warrants imaging to rule out a fracture.',
+    guidance:[
+      'Balance work matters more than stretching. Proprioception is what is actually lost after a sprain, and it is what prevents the next one.',
+      'Single-leg standing is the highest-value thing, and it costs nothing.',
+    ],
+    helps:['cf_ankle_rock','cf_wall'],
+    avoid:[],
+  },
+  {
+    id:'lowback_nonspecific', icon:'🪑', label:'General lower back pain', region:'lowback',
+    redFlags:['Pain following significant trauma', 'Unexplained weight loss with back pain', 'Fever with back pain', 'Night pain that wakes you and will not settle'],
+    redFlagAction:'Any of these warrant assessment rather than self-management.',
+    guidance:[
+      'Stay active. Prolonged rest reliably makes non-specific back pain worse.',
+      'Hurt does not equal harm here. Most back pain is not structural damage.',
+      'Anti-rotation work — bird dog, dead bug — beats flexion-heavy core work.',
+    ],
+    helps:['lb_birddog','lb_deadbug','h_glutebridge','h_hipflexor','t_ext_chair'],
+    avoid:[],
+  },
+  {
+    id:'lat_epicondylitis', icon:'💪', label:'Tennis / golfer\'s elbow', region:'wrist',
+    redFlags:['Pain after a sudden pop or tear'],
+    redFlagAction:'A sudden tearing sensation is a different injury and needs assessment.',
+    guidance:[
+      'Loading beats resting. Slow, heavy-ish eccentric work is the best-supported treatment — considerably better than rest or stretching.',
+      'It is slow. Meaningful change takes 8-12 weeks of consistent loading.',
+      'Reduce sustained gripping in the meantime, but do not stop using the arm.',
+    ],
+    helps:['w_wrist_ext_str','w_extensor','sc_band_row'],
+    avoid:['w_grip_endur'],
+    avoidNote:'Sustained grip holds are suppressed — reduce the provoking load while the tendon is being rebuilt.',
+  },
+];
+
+// ── Gym library gating (2026-09-07) ───────────────────────────
+// EX_LIB movements carry flags: grip · overhead · spine · shoulder.
+// Conditions map onto those flags at TWO strengths, and the distinction matters:
+//
+//   exBlock   — hidden outright. Reserved for genuinely contraindicated
+//               combinations, e.g. loaded spinal flexion with active sciatica.
+//   exCaution — shown with a condition-specific warning. For things that are
+//               manageable with judgement.
+//
+// Blocking everything grip-flagged for trigger finger would remove almost all
+// pulling work, and Craig is post-cortisone and actively rowing. An app that
+// hides half the library gets overridden and then ignored — so most of these are
+// cautions, and only the genuinely unsafe pairings are hidden.
+const CONDITION_EX_RULES = {
+  sciatica:            { block:['spine'], note:'Loaded spinal flexion is hidden while sciatica is active — it directly provokes the nerve.' },
+  lowback_nonspecific: { caution:['spine'], note:'Watch the lower back on this one. Brace before the first rep, and stop the set if form goes rather than grinding it out.' },
+  carpal_tunnel:       { caution:['grip'], note:'Grip-heavy. Use straps and keep the wrist neutral — sustained gripping raises pressure inside the carpal tunnel.' },
+  trigger_finger:      { caution:['grip'], note:'Grip-heavy. Post-injection the pain signal is muted, so judge by whether catching increases rather than by how it feels.' },
+  lat_epicondylitis:   { caution:['grip'], note:'Grip load provokes this. Straps help; reduce the load before reducing the reps.' },
+  shoulder_oa:         { caution:['overhead','shoulder'], note:'Work the pain-free range only. Stop short of the pinch rather than pushing to lockout.' },
+};
+
+// Returns { blocked:Set(names), cautions:[{name, note}] } for the gym library.
+function exContraindications() {
+  const blockedFlags = new Set(); const cautionFlags = {}; const blockedMuscles = new Set();
+  getUserConditions().forEach(c => {
+    const r = CONDITION_EX_RULES[c.id];
+    if (r) {
+      (r.block || []).forEach(f => blockedFlags.add(f));
+      (r.caution || []).forEach(f => { if (!cautionFlags[f]) cautionFlags[f] = r.note; });
+    }
+    // Active gout flare — hide lower-limb work entirely, same rule as stretches.
+    if (_conditionFlaringNow(c)) ['quads','hamstrings','glutes','calves'].forEach(m => blockedMuscles.add(m));
+  });
+  const blocked = new Set(); const cautions = [];
+  EX_LIB.forEach(e => {
+    const flags = e.flags || [];
+    if (blockedMuscles.has(e.m) || flags.some(f => blockedFlags.has(f))) { blocked.add(e.name); return; }
+    const hit = flags.find(f => cautionFlags[f]);
+    if (hit) cautions.push({ name: e.name, note: cautionFlags[hit] });
+  });
+  return { blocked, cautions };
+}
+function exCautionFor(name) {
+  const c = exContraindications().cautions.find(x => x.name === name);
+  return c ? c.note : null;
+}
+
+function conditionById(id) { return CONDITIONS.find(c => c.id === id); }
+function getUserConditions() {
+  let ids = [];
+  if (USER_PROFILE && Array.isArray(USER_PROFILE.conditions)) ids = USER_PROFILE.conditions;
+  else { try { ids = JSON.parse(localStorage.getItem('user_conditions') || '[]'); } catch (e) {} }
+  return ids.map(conditionById).filter(Boolean);
+}
+function getConditionDetail(id) {
+  let d = {};
+  if (USER_PROFILE && USER_PROFILE.condition_detail) d = USER_PROFILE.condition_detail;
+  else { try { d = JSON.parse(localStorage.getItem('condition_detail') || '{}'); } catch (e) {} }
+  return d[id] || {};
+}
+function setConditionDetail(id, patch) {
+  let d = {};
+  try { d = JSON.parse(localStorage.getItem('condition_detail') || '{}'); } catch (e) {}
+  if (USER_PROFILE && USER_PROFILE.condition_detail) d = Object.assign({}, USER_PROFILE.condition_detail, d);
+  d[id] = Object.assign({}, d[id] || {}, patch);
+  if (USER_PROFILE) USER_PROFILE.condition_detail = d;
+  try { localStorage.setItem('condition_detail', JSON.stringify(d)); } catch (e) {}
+  if (sbReady && USER_PROFILE) sb.from('user_profiles').update({ condition_detail: d }).eq('id', USER_PROFILE.id).then(() => {});
+  if (typeof renderStretchScreen === 'function') renderStretchScreen();
+}
+function toggleCondition(id) {
+  let ids = getUserConditions().map(c => c.id);
+  const i = ids.indexOf(id);
+  if (i >= 0) ids.splice(i, 1); else ids.push(id);
+  if (USER_PROFILE) USER_PROFILE.conditions = ids;
+  try { localStorage.setItem('user_conditions', JSON.stringify(ids)); } catch (e) {}
+  if (sbReady && USER_PROFILE) sb.from('user_profiles').update({ conditions: ids }).eq('id', USER_PROFILE.id).then(() => {});
+  // Conditions are managed inside the stretch module, so that re-render covers
+  // it. (There was a call to a renderConditionSettings() that never existed —
+  // guarded, so harmless, but dead.)
+  if (typeof renderStretchScreen === 'function') renderStretchScreen();
+}
+
+// Is a lower-limb-affecting condition currently flaring? Uses the episode log.
+function _conditionFlaringNow(cond) {
+  if (!cond.flareSuppress || typeof epOpenEpisodes !== 'function') return false;
+  return epOpenEpisodes().some(e => (e.condition || '').toLowerCase().indexOf(cond.label.split(' ')[0].toLowerCase()) !== -1);
+}
+
+// The contraindication gate. Returns { blocked:Set, reasons:[] }.
+function contraindications() {
+  const blocked = new Set(); const reasons = [];
+  getUserConditions().forEach(c => {
+    let list = (c.avoid || []).slice();
+    if (_conditionFlaringNow(c)) {
+      // Active gout flare: hide lower-limb work entirely.
+      STRETCH_LIB.filter(s => ['calf','hip','hamstring','lowback'].indexOf(s.region) !== -1)
+        .forEach(s => list.push(s.id));
+    }
+    if (!list.length) return;
+    list.forEach(id => blocked.add(id));
+    if (c.avoidNote) reasons.push({ label: c.label, note: c.avoidNote });
+  });
+  return { blocked, reasons };
+}
+// Movements a user's conditions actively recommend, direction-aware.
+function conditionHelps() {
+  const out = [];
+  getUserConditions().forEach(c => {
+    let ids = c.helps || [];
+    if (c.screening) {
+      const dir = getConditionDetail(c.id)[c.screening.key];
+      if (dir === 'extension' && c.helpsIfExtension) ids = c.helpsIfExtension;
+      if (dir === 'flexion'  && c.helpsIfFlexion)   ids = c.helpsIfFlexion;
+    }
+    ids.forEach(id => { if (out.indexOf(id) === -1) out.push(id); });
+  });
+  return out;
+}
+
+// ══════════════════════════════════════════════════════════════
+// OCCUPATIONAL LOAD PROFILES  (task #24, 2026-09-07)
+// ══════════════════════════════════════════════════════════════
+// Craig asked for tailored work for a friend who does massage therapy —
+// persistent back and arm pain.
+//
+// STRUCTURE: occupation → postural PATTERN → programme. The job title isn't what
+// loads the body. A massage therapist, hairdresser, dentist and surgeon share
+// nearly identical demands (sustained forward flexion, static shoulder
+// elevation, repetitive grip); a desk worker and a driver share a different set.
+// Adding a new occupation is one line pointing at an existing pattern.
+//
+// THE HONEST PART, and it shaped the whole design: for occupational MSK pain the
+// evidence for STRETCHING as prevention is weak. What actually helps is
+// (a) changing the setup, (b) technique, (c) strengthening the antagonists and
+// training endurance, (d) pacing. So every profile leads with `setup`, and the
+// strength work is not optional garnish — it's the part that works. Mobility is
+// included because it helps symptoms and costs nothing, not because it fixes the
+// cause.
+const POSTURAL_PATTERNS = {
+  seated_flexed: {
+    label: 'Seated, leaning forward',
+    loads: ['Sustained hip flexion', 'Rounded upper back', 'Head forward of the shoulders', 'Static shoulder hold'],
+    priority: ['hip', 'thoracic', 'neck', 'chest'],
+  },
+  standing_handson: {
+    label: 'Standing, working with the hands',
+    loads: ['Sustained forward lean', 'Shoulders held up and out', 'Repetitive gripping and thumb pressure', 'Prolonged standing'],
+    priority: ['wrist', 'shoulder', 'thoracic', 'lowback', 'calf'],
+  },
+  lifting_standing: {
+    label: 'On your feet, lifting and moving people or loads',
+    loads: ['Unpredictable asymmetric lifting', 'Bending over beds and equipment', 'Long periods standing and walking', 'Shift work compressing recovery'],
+    priority: ['lowback', 'hip', 'calf', 'thoracic'],
+  },
+};
+
+const OCCUPATIONS = [
+  {
+    id: 'desk', icon: '💻', label: 'Desk / computer work', pattern: 'seated_flexed',
+    setup: [
+      'Top of the screen at eye level — looking down all day is what drives the neck pain.',
+      'Elbows at about 90° with the shoulders relaxed down, not shrugged toward the keyboard.',
+      'Feet flat. If they dangle, the hip flexors take the load instead.',
+      'Get up every 30-45 minutes. Changing position beats any perfect posture.',
+    ],
+    mobility: ['n_retract', 't_ext_chair', 'c_floor_angel', 'h_9090'],
+    strength: ['sc_ytw', 'h_glutebridge', 'sc_band_row', 'lb_deadbug'],
+    post:     ['h_hipflexor', 'n_uppertrap', 'c_doorway'],
+    note: 'The neck and shoulder pain is usually downstream of the hips and upper back being stuck. That\'s why the hip work is in here even though nothing hurts there.',
+  },
+  {
+    id: 'handson', icon: '💆', label: 'Massage / standing hands-on work', pattern: 'standing_handson',
+    setup: [
+      'Table height is the single biggest lever. Standing relaxed, your knuckles should reach the table — most therapists work too high, which forces the shoulders up all day.',
+      'Use forearms and elbows for broad pressure. Thumb-tip pressure is what wrecks the CMC joint, and that joint is the classic career-ender in this work.',
+      'Stack your joints and lean with body weight rather than pushing with the arms.',
+      'Alternate the working side between clients, and avoid stacking deep-tissue sessions back to back.',
+    ],
+    mobility: ['w_cmc_circ', 'w_nerve_glide', 's_cars', 't_ext_chair', 'cf_ankle_rock'],
+    strength: ['w_grip_endur', 'w_wrist_ext_str', 'sc_ytw', 'sc_facepull', 'sc_ext_rot', 'lb_birddog', 'ham_hinge'],
+    post:     ['w_flexor', 'w_extensor', 'n_levator', 'lb_childs', 'cf_wall'],
+    note: 'Hand and forearm pain from this work is an ENDURANCE problem, not a flexibility one — the tissue does low-level work for hours. That\'s why the grip work is sustained light holds rather than stretching, and why the back and shoulder strengthening matters more than any stretch.',
+    caution: 'Numbness, tingling or night pain in the hands is a nerve symptom, not muscle soreness. That warrants a clinician rather than more self-management.',
+  },
+  {
+    id: 'healthcare', icon: '🏥', label: 'Nursing / healthcare', pattern: 'lifting_standing',
+    setup: [
+      'Use the equipment. Hoists and slide sheets are the single biggest factor in whether backs survive this job — bigger than any technique, and much bigger than any exercise.',
+      'Raise the bed before you lean over it. Every bend at a bad height is load you didn\'t have to take.',
+      'Get the load close and hinge at the hips. Distance from your centre is what multiplies spinal load, not the weight itself.',
+      'Never take an unpredictable weight alone if there\'s any option not to. Most nursing back injuries happen during an unplanned save, not a planned lift.',
+      'Supportive footwear and compression socks on long shifts. Unglamorous, and they work.',
+    ],
+    mobility: ['ham_hinge', 'h_9090', 't_ext_chair', 'cf_ankle_rock'],
+    strength: ['lb_birddog', 'lb_deadbug', 'lb_sideplank', 'lb_carry', 'h_glutebridge', 'cf_calfraise', 'sc_band_row'],
+    post:     ['h_hipflexor', 'cf_plantar', 'cf_wall', 'lb_childs', 'n_uppertrap'],
+    note: 'Nursing has one of the highest rates of work-related back injury of any occupation, and patient handling is the mechanism. Worth being straight about this: the biggest protective factors are equipment, staffing and time — things you mostly don\'t control. What you do control is core ENDURANCE (not strength) and hip hinge mechanics, which is why the plank and carry work is here rather than crunches. Nothing here compensates for lifting someone alone who should have been a two-person job.',
+    caution: 'Shift work compresses recovery, and poor sleep independently raises injury risk. If you\'re on nights, protecting sleep does more for your back than any of these exercises.',
+  },
+];
+
+function getOccupation() {
+  const id = (USER_PROFILE && USER_PROFILE.occupation) || (function () {
+    try { return localStorage.getItem('occupation') || ''; } catch (e) { return ''; }
+  })();
+  return OCCUPATIONS.find(o => o.id === id) || null;
+}
+function setOccupation(id) {
+  if (USER_PROFILE) USER_PROFILE.occupation = id;
+  try { localStorage.setItem('occupation', id); } catch (e) {}
+  if (sbReady && USER_PROFILE) {
+    sb.from('user_profiles').update({ occupation: id }).eq('id', USER_PROFILE.id)
+      .then(r => { if (r && r.error) console.warn('occupation save failed', r.error); });
+  }
+  if (typeof renderStretchScreen === 'function') renderStretchScreen();
+  if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
+}
+
+// ── Stretch / mobility UI (task #25) ──────────────────────────
+let _stScreen = 'home';   // home | region | work
+let _stRegion = null;
+
+function openStretch(screen) {
+  _stScreen = screen || 'home';
+  const bd = document.getElementById('stretch-backdrop');
+  if (bd) bd.classList.add('open');
+  renderStretchScreen();
+}
+function closeStretch() {
+  const bd = document.getElementById('stretch-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function _stGo(screen, region) { _stScreen = screen; _stRegion = region || null; renderStretchScreen(); }
+
+// Log a completed movement into the unified activity log.
+function stretchDone(id) {
+  const s = stretchById(id);
+  if (!s) return;
+  if (typeof logActivity === 'function') {
+    logActivity({
+      kind: s.type === 'strength' ? 'strength' : (s.type === 'mobility' ? 'mobility' : 'stretch'),
+      name: s.name, exercise_key: 'st_' + s.id, muscle: s.region, notes: s.dose,
+    });
+  }
+  const el = document.getElementById('stdone-' + id);
+  if (el) { el.textContent = '✓'; el.style.color = 'var(--green)'; }
+}
+
+function _stCard(s) {
+  const typeLabel = { mobility:'Mobility', static:'Hold', strength:'Strength' }[s.type] || s.type;
+  const typeColor = { mobility:'var(--cyan)', static:'var(--purple)', strength:'var(--green)' }[s.type] || 'var(--text-muted)';
+  const flagNote = (s.flags || []).indexOf('shoulder') !== -1
+    ? '<div style="font-size:11px;color:var(--orange);margin-top:5px;line-height:1.45">Shoulder OA — work the pain-free range only, don\'t chase the end of the arc.</div>' : '';
+  return `<div style="padding:11px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:7px">
+    <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap">
+      <span style="font-size:13.5px;font-weight:700;color:var(--text)">${s.name}</span>
+      <span style="font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;color:${typeColor};border:1px solid ${typeColor}">${typeLabel}</span>
+    </div>
+    <div style="font-size:12px;color:var(--text-dim);margin-top:3px">${s.dose}</div>
+    <div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:5px">${s.cue}</div>
+    ${flagNote}
+    <button onclick="stretchDone('${s.id}')" id="stdone-${s.id}"
+      style="margin-top:8px;padding:9px 16px;border-radius:7px;border:1px solid var(--card-border);background:transparent;color:var(--text-dim);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px">Done</button>
+  </div>`;
+}
+
+function renderStretchScreen() {
+  const body = document.getElementById('stretch-body');
+  const title = document.getElementById('stretch-title');
+  if (!body) return;
+  const occ = getOccupation();
+
+  // ── Work programme ──
+  if (_stScreen === 'work') {
+    if (!occ) { _stScreen = 'home'; return renderStretchScreen(); }
+    if (title) title.textContent = occ.label;
+    const sec = (heading, ids, blurb) => {
+      const items = ids.map(stretchById).filter(Boolean);
+      if (!items.length) return '';
+      return `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:14px 0 4px">${heading}</div>
+        ${blurb ? `<div style="font-size:11.5px;color:var(--text-muted);line-height:1.5;margin-bottom:7px">${blurb}</div>` : ''}
+        ${items.map(_stCard).join('')}`;
+    };
+    body.innerHTML = `
+      <button onclick="_stGo('home')" style="background:none;border:none;color:var(--cyan);font-size:13px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Back</button>
+
+      <div style="padding:11px;border-radius:9px;background:var(--cyan-bg);border:1px solid var(--cyan);margin-bottom:12px">
+        <div style="font-size:12.5px;font-weight:700;color:var(--cyan);margin-bottom:5px">Fix the setup first</div>
+        <div style="font-size:12px;color:var(--cyan);line-height:1.65">${occ.setup.map(x => '• ' + x).join('<br>')}</div>
+      </div>
+      ${occ.note ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.55;padding:9px 11px;border-radius:8px;background:var(--input-bg);margin-bottom:4px">${occ.note}</div>` : ''}
+      ${occ.caution ? `<div style="font-size:12px;color:var(--orange);line-height:1.55;padding:9px 11px;border-radius:8px;background:var(--orange-bg);border:1px solid var(--orange-border, var(--orange));margin-top:7px">⚠ ${occ.caution}</div>` : ''}
+
+      ${sec('During the day', occ.mobility, 'Quick, between clients or tasks. Loosens things without reducing strength.')}
+      ${sec('Strength — 2-3× a week', occ.strength, 'This is the part that actually changes anything. Stretching eases symptoms; strengthening the antagonists and building endurance is what stops it coming back.')}
+      ${sec('After work', occ.post, 'Held stretches. Do these at the end of the day, not before physical work — static stretching beforehand reduces force output.')}`;
+    return;
+  }
+
+  // ── By region ──
+  if (_stScreen === 'region' && _stRegion) {
+    const r = STRETCH_REGIONS.find(x => x.id === _stRegion);
+    if (title) title.textContent = r ? r.label : 'Stretches';
+    const chain = REGION_CONTRIBUTORS[_stRegion] || [_stRegion];
+    const items = stretchesFor(_stRegion);
+    const chainLabels = chain.map(c => (STRETCH_REGIONS.find(x => x.id === c) || {}).label).filter(Boolean);
+    body.innerHTML = `
+      <button onclick="_stGo('home')" style="background:none;border:none;color:var(--cyan);font-size:13px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Back</button>
+      ${chain.length > 1 ? `<div style="font-size:12px;color:var(--text-muted);line-height:1.55;padding:9px 11px;border-radius:8px;background:var(--input-bg);margin-bottom:10px">
+        Where it hurts often isn't what's causing it. For ${r ? r.label.toLowerCase() : 'this'}, the usual drivers are <b style="color:var(--text)">${chainLabels.slice(0, -1).join(', ')}</b> — so those come first.
+      </div>` : ''}
+      ${items.map(_stCard).join('') || '<div style="font-size:12px;color:var(--text-muted);padding:16px 0">Nothing here yet.</div>'}`;
+    return;
+  }
+
+  // ── Conditions screen ──
+  if (_stScreen === 'conditions') {
+    if (title) title.textContent = 'Known conditions';
+    const mine = getUserConditions();
+    body.innerHTML = `
+      <button onclick="_stGo('home')" style="background:none;border:none;color:var(--cyan);font-size:13px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Back</button>
+      <div style="font-size:11.5px;color:var(--text-muted);line-height:1.55;margin-bottom:10px">Tell the app what you're dealing with and it hides the movements that make each one worse. Self-declared — this doesn't diagnose anything.</div>
+      ${CONDITIONS.map(c => {
+        const on = mine.some(m => m.id === c.id);
+        const detail = getConditionDetail(c.id);
+        return `<div style="border:1px solid ${on ? 'var(--green-border)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'var(--input-bg)'};border-radius:9px;padding:11px;margin-bottom:7px">
+          <div onclick="toggleCondition('${c.id}')" style="display:flex;align-items:center;gap:9px;cursor:pointer;min-height:34px">
+            <div style="width:18px;height:18px;border-radius:5px;flex-shrink:0;border:1.5px solid ${on ? 'var(--green)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'transparent'};color:var(--green);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${on ? '✓' : ''}</div>
+            <span style="font-size:14px">${c.icon}</span>
+            <span style="flex:1;font-size:13px;font-weight:${on ? '700' : '600'};color:${on ? 'var(--green)' : 'var(--text)'}">${c.label}</span>
+          </div>
+          ${on ? `
+            <div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--divider)">
+              <div style="font-size:11.5px;font-weight:700;color:var(--red);margin-bottom:3px">Get seen urgently if:</div>
+              <div style="font-size:11.5px;color:var(--red);line-height:1.55">${c.redFlags.map(f => '• ' + f).join('<br>')}</div>
+              <div style="font-size:11px;color:var(--red);line-height:1.5;margin-top:5px;font-weight:600">${c.redFlagAction}</div>
+              <div style="font-size:11.5px;color:var(--text);line-height:1.6;margin-top:9px">${c.guidance.map(g => '• ' + g).join('<br>')}</div>
+              ${c.avoidNote ? `<div style="font-size:11px;color:var(--orange);line-height:1.5;margin-top:7px;padding:7px 9px;border-radius:6px;background:var(--orange-bg)">🚫 ${c.avoidNote}</div>` : ''}
+              ${c.screening ? `
+                <div style="margin-top:9px">
+                  <div style="font-size:11.5px;font-weight:700;color:var(--text);margin-bottom:4px">${c.screening.question}</div>
+                  ${c.screening.options.map(o => `<div onclick="setConditionDetail('${c.id}',{${c.screening.key}:'${o.v}'})"
+                    style="padding:9px 10px;border-radius:7px;border:1px solid ${detail[c.screening.key] === o.v ? 'var(--cyan)' : 'var(--card-border)'};background:${detail[c.screening.key] === o.v ? 'var(--cyan-bg)' : 'transparent'};margin-bottom:4px;cursor:pointer;min-height:40px">
+                    <div style="font-size:12px;font-weight:600;color:${detail[c.screening.key] === o.v ? 'var(--cyan)' : 'var(--text)'}">${o.label}</div>
+                    <div style="font-size:10.5px;color:var(--text-muted);margin-top:1px">${o.note}</div>
+                  </div>`).join('')}
+                </div>` : ''}
+            </div>` : ''}
+        </div>`;
+      }).join('')}`;
+    return;
+  }
+
+  // ── Home ──
+  if (title) title.textContent = 'Stretch & mobility';
+  const myConds = getUserConditions();
+  const cx = contraindications();
+  body.innerHTML = `
+    <div onclick="_stGo('conditions')" style="display:flex;align-items:center;gap:9px;padding:11px;border-radius:9px;background:var(--input-bg);border:1px solid var(--card-border);cursor:pointer;margin-bottom:12px;min-height:48px">
+      <span style="font-size:16px">🩺</span>
+      <div style="flex:1">
+        <div style="font-size:12.5px;font-weight:700;color:var(--text)">Known conditions</div>
+        <div style="font-size:11px;color:var(--text-muted)">${myConds.length ? myConds.map(c => c.label.split(' /')[0]).join(' · ') : 'None set — tap to add'}</div>
+      </div>
+      <span style="color:var(--text-muted)">›</span>
+    </div>
+    ${cx.reasons.length ? `<div style="font-size:11px;color:var(--orange);line-height:1.5;padding:8px 10px;border-radius:7px;background:var(--orange-bg);margin-bottom:12px">🚫 Some movements are hidden because of your conditions. ${cx.reasons.map(r => r.note).join(' ')}</div>` : ''}` + `
+    ${occ
+      ? `<div onclick="_stGo('work')" style="display:flex;align-items:center;gap:10px;padding:13px 11px;border-radius:9px;background:var(--cyan-bg);border:1px solid var(--cyan);cursor:pointer;margin-bottom:14px;min-height:52px">
+           <span style="font-size:19px">${occ.icon}</span>
+           <div style="flex:1">
+             <div style="font-size:13.5px;font-weight:700;color:var(--cyan)">Your work programme</div>
+             <div style="font-size:11.5px;color:var(--cyan)">${occ.label}</div>
+           </div>
+           <span style="color:var(--cyan)">›</span>
+         </div>`
+      : `<div style="padding:11px;border-radius:9px;background:var(--input-bg);border:1px solid var(--card-border);margin-bottom:14px">
+           <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:4px">What do you do all day?</div>
+           <div style="font-size:11.5px;color:var(--text-muted);line-height:1.5;margin-bottom:8px">Work loads the body in patterns. Knowing yours changes what's worth doing.</div>
+           ${OCCUPATIONS.map(o => `<button onclick="setOccupation('${o.id}')"
+             style="width:100%;text-align:left;padding:12px;border-radius:8px;border:1px solid var(--card-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:5px;min-height:46px">${o.icon}  ${o.label}</button>`).join('')}
+         </div>`}
+
+    <div style="font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:7px">What feels stiff?</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+      ${STRETCH_REGIONS.map(r => `<button onclick="_stGo('region','${r.id}')"
+        style="padding:13px 5px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:4px;align-items:center;min-height:62px">
+        <span style="font-size:18px">${r.icon}</span>${r.label}</button>`).join('')}
+    </div>
+    ${occ ? `<div style="font-size:11.5px;color:var(--text-muted);text-align:center;margin-top:12px"><span onclick="setOccupation('')" style="cursor:pointer;text-decoration:underline">Change your job</span></div>` : ''}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// HEALTH EPISODES  (new core, 2026-09-03)
+// ══════════════════════════════════════════════════════════════
+// Replaces the part-first body_log model.
+//
+// Craig: "gout -> right foot, onset, pain management, treatment plan. Just like
+// cold -> runny nose, heavy mucus."
+//
+// The old model was musculoskeletal — part, pain 0-10, stiffness 0-10, side. It
+// cannot represent a cold. An EPISODE (a named thing with a start, a course and
+// an end) fits both, and logging the same condition again joins the open episode
+// so the timeline builds itself.
+//
+// THREE DEFECTS THIS DELIBERATELY AVOIDS, all of which destroyed the old module:
+//   1. Upserts used onConflict:'user_id,client_id' against tables that had no
+//      such constraint. Every write was rejected by Postgres.
+//   2. The rejection was swallowed into console.warn, so the UI reported success.
+//   3. A one-shot migration flag was set on an empty list at first open, so the
+//      backlog never retried.
+// Here: the constraint exists, sync failures are surfaced, and reconcile has no
+// permanent "done" flag.
+//
+// Severity is 3-POINT on purpose. Eleven points is false precision at n=1, it's
+// what a clinician asks anyway, and asking for two 0-10 scales per entry is a
+// large part of why the old form went unused.
+const EP_SEVERITY = [
+  { v:1, label:'Mild',     color:'var(--green)'  },
+  { v:2, label:'Moderate', color:'var(--orange)' },
+  { v:3, label:'Bad',      color:'var(--red)'    },
+];
+const EP_CATEGORIES = [
+  { id:'msk',     icon:'🦴', label:'Joint / muscle' },
+  { id:'illness', icon:'🤒', label:'Illness' },
+  { id:'injury',  icon:'🩹', label:'Injury' },
+  { id:'skin',    icon:'🧴', label:'Skin' },
+  { id:'gi',      icon:'🫃', label:'Stomach' },
+  { id:'mental',  icon:'🧠', label:'Mood / head' },
+  { id:'other',   icon:'•',  label:'Other' },
+];
+// Seeds the "what's going on" suggestions. Craig's own history first.
+const EP_COMMON = [
+  { name:'Gout',            cat:'msk',     part:'Foot' },
+  { name:'Trigger finger',  cat:'msk',     part:'Finger' },
+  { name:'Shoulder pain',   cat:'msk',     part:'Shoulder' },
+  { name:'Ankle',           cat:'injury',  part:'Ankle' },
+  { name:'Lower back',      cat:'msk',     part:'Lower back' },
+  { name:'Cold',            cat:'illness', part:'' },
+  { name:'Flu',             cat:'illness', part:'' },
+  { name:'Headache',        cat:'other',   part:'Head' },
+  { name:'Stomach upset',   cat:'gi',      part:'' },
+  { name:'Sore throat',     cat:'illness', part:'' },
+];
+
+let EPISODES = [];   // [{client_id, person, condition, category, body_part, side, started_on, ended_on, status, diagnosed, treatment, notes}]
+let EP_EVENTS = [];  // [{client_id, episode_id, event_date, event_time, severity, symptoms, treatment, note}]
+
+function _epSave() {
+  try {
+    localStorage.setItem('health_episodes', JSON.stringify(EPISODES));
+    localStorage.setItem('health_events', JSON.stringify(EP_EVENTS));
+  } catch (e) {}
+}
+function _epLoadLocal() {
+  try { EPISODES  = JSON.parse(localStorage.getItem('health_episodes') || '[]'); } catch (e) { EPISODES = []; }
+  try { EP_EVENTS = JSON.parse(localStorage.getItem('health_events')   || '[]'); } catch (e) { EP_EVENTS = []; }
+}
+
+// Surfaced, not swallowed — the old module hid every failure in console.warn.
+let _epSyncError = null;
+function _epFlagSyncError(what, err) {
+  _epSyncError = what + ': ' + (err && err.message ? err.message : String(err));
+  console.warn('episode sync failed —', _epSyncError);
+}
+
+async function epSyncEpisode(ep) {
+  if (!sbReady) return;
+  try {
+    const { error } = await sb.from('health_episodes').upsert([{
+      client_id: ep.client_id, person: ep.person || 'me', condition: ep.condition,
+      category: ep.category || 'other', body_part: ep.body_part || '', side: ep.side || '',
+      started_on: ep.started_on, ended_on: ep.ended_on || null,
+      status: ep.status || 'active', diagnosed: !!ep.diagnosed,
+      treatment: ep.treatment || '', notes: ep.notes || '',
+    }], { onConflict: 'user_id,client_id' });
+    if (error) throw error;
+    _epSyncError = null;
+  } catch (e) { _epFlagSyncError('episode', e); }
+}
+async function epSyncEvent(ev) {
+  if (!sbReady) return;
+  try {
+    // episode_id is a local client_id; resolve to the server UUID.
+    let uuid = null;
+    if (ev.episode_id) {
+      const { data } = await sb.from('health_episodes').select('id').eq('client_id', ev.episode_id).maybeSingle();
+      uuid = data ? data.id : null;
+    }
+    const { error } = await sb.from('health_events').upsert([{
+      client_id: ev.client_id, episode_id: uuid,
+      event_date: ev.event_date, event_time: ev.event_time || '',
+      severity: ev.severity || null, symptoms: ev.symptoms || '',
+      treatment: ev.treatment || '', note: ev.note || '',
+    }], { onConflict: 'user_id,client_id' });
+    if (error) throw error;
+    _epSyncError = null;
+  } catch (e) { _epFlagSyncError('event', e); }
+}
+
+// Reconcile — no permanent flag. Pushes anything local the server lacks, then
+// pulls the server's view. Runs on every open; cheap, and it can't get stuck.
+async function epReconcile() {
+  if (!sbReady) return;
+  try {
+    const { data: remoteEps, error: e1 } = await sb.from('health_episodes').select('*');
+    if (e1) throw e1;
+    const knownEp = new Set((remoteEps || []).map(r => r.client_id));
+    for (const ep of EPISODES) if (!knownEp.has(ep.client_id)) await epSyncEpisode(ep);
+
+    const { data: remoteEvs, error: e2 } = await sb.from('health_events').select('*');
+    if (e2) throw e2;
+    const knownEv = new Set((remoteEvs || []).map(r => r.client_id));
+    for (const ev of EP_EVENTS) if (!knownEv.has(ev.client_id)) await epSyncEvent(ev);
+
+    // Pull authoritative state back down.
+    const { data: eps } = await sb.from('health_episodes').select('*').order('started_on', { ascending: false });
+    if (eps) EPISODES = eps.map(r => ({
+      client_id: r.client_id, person: r.person, condition: r.condition, category: r.category,
+      body_part: r.body_part, side: r.side, started_on: r.started_on, ended_on: r.ended_on,
+      status: r.status, diagnosed: r.diagnosed, treatment: r.treatment, notes: r.notes,
+    }));
+    const uuidToCid = {};
+    (eps || []).forEach(r => { uuidToCid[r.id] = r.client_id; });
+    const { data: evs } = await sb.from('health_events').select('*').order('event_date', { ascending: false });
+    if (evs) EP_EVENTS = evs.map(r => ({
+      client_id: r.client_id, episode_id: uuidToCid[r.episode_id] || null,
+      event_date: r.event_date, event_time: r.event_time, severity: r.severity,
+      symptoms: r.symptoms, treatment: r.treatment, note: r.note,
+    }));
+    _epSave();
+  } catch (e) { _epFlagSyncError('reconcile', e); }
+}
+
+function _epNewId(p) { return p + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7); }
+
+function epOpenFor(condition, person) {
+  const c = (condition || '').trim().toLowerCase();
+  return EPISODES.find(e => e.status !== 'resolved' &&
+    (e.person || 'me') === (person || 'me') &&
+    (e.condition || '').trim().toLowerCase() === c);
+}
+function epEventsFor(clientId) {
+  return EP_EVENTS.filter(e => e.episode_id === clientId)
+    .sort((a, b) => (b.event_date + (b.event_time || '')).localeCompare(a.event_date + (a.event_time || '')));
+}
+function epOpenEpisodes() {
+  return EPISODES.filter(e => e.status !== 'resolved')
+    .sort((a, b) => (b.started_on || '').localeCompare(a.started_on || ''));
+}
+
+// The one call the entry screen makes. Joins an open episode if the condition
+// matches, otherwise starts one — so the user never manages episodes by hand.
+function epLog({ condition, category, body_part, side, severity, symptoms, treatment, note, person }) {
+  const now = new Date();
+  const today = ds(now);
+  let ep = epOpenFor(condition, person);
+  if (!ep) {
+    ep = {
+      client_id: _epNewId('ep'), person: person || 'me', condition: (condition || '').trim(),
+      category: category || 'other', body_part: body_part || '', side: side || '',
+      started_on: today, ended_on: null, status: 'active', diagnosed: false,
+      treatment: '', notes: '',
+    };
+    EPISODES.push(ep);
+    epSyncEpisode(ep);
+  }
+  const ev = {
+    client_id: _epNewId('ev'), episode_id: ep.client_id, event_date: today,
+    event_time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+    severity: severity || null, symptoms: symptoms || '', treatment: treatment || '', note: note || '',
+  };
+  EP_EVENTS.push(ev);
+  _epSave();
+  epSyncEvent(ev);
+  return { episode: ep, event: ev, isNew: epEventsFor(ep.client_id).length === 1 };
+}
+
+function epResolve(clientId) {
+  const ep = EPISODES.find(e => e.client_id === clientId);
+  if (!ep) return;
+  ep.status = 'resolved';
+  ep.ended_on = ds(new Date());
+  _epSave(); epSyncEpisode(ep);
+}
+function epReopen(clientId) {
+  const ep = EPISODES.find(e => e.client_id === clientId);
+  if (!ep) return;
+  ep.status = 'active'; ep.ended_on = null;
+  _epSave(); epSyncEpisode(ep);
+}
+function epUpdate(clientId, fields) {
+  const ep = EPISODES.find(e => e.client_id === clientId);
+  if (!ep) return;
+  Object.assign(ep, fields);
+  _epSave(); epSyncEpisode(ep);
+}
+function epDeleteEvent(clientId) {
+  EP_EVENTS = EP_EVENTS.filter(e => e.client_id !== clientId);
+  _epSave();
+  if (sbReady) sb.from('health_events').delete().eq('client_id', clientId).then(() => {});
+}
+
+// ── Symptom entry: one screen, iPhone-first ───────────────────
+// The old form asked for part, side, pain 0-10, stiffness 0-10 and a clinician
+// flag to record "my foot hurts". Five decisions, and it went unused for months.
+// This asks two things and lets everything else be optional.
+let _epDraft = { condition:'', category:'', body_part:'', side:'', severity:0, person:'me', symptoms:'', treatment:'' };
+let _epScreen = 'entry';   // entry | list | detail
+let _epDetailId = null;
+
+function openSymptomEntry(prefill) {
+  _epLoadLocal();
+  _epScreen = 'entry';
+  _epDraft = { condition:'', category:'', body_part:'', side:'', severity:0, person:'me', symptoms:'', treatment:'' };
+  if (prefill) Object.assign(_epDraft, prefill);
+  const bd = document.getElementById('episode-backdrop');
+  if (bd) bd.classList.add('open');
+  renderEpisodeScreen();
+  epReconcile().then(() => renderEpisodeScreen());
+}
+function closeSymptomEntry() {
+  const bd = document.getElementById('episode-backdrop');
+  if (bd) bd.classList.remove('open');
+}
+function _epSetScreen(s, id) { _epScreen = s; _epDetailId = id || null; renderEpisodeScreen(); }
+function _epPick(field, val) {
+  _epDraft[field] = (_epDraft[field] === val) ? '' : val;
+  renderEpisodeScreen();
+}
+function _epPickCondition(name) {
+  const c = EP_COMMON.find(x => x.name === name);
+  _epDraft.condition = name;
+  if (c) { _epDraft.category = c.cat; if (c.part) _epDraft.body_part = c.part; }
+  renderEpisodeScreen();
+}
+function _epSyncField(field) {
+  const el = document.getElementById('ep-' + field);
+  if (el) _epDraft[field] = el.value;
+}
+
+function _epSubmit() {
+  _epSyncField('condition'); _epSyncField('symptoms');
+  const cond = (_epDraft.condition || '').trim();
+  if (!cond) {
+    const el = document.getElementById('ep-condition');
+    if (el) { el.style.borderColor = 'var(--red)'; el.focus();
+      setTimeout(() => { el.style.borderColor = 'var(--input-border)'; }, 1500); }
+    return;
+  }
+  const existing = epOpenFor(cond, _epDraft.person);
+  const r = epLog({
+    condition: cond, category: _epDraft.category || 'other',
+    body_part: _epDraft.body_part, side: _epDraft.side,
+    severity: _epDraft.severity || null, symptoms: _epDraft.symptoms,
+    person: _epDraft.person,
+  });
+  // Land on the episode so he immediately sees the thing he's building.
+  _epSetScreen('detail', r.episode.client_id);
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  return existing;
+}
+
+function renderEpisodeScreen() {
+  const body = document.getElementById('episode-body');
+  const title = document.getElementById('episode-title');
+  if (!body) return;
+
+  if (_epScreen === 'list')   { return _epRenderList(body, title); }
+  if (_epScreen === 'detail') { return _epRenderDetail(body, title); }
+
+  if (title) title.textContent = 'Report a symptom';
+  const open = epOpenEpisodes();
+  const past = Array.from(new Set(EPISODES.map(e => e.condition))).filter(Boolean);
+  const suggestions = Array.from(new Set(past.concat(EP_COMMON.map(c => c.name)))).slice(0, 10);
+  const joining = epOpenFor(_epDraft.condition, _epDraft.person);
+
+  body.innerHTML = `
+    ${_epSyncError ? `<div style="padding:8px 10px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:700;margin-bottom:10px;line-height:1.5">⚠ Not saving to the server — ${_epSyncError}. Entries are safe on this device.</div>` : ''}
+
+    ${open.length ? `<div onclick="_epSetScreen('list')" style="display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:8px;background:var(--input-bg);border:1px solid var(--card-border);margin-bottom:12px;cursor:pointer">
+      <span style="font-size:15px">📋</span>
+      <span style="flex:1;font-size:12px;color:var(--text)">${open.length} ongoing</span>
+      <span style="color:var(--text-muted)">›</span></div>` : ''}
+
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">What's going on?</div>
+    <input type="text" id="ep-condition" value="${(_epDraft.condition || '').replace(/"/g,'&quot;')}"
+      placeholder="Gout, cold, sore shoulder…" autocomplete="off"
+      oninput="_epSyncField('condition')" onchange="renderEpisodeScreen()"
+      style="width:100%;padding:14px;border-radius:9px;border:1.5px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:17px;font-family:inherit;box-sizing:border-box;margin-bottom:7px">
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:${joining ? '7' : '16'}px">
+      ${suggestions.map(s => `<button onclick="_epPickCondition('${s.replace(/'/g,"\\'")}')"
+        style="padding:8px 12px;border-radius:16px;border:1px solid ${_epDraft.condition === s ? 'var(--cyan)' : 'var(--card-border)'};background:${_epDraft.condition === s ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${_epDraft.condition === s ? 'var(--cyan)' : 'var(--text-muted)'};font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;min-height:40px">${s}</button>`).join('')}
+    </div>
+    ${joining ? `<div style="font-size:11px;color:var(--cyan);background:var(--cyan-bg);border-radius:6px;padding:8px 10px;margin-bottom:16px;line-height:1.5">Adding to the episode that started ${joining.started_on}. ${epEventsFor(joining.client_id).length} entr${epEventsFor(joining.client_id).length === 1 ? 'y' : 'ies'} so far.</div>` : ''}
+
+    <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">How bad?</div>
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      ${EP_SEVERITY.map(s => {
+        const on = _epDraft.severity === s.v;
+        return `<button onclick="_epPick('severity',${s.v})"
+          style="flex:1;padding:14px 4px;border-radius:9px;border:1.5px solid ${on ? s.color : 'var(--card-border)'};background:${on ? 'var(--input-bg)' : 'transparent'};color:${on ? s.color : 'var(--text-muted)'};font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;min-height:48px">${s.label}</button>`;
+      }).join('')}
+    </div>
+
+    <details style="margin-bottom:16px">
+      <summary style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:6px 0">Add detail (optional)</summary>
+      <div style="padding-top:8px">
+        <input type="text" id="ep-symptoms" value="${(_epDraft.symptoms || '').replace(/"/g,'&quot;')}"
+          placeholder="Runny nose, heavy mucus…" oninput="_epSyncField('symptoms')"
+          style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:16px;font-family:inherit;box-sizing:border-box;margin-bottom:8px">
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+          ${['','left','right','both'].map(sd => `<button onclick="_epPick('side','${sd}')"
+            style="padding:8px 12px;border-radius:14px;border:1px solid ${_epDraft.side === sd ? 'var(--cyan)' : 'var(--card-border)'};background:${_epDraft.side === sd ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${_epDraft.side === sd ? 'var(--cyan)' : 'var(--text-muted)'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;min-height:38px">${sd === '' ? 'No side' : sd}</button>`).join('')}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          ${EP_CATEGORIES.map(c => `<button onclick="_epPick('category','${c.id}')"
+            style="padding:8px 11px;border-radius:14px;border:1px solid ${_epDraft.category === c.id ? 'var(--purple)' : 'var(--card-border)'};background:${_epDraft.category === c.id ? 'var(--purple-bg)' : 'var(--input-bg)'};color:${_epDraft.category === c.id ? 'var(--purple)' : 'var(--text-muted)'};font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;min-height:38px">${c.icon} ${c.label}</button>`).join('')}
+        </div>
+      </div>
+    </details>
+
+    <button onclick="_epSubmit()"
+      style="width:100%;padding:16px;border-radius:9px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:16px;font-weight:700;cursor:pointer;font-family:inherit">Log it</button>`;
+}
+
+// ── Episode list ──────────────────────────────────────────────
+function _epRenderList(body, title) {
+  if (title) title.textContent = 'Ongoing';
+  const open = epOpenEpisodes();
+  const resolved = EPISODES.filter(e => e.status === 'resolved')
+    .sort((a, b) => (b.ended_on || '').localeCompare(a.ended_on || '')).slice(0, 12);
+
+  const row = e => {
+    const evs = epEventsFor(e.client_id);
+    const last = evs[0];
+    const sev = last && last.severity ? EP_SEVERITY.find(s => s.v === last.severity) : null;
+    const days = Math.max(1, Math.round((new Date(ds(new Date())) - new Date(e.started_on)) / 86400000) + 1);
+    const cat = EP_CATEGORIES.find(c => c.id === e.category);
+    return `<div onclick="_epSetScreen('detail','${e.client_id}')"
+      style="display:flex;align-items:center;gap:9px;padding:12px 10px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:52px">
+      <span style="font-size:17px">${cat ? cat.icon : '•'}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:var(--text)">${discreetLabel(e.condition)}${e.body_part ? ` · ${e.body_part}` : ''}${e.side ? ` (${e.side})` : ''}</div>
+        <div style="font-size:11.5px;color:var(--text-muted)">${e.status === 'resolved' ? `resolved ${e.ended_on}` : `day ${days} · ${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}`}</div>
+      </div>
+      ${sev ? `<span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;color:${sev.color};border:1px solid ${sev.color}">${sev.label}</span>` : ''}
+      <span style="color:var(--text-muted)">›</span>
+    </div>`;
+  };
+
+  body.innerHTML = `
+    <button onclick="_epSetScreen('entry')" style="background:none;border:none;color:var(--cyan);font-size:13px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Report something</button>
+    ${open.length ? open.map(row).join('')
+      : '<div style="font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center">Nothing ongoing.</div>'}
+    ${resolved.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin:16px 0 4px">Past</div>${resolved.map(row).join('')}` : ''}`;
+}
+
+// ── Episode detail: the timeline ──────────────────────────────
+function _epRenderDetail(body, title) {
+  const e = EPISODES.find(x => x.client_id === _epDetailId);
+  if (!e) { return _epSetScreen('list'); }
+  if (title) title.textContent = discreetLabel(e.condition);
+  const evs = epEventsFor(e.client_id);
+  const days = Math.max(1, Math.round((new Date(e.ended_on || ds(new Date())) - new Date(e.started_on)) / 86400000) + 1);
+
+  const timeline = evs.map(ev => {
+    const sev = ev.severity ? EP_SEVERITY.find(s => s.v === ev.severity) : null;
+    return `<div style="display:flex;gap:9px;padding:10px 4px;border-bottom:1px solid var(--divider)">
+      <div style="min-width:74px;font-size:11.5px;color:var(--text-muted)">${ev.event_date.slice(5)}${ev.event_time ? ' ' + ev.event_time : ''}</div>
+      ${sev ? `<span style="font-size:11px;font-weight:700;color:${sev.color};min-width:58px">${sev.label}</span>` : '<span style="min-width:58px"></span>'}
+      <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text);line-height:1.5">${[ev.symptoms, ev.treatment, ev.note].filter(Boolean).join(' · ') || '—'}</div>
+      <button onclick="epDeleteEvent('${ev.client_id}');renderEpisodeScreen()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:0 3px">×</button>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <button onclick="_epSetScreen('list')" style="background:none;border:none;color:var(--cyan);font-size:13px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ All</button>
+
+    <div style="padding:11px;border-radius:9px;background:var(--input-bg);border:1px solid var(--card-border);margin-bottom:12px">
+      <div style="font-size:12.5px;color:var(--text);line-height:1.6">
+        Started <b>${e.started_on}</b> · day ${days}${e.ended_on ? ` · ended ${e.ended_on}` : ''}<br>
+        ${e.body_part ? e.body_part : 'No location'}${e.side ? ` (${e.side})` : ''} · ${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
+        ${e.diagnosed ? '✓ Confirmed by a clinician' : 'Self-reported — not a diagnosis'}
+        <span onclick="epUpdate('${e.client_id}',{diagnosed:${!e.diagnosed}});renderEpisodeScreen()" style="color:var(--cyan);cursor:pointer;text-decoration:underline;margin-left:6px">${e.diagnosed ? 'undo' : 'mark confirmed'}</span>
+      </div>
+    </div>
+
+    <div style="font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:4px">Treatment plan</div>
+    <textarea id="ep-treatment" rows="2" placeholder="What you're doing about it…"
+      onchange="epUpdate('${e.client_id}',{treatment:this.value})"
+      style="width:100%;padding:11px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:16px;font-family:inherit;box-sizing:border-box;resize:vertical;margin-bottom:14px">${(e.treatment || '').replace(/</g,'&lt;')}</textarea>
+
+    <div style="font-size:12px;font-weight:700;color:var(--text-dim);margin-bottom:4px">Timeline</div>
+    ${timeline || '<div style="font-size:12px;color:var(--text-muted);padding:10px 0">No entries.</div>'}
+
+    <div style="display:flex;gap:6px;margin-top:14px">
+      <button onclick="openSymptomEntry({condition:'${e.condition.replace(/'/g,"\\'")}',category:'${e.category}',body_part:'${(e.body_part||'').replace(/'/g,"\\'")}',side:'${e.side}'})"
+        style="flex:2;padding:13px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">+ Add entry</button>
+      <button onclick="${e.status === 'resolved' ? `epReopen('${e.client_id}')` : `epResolve('${e.client_id}')`};renderEpisodeScreen()"
+        style="flex:1;padding:13px;border-radius:8px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">${e.status === 'resolved' ? 'Reopen' : 'Resolved'}</button>
+    </div>
+
+    <button onclick="epPrintSummary()"
+      style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit">📄 Print for an appointment</button>`;
+}
+
+// Printable summary. Self-named conditions are labelled "reported as" — a doctor
+// must never read Craig's own guess as an established diagnosis.
+function epPrintSummary() {
+  const open = epOpenEpisodes();
+  const recent = EPISODES.filter(e => e.status === 'resolved').slice(0, 20);
+  const all = open.concat(recent);
+  const block = e => {
+    const evs = epEventsFor(e.client_id);
+    return `<h3>${e.diagnosed ? '' : 'Reported as: '}${e.condition}${e.body_part ? ' — ' + e.body_part : ''}${e.side ? ' (' + e.side + ')' : ''}</h3>
+      <p><b>Started:</b> ${e.started_on}${e.ended_on ? ' · <b>Ended:</b> ' + e.ended_on : ' · ongoing'} · ${evs.length} entries</p>
+      ${e.treatment ? `<p><b>Self-managed with:</b> ${e.treatment}</p>` : ''}
+      <table><tr><th>Date</th><th>Severity</th><th>Notes</th></tr>
+      ${evs.map(v => `<tr><td>${v.event_date} ${v.event_time || ''}</td><td>${v.severity ? ['','Mild','Moderate','Bad'][v.severity] : ''}</td><td>${[v.symptoms, v.treatment, v.note].filter(Boolean).join('; ')}</td></tr>`).join('')}
+      </table>`;
+  };
+  const w = window.open('', '_blank');
+  if (!w) { alert('Pop-up blocked — allow pop-ups to print.'); return; }
+  w.document.write(`<!DOCTYPE html><html><head><title>Symptom history</title>
+    <style>body{font-family:system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#111}
+    h1{font-size:20px}h3{font-size:15px;margin:20px 0 4px}p{font-size:13px;margin:3px 0}
+    table{border-collapse:collapse;width:100%;margin-top:6px;font-size:12px}
+    th,td{border:1px solid #ccc;padding:5px 7px;text-align:left;vertical-align:top}
+    th{background:#f4f4f4}.note{font-size:11px;color:#666;margin-top:28px;border-top:1px solid #ccc;padding-top:8px}
+    @media print{.no-print{display:none}}</style></head><body>
+    <div class="no-print"><a href="#" onclick="window.print();return false">Print / Save as PDF</a></div>
+    <h1>Symptom history</h1><p>Generated ${ds(new Date())}</p>
+    ${all.map(block).join('') || '<p>No episodes recorded.</p>'}
+    <div class="note">Self-recorded by the patient for discussion. Entries marked
+    "Reported as" are the patient's own description and have not been clinically
+    confirmed. Severity is a three-point self-rating, not a clinical scale.</div>
+    </body></html>`);
+  w.document.close();
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -11713,9 +12966,12 @@ function addSessionSet(exKey, exName, weight, reps, flag) {
   // Write through the existing per-set helper so the spreadsheet and every
   // legacy stats reader keep working — it maintains the aggregate alongside.
   if (typeof setExSetEntry === 'function') {
-    setExSetEntry(dateStr, exKey, idx, 'w', weight);
-    setExSetEntry(dateStr, exKey, idx, 'r', reps);
-    if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+    _exSyncSuspended = true;   // this function logs the activity row itself, below
+    try {
+      setExSetEntry(dateStr, exKey, idx, 'w', weight);
+      setExSetEntry(dateStr, exKey, idx, 'r', reps);
+      if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+    } finally { _exSyncSuspended = false; }
   }
   // Same set also lands in the unified activity log, so weekly load, muscle
   // volume and the day review can see strength work alongside cardio and
@@ -11768,6 +13024,61 @@ function removeSessionSet(exKey, idx) {
 // Hint only — never gates anything.
 function suggestedSetCount() { return 3; }
 
+// ── Recent exercises (2026-09-07) ─────────────────────────────
+// Craig trains a fairly stable set of movements. Making him walk the muscle
+// picker or build a plan to log a lift he did on Tuesday is friction with no
+// payoff. Reads activity_log, which is now the only store, so anything logged
+// any way — session, inline, quick — shows up here.
+function recentExercises(limit, days) {
+  limit = limit || 8;
+  days = days || 28;
+  const seen = {};
+  const out = [];
+  const today = new Date();
+  for (let d = 0; d < days; d++) {
+    const dt = new Date(today);
+    dt.setDate(dt.getDate() - d);
+    const dateStr = ds(dt);
+    const rows = getActivity(dateStr).filter(r => r.kind === 'strength' && r.exercise_name);
+    rows.forEach(r => {
+      if (seen[r.exercise_key]) return;
+      seen[r.exercise_key] = true;
+      const sameEx = rows.filter(x => x.exercise_key === r.exercise_key);
+      const top = sameEx.reduce((a, x) => (Number(x.weight) || 0) > (Number(a.weight) || 0) ? x : a, sameEx[0]);
+      out.push({
+        key: r.exercise_key,
+        name: r.exercise_name,
+        daysAgo: d,
+        sets: sameEx.length,
+        weight: top && top.weight ? Number(top.weight) : null,
+        reps: top && top.reps ? Number(top.reps) : null,
+      });
+    });
+    if (out.length >= limit) break;
+  }
+  return out.slice(0, limit);
+}
+
+// Rendered on the plan builder and mid-session. One tap goes straight to the
+// set entry screen — no plan required to log one lift.
+function recentExercisesHtml(limit) {
+  const recent = recentExercises(limit || 6);
+  if (!recent.length) return '';
+  const chips = recent.map(r => {
+    const when = r.daysAgo === 0 ? 'today' : r.daysAgo === 1 ? 'yesterday' : r.daysAgo + 'd ago';
+    const last = (r.weight && r.reps) ? `${r.weight}×${r.reps}` : `${r.sets} set${r.sets > 1 ? 's' : ''}`;
+    return `<button onclick="openExercise('${r.key}','${String(r.name).replace(/'/g, "\\'")}')"
+      style="text-align:left;padding:8px 10px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:2px">
+      <span style="font-size:11.5px;font-weight:600;color:var(--text)">${r.name}</span>
+      <span style="font-size:9.5px;color:var(--text-muted)">${last} · ${when}</span>
+    </button>`;
+  }).join('');
+  return `<div style="margin-bottom:14px">
+    <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Recent</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px">${chips}</div>
+  </div>`;
+}
+
 // ── Screens ───────────────────────────────────────────────────
 let _sessPlanDraft = [];
 
@@ -11781,6 +13092,7 @@ function closeSessionScreen() {
   const bd = document.getElementById('session-backdrop');
   if (bd) bd.classList.remove('open');
   _sessEx = null;
+  _sessReturnTo = null;   // stale return target would hijack the next open
 }
 function _sessTogglePlan(mid) {
   const i = _sessPlanDraft.indexOf(mid);
@@ -11801,8 +13113,8 @@ function renderSessionScreen() {
   // B: no session yet → plan builder
   if (!SESSION) {
     if (title) title.textContent = 'Plan your session';
-    body.innerHTML = `
-      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Pick what you're working today. You can change it mid-session.</div>
+    body.innerHTML = recentExercisesHtml(6) + `
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5;margin-bottom:10px">Or pick what you're working today. You can change it mid-session.</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px">
         ${MUSCLE_GROUPS.map(m => {
           const on = _sessPlanDraft.indexOf(m.id) !== -1;
@@ -11835,7 +13147,7 @@ function renderSessionScreen() {
     if (!exs.length) exs = _mpickExercisesFor(mid).filter(e => e.equip === 'bw');
     exs = exs.slice(0, 4);
     const rows = exs.map(e => {
-      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const key = exSlug(e.name);
       const sets = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : [];
       const doneCls = sets.length ? 'var(--green)' : 'var(--text)';
       return `<div onclick="openExercise('${key}','${e.name.replace(/'/g, "\\'")}')"
@@ -11848,7 +13160,7 @@ function renderSessionScreen() {
       </div>`;
     }).join('');
     const anyDone = exs.some(e => {
-      const key = 'gymex_' + e.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+      const key = exSlug(e.name);
       return ((typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : []).length > 0;
     });
     return `<div style="margin-bottom:12px">
@@ -11856,7 +13168,7 @@ function renderSessionScreen() {
       ${rows}</div>`;
   }).join('');
 
-  body.innerHTML = groups + `
+  body.innerHTML = groups + recentExercisesHtml(4) + `
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Cardio</div>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -11917,7 +13229,7 @@ function renderCardioScreen() {
   const totalS = rows.reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
       ${CARDIO_MODES.map(m => `<button onclick="_cardioMode='${m.id}';renderCardioScreen()"
         style="padding:5px 9px;border-radius:14px;border:1px solid ${m.id === mode.id ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${m.id === mode.id ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${m.id === mode.id ? 'var(--cyan)' : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${m.icon} ${m.label}</button>`).join('')}
@@ -11959,7 +13271,17 @@ function openExercise(key, name) {
   document.getElementById('session-backdrop').classList.add('open');
   renderExerciseScreen();
 }
-function backToPlan() { _sessEx = null; renderSessionScreen(); }
+function backToPlan() {
+  if (_sessReturnTo === 'picker') {
+    _sessReturnTo = null;
+    _sessEx = null;
+    closeSessionScreen();
+    openMusclePicker(_mpickMuscle);
+    return;
+  }
+  _sessEx = null;
+  renderSessionScreen();
+}
 
 function renderExerciseScreen() {
   const body = document.getElementById('session-body');
@@ -11994,7 +13316,7 @@ function renderExerciseScreen() {
     </div>`).join('');
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     ${(function () {
       const v = (typeof progressVerdict === 'function' && ex.m) ? progressVerdict(ex.m) : null;
       if (!v || !v.text) return '';
@@ -12006,6 +13328,12 @@ function renderExerciseScreen() {
       const s = (typeof variantSuggestion === 'function') ? variantSuggestion(_sessExName, sessionLocationFor(ds(new Date()))) : null;
       if (!s) return '';
       return `<div style="font-size:10.5px;color:var(--cyan);background:var(--cyan-bg);border-radius:6px;padding:8px 10px;margin-bottom:8px;line-height:1.5">${s.text}</div>`;
+    })()}
+    ${(function () {
+      // Condition-specific caution, shown above the generic cue because it's the
+      // one that's personal to him rather than general advice.
+      const w = (typeof exCautionFor === 'function') ? exCautionFor(_sessExName) : null;
+      return w ? `<div style="font-size:11px;color:var(--orange);line-height:1.5;margin-bottom:8px;padding:9px 11px;border-radius:7px;background:var(--orange-bg);border:1px solid var(--orange-border, var(--orange))">⚠ ${w}</div>` : '';
     })()}
     ${ex.cue ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:var(--input-bg)">${ex.cue}</div>` : ''}
     ${rows}
@@ -12063,7 +13391,8 @@ function renderDayReview() {
     }
     return fmtDur(r.duration_s) || '✓';
   };
-  const kindIcon = { strength:'🏋️', cardio:'🏃', stretch:'🧘', mobility:'🤸' };
+  const kindIcon = { strength:'🏋️', cardio:'🏃', stretch:'🧘', mobility:'🤸', gym_time:'📍' };
+  const unitFor = k => k === 'cardio' ? 'interval' : k === 'gym_time' ? 'session' : 'set';
 
   // Group by exercise so 4 intervals read as one block, not four orphan lines.
   const byEx = {};
@@ -12076,7 +13405,7 @@ function renderDayReview() {
       <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:3px">
         <span style="font-size:13px">${kindIcon[first.kind] || '•'}</span>
         <span style="font-size:12px;font-weight:700;color:var(--text)">${first.exercise_name}</span>
-        <span style="font-size:9.5px;color:var(--text-muted)">${set.length} ${first.kind === 'cardio' ? 'interval' : 'set'}${set.length > 1 ? 's' : ''}</span>
+        <span style="font-size:9.5px;color:var(--text-muted)">${set.length} ${unitFor(first.kind)}${set.length > 1 ? 's' : ''}</span>
       </div>
       ${set.map((r, i) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0 4px 20px;border-bottom:1px solid var(--divider)">
         <span style="font-size:9.5px;color:var(--text-muted);min-width:30px">${i + 1}</span>
@@ -12088,7 +13417,7 @@ function renderDayReview() {
   }).join('');
 
   body.innerHTML = `
-    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Session</button>
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     ${rows.length ? blocks : '<div style="font-size:11px;color:var(--text-muted);padding:16px 0;text-align:center">Nothing logged today yet.</div>'}
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--divider);font-size:10.5px;color:var(--text-muted);line-height:1.7">
       <b style="color:var(--text-dim)">This week</b><br>
@@ -12233,24 +13562,180 @@ function _restFmt(s) {
 function renderRestTimer() {
   const el = document.getElementById('rest-timer-bar');
   if (!el) return;
-  if (!_restTimer.running) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  if (!_restTimer.running) {
+    el.style.display = 'none'; el.innerHTML = '';
+    document.body.classList.remove('rest-active');
+    return;
+  }
   const over = _restTimer.remaining < 0;
   const tone = over ? 'green' : (_restTimer.remaining <= 10 ? 'orange' : 'cyan');
   const pct = _restTimer.target > 0
     ? Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) : 100;
   el.style.display = 'block';
+  // Sized to be read at arm's length, from a bench, mid-set. The clock is the
+  // only thing that matters at a glance, so it gets the space; the label and
+  // status drop to secondary. clamp() keeps it large on a phone without it
+  // becoming absurd on a desktop window.
+  //
+  // Buttons are 46px tall — Apple's minimum touch target is 44px and the old
+  // 24px ones were genuinely hard to hit with sweaty hands. Progress moved to a
+  // full-bleed bar across the top edge so it reads peripherally, without having
+  // to focus on it.
   el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px">
-      <div style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--${tone});min-width:66px">${_restFmt(_restTimer.remaining)}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:10px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_restTimer.label || 'Rest'}</div>
-        <div style="font-size:9px;color:var(--text-muted)">${over ? 'Ready — extra rest is fine, note it if it was a lot' : 'Resting'}</div>
-        <div style="height:3px;border-radius:2px;background:var(--divider);margin-top:4px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
-        </div>
+    <div style="height:6px;background:var(--divider);overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px 14px">
+      <div style="min-width:0;flex:1">
+        <div style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:var(--${tone})">${_restFmt(_restTimer.remaining)}</div>
+        <div style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px">${_restTimer.label || 'Rest'}</div>
+        <div style="font-size:11px;color:${over ? 'var(--green)' : 'var(--text-muted)'};font-weight:${over ? '700' : '400'};margin-top:1px">${over ? 'Ready — go' : 'Resting'}</div>
       </div>
-      <button onclick="adjustRestTimer(30)" style="padding:4px 8px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
-      <button onclick="stopRestTimer()" style="padding:4px 9px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit">✕</button>
+      <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
+        <button onclick="adjustRestTimer(30)" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
+        <button onclick="stopRestTimer()" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--${tone}-border, var(--card-border));background:${over ? 'var(--green-bg)' : 'var(--input-bg)'};color:${over ? 'var(--green)' : 'var(--text-dim)'};font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">${over ? 'Done' : 'Skip'}</button>
+      </div>
+    </div>`;
+  // Measured, not guessed — the clock uses clamp() so the height varies with
+  // viewport width. Read after innerHTML so offsetHeight reflects this render.
+  document.body.classList.add('rest-active');
+  document.documentElement.style.setProperty('--rest-bar-h', el.offsetHeight + 'px');
+}
+
+// ══════════════════════════════════════════════════════
+// "I'M AT THE GYM" CLOCK  (task #30, 2026-09-07)
+// ══════════════════════════════════════════════════════
+// Wall-clock time spent training. Craig asked for it; two honest caveats that
+// shaped the build:
+//
+// 1. TIME AT THE GYM IS A WEAK TRAINING METRIC. It counts queueing for a rack,
+//    scrolling, and talking. It is NOT work done, so it is logged under its own
+//    kind ('gym_time') and never enters strength volume or set counts.
+//    Where it IS useful for Craig specifically: his own pattern note says a 2hr
+//    gym leaves him shaky. Duration is a fatigue//systemic-load signal for him,
+//    and pairing it against how the next day feels is the actual payoff.
+//
+// 2. A MANUAL TIMER GETS LEFT RUNNING. He will drive home with it counting.
+//    So: elapsed is derived from a stored timestamp (never a tick counter, which
+//    dies when the phone sleeps or the PWA is evicted), and anything over
+//    GYMCLOCK_SANE_H prompts on return instead of silently logging a 9-hour
+//    workout. Nothing auto-logs; an implausible number is offered for correction.
+
+let GYMCLOCK = null;                 // { startedAt:<ms>, date:'YYYY-MM-DD' }
+let _gymClockTick = null;
+const GYMCLOCK_SANE_H = 4;           // beyond this, ask rather than assume
+
+function _gymClockSave() {
+  try {
+    if (GYMCLOCK) localStorage.setItem('gym_clock', JSON.stringify(GYMCLOCK));
+    else localStorage.removeItem('gym_clock');
+  } catch (e) {}
+}
+function _gymClockLoad() {
+  try { GYMCLOCK = JSON.parse(localStorage.getItem('gym_clock') || 'null'); }
+  catch (e) { GYMCLOCK = null; }
+  if (GYMCLOCK && !GYMCLOCK.startedAt) GYMCLOCK = null;
+  if (GYMCLOCK) _gymClockStartTicking();
+  return GYMCLOCK;
+}
+function gymClockElapsedS() {
+  if (!GYMCLOCK) return 0;
+  return Math.max(0, Math.round((Date.now() - GYMCLOCK.startedAt) / 1000));
+}
+function gymClockFmt(s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return h ? h + 'h ' + String(m).padStart(2, '0') + 'm'
+           : m + 'm ' + String(s % 60).padStart(2, '0') + 's';
+}
+function _gymClockStartTicking() {
+  if (_gymClockTick) clearInterval(_gymClockTick);
+  // 10s is plenty for a display reading in minutes, and cheap on battery.
+  _gymClockTick = setInterval(() => { renderGymClock(); }, 10000);
+}
+function _gymClockStopTicking() {
+  if (_gymClockTick) clearInterval(_gymClockTick);
+  _gymClockTick = null;
+}
+
+function gymClockStart() {
+  GYMCLOCK = { startedAt: Date.now(), date: ds(new Date()) };
+  _gymClockSave();
+  _gymClockStartTicking();
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// mins optional — used when the user corrects an implausible elapsed time.
+function gymClockStop(mins) {
+  if (!GYMCLOCK) return;
+  const secs = (mins !== undefined && mins !== null)
+    ? Math.round(Number(mins) * 60)
+    : gymClockElapsedS();
+  const dateStr = GYMCLOCK.date || ds(new Date());
+  GYMCLOCK = null;
+  _gymClockSave();
+  _gymClockStopTicking();
+  if (secs >= 60 && typeof logActivity === 'function') {
+    logActivity({
+      date: dateStr, kind: 'gym_time', name: 'Time training',
+      exercise_key: 'gym_time', set_index: 0,
+      duration_s: secs, source: 'clock',
+    });
+  }
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+function gymClockDiscard() {
+  GYMCLOCK = null;
+  _gymClockSave();
+  _gymClockStopTicking();
+  renderGymClock();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// Total logged training time for a day, for the capacity card and day review.
+function gymTimeTodayS(dateStr) {
+  return getActivity(dateStr || ds(new Date()))
+    .filter(r => r.kind === 'gym_time')
+    .reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
+}
+
+function renderGymClock() {
+  const el = document.getElementById('gym-clock-host');
+  if (!el) return;
+  const loggedS = gymTimeTodayS();
+
+  if (!GYMCLOCK) {
+    el.innerHTML = `
+      <button onclick="gymClockStart()" style="width:100%;margin-top:5px;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+        📍 I'm at the gym${loggedS ? ` · ${gymClockFmt(loggedS)} logged today` : ''}</button>`;
+    return;
+  }
+
+  const s = gymClockElapsedS();
+  const over = s > GYMCLOCK_SANE_H * 3600;
+  if (over) {
+    // Do not silently log a 9-hour workout. Offer the likely truth instead.
+    el.innerHTML = `
+      <div style="margin-top:5px;padding:10px;border-radius:7px;border:1px solid var(--orange-border, var(--orange));background:var(--orange-bg)">
+        <div style="font-size:11px;font-weight:700;color:var(--orange)">Clock has run ${gymClockFmt(s)}</div>
+        <div style="font-size:10px;color:var(--text-dim);line-height:1.5;margin-top:3px">That's longer than a session — it was probably left running. How long were you actually training?</div>
+        <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+          ${[45, 60, 75, 90, 120].map(m => `<button onclick="gymClockStop(${m})" style="flex:1;min-width:52px;padding:8px 4px;border-radius:6px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">${m}m</button>`).join('')}
+        </div>
+        <button onclick="gymClockDiscard()" style="width:100%;margin-top:5px;padding:7px;border-radius:6px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">Discard — I wasn't training</button>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="margin-top:5px;padding:10px 11px;border-radius:7px;border:1px solid var(--green-border);background:var(--green-bg);display:flex;align-items:center;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green);line-height:1.1">${gymClockFmt(s)}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">At the gym${loggedS ? ` · ${gymClockFmt(loggedS)} earlier today` : ''}</div>
+      </div>
+      <button onclick="gymClockStop()" style="padding:10px 14px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Done</button>
     </div>`;
 }
 
@@ -15301,6 +16786,7 @@ function buildActivityDecisionTree(dateStr) {
       </div>
       <div class="adt-row">${chips}</div>
       ${intentHtml}
+      <div id="gym-clock-host"></div>
       <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
       <button onclick="openMusclePicker()" style="width:100%;margin-top:5px;padding:7px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">Just browse exercises</button>
     </div>
@@ -16193,6 +17679,150 @@ function setExSet(dateStr, exKey, field, val) {
   if (!sets[exKey]) sets[exKey] = {};
   sets[exKey][field] = val;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
+  syncCardioAggToActivity(dateStr, exKey);
+}
+
+// ─── One store for sets (2026-09-07) ──────────────────────────────────────
+// Two logging paths had grown up independently:
+//   * session logger  — key gymex_<slug>, writes activity_log -> Supabase
+//   * inline fields in the routine popup — key <routineKey>_<i>, writes
+//     exsets_ localStorage and NOTHING else
+// Same lift, two unrelated records, and the inline one never left the phone.
+// Craig hit it from the other side: "when I click 'log exercise' it brings me
+// up to a completely different gym exercise tracker."
+//
+// Same failure family as the gymex_ black hole and the Body module: a writer
+// with no reader. Fixed at the storage layer so every call site inherits it —
+// patching the call sites is what let the last one recur.
+//
+// exsets_ stays the offline buffer (gym basements have no signal);
+// activity_log is the source of truth.
+
+function exSlug(name) {
+  return 'gymex_' + String(name || '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+
+// Movement-identity key, migrating any data written under the old positional
+// key on read. Read-through rather than a one-shot migration pass: a one-shot
+// flag that latches on an empty list is precisely what silently ate the Body
+// module's data, and it never retried.
+function exSetKey(dateStr, routineKey, i, exName) {
+  if (!exName) return routineKey + '_' + i;
+  const modern = exSlug(exName);
+  _exNameCache[modern] = exName;
+  const legacy = routineKey + '_' + i;
+  const all = getExSets(dateStr);
+  const old = all[legacy];
+  const hasData = old && (Array.isArray(old.entries) ? old.entries.length : (old.weight || old.reps || old.time || old.dist));
+  if (!all[modern] && hasData) {
+    all[modern] = Object.assign({}, old, { name: exName });
+    delete all[legacy];
+    try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+    syncExSetsToActivity(dateStr, modern, exName);
+  }
+  return modern;
+}
+
+// Mirror entries[] into activity_log. client_id is deterministic
+// (al-<date>-<exKey>-<setIndex>), so repeat calls upsert in place instead of
+// piling up duplicates on every keystroke.
+// The inline writers (setExSetEntry, addExSetRow…) only ever receive a key, so
+// the name has to be recoverable from it or the sync silently no-ops — which is
+// how this whole class of bug starts. exSlug is deterministic, so a reverse
+// lookup against EX_LIB is exact; the de-slug is a last resort for movements
+// that live in ROUTINES but not EX_LIB.
+// Names seen this session, so a routine movement that isn't in EX_LIB keeps its
+// real label ("Lat pulldown (wide)") instead of a de-slugged approximation.
+const _exNameCache = {};
+
+function exNameForKey(exKey, data) {
+  if (data && data.name) return data.name;
+  if (_exNameCache[exKey]) return _exNameCache[exKey];
+  if (typeof EX_LIB !== 'undefined') {
+    const hit = EX_LIB.find(e => exSlug(e.name) === exKey);
+    if (hit) return hit.name;
+  }
+  if (/^gymex_/.test(exKey || '')) {
+    const words = exKey.replace(/^gymex_/, '').replace(/_/g, ' ').trim();
+    return words ? words.charAt(0).toUpperCase() + words.slice(1) : '';
+  }
+  return '';
+}
+
+// The session logger writes the aggregate AND logs the activity row itself.
+// Without this guard each set would fire three redundant Supabase upserts
+// (one per field written) before the real one — needless chatter on gym wifi.
+let _exSyncSuspended = false;
+
+function syncExSetsToActivity(dateStr, exKey, exName) {
+  if (_exSyncSuspended) return;
+  if (typeof logActivity !== 'function' || typeof getActivity !== 'function') return;
+  const all = getExSets(dateStr);
+  const data = all[exKey] || {};
+  const name = exName || exNameForKey(exKey, data);
+  if (!name) return;
+  if (data.name !== name) {
+    data.name = name;
+    try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+  }
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  const meta = (typeof EX_LIB !== 'undefined' && EX_LIB.find(e => e.name === name)) || {};
+  const existing = getActivity(dateStr).filter(r => r.exercise_key === exKey);
+  // Reps are what make a set a set. addExSetRow pre-fills the new row's weight
+  // from the previous set, so "has a weight" would log every half-typed row as
+  // a completed 130×0.
+  const filled = e => !!(e && Number(e.r) > 0);
+
+  entries.forEach((e, idx) => {
+    if (!filled(e)) return;  // a blank row the UI just added is not a logged set
+    const prev = existing.find(r => r.set_index === idx);
+    logActivity({
+      date: dateStr, kind: 'strength', name: name, exercise_key: exKey,
+      set_index: idx, muscle: meta.m || '', equip: meta.equip || '',
+      weight: e.w || null, reps: e.r || null, flag: e.flag || '',
+      rest_s: prev ? prev.rest_s : null,   // keep a rest that was actually measured
+      source: 'inline',
+    });
+  });
+  // Sets cleared or deleted in the UI must not linger in the log. Only ever
+  // prune rows this path wrote — a session-logged set for the same movement is
+  // not ours to delete.
+  existing
+    .filter(r => (r.source || '') === 'inline')
+    .filter(r => r.set_index >= entries.length || !filled(entries[r.set_index]))
+    .forEach(r => removeActivity(dateStr, r.client_id));
+}
+
+// The aggregate path (cardio machines in the gym popup: time / distance, no
+// entries[]). Same bug, same fix — these never left the device either.
+function syncCardioAggToActivity(dateStr, exKey) {
+  if (typeof logActivity !== 'function') return;
+  if (!/^gymcardio_|^gymmachine_/.test(exKey || '')) return;
+  const data = getExSets(dateStr)[exKey] || {};
+  // Apple Health already owns its own record of these; mirroring them here
+  // would double-count the same session.
+  if (data.source === 'apple_health') return;
+  const mins = parseFloat(data.time) || 0;
+  const dist = parseFloat(data.dist) || 0;
+  const label = data.name || exKey.replace(/^gym(cardio|machine)_/, '').replace(/_/g, ' ');
+  const existing = getActivity(dateStr).find(r => r.exercise_key === exKey);
+  if (!mins && !dist) {
+    if (existing && (existing.source || '') === 'inline') removeActivity(dateStr, existing.client_id);
+    return;
+  }
+  // dist is stored in whatever unit the machine uses — don't assume km.
+  const cid = exKey.replace(/^gymcardio_/, '');
+  const unit = data.distUnit
+    || (typeof GYM_CARDIO !== 'undefined' && (GYM_CARDIO.find(c => c.id === cid) || {}).distUnit)
+    || 'm';
+  const mult = unit === 'km' ? 1000 : unit === 'mi' ? 1609.34 : 1;
+  logActivity({
+    date: dateStr, kind: 'cardio', name: label, exercise_key: exKey, set_index: 0,
+    distance_m: dist ? Math.round(dist * mult) : null,
+    duration_s: mins ? Math.round(mins * 60) : null,
+    source: 'inline',
+  });
 }
 
 // ─── Per-set entries (v1, 2026-05-10) ─────────────────────────────────────
@@ -16251,6 +17881,7 @@ function setExSetEntry(dateStr, exKey, idx, field, val) {
   data.reps = first.r || 0;
   data.sets = data.entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  syncExSetsToActivity(dateStr, exKey);
 }
 
 // Add a new empty set row. New set's weight defaults to the last set's weight
@@ -16265,6 +17896,8 @@ function addExSetRow(dateStr, exKey) {
   all[exKey].entries.push({ w: last ? last.w : 0, r: 0, flag: '' });
   all[exKey].sets = all[exKey].entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  // No sync here on purpose. The new row inherits the previous set's weight but
+  // has no reps yet, so it isn't a performed set. It syncs when reps land on it.
   if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
     scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
   } else if (typeof renderDaily === 'function') {
@@ -16283,6 +17916,13 @@ function removeExSetRow(dateStr, exKey, idx) {
   all[exKey].reps = first.r || 0;
   all[exKey].sets = all[exKey].entries.length;
   localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  // Removing set 2 of 4 renumbers 3 and 4. Drop this exercise's rows for the
+  // day and re-log the survivors — patching indices in place is how off-by-one
+  // logs happen.
+  getActivity(dateStr)
+    .filter(r => r.exercise_key === exKey)
+    .forEach(r => removeActivity(dateStr, r.client_id));
+  syncExSetsToActivity(dateStr, exKey);
   if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
     scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
   } else if (typeof renderDaily === 'function') {
@@ -16441,8 +18081,8 @@ function buildLiftInlineSummary(dateStr, woType, subtype) {
 
   const rows = exercises.map((ex, i) => {
     const key = 'r_' + routineKey + '_' + i;
-    const exKey = routineKey + '_' + i;
-    const setData = exSets[exKey] || {};
+    const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+    const setData = getExSets(dateStr)[exKey] || {};
     const isDone = !!checked[key];
     const nameLower = (ex.name || '').toLowerCase();
     const isWarmup = ex._warmupCardio || nameLower.includes('warmup');
@@ -17108,8 +18748,8 @@ function openRoutinePopup(routineKey, dateStr) {
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = routineKey + '_' + i;
-      const setData = exSets[exKey] || {};
+      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const setData = getExSets(dateStr)[exKey] || {};
       // Show reps/weight inputs based on routine type
       const _exNameLower = (ex.name || '').toLowerCase();
       const _isWarmup = ex._warmupCardio || _exNameLower.includes('warmup');
@@ -17170,8 +18810,8 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = routineKey + '_' + i;
-      const setData = exSets[exKey] || {};
+      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const setData = getExSets(dateStr)[exKey] || {};
       const showBwTrack = ex.trackReps;
       const timerSecs2 = parseTimerSeconds(ex.sets);
       const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div></div>` : '';
@@ -17590,6 +19230,7 @@ function renderDaily() {
   // the next one added will leak again unless someone remembers. Build Phase B.
   const morningHtml = `
     <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>
+    <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openStretch()">🧘 Stretch &amp; mobility <span style="font-size:9px;opacity:0.7;font-weight:600">(what feels stiff?)</span></div>
     ${isContentOwner() ? `<div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(1×/day · maintenance)</span></div>` : ''}`;
 
   // Recommended workout section
@@ -17710,6 +19351,8 @@ function renderDaily() {
 
   // Task #16 — activity decision tree at the top of the workout card
   const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr) : '';
+  // #gym-clock-host lives inside adtHtml, so it only exists after this write —
+  // renderGymClock() is called at the end of this function, not here.
   wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
@@ -18040,6 +19683,9 @@ function renderDaily() {
     </div>
   `;
   restoreOpenSections(dateStr);
+  // The gym clock's host div is written by buildActivityDecisionTree above, so
+  // it can only be filled once wc.innerHTML has landed.
+  if (typeof renderGymClock === 'function') renderGymClock();
   // Auto-fire check-in prompts on today's view only, with a slight delay so the
   // dashboard paints first. Morning takes priority over evening if both eligible.
   if (currentDayOffset === 0) {
@@ -18642,6 +20288,9 @@ async function refreshData(btn) {
 document.addEventListener('DOMContentLoaded', async () => {
   loadTheme();
   initSupabase();
+  // Restore a gym clock left running through a reload, phone lock, or PWA
+  // eviction. Elapsed is derived from the stored timestamp, so nothing is lost.
+  if (typeof _gymClockLoad === 'function') _gymClockLoad();
 
   // Check for existing session
   const loggedIn = await checkAuth();
