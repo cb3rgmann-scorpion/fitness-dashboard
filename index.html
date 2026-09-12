@@ -793,6 +793,21 @@
   }
   .wlog-input:focus { border-color: var(--cyan); outline: none; }
   .wlog-unit { font-size: 9px; color: var(--text-muted); min-width: 14px; }
+  /* Read-only stand-in for the flat boxes once an exercise has varied sets.
+     Deliberately NOT styled as inputs — a disabled-looking text field invites a
+     tap and then refuses it. These read as a value with a unit, and the whole
+     row is the tap target for the per-set screen. */
+  .wlog-ro-row {
+    display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+    padding: 1px 2px; border-radius: 5px;
+  }
+  .wlog-ro-row:active { background: var(--input-bg); }
+  .wlog-ro {
+    font-size: 10px; font-weight: 700; color: var(--text);
+    background: var(--input-bg); border: 1px solid var(--input-border);
+    border-radius: 4px; padding: 2px 6px; white-space: nowrap;
+  }
+  .wlog-ro-go { font-size: 10px; font-weight: 700; color: var(--cyan); }
   .wlog-row.done .wlog-label { color: var(--green); }
   .wlog-types { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
   .wlog-type-pill {
@@ -2893,7 +2908,7 @@
     <div style="display:flex;align-items:center;gap:14px">
       <div class="day-name" id="day-name"></div>
       <div class="date-full" id="date-full"></div>
-      <div class="custody-badge craig" id="custody-badge" data-module="schedule">
+      <div class="custody-badge craig" id="custody-badge" data-module="custody">
         <div class="custody-dot"></div>
         <span class="custody-text"></span>
       </div>
@@ -2929,7 +2944,7 @@
   <!-- Custody coverage warning. Silent expiry is the failure mode this catches:
        between Jul 1 and Aug 14 2026 the app ran 45 days with no custody data
        and nothing on screen said so. Added 2026-08-14. -->
-  <div class="backfill-banner hidden" id="custody-gap-banner" style="background:var(--orange-bg);border-color:var(--orange-border);color:var(--orange)">
+  <div class="backfill-banner hidden" id="custody-gap-banner" data-module="custody" style="background:var(--orange-bg);border-color:var(--orange-border);color:var(--orange)">
     <span class="bf-label" id="custody-gap-label"></span>
     <button class="bf-exit" onclick="openScheduleEditor()">Update schedule ›</button>
   </div>
@@ -3465,7 +3480,7 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.08.05';
+const APP_VERSION = '2026.09.12.07';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -3605,7 +3620,50 @@ async function loadRoutinesFromDB() {
   }
 }
 
-// Load all schedule data from Supabase (replaces CSV loading)
+// ── Per-user offline cache for the schedule ───────────────────
+// Replaces the deleted FALLBACK_* constants. The difference that matters: this
+// is keyed on auth.uid() and is only ever written from rows THIS user's own
+// session already read through RLS. A second user on the same device gets their
+// own key and reads nothing of Craig's; a signed-out visitor reads nothing at all
+// because the page no longer carries anyone's calendar in it.
+function _schedCacheKey() {
+  const uid = (USER_PROFILE && USER_PROFILE.id) || null;
+  return uid ? 'schedule_cache_' + uid : null;
+}
+function _saveScheduleCache(rows) {
+  const key = _schedCacheKey();
+  if (!key || !rows || !rows.length) return false;
+  try { localStorage.setItem(key, JSON.stringify(rows)); return true; }
+  catch (e) { return false; }   // quota — a stale cache is not worth an exception
+}
+// Returns true only if it actually populated the calendar, so the caller can tell
+// "restored from cache" from "nothing to restore".
+function _loadScheduleCache() {
+  const key = _schedCacheKey();
+  if (!key) return false;
+  let rows = null;
+  try { rows = JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return false; }
+  if (!Array.isArray(rows) || !rows.length) return false;
+  CUSTODY_CALENDAR = {};
+  CSV_EVENTS = {};
+  CSV_NOTES = {};
+  rows.forEach(row => {
+    if (row.custody) CUSTODY_CALENDAR[row.date] = String(row.custody).toUpperCase();
+    if (row.event) CSV_EVENTS[row.date] = row.event;
+    if (row.notes) CSV_NOTES[row.date] = row.notes;
+  });
+  console.log('Schedule restored from local cache: ' + rows.length + ' days');
+  return true;
+}
+function _clearScheduleCache() {
+  const key = _schedCacheKey();
+  if (key) { try { localStorage.removeItem(key); } catch (e) {} }
+}
+
+// Load all schedule data from Supabase (replaces CSV loading).
+// Returns true for any CLEAN read — including one that returns zero rows, which
+// is a legitimate answer for a user who has no schedule of their own. Returning
+// false there is what sent an empty result down the fallback path on 2026-09-12.
 async function loadScheduleFromDB() {
   if (!sbReady) return false;
   try {
@@ -3614,12 +3672,14 @@ async function loadScheduleFromDB() {
     CUSTODY_CALENDAR = {};
     CSV_EVENTS = {};
     CSV_NOTES = {};
-    data.forEach(row => {
+    (data || []).forEach(row => {
       if (row.custody) CUSTODY_CALENDAR[row.date] = row.custody.toUpperCase();
       if (row.event) CSV_EVENTS[row.date] = row.event;
       if (row.notes) CSV_NOTES[row.date] = row.notes;
     });
-    console.log('Schedule loaded from Supabase: ' + data.length + ' days');
+    console.log('Schedule loaded from Supabase: ' + (data || []).length + ' days');
+    if ((data || []).length) _saveScheduleCache(data);
+    else _clearScheduleCache();   // they have none; don't resurrect yesterday's
     return true;
   } catch(e) {
     console.warn('Supabase schedule load failed', e);
@@ -4646,6 +4706,7 @@ function getCustodyMonthShare(year, month /* 0-11 */) {
 // Compact status chip for the month view. Month-scoped per Craig's benchmark,
 // with the annual figure carried in the tooltip as backstop context.
 function custodyShareChipHtml(year, month) {
+  if (typeof canSee === 'function' && !canSee('custody')) return '';
   const m = getCustodyMonthShare(year, month);
   const y = getCustodyShare(year);
   const tone = m.ok ? 'green' : (m.blank > 0 ? 'orange' : 'red');
@@ -4667,6 +4728,7 @@ function custodyShareChipHtml(year, month) {
 
 // Full panel — used inside the schedule editor, updates live as days are edited.
 function custodySharePanelHtml(year) {
+  if (typeof canSee === 'function' && !canSee('custody')) return '';
   const s = getCustodyShare(year);
   const tone = s.status === 'safe' ? 'green' : (s.status === 'below' ? 'red' : 'orange');
   let headline, detail;
@@ -4725,6 +4787,10 @@ function refreshCustodyGapBanner() {
   const el = document.getElementById('custody-gap-banner');
   const label = document.getElementById('custody-gap-label');
   if (!el || !label) return;
+  // data-module hides it, but this function also runs it visible again on every
+  // render — so the gate has to live here too, not only in the markup. It was the
+  // FIRST thing a new user saw on 2026-09-12 precisely because it had neither.
+  if (typeof canSee === 'function' && !canSee('custody')) { el.classList.add('hidden'); return; }
   const cov = getCustodyCoverage();
   if (cov.daysAhead === null) {
     label.textContent = '🗓️ No custody schedule loaded.';
@@ -4788,7 +4854,9 @@ function renderScheduleEditor() {
   // Custody arrives from Lisa as blocks ("Craig has them Aug 17-21"), so a
   // range fill is the primary tool and per-day editing is the fixup tool.
   const todayStr = ds(new Date());
-  const rangeHtml = `
+  // Custody-only. Without the gate a schedule-granted user gets a Craig/Lisa
+  // dropdown for children who are not theirs.
+  const rangeHtml = !canSee('custody') ? '' : `
     <div style="margin-bottom:18px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">Fill a range</div>
       <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Schedules arrive as blocks. Set a start and end date, pick who has the kids, apply. Repeat for each block.</div>
@@ -4859,6 +4927,7 @@ function renderScheduleEditor() {
 // The three C / L / – buttons for one day. Shared by the full render and the
 // targeted single-row update so the two can't drift apart.
 function _schedSegHtml(dStr) {
+  if (typeof canSee === 'function' && !canSee('custody')) return '';
   const cur = CUSTODY_CALENDAR[dStr] || '';
   return [['C','Craig'],['L','Lisa'],['','–']].map(([val, lbl]) => {
     const on = cur === val;
@@ -4902,6 +4971,7 @@ function _schedRefreshCoverage() {
 }
 
 function _schedCoverageHtml() {
+  if (typeof canSee === 'function' && !canSee('custody')) return '<div id="sched-coverage"></div>';
   const cov = getCustodyCoverage();
   if (!cov.last) {
     return `<div id="sched-coverage" style="padding:10px;border-radius:6px;background:var(--red-bg);border:1px solid var(--red);color:var(--red);font-size:11px;font-weight:600;margin-bottom:14px">⚠ No custody data loaded at all.</div>`;
@@ -7394,7 +7464,15 @@ const NO_SCHOOL = new Set([
   "2027-06-28", "2027-06-29", "2027-06-30",
 ]);
 
+// Bootstrap import of craig_schedule.csv. OWNER ONLY, and deliberately so: the
+// file is named after Craig because it IS Craig's — a year of custody days and
+// the kids' school calendar. It sits next to index.html on a public host, so any
+// other user reaching this path would be handed his calendar as if it were their
+// own. Same leak as FALLBACK_CUSTODY, different door. Do not relax this guard;
+// if a second user ever needs a CSV import, it belongs behind a file picker that
+// reads a file THEY chose, not a fixed filename on the server.
 async function loadScheduleCSV() {
+  if (!isContentOwner()) return;
   try {
     // Clear old data so edits are picked up cleanly
     CUSTODY_CALENDAR = {};
@@ -7429,142 +7507,40 @@ async function loadScheduleCSV() {
 }
 
 // Fallback data if CSV fails to load (synced from CSV 2026-03-26)
-const FALLBACK_CUSTODY = {
-  "2026-01-01": "L", "2026-01-02": "L", "2026-01-03": "L", "2026-01-04": "L",
-  "2026-01-05": "L", "2026-01-06": "L", "2026-01-07": "L", "2026-01-08": "C",
-  "2026-01-09": "C", "2026-01-10": "C", "2026-01-11": "C", "2026-01-12": "C",
-  "2026-01-13": "C", "2026-01-14": "C", "2026-01-15": "L", "2026-01-16": "L",
-  "2026-01-17": "L", "2026-01-18": "L", "2026-01-19": "L", "2026-01-20": "L",
-  "2026-01-21": "L", "2026-01-22": "L", "2026-01-23": "L", "2026-01-24": "C",
-  "2026-01-25": "C", "2026-01-26": "C", "2026-01-27": "C", "2026-01-28": "C",
-  "2026-01-29": "C", "2026-01-30": "L", "2026-01-31": "L",
-  "2026-02-01": "L", "2026-02-02": "L", "2026-02-03": "L", "2026-02-04": "L",
-  "2026-02-05": "L", "2026-02-06": "L", "2026-02-07": "L", "2026-02-08": "L",
-  "2026-02-09": "C", "2026-02-10": "C", "2026-02-11": "C", "2026-02-12": "C",
-  "2026-02-13": "C", "2026-02-14": "C", "2026-02-15": "C", "2026-02-16": "L",
-  "2026-02-17": "L", "2026-02-18": "L", "2026-02-19": "L", "2026-02-20": "L",
-  "2026-02-21": "L", "2026-02-22": "C", "2026-02-23": "C", "2026-02-24": "C",
-  "2026-02-25": "C", "2026-02-26": "C", "2026-02-27": "L", "2026-02-28": "L",
-  "2026-03-01": "L", "2026-03-02": "L", "2026-03-03": "L", "2026-03-04": "L",
-  "2026-03-05": "L", "2026-03-06": "L", "2026-03-07": "L", "2026-03-08": "L",
-  "2026-03-09": "C", "2026-03-10": "C", "2026-03-11": "C", "2026-03-12": "C",
-  "2026-03-13": "C", "2026-03-14": "C", "2026-03-15": "C", "2026-03-16": "L",
-  "2026-03-17": "L", "2026-03-18": "L", "2026-03-19": "L", "2026-03-20": "L",
-  "2026-03-21": "L", "2026-03-22": "L", "2026-03-23": "L", "2026-03-24": "L",
-  "2026-03-25": "C", "2026-03-26": "C", "2026-03-27": "C", "2026-03-28": "C",
-  "2026-03-29": "C", "2026-03-30": "L", "2026-03-31": "L",
-  "2026-04-01": "L", "2026-04-02": "L", "2026-04-03": "L", "2026-04-04": "C",
-  "2026-04-05": "C", "2026-04-06": "C", "2026-04-07": "C", "2026-04-08": "C",
-  "2026-04-09": "C", "2026-04-10": "L", "2026-04-11": "L", "2026-04-12": "L",
-  "2026-04-13": "L", "2026-04-14": "L", "2026-04-15": "L", "2026-04-16": "L",
-  "2026-04-17": "L", "2026-04-18": "L", "2026-04-19": "L", "2026-04-20": "C",
-  "2026-04-21": "C", "2026-04-22": "C", "2026-04-23": "C", "2026-04-24": "C",
-  "2026-04-25": "C", "2026-04-26": "C", "2026-04-27": "L", "2026-04-28": "L",
-  "2026-04-29": "L", "2026-04-30": "L",
-};
-const FALLBACK_EVENTS = {
-  "2026-01-01": "🍁 New Year's Day", "2026-02-16": "🍁 Family Day",
-  "2026-04-03": "🍁 Good Friday",
-  "2026-04-10": "Harlow — Dance Competition",
-  "2026-04-11": "Violet — Competition Day 1",
-  "2026-04-12": "Violet — Competition Day 2",
-  "2026-05-18": "🍁 Victoria Day", "2026-07-01": "🍁 Canada Day",
-  "2026-08-03": "🍁 Civic Holiday", "2026-09-07": "🍁 Labour Day",
-  "2026-10-12": "🍁 Thanksgiving", "2026-11-11": "🍁 Remembrance Day",
-  "2026-12-25": "🍁 Christmas Day", "2026-12-26": "🍁 Boxing Day",
-};
-const FALLBACK_NOTES = {
-  "2026-01-01": "Holiday", "2026-01-02": "Christmas Break", "2026-01-03": "Christmas Break",
-  "2026-01-04": "Christmas Break", "2026-01-30": "PD Day",
-  "2026-02-12": "Teachers Convention", "2026-02-13": "Teachers Convention",
-  "2026-02-16": "Holiday", "2026-02-24": "Report Cards", "2026-02-27": "PD Day",
-  "2026-03-23": "Spring Break", "2026-03-24": "Spring Break", "2026-03-25": "Spring Break",
-  "2026-03-26": "Spring Break", "2026-03-27": "Spring Break",
-  "2026-04-03": "Holiday", "2026-04-24": "PD Day", "2026-05-15": "PD Day",
-  "2026-05-18": "Holiday", "2026-06-26": "Last Day of School",
-  "2026-06-29": "Summer Break", "2026-06-30": "Summer Break",
-  "2026-07-01": "Holiday; Summer Break", "2026-07-02": "Summer Break", "2026-07-03": "Summer Break",
-  "2026-07-06": "Summer Break", "2026-07-07": "Summer Break", "2026-07-08": "Summer Break",
-  "2026-07-09": "Summer Break", "2026-07-10": "Summer Break",
-  "2026-07-13": "Summer Break", "2026-07-14": "Summer Break", "2026-07-15": "Summer Break",
-  "2026-07-16": "Summer Break", "2026-07-17": "Summer Break",
-  "2026-07-20": "Summer Break", "2026-07-21": "Summer Break", "2026-07-22": "Summer Break",
-  "2026-07-23": "Summer Break", "2026-07-24": "Summer Break",
-  "2026-07-27": "Summer Break", "2026-07-28": "Summer Break", "2026-07-29": "Summer Break",
-  "2026-07-30": "Summer Break", "2026-07-31": "Summer Break",
-  "2026-08-03": "Holiday; Summer Break", "2026-08-04": "Summer Break", "2026-08-05": "Summer Break",
-  "2026-08-06": "Summer Break", "2026-08-07": "Summer Break",
-  "2026-08-10": "Summer Break", "2026-08-11": "Summer Break", "2026-08-12": "Summer Break",
-  "2026-08-13": "Summer Break", "2026-08-14": "Summer Break",
-  "2026-08-17": "Summer Break", "2026-08-18": "Summer Break", "2026-08-19": "Summer Break",
-  "2026-08-20": "Summer Break", "2026-08-21": "Summer Break",
-  "2026-08-24": "Summer Break", "2026-08-25": "Summer Break", "2026-08-26": "Summer Break",
-  "2026-08-27": "Summer Break", "2026-08-28": "Summer Break", "2026-08-31": "Summer Break",
-  "2026-09-07": "Holiday", "2026-10-12": "Holiday", "2026-11-11": "Holiday",
-  "2026-12-21": "Christmas Break", "2026-12-22": "Christmas Break", "2026-12-23": "Christmas Break",
-  "2026-12-24": "Christmas Break", "2026-12-25": "Holiday; Christmas Break", "2026-12-26": "Holiday",
-  "2026-12-28": "Christmas Break", "2026-12-29": "Christmas Break",
-  "2026-12-30": "Christmas Break", "2026-12-31": "Christmas Break",
-};
+// FALLBACK_CUSTODY / FALLBACK_EVENTS / FALLBACK_NOTES were DELETED 2026-09-12.
+//
+// They held a hardcoded Jan-Dec 2026 custody calendar, the kids' names and their
+// competition dates, and the school calendar — baked into a file served publicly
+// from GitHub Pages. Two things were wrong with that:
+//
+//  1. Anyone who opened view-source could read a year of which parent had the
+//     children on which day, WITHOUT signing in. RLS never entered the picture.
+//  2. Any signed-in user with 0 schedule rows of their own fell through to it,
+//     so Craig's calendar rendered on their phone as if it were theirs. That is
+//     exactly what happened when two users were added on 2026-09-12.
+//
+// Do NOT reintroduce a personal-data constant as a "fallback". Offline
+// resilience is _loadScheduleCache() below — per-user, keyed on auth.uid(),
+// written only from rows that user's own session already read.
 
 // ──────────────────────────────────────────────
 // WORKOUT PLANS — Keyed by date
 // ──────────────────────────────────────────────
-const WORKOUT_PLANS = {
-  "2026-03-09": { type: "row", label: "Row — Steady State", target: "1km @ 125 bpm", details: "Focus: smooth strokes, find your rhythm", extra: "", timing: "evening", week: 1, optional: "Add 500m if feeling good", alt: "Alt: 30-min walk or swim" },
-  "2026-03-10": { type: "stretch", label: "Active Recovery", target: "Stretch Routine B + foam roll", details: "Easy day after first row", extra: "", timing: "evening", week: 1, optional: "Add 15-min yoga video", alt: "Alt: Easy 1km row or 20-min walk" },
-  "2026-03-11": { type: "row", label: "Row — Intervals", target: "3×1.5 min @ sub-2:15 / 2 min @ 2:40+", details: "~9 min total. Push for sub-2:15 pace on work intervals", extra: "", timing: "evening", week: 1, optional: "Add 4th interval or extend work by 30s", alt: "Alt: Gym session or outdoor jog/walk intervals" },
-  "2026-03-12": {  type: "yoga", label: "Yoga (20 min)", target: "Follow-along video", details: "After kids are down.", extra: "", timing: "evening", week: 2, optional: "Add 10-min guided meditation after", alt: "Alt: Row 1km easy or stretch routine only"  },
-  "2026-03-13": { type: "yoga", label: "Yoga (20 min)", target: "Follow-along video", details: "Recovery after gym. Gentle.", extra: "", timing: "evening", week: 1, optional: "Extend to 30-min video", alt: "Alt: 30-min walk or stretch only" },
-  "2026-03-14": {  type: "stretch", label: "Stretch Only", target: "Routine A — Posterior Chain & Hips", details: "Recovery day. After bedtime.", extra: "", timing: "evening", week: 2, optional: "Add foam rolling 10 min", alt: "Alt: Easy yoga 15 min"  },
-  "2026-03-15": { type: "row", label: "Row — Endurance", target: "15 min non-stop — any pace", details: "Sunday long row. Just keep moving.", extra: "", timing: "evening", week: 1, optional: "Push to 20 min if feeling good", alt: "Alt: Outdoor hike/walk 45-60 min or swim" },
-  "2026-03-16": { type: "row", label: "Row — Steady State", target: "1km @ 125 bpm", details: "After bedtime. Keep it easy.", extra: "", timing: "evening", week: 2, optional: "Add 500m at slightly faster pace", alt: "Alt: Bodyweight circuit (push-ups, squats, planks) or yoga 20 min" },
-  "2026-03-17": {  type: "gym", label: "Gym Session", target: "Full workout — see plan", details: "Lower body → Upper body → Core → Cooldown", extra: "Track weights in spreadsheet", timing: "anytime", week: 1, optional: "Add farmer's carries 3×40m at end", alt: "Alt: Bodyweight circuit at home or swim"  },
-  "2026-03-18": { type: "row", label: "Row — Intervals", target: "3×1.5 min @ sub-2:15 / 2 min @ 2:40+", details: "After bedtime. Short and intense.", extra: "", timing: "evening", week: 2, optional: "Add 4th interval or extend work by 30s", alt: "Alt: Bodyweight HIIT circuit 15 min" },
-  "2026-03-19": {  type: "gym", label: "Gym Session", target: "Full workout — push for form", details: "2nd gym this week. Focus on technique.", extra: "Track weights", timing: "anytime", week: 1, optional: "Add extra set on your weakest lift", alt: "Alt: Row 2km steady or outdoor hike 45 min"  },
-  "2026-03-20": { type: "row", label: "Row — Pace", target: "1.5km — hold 2:25/500m", details: "Friday evening. Lock in a split and hold it.", extra: "", timing: "evening", week: 2, optional: "Try to negative split (2nd half faster)", alt: "Alt: Bodyweight circuit or yoga 20 min" },
-  "2026-03-21": { type: "yoga", label: "Yoga + Stretch", target: "20 min yoga + daily stretch", details: "Weekend. Yoga when kids nap/play.", extra: "Family walk option", timing: "anytime", week: 2, optional: "Extend yoga to 30 min", alt: "Alt: Family walk/hike 30-45 min or playground session" },
-  "2026-03-22": { type: "rest", label: "Rest Day", target: "Active recovery only", details: "Recharge. Family time.", extra: "Easy walk if you feel like it", timing: "anytime", week: 2, optional: "10-min evening stretch if restless" },
-  "2026-03-23": { type: "row", label: "Row — Intervals", target: "3×1.5 min @ sub-2:15 / 2 min @ 2:40+", details: "~10 min. Progression from 3×1 min.", extra: "", timing: "evening", week: 2, optional: "Add 4th interval or extend work by 30s", alt: "Alt: Bodyweight circuit or yoga 20 min" },
-  "2026-03-24": { type: "stretch", label: "Stretch + Bodyweight", target: "Routine A + 3×10 push-ups, 3×12 squats", details: "Light combo. After bedtime.", extra: "", timing: "evening", week: 2, optional: "Add 3×10 lunges each leg", alt: "Alt: Row 1km easy or yoga 20 min" },
-  "2026-03-25": { type: "row", label: "Row — Intervals", target: "3×2 min @ sub-2:15 / 2 min @ 2:40+", details: "WFH: row after morning coffee", extra: "", timing: "evening", week: 3, optional: "Add 4th interval or extend work by 30s", alt: "Alt: Gym session or outdoor jog intervals" },
-  "2026-03-26": {  type: "row", label: "Row — Steady State", target: "2km @ 125 bpm", details: "Kids day — Row after bedtime.", extra: "", timing: "evening", week: 3, optional: "Beat your pace by 2-3 sec/500m", alt: "Alt: Bodyweight circuit or yoga 20 min"  },
-  "2026-03-27": { type: "row", label: "Row — Pace", target: "2km — hold 2:20/500m", details: "2km pace challenge! Lock in and hold.", extra: "", timing: "evening", week: 3, optional: "Negative split: row 2nd km faster than 1st", alt: "Alt: Outdoor walk/jog 45 min or swim" },
-  "2026-03-28": {  type: "yoga", label: "Yoga (20 min)", target: "Follow-along video", details: "Recovery day. After bedtime.", extra: "", timing: "evening", week: 4, optional: "Extend to 30-min yoga for back pain", alt: "Alt: Easy row 1km or stretch only"  },
-  "2026-03-29": { type: "yoga", label: "Yoga — Recovery", target: "30 min yoga + stretch", details: "Recovery before Lisa week", extra: "", timing: "evening", week: 3, optional: "Add 10-min foam rolling", alt: "Alt: Easy walk 30 min or swim (easy)" },
-  "2026-03-30": {  type: "gym", label: "Gym Session", target: "Full workout — increase weight 1-2 exercises", details: "Compare to Week 1 numbers", extra: "Track weights", timing: "anytime", week: 3, optional: "Add cable face pulls 3×15", alt: "Alt: Row 2km steady or swim"  },
-  "2026-03-31": { type: "row", label: "Row — Intervals", target: "3×2 min @ sub-2:10 / 2 min @ 2:40+", details: "Longer work intervals!", extra: "", timing: "evening", week: 4, optional: "Add 4th interval or extend work by 30s", alt: "Alt: Bodyweight HIIT 15 min or yoga 20 min" },
-  "2026-04-01": {  type: "gym", label: "Gym Session", target: "Full workout — 2nd gym this week", details: "Saturday gym. No time pressure.", extra: "Track weights", timing: "anytime", week: 3, optional: "Add extra core: pallof press 3×10 each", alt: "Alt: Outdoor hike 60 min or row 2.5km"  },
-  "2026-04-02": { type: "row", label: "Row — Endurance", target: "20 min non-stop — easy pace", details: "Go for time, not distance. After bedtime.", extra: "", timing: "evening", week: 4, optional: "Push to 25 min", alt: "Alt: Bodyweight circuit or yoga 20 min" },
-  "2026-04-03": { type: "stretch", label: "Stretch + Bodyweight", target: "Routine B + push-ups, squats, planks", details: "Good Friday. Light home session.", extra: "", timing: "evening", week: 4, optional: "Add 3×8 dead bugs + 3×10 lunges", alt: "Alt: Family walk or easy row 1km" },
-  "2026-04-04": {  type: "stretch", label: "Stretch + Bodyweight", target: "Routine A + push-ups, squats, lunges", details: "Harlow dance comp. Light day.", extra: "", timing: "evening", week: 6, optional: "Add planks 3×30s + dead bugs 3×8", alt: "Alt: Easy row 1km or yoga 20 min"  },
-  "2026-04-05": { type: "row", label: "Row — Endurance", target: "25 min non-stop — any pace", details: "Sunday long row. Just keep moving!", extra: "", timing: "evening", week: 5, optional: "Push to 30 min", alt: "Alt: Outdoor hike/jog 60 min or swim" },
-  "2026-04-06": { type: "row", label: "Row — Intervals", target: "4×2 min @ sub-2:10 / 90s @ 2:40+", details: "~12 min. More intervals now.", extra: "", timing: "evening", week: 5, optional: "Add 5th interval or extend work by 30s", alt: "Alt: Gym session or outdoor jog intervals" },
-  "2026-04-07": {  type: "row", label: "Row — Pace", target: "2.5km — hold 2:15/500m", details: "Pace challenge. Lock in and grind.", extra: "", timing: "evening", week: 6, optional: "Negative split the last 500m", alt: "Alt: Bodyweight circuit or yoga 30 min"  },
-  "2026-04-08": { type: "yoga", label: "Yoga — Recovery", target: "30 min yoga", details: "Recovery before long Lisa stretch", extra: "", timing: "evening", week: 5, optional: "Add 15-min guided meditation", alt: "Alt: Easy walk 30 min or stretch only" },
-  "2026-04-09": {  type: "yoga", label: "Yoga (20 min)", target: "Follow-along video", details: "Mid-week recovery.", extra: "", timing: "evening", week: 7, optional: "Add 10-min meditation", alt: "Alt: Stretch routine only or easy row 1km"  },
-  "2026-04-10": {  type: "gym", label: "Gym Session", target: "Full workout — push for progress", details: "Saturday gym. Fresh from Lisa week.", extra: "Track weights", timing: "anytime", week: 5, optional: "Add single-leg RDL 3×8 each side", alt: "Alt: Row 2.5km steady or outdoor hike 60 min"  },
-  "2026-04-11": { type: "outdoor", label: "Family Walk/Hike", target: "45-60 min walk", details: "Violet competition Day 1.", extra: "Take the kids!", timing: "anytime", week: 6, optional: "Add jog intervals: 2 min jog / 3 min walk × 3", alt: "Alt: Playground workout (pull-ups, dips, squats)" },
-  "2026-04-12": { type: "yoga", label: "Yoga — Recovery", target: "20 min yoga + stretch", details: "Violet competition Day 2. Easy day.", extra: "", timing: "anytime", week: 6, optional: "Extend to 30-min yoga", alt: "Alt: Family walk 30 min" },
-  "2026-04-13": {  type: "gym", label: "Gym Session", target: "Full workout — compare to Week 3", details: "Mid-week gym. Track progress.", extra: "Track weights", timing: "anytime", week: 5, optional: "Add farmer's carries + extra set on bench", alt: "Alt: Row 2.5km or swim + bodyweight"  },
-  "2026-04-14": { type: "row", label: "Row — Intervals", target: "4×2.5 min @ sub-2:05 / 90s @ 2:40+", details: "After bedtime. Stay consistent.", extra: "", timing: "evening", week: 7, optional: "Add 5th interval or extend work by 30s", alt: "Alt: Bodyweight HIIT 20 min" },
-  "2026-04-15": {  type: "gym", label: "Gym Session", target: "Full workout — 3rd gym this block", details: "Craig day! Take advantage of gym access.", extra: "Track weights", timing: "anytime", week: 6, optional: "Add cable face pulls + extra core work", alt: "Alt: Row intervals 4×2 min @ sub-2:10 or swim"  },
-  "2026-04-16": { type: "row", label: "Row — Pace", target: "2.5km — beat your Apr 13 split", details: "Pace improvement day. After bedtime.", extra: "", timing: "evening", week: 7, optional: "Add 500m tempo finish at sub-2:10", alt: "Alt: Bodyweight circuit + stretch" },
-  "2026-04-17": { type: "stretch", label: "Stretch + Bodyweight", target: "Routine B + bodyweight circuit", details: "Push-ups, squats, lunges, planks, dead bugs", extra: "", timing: "evening", week: 7, optional: "Add 2nd round of bodyweight circuit", alt: "Alt: Row 2km easy or yoga 20 min" },
-  "2026-04-18": { type: "outdoor", label: "Family Walk/Hike", target: "45-60 min walk or playground", details: "Saturday with kids. Get outside.", extra: "Family activity", timing: "anytime", week: 7, optional: "Add jog intervals: 2 min jog / 3 min walk × 4", alt: "Alt: Family bike ride or playground workout" },
-  "2026-04-19": { type: "rest", label: "Rest Day", target: "Active recovery only", details: "Last Kids day — Recharge for Craig week.", extra: "Easy walk if you feel like it", timing: "anytime", week: 7, optional: "10-min evening stretch" },
-  "2026-04-20": { type: "row", label: "Row — Endurance", target: "30 min non-stop — any pace", details: "New milestone! Monday morning endurance test.", extra: "", timing: "evening", week: 8, optional: "Note total meters and try to beat it next time", alt: "Alt: Gym session or outdoor run/walk 60 min" },
-  "2026-04-21": {  type: "yoga", label: "Yoga (20 min)", target: "Follow-along video", details: "After bedtime. Recovery.", extra: "", timing: "evening", week: 9, optional: "Extend to 30 min", alt: "Alt: Stretch routine only or easy row 1km"  },
-  "2026-04-22": { type: "row", label: "Row — Intervals", target: "5×2 min @ sub-2:05 / 90s @ 2:40+", details: "~18 min. Peak interval session.", extra: "", timing: "evening", week: 8, optional: "Add 6th interval or extend work by 30s", alt: "Alt: Outdoor jog intervals or gym" },
-  "2026-04-23": { type: "yoga", label: "Yoga — Recovery", target: "30 min yoga", details: "Mid-week recovery. Don't skip this.", extra: "", timing: "evening", week: 8, optional: "Add foam rolling 15 min", alt: "Alt: Easy walk 30 min or swim (easy)" },
-  "2026-04-24": {  type: "row", label: "Row — Intervals", target: "5×2 min @ sub-2:05 / 60s @ 2:40+", details: "Shorter rest! After bedtime.", extra: "", timing: "evening", week: 9, optional: "Add 6th interval or extend work by 30s", alt: "Alt: Bodyweight HIIT 20 min"  },
-  "2026-04-25": { type: "row", label: "Row — Pace", target: "3km — hold 2:10/500m", details: "Saturday pace test. Your best 3km split!", extra: "", timing: "evening", week: 8, optional: "Push to 3.5km at same pace", alt: "Alt: Outdoor hike/run 60-90 min or swim" },
-  "2026-04-26": { type: "yoga", label: "Yoga + Stretch", target: "20 min yoga + full stretch", details: "Recovery day before Lisa week.", extra: "", timing: "evening", week: 8, optional: "Add 10-min guided meditation", alt: "Alt: Easy walk 30 min" },
-  "2026-04-27": {  type: "gym", label: "Gym Session", target: "Wk 8 strength test — compare to Wk 1!", details: "Friday gym. Log everything.", extra: "Track weights. Progress check!", timing: "anytime", week: 8, optional: "Add extra set on every compound lift", alt: "Alt: Row 3km or outdoor hike 60 min"  },
-  "2026-04-28": {  type: "gym", label: "Gym Session", target: "Full workout — push for new PBs", details: "Compare to all previous weeks.", extra: "Track weights", timing: "anytime", week: 8, optional: "Add cable face pulls + extra core work", alt: "Alt: Row 3km or swim + bodyweight"  },
-  "2026-04-29": { type: "row", label: "Row — Steady State", target: "3km @ 125 bpm", details: "Maintain 3km. After bedtime.", extra: "", timing: "evening", week: 9, optional: "Try negative splits: 2nd half faster", alt: "Alt: Bodyweight circuit + yoga 20 min" },
-  "2026-04-30": { type: "stretch", label: "Stretch + Bodyweight — Month End", target: "Full stretch + bodyweight circuit", details: "End of April! Log how you feel.", extra: "Review progress this month", timing: "evening", week: 9, optional: "2nd round of bodyweight circuit", alt: "Alt: Row 2km easy or yoga 30 min" },
-};
+// EMPTIED 2026-09-12. This held the 53-day March 24 periodized plan, 2026-03-09
+// to 2026-04-30 — every entry already in the past, and the plan itself formally
+// retired by the May 3 pivot ("superseded historical context, not current spec").
+// So every lookup here has returned undefined for months and emptying it changes
+// no behaviour.
+//
+// It is emptied rather than kept because it was 14.7KB of Craig's personal
+// planning text in a publicly served file, naming his children and the days of
+// their competitions. Same exposure as the custody constants deleted above, just
+// less obvious because it renders as workout copy. (The names are deliberately
+// not quoted here — a comment ships in the same bytes as the code.)
+//
+// Left as an empty object, not deleted: WORKOUT_PLANS[dateStr] is read in the
+// daily, week and month renderers and every reader already handles undefined.
+const WORKOUT_PLANS = {};;
 
 // ──────────────────────────────────────────────
 // MEAL TEMPLATES
@@ -10267,6 +10243,31 @@ const DAY_NOTE_CATS = [
   { id: 'win',      icon: '⭐',   label: 'Win',       color: 'cyan',   hint: 'Something that went well' },
   { id: 'personal', icon: '📝',   label: 'Personal',  color: 'purple', hint: 'For you' },
   { id: 'custody',  icon: '🔄',   label: 'Custody',   color: 'orange', hint: 'Trades, exceptions, handover changes' },
+  // Milestone (2026-09-12). Craig: "logging these personal milestones are huge"
+  // — 40 pant to a loose 36, four belt notches.
+  //
+  // It lives HERE, as an event category, because he was explicit: "milestones
+  // shouldn't be a push, it should be in the event log. like the custody
+  // events, personal events etc." So: no module, no dashboard, no streak, no
+  // trophy case. It inherits this file's zero-obligation rule above.
+  //
+  // Distinct from 'win': a win is something that went well today. A milestone
+  // is a threshold crossed — clothing size, a belt notch, a first. Recorded in
+  // both directions, because he asked for the honest ones too, and a record
+  // that only holds good news isn't a record.
+  //
+  // Deliberately no measurement field. He chose moments over numbers, and pant
+  // sizes are too coarse and brand-inconsistent to trend anyway.
+  //
+  // DB note: day_notes.category has a CHECK constraint. 'milestone' was added
+  // to it by migration day_notes_add_milestone_category before this line
+  // shipped — without that, every save would have failed into the
+  // console.warn below and looked like it worked.
+  // color: 'pink' because it's the only unused ramp with the -bg and -border
+  // variants this list needs. There is no --amber in any of the three themes,
+  // and the category would have rendered colourless in all of them.
+  { id: 'milestone', icon: '🏆', label: 'Milestone', color: 'pink',
+    hint: 'A threshold crossed — clothing size, belt notch, a first' },
 ];
 let DAY_NOTES = {};              // dateStr -> [note, ...]
 let _dnDraft = { cat: 'together', body: '', editingId: null };
@@ -10475,7 +10476,13 @@ const APP_MODULES = [
   { id:'exercise', icon:'💪', label:'Exercise',   desc:'Workout card, logging, muscle picker, rest timer' },
   { id:'meals',    icon:'🍽️', label:'Meals',      desc:'Meal log, recipes, restaurant picker' },
   { id:'body',     icon:'🩹', label:'Body',       desc:'Symptoms, meds, appointments, providers' },
-  { id:'schedule', icon:'🗓️', label:'Schedule',   desc:'Week/month views, custody calendar' },
+  { id:'schedule', icon:'🗓️', label:'Schedule',   desc:'Week and month calendar views' },
+  // Split out of `schedule` on 2026-09-12. The custody surfaces are single-tenant
+  // by construction — "Craig" and "Lisa" are hardcoded in the labels, the CSS
+  // classes, the editor dropdown and the 40%-threshold panel — so granting the
+  // calendar should never have implied granting them. Off by default: absent from
+  // an existing profile's `modules` array, canSee('custody') is false.
+  { id:'custody',  icon:'⚖️', label:'Custody',    desc:'Custody calendar, 40% share panel, coverage banner' },
   { id:'notes',    icon:'🗒️', label:'Notes',      desc:'Day notes and (later) photos' },
   { id:'checkins', icon:'☀️', label:'Check-ins',  desc:'Morning and evening prompts' },
   { id:'stats',    icon:'📊', label:'Stats',      desc:'Trends, rowing, cardio, health' },
@@ -17948,6 +17955,117 @@ function exSetKey(dateStr, routineKey, i, exName) {
 // Mirror entries[] into activity_log. client_id is deterministic
 // (al-<date>-<exKey>-<setIndex>), so repeat calls upsert in place instead of
 // piling up duplicates on every keystroke.
+// ── Quick aggregate entry -> real per-set entries (2026-09-12) ───────────
+// Craig did 2×10 then 2×15 push-ups and found only a single "how many reps?"
+// box with no way to add more. Two defects behind that:
+//   1. The inline row offered one flat number per exercise.
+//   2. It wrote via setExSet(), which only syncs cardio aggregates — so those
+//      reps never reached activity_log at all. Another writer with no reader.
+//
+// The flat boxes stay, because "3×12, done" is genuinely faster than opening a
+// screen. They now expand into entries[] so they land in the unified log, and
+// the exercise NAME opens the per-set screen for sessions like his.
+//
+// Expansion is deliberately lossy-safe: it only rebuilds entries when the
+// aggregate is the newer source of truth, so it never flattens per-set data
+// that's already richer than N identical sets.
+function quickSetAgg(dateStr, exKey, field, val) {
+  const all = getExSets(dateStr);
+  if (!all[exKey]) all[exKey] = {};
+  const d = all[exKey];
+
+  // Varied is decided BEFORE anything is written, and a varied exercise now
+  // returns having changed nothing at all.
+  //
+  // It used to write d[field] = val first and only then back off from rebuilding
+  // entries. The entries survived — test [29] — but the aggregate did not: a row
+  // logged 10/10/15/15 and then touched in the flat reps box ended up holding
+  // reps:12, sets:4 alongside entries totalling 50. The box displayed 12, the
+  // summary underneath said 50, nothing was logged, and the aggregate — which is
+  // what legacy readers fall back to — was left describing a session that never
+  // happened. As of 2026-09-12 the flat boxes render read-only once sets vary
+  // (see _aggReadonlyRow), so this path should be unreachable from the UI; it
+  // stays as the guarantee behind that, not as the only line of defence.
+  if (_isVariedEntries(d.entries)) {
+    if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+    return;
+  }
+
+  d[field] = val;
+  const reps = Number(d.reps) || 0;
+  const weight = Number(d.weight) || 0;
+  const nSets = Math.max(1, Number(d.sets) || 1);
+
+  if (!reps) {
+    // Reps cleared — the exercise isn't logged any more.
+    delete d.entries;
+    localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+    syncExSetsToActivity(dateStr, exKey);
+    if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+    return;
+  }
+  d.entries = [];
+  for (let i = 0; i < nSets; i++) d.entries.push({ w: weight, r: reps, flag: '' });
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
+  syncExSetsToActivity(dateStr, exKey);
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// ONE definition of "varied", used by both the writer that refuses to flatten
+// and the renderer that hides the boxes. Two copies of this rule drifting apart
+// is how the flat box came to be editable on data it could not represent.
+// Varied = more than one set, and not all sets identical in weight AND reps.
+function _isVariedEntries(entries) {
+  return Array.isArray(entries) && entries.length > 1
+    && !entries.every(e => e && e.r === entries[0].r && e.w === entries[0].w);
+}
+
+// The read-only replacement for the flat [lbs]×[reps]×[sets] boxes, shown once
+// an exercise has varied sets.
+//
+// Craig's call, 2026-09-12: "make the boxes read-only; but show the total from
+// the added sets." So the reps figure here is the TOTAL across sets (50 for
+// 10/10/15/15), not the first set's value — which is what the editable box used
+// to show and what made it look like a single set of 10.
+//
+// The × separators are dropped deliberately. "50 reps × 4 sets" reads as 200.
+// Each figure gets its own unit label instead, so the row states three facts
+// rather than implying an arithmetic relationship between them.
+function _aggReadonlyRow(dateStr, exKey, exName) {
+  const entries = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+  if (!_isVariedEntries(entries)) return '';
+  const totalReps = entries.reduce((a, e) => a + (Number(e.r) || 0), 0);
+  const weights = entries.map(e => Number(e.w) || 0).filter(w => w > 0);
+  let wTxt = '';
+  if (weights.length) {
+    const lo = Math.min.apply(null, weights), hi = Math.max.apply(null, weights);
+    wTxt = (lo === hi ? String(lo) : lo + '–' + hi) + ' lb';
+  }
+  const chip = v => `<span class="wlog-ro">${v}</span>`;
+  const safeName = String(exName || '').replace(/'/g, "\\'");
+  return `<span class="wlog-ro-row" onclick="event.stopPropagation();openExercise('${exKey}','${safeName}')"
+    title="Logged set by set — tap to edit">`
+    + (wTxt ? chip(wTxt) : '')
+    + chip(totalReps + ' reps')
+    + chip(entries.length + ' sets')
+    + `<span class="wlog-ro-go">›</span></span>`;
+}
+
+// Shows what's actually logged, so varied sets entered on the per-set screen
+// are visible from the daily card instead of looking like a single set.
+function _aggSetSummary(dateStr, exKey) {
+  const entries = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+  if (entries.length < 2) return '';
+  const total = entries.reduce((a, e) => a + (Number(e.r) || 0), 0);
+  // Clearing reps to 0 un-logs the exercise, but the legacy aggregate keeps the
+  // weight and set count, so getExSetEntries still synthesizes N sets from it.
+  // Without this guard the row renders a ghost "95×0 · 95×0 · 95×0 = 0 reps"
+  // under an exercise the user just cleared — it reads as still logged.
+  if (total === 0) return '';
+  const parts = entries.map(e => (e.w ? e.w + '×' + e.r : String(e.r)));
+  return `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${parts.join(' · ')} <b style="color:var(--text-dim)">= ${total} reps</b></div>`;
+}
+
 // The inline writers (setExSetEntry, addExSetRow…) only ever receive a key, so
 // the name has to be recoverable from it or the sync silently no-ops — which is
 // how this whole class of bug starts. exSlug is deterministic, so a reverse
@@ -18338,18 +18456,28 @@ function buildLiftInlineSummary(dateStr, woType, subtype) {
       ? `<span class="gym-swap-btn" onclick="event.stopPropagation();openExSwap('${dateStr}','${routineKey}',${i},'${ex.muscleGroup}')" title="Swap exercise">↻</span>`
       : '';
     const swappedTag = ex._swapped ? '<span class="gym-swapped-tag" title="Swapped from default">·swap</span>' : '';
-    const inputs = `
-      ${trackWeight ? `<input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" value="${setData.weight || ''}" onchange="setExSet('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)"><span class="wlog-unit">×</span>` : ''}
-      ${trackReps ? `<input class="wlog-input" type="number" placeholder="reps" min="0" max="500" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">` : ''}
-      ${trackSets ? `<span class="wlog-unit">×</span><input class="wlog-input" type="number" placeholder="sets" min="0" max="20" value="${setData.sets || ''}" onchange="setExSet('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">` : ''}
+    // Once the sets vary, the flat boxes cannot represent what is logged, so they
+    // are replaced rather than left editable over data they would misstate.
+    // Uniform or single-set exercises keep the editable boxes — 3×12 really is
+    // faster to type than opening a screen, which is why they exist.
+    const roRow = _aggReadonlyRow(dateStr, exKey, ex.name);
+    const inputs = roRow ? `
+      ${roRow}
+      ${swapBtn}
+      ${ex.link ? `<a class="gym-vid-link" href="${ex.link}" target="_blank" onclick="event.stopPropagation()">▶</a>` : ''}
+    ` : `
+      ${trackWeight ? `<input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" value="${setData.weight || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','weight',parseFloat(this.value)||0)"><span class="wlog-unit">×</span>` : ''}
+      ${trackReps ? `<input class="wlog-input" type="number" placeholder="reps" min="0" max="500" value="${setData.reps || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">` : ''}
+      ${trackSets ? `<span class="wlog-unit">×</span><input class="wlog-input" type="number" placeholder="sets" min="0" max="20" value="${setData.sets || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">` : ''}
       ${swapBtn}
       ${ex.link ? `<a class="gym-vid-link" href="${ex.link}" target="_blank" onclick="event.stopPropagation()">▶</a>` : ''}
     `;
     return `<div class="gym-inline-row ${isDone ? 'done' : ''}">
       <div class="check-box ${isDone ? 'checked' : ''}" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${isDone ? '✓' : ''}</div>
       <div style="flex:1;min-width:0">
-        <div class="gym-ex-name">${ex.name}${swappedTag} <span class="gym-ex-sets">${ex.sets || ''}</span></div>
+        <div class="gym-ex-name" onclick="event.stopPropagation();openExercise('${exKey}','${(ex.name || '').replace(/'/g, "\\'")}')" style="cursor:pointer" title="Tap to log set by set">${ex.name}${swappedTag} <span class="gym-ex-sets">${ex.sets || ''}</span> <span style="color:var(--cyan);font-weight:700">›</span></div>
         <div class="gym-ex-inputs" onclick="event.stopPropagation()">${inputs}</div>
+        ${_aggSetSummary(dateStr, exKey)}
       </div>
     </div>`;
   }).join('');
@@ -19732,9 +19860,9 @@ function renderDaily() {
   // Work removed from schedule — it's every day, no need to show it
   if (wo && wo.timing==="anytime") items.push({k:"workout",t:"🕐",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
   // Kids arrive: today is L (kid-free), tomorrow is C → kids come to you at 5pm tonight
-  if (todayC === 'L' && nextC === 'C') items.push({k:"kids_arrive",t:"5P",txt:"👧 Kids Arrive",sub:""});
+  if (canSee('custody') && todayC === 'L' && nextC === 'C') items.push({k:"kids_arrive",t:"5P",txt:"👧 Kids Arrive",sub:""});
   // Kids leave: today is C (have kids), tomorrow is L → Lisa picks up at 5pm tonight
-  if (todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
+  if (canSee('custody') && todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
   if (wo && wo.timing==="evening") items.push({k:"workout",t:"PM",txt:"🌙 "+wo.label,sub:wo.target});
   items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Session",sub:"Any tier — quick, standard, yoga, or deep"});
   // Kegels — daily-floor pelvic floor training. Added 2026-05-10 from
@@ -19742,7 +19870,11 @@ function renderDaily() {
   // Dorey et al. 2004 (BJU Int) RCT: 40% regained normal erectile function
   // after 3 months. Two rep schemes matter: long holds (slow-twitch) +
   // quick flicks (fast-twitch endurance).
-  items.push({k:"kegels",t:"🔁",txt:"💪 Kegels",sub:"10s hold × 10 × 3/day + quick flicks × 10 × 2/day — internal 'lift', no glutes/abs"});
+  // Owner-gated 2026-09-12. This is Craig's protocol out of Craig-Health-Profile.md,
+  // and it was rendering as a prescribed daily task in every other user's app.
+  // DISCREET_LABELS only renames it for him — it does nothing about who sees it.
+  // Any hardcoded health element needs isContentOwner(); see its comment block.
+  if (isContentOwner()) items.push({k:"kegels",t:"🔁",txt:"💪 Kegels",sub:"10s hold × 10 × 3/day + quick flicks × 10 × 2/day — internal 'lift', no glutes/abs"});
 
   // Optional/alt workout items — checkable, with divider
   if (wo && (wo.optional || wo.alt)) items.push({k:"_divider",t:"",txt:"— optional —",sub:"",divider:true});
@@ -19937,19 +20069,19 @@ function getDayProgress(dateStr) {
   tasks.push({k:'stretch', label:'🧘 Stretch Session', show:true, pct:true});
   // Kegels — daily-floor. Not in pct (pelvic floor training is additive, not a
   // core-3 workout). Not shown in week view (`show:false`) to keep the strip tight.
-  tasks.push({k:'kegels', label:'💪 Kegels', show:false, pct:false});
+  if (isContentOwner()) tasks.push({k:'kegels', label:'💪 Kegels', show:false, pct:false});
   // Task #31 — allopurinol moved to medications table (driven by med tracker, not hardcoded)
   if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true, pct:true});
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
-  if (cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false, pct:false});
+  if (canSee('custody') && cust === 'C' && dow >= 1 && dow <= 5 && !schoolOff) tasks.push({k:'school', label:'🏫 Pickup', show:false, pct:false});
   if (wo && wo.optional) tasks.push({k:'optional', label:'⚡ Bonus', show:true, pct:false});
   if (wo && wo.alt) tasks.push({k:'alt', label:'🔄 Alt workout', show:true, pct:false});
 
   const prev = new Date(d); prev.setDate(prev.getDate()-1);
   const next = new Date(d); next.setDate(next.getDate()+1);
-  if (cust === 'L' && custodyType(ds(next)) === 'C') tasks.push({k:'kids_arrive', label:'👧 Kids arrive', show:false, pct:false});
-  if (cust === 'C' && custodyType(ds(next)) === 'L') tasks.push({k:'kids_leave', label:'👋 Kids leave', show:false, pct:false});
+  if (canSee('custody') && cust === 'L' && custodyType(ds(next)) === 'C') tasks.push({k:'kids_arrive', label:'👧 Kids arrive', show:false, pct:false});
+  if (canSee('custody') && cust === 'C' && custodyType(ds(next)) === 'L') tasks.push({k:'kids_leave', label:'👋 Kids leave', show:false, pct:false});
 
   for (let i = 0; i < 5; i++) tasks.push({k:'m_'+i, label:['☕ Coffee','🍽️ Lunch','🍎 Snack','🍖 Dinner','🌙 Evening'][i], show:false, pct:false});
 
@@ -20484,15 +20616,18 @@ async function refreshData(btn) {
   applyViewerMode();
   // Load exercises from Supabase (falls back to hardcoded ROUTINES)
   await loadRoutinesFromDB();
-  // Try Supabase first, then CSV, then fallback
+  // Supabase is authoritative. A SUCCESSFUL query returning zero rows is a real
+  // answer — "this user has no schedule" — not a failure to be papered over. That
+  // distinction is the whole bug of 2026-09-12: an empty result fell through to a
+  // hardcoded constant and rendered Craig's custody calendar on someone else's
+  // phone. loadScheduleFromDB() therefore returns true on an empty-but-clean read,
+  // and only a genuine error (offline, RLS explosion, sbReady false) returns false.
   const dbLoaded = await loadScheduleFromDB();
   if (!dbLoaded) {
-    await loadScheduleCSV();
-  }
-  if (Object.keys(CUSTODY_CALENDAR).length === 0) {
-    CUSTODY_CALENDAR = {...FALLBACK_CUSTODY};
-    Object.assign(CSV_EVENTS, FALLBACK_EVENTS);
-    Object.assign(CSV_NOTES, FALLBACK_NOTES);
+    // Offline or Supabase down. Fall back to THIS user's own cached rows — never
+    // to anything baked into the file.
+    const restored = _loadScheduleCache();
+    if (!restored) await loadScheduleCSV();   // owner-only bootstrap; see the function
   }
   // Load tracking data for a wide range (current month ± 1)
   const now = new Date();
