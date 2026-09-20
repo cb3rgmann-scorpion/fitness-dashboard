@@ -3311,7 +3311,7 @@
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:4px">💪 Recover Bodyweight Reps</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px">Scans this device's local storage for any bodyweight rep data (push-ups, sit-ups, squats, crunches, oblique crunches) and saves it to the database. Run this once on each device where you previously tracked reps.</div>
         <div id="bw-migrate-status" style="font-size:10px;margin-bottom:8px;min-height:16px"></div>
-        <button onclick="migrateLocalBwToSupabase()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--orange-border,var(--input-border));background:var(--orange-bg,var(--input-bg));color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">📤 Migrate Local Reps → Database</button>
+        <button onclick="migrateLocalBwToSupabase()" style="padding:8px 16px;border-radius:6px;border:1px solid var(--orange-border,var(--input-border));background:var(--orange-bg,var(--input-bg));color:var(--orange);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;width:100%">📤 Migrate old exercise data → unified log</button>
       </div>
     </div>
     <div style="padding:10px 14px;border-top:1px solid var(--divider);font-size:calc(10px * var(--fs-scale, 1));color:var(--text-muted);line-height:1.6" id="build-info"></div>
@@ -3480,7 +3480,7 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.12.07';
+const APP_VERSION = '2026.09.20.02';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -3984,30 +3984,35 @@ function setWorkoutLog(dateStr, woType, field, value) {
   DB_CACHE.workouts[dateStr][woType][field] = value;
   // localStorage backup
   localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
-  // Supabase
-  if (!sbReady) return;
+  // CUTOVER 2026-09-12 — the workout_log upsert is gone.
+  //
+  // What it used to do, and why none of it survives: it wrote
+  // `workout_type = woType + '_' + subtype` when a subtype was set and plain
+  // `woType` when it wasn't, so a single walk accumulated BOTH a `walk` row and a
+  // `walk_walk` row as the subtype came and went. 20 `walk` + 16 `walk_walk` +
+  // 5 `walk_jog` + 1 `walk_hike` in the live table for far fewer actual walks.
+  // There is no way to tell a duplicate from a second outing, which is why that
+  // history is explicitly NOT being backfilled.
+  //
+  // Now: measured cardio becomes one segment in activity_log, keyed by movement
+  // (wo_walk) with the subtype carried as a note rather than smuggled into the
+  // key. Container types (gym / bodyweight / kettlebell) write nothing here —
+  // their content is logged per exercise, and a day-level "done" tick is a UI
+  // state, not an effort.
   const entry = DB_CACHE.workouts[dateStr][woType];
-  if (entry.done) {
-    const woMeta = OTHER_WORKOUTS.find(w => w.id === woType);
-    const dbType = entry.subtype ? woType + '_' + entry.subtype : woType;
-    sb.from('workout_log').upsert({
-      log_date: dateStr, workout_type: dbType,
-      duration_min: entry.time || 0, distance_val: entry.dist || 0,
-      distance_unit: woMeta ? woMeta.distUnit : 'm'
-    }, { onConflict: 'log_date,workout_type' })
-      .then(({error}) => { if (error) console.warn('DB workout save error:', error); });
+  if (MIGRATED_WO_IDS.indexOf(woType) === -1) return;
+  const key = 'wo_' + woType;
+  const cid = 'al-' + dateStr + '-' + key + '-0';
+  const measured = (Number(entry.time) || 0) > 0 || (Number(entry.dist) || 0) > 0;
+  if (entry.done && measured) {
+    const woMeta = OTHER_WORKOUTS.find(w => w.id === woType) || {};
+    logActivity(Object.assign({
+      date: dateStr, name: woMeta.label || woType, exercise_key: key, set_index: 0,
+      client_id: cid, source: 'inline', notes: entry.subtype || '',
+    }, _trackToStorage(key, '', { d: Number(entry.dist) || 0, t: (Number(entry.time) || 0) * 60 })));
   } else {
-    // Delete any subtype variants for this group
-    const woMeta = OTHER_WORKOUTS.find(w => w.id === woType);
-    if (woMeta && woMeta.types) {
-      woMeta.types.forEach(t => {
-        sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType + '_' + t)
-          .then(({error}) => { if (error) console.warn('DB workout delete error:', error); });
-      });
-    } else {
-      sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType)
-        .then(({error}) => { if (error) console.warn('DB workout delete error:', error); });
-    }
+    getActivity(dateStr).filter(r => r.exercise_key === key)
+      .forEach(r => removeActivity(dateStr, r.client_id));
   }
 }
 
@@ -4115,16 +4120,22 @@ function setExReps(dateStr, woId, exKey, val) {
   const reps = parseInt(val) || 0;
   DB_CACHE.workouts[dateStr][woId].exercises[exKey] = reps;
   localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
-  if (!sbReady) return;
-  const woType = prefix + exKey;
+
+  // CUTOVER 2026-09-12 — this used to upsert workout_log with the REP COUNT in a
+  // column named duration_min and distance_unit set to the string 'reps'. Craig
+  // chose a straight cutover, so that write is gone: reps now go to activity_log
+  // through the same path as every other logged effort.
+  const key = prefix + exKey;
+  const label = (typeof _legacyExLabel === 'function') ? _legacyExLabel(woId, exKey) : exKey;
   if (reps > 0) {
-    sb.from('workout_log').upsert({
-      log_date: dateStr, workout_type: woType, duration_min: reps, distance_val: 0, distance_unit: 'reps'
-    }, { onConflict: 'log_date,workout_type' })
-      .then(({error}) => { if (error) console.warn('DB exercise save error:', error); });
+    logActivity(Object.assign({
+      date: dateStr, name: label, exercise_key: key, set_index: 0,
+      client_id: 'al-' + dateStr + '-' + key + '-0', source: 'inline',
+    }, _trackToStorage(key, '', { r: reps })));
   } else {
-    sb.from('workout_log').delete().eq('log_date', dateStr).eq('workout_type', woType)
-      .then(({error}) => { if (error) console.warn('DB exercise delete error:', error); });
+    // Cleared to zero means un-logged, same as clearing reps on a lift.
+    getActivity(dateStr).filter(r => r.exercise_key === key)
+      .forEach(r => removeActivity(dateStr, r.client_id));
   }
 }
 function setBodyExReps(dateStr, exKey, val) { setExReps(dateStr, 'bodyweight', exKey, val); }
@@ -5053,52 +5064,40 @@ async function _syncScheduleRowsToSupabase(dates) {
   }
 }
 
+// REPOINTED 2026-09-12. This used to push local bodyweight reps INTO the broken
+// shape — workout_log rows with the rep count in `duration_min` and
+// `distance_unit` set to the string 'reps'. It was a migration tool aimed at the
+// wrong table, so running it made the mess bigger.
+//
+// It now runs the unified migration instead: every legacy local store on this
+// device (bodyweight and kettlebell reps, plus row/walk/swim aggregates) becomes
+// activity_log segments. Craig asked for this to cover "customer data" too, and
+// this is the path that reaches it — local-mode users never wrote to Supabase at
+// all, so their whole history is in localStorage on their own phone and only a
+// button they press in their own browser can move it.
+//
+// Safe to press repeatedly: every write carries a deterministic client_id, so a
+// second run upserts the same rows rather than duplicating them. It is also run
+// automatically on load; this button exists so a user can see what happened.
 async function migrateLocalBwToSupabase() {
   const statusEl = document.getElementById('bw-migrate-status');
-  if (!sbReady) { statusEl.innerHTML = '<span style="color:var(--red)">Not logged in — log in first</span>'; return; }
-  statusEl.innerHTML = '<span style="color:var(--text-muted)">Scanning local storage...</span>';
-
-  const BW_KEYS = ['pushups', 'situps', 'squats', 'crunches', 'oblique_crunches'];
-  const toUpsert = [];
-
-  Object.keys(localStorage)
-    .filter(k => k.startsWith('wlog_'))
-    .forEach(k => {
-      const dateStr = k.replace('wlog_', '');
-      try {
-        const data = JSON.parse(localStorage.getItem(k));
-        const ex = data && data.bodyweight && data.bodyweight.exercises;
-        if (!ex) return;
-        BW_KEYS.forEach(key => {
-          const reps = parseInt(ex[key]) || 0;
-          if (reps > 0) toUpsert.push({ log_date: dateStr, workout_type: 'bw_' + key, duration_min: reps, distance_val: 0, distance_unit: 'reps' });
-        });
-      } catch(e) {}
-    });
-
-  if (toUpsert.length === 0) {
-    statusEl.innerHTML = '<span style="color:var(--text-muted)">No bodyweight rep data found in local storage on this device.</span>';
+  const say = html => { if (statusEl) statusEl.innerHTML = html; };
+  say('<span style="color:var(--text-muted)">Scanning this device...</span>');
+  let res;
+  try {
+    res = migrateLegacyExerciseData();
+  } catch (e) {
+    console.warn('migration failed', e);
+    say('<span style="color:var(--red)">Migration failed — see console.</span>');
     return;
   }
-
-  statusEl.innerHTML = '<span style="color:var(--cyan)">Found ' + toUpsert.length + ' entries — saving to database...</span>';
-
-  // Upsert in batches of 50
-  let saved = 0, failed = 0;
-  for (let i = 0; i < toUpsert.length; i += 50) {
-    const batch = toUpsert.slice(i, i + 50);
-    const { error } = await sb.from('workout_log').upsert(batch, { onConflict: 'log_date,workout_type' });
-    if (error) { failed += batch.length; console.warn('bw migrate error:', error); }
-    else saved += batch.length;
+  if (!res.rows) {
+    say('<span style="color:var(--text-muted)">Nothing left to migrate on this device — already up to date.</span>');
+    return;
   }
-
-  const dates = [...new Set(toUpsert.map(r => r.log_date))].sort();
-  const summary = dates.length + ' day' + (dates.length !== 1 ? 's' : '') + ' (' + dates[0].substring(5) + ' → ' + dates[dates.length-1].substring(5) + ')';
-  if (failed === 0) {
-    statusEl.innerHTML = '<span style="color:var(--green)">✓ Saved ' + saved + ' exercise entries across ' + summary + '</span>';
-  } else {
-    statusEl.innerHTML = '<span style="color:var(--orange)">Saved ' + saved + ', failed ' + failed + ' — check console for details</span>';
-  }
+  say('<span style="color:var(--green)">\u2713 Moved ' + res.rows + ' entr' + (res.rows === 1 ? 'y' : 'ies')
+      + ' across ' + res.days + ' day' + (res.days === 1 ? '' : 's') + ' into the unified log.</span>');
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
 }
 
 // ── Apple Health Sync functions ──
@@ -11722,91 +11721,91 @@ const REGION_CONTRIBUTORS = {
 const STRETCH_LIB = [
   // ── Thoracic — the quiet driver behind most neck and shoulder complaints ──
   { id:'t_ext_chair', region:'thoracic', type:'mobility', when:'any', name:'Thoracic extension over a chair',
-    dose:'8-10 slow reps', cue:'Mid-back against the chair edge, hands behind the head, breathe out as you extend. Move the upper back, not the lower — if you feel it in your lumbar, slide higher.' },
+    dose:'8-10 slow reps', reps:8, cue:'Mid-back against the chair edge, hands behind the head, breathe out as you extend. Move the upper back, not the lower — if you feel it in your lumbar, slide higher.' },
   { id:'t_rot_open', region:'thoracic', type:'mobility', when:'any', name:'Open book rotation',
-    dose:'8 each side', cue:'On your side, knees bent, arms stacked. Open the top arm and follow it with your eyes. Let the ribcage rotate; keep the knees together.' },
+    dose:'8 each side', reps:8, perSide:true, cue:'On your side, knees bent, arms stacked. Open the top arm and follow it with your eyes. Let the ribcage rotate; keep the knees together.' },
   { id:'t_catcow', region:'thoracic', type:'mobility', when:'pre', name:'Cat-cow',
-    dose:'10 reps', cue:'Slow, synced with breath. Segment by segment rather than one big arch.' },
+    dose:'10 reps', reps:10, cue:'Slow, synced with breath. Segment by segment rather than one big arch.' },
 
   // ── Chest ──
   { id:'c_doorway', region:'chest', type:'static', when:'post', name:'Doorway pec stretch',
-    dose:'30s each side', cue:'Forearm on the frame, elbow at shoulder height, step through gently. Stop well short of a sharp pull at the front of the shoulder.', flags:['shoulder'] },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Forearm on the frame, elbow at shoulder height, step through gently. Stop well short of a sharp pull at the front of the shoulder.', flags:['shoulder'] },
   { id:'c_floor_angel', region:'chest', type:'mobility', when:'any', name:'Floor angels',
-    dose:'8-10 reps', cue:'On your back, arms sliding overhead, keeping wrists and lower back in contact. Only go as far as contact allows — the range is the point, not the reach.' },
+    dose:'8-10 reps', reps:8, cue:'On your back, arms sliding overhead, keeping wrists and lower back in contact. Only go as far as contact allows — the range is the point, not the reach.' },
 
   // ── Shoulder ──
   { id:'s_cars', region:'shoulder', type:'mobility', when:'pre', name:'Shoulder circles, small to large',
-    dose:'8 each direction', cue:'Start plate-sized, build only as far as stays comfortable. With arthritic change, pain-free range is the useful range.', flags:['shoulder'] },
+    dose:'8 each direction', reps:8, perSide:true, cue:'Start plate-sized, build only as far as stays comfortable. With arthritic change, pain-free range is the useful range.', flags:['shoulder'] },
   { id:'s_sleeper', region:'shoulder', type:'static', when:'post', name:'Cross-body stretch',
-    dose:'30s each side', cue:'Arm across the chest, pull at the upper arm not the elbow. Gentler on the joint than the sleeper stretch.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Arm across the chest, pull at the upper arm not the elbow. Gentler on the joint than the sleeper stretch.' },
 
   // ── Neck ──
   { id:'n_retract', region:'neck', type:'mobility', when:'any', name:'Chin tucks',
-    dose:'10 × 3s hold', cue:'Slide the head back over the shoulders, making a double chin. Not a nod. Directly counters the forward-head posture screens and hands-on work produce.' },
+    dose:'10 × 3s hold', reps:10, hold_s:3, cue:'Slide the head back over the shoulders, making a double chin. Not a nod. Directly counters the forward-head posture screens and hands-on work produce.' },
   { id:'n_uppertrap', region:'neck', type:'static', when:'post', name:'Upper trap stretch',
-    dose:'30s each side', cue:'Ear toward shoulder, opposite hand tucked under the thigh to anchor. No pulling hard on the head.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Ear toward shoulder, opposite hand tucked under the thigh to anchor. No pulling hard on the head.' },
   { id:'n_levator', region:'neck', type:'static', when:'post', name:'Levator scapulae stretch',
-    dose:'30s each side', cue:'Turn the head 45° away, look down toward the armpit. This is the one that helps the knot at the top of the shoulder blade.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Turn the head 45° away, look down toward the armpit. This is the one that helps the knot at the top of the shoulder blade.' },
 
   // ── Lower back / hip ──
   { id:'h_hipflexor', region:'hip', type:'static', when:'post', name:'Half-kneeling hip flexor stretch',
-    dose:'30-45s each side', cue:'Squeeze the back glute FIRST, then shift forward slightly. Without the glute the pelvis just tips and you stretch the lower back instead.' },
+    dose:'30-45s each side', hold_s:30, perSide:true, cue:'Squeeze the back glute FIRST, then shift forward slightly. Without the glute the pelvis just tips and you stretch the lower back instead.' },
   { id:'h_9090', region:'hip', type:'mobility', when:'any', name:'90/90 hip switches',
-    dose:'8 each side', cue:'Sit with both knees at 90°, rotate side to side. Sit tall — the spine shouldn\'t do the work.' },
+    dose:'8 each side', reps:8, perSide:true, cue:'Sit with both knees at 90°, rotate side to side. Sit tall — the spine shouldn\'t do the work.' },
   { id:'h_glutebridge', region:'hip', type:'strength', when:'any', name:'Glute bridge',
-    dose:'15-20 reps', cue:'Ribs down, squeeze at the top. Strength, not a stretch — and the safest posterior-chain option when the back is unhappy.' },
+    dose:'15-20 reps', reps:15, cue:'Ribs down, squeeze at the top. Strength, not a stretch — and the safest posterior-chain option when the back is unhappy.' },
   { id:'lb_birddog', region:'lowback', type:'strength', when:'any', name:'Bird dog',
-    dose:'8-12 each side', cue:'Opposite arm and leg, slow, hips level. Anti-rotation. One of the few things that is good FOR a cranky lower back rather than a risk to it.' },
+    dose:'8-12 each side', reps:8, perSide:true, cue:'Opposite arm and leg, slow, hips level. Anti-rotation. One of the few things that is good FOR a cranky lower back rather than a risk to it.' },
   { id:'lb_deadbug', region:'lowback', type:'strength', when:'any', name:'Dead bug',
-    dose:'8-12 each side', cue:'Lower back stays flat on the floor. Stop the moment it lifts.' },
+    dose:'8-12 each side', reps:8, perSide:true, cue:'Lower back stays flat on the floor. Stop the moment it lifts.' },
   { id:'lb_childs', region:'lowback', type:'static', when:'post', name:'Child\'s pose',
-    dose:'45-60s', cue:'Knees wide, sit back toward the heels, walk the hands forward. Breathe into the back of the ribs.' },
+    dose:'45-60s', hold_s:45, cue:'Knees wide, sit back toward the heels, walk the hands forward. Breathe into the back of the ribs.' },
 
   // ── Hamstring ──
   { id:'ham_supine', region:'hamstring', type:'static', when:'post', name:'Supine hamstring stretch',
-    dose:'30s each side', cue:'On your back with a strap or towel, other leg bent with the foot down. Lying keeps the lower back out of it, which standing toe-touches do not.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'On your back with a strap or towel, other leg bent with the foot down. Lying keeps the lower back out of it, which standing toe-touches do not.' },
   { id:'ham_hinge', region:'hamstring', type:'mobility', when:'pre', name:'Hip hinge pattern',
-    dose:'10 reps', cue:'Hands on the hip creases, push the hips back with a long spine. This is the movement that protects the back when leaning over a table all day.' },
+    dose:'10 reps', reps:10, cue:'Hands on the hip creases, push the hips back with a long spine. This is the movement that protects the back when leaning over a table all day.' },
 
   // ── Calf / ankle ──
   { id:'cf_wall', region:'calf', type:'static', when:'post', name:'Wall calf stretch',
-    dose:'30s each side, both bent and straight knee', cue:'Straight knee targets gastroc, bent knee targets soleus. Do both — relevant given the ankle history.' },
+    dose:'30s each side, both bent and straight knee', hold_s:30, variants:2, perSide:true, cue:'Straight knee targets gastroc, bent knee targets soleus. Do both — relevant given the ankle history.' },
   { id:'cf_ankle_rock', region:'calf', type:'mobility', when:'pre', name:'Ankle rocks',
-    dose:'10 each side', cue:'Knee travels over the toes, heel stays down. Restores the ankle range that standing all day quietly removes.' },
+    dose:'10 each side', reps:10, perSide:true, cue:'Knee travels over the toes, heel stays down. Restores the ankle range that standing all day quietly removes.' },
 
   // ── Wrist / hand — the massage-therapist career-enders ──
   { id:'w_flexor', region:'wrist', type:'static', when:'post', name:'Forearm flexor stretch',
-    dose:'30s each side', cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gets loaded by every hour of hands-on work.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gets loaded by every hour of hands-on work.' },
   { id:'w_extensor', region:'wrist', type:'static', when:'post', name:'Forearm extensor stretch',
-    dose:'30s each side', cue:'Arm straight, palm down, gently press the back of the hand toward you.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm down, gently press the back of the hand toward you.' },
   { id:'w_nerve_glide', region:'wrist', type:'mobility', when:'any', name:'Median nerve glide',
-    dose:'5-8 slow reps', cue:'Arm out, palm up, extend the wrist and tip the head away. Should feel like a stretch, never like pins and needles — back off immediately if it tingles.' },
+    dose:'5-8 slow reps', reps:5, cue:'Arm out, palm up, extend the wrist and tip the head away. Should feel like a stretch, never like pins and needles — back off immediately if it tingles.' },
   { id:'w_cmc_circ', region:'wrist', type:'mobility', when:'any', name:'Thumb CMC circles',
-    dose:'10 each direction', cue:'Slow circles at the base of the thumb, unloaded. The CMC joint is the classic career-ender in hands-on work; keeping it moving matters more than stretching it.' },
+    dose:'10 each direction', reps:10, perSide:true, cue:'Slow circles at the base of the thumb, unloaded. The CMC joint is the classic career-ender in hands-on work; keeping it moving matters more than stretching it.' },
   { id:'w_grip_endur', region:'wrist', type:'strength', when:'any', name:'Grip endurance holds',
-    dose:'3 × 30-45s, light', cue:'Sustained light squeeze on a ball, not maximum crush. Occupational hand pain is an ENDURANCE problem — the tissue is doing low-level work for hours, so train the same quality.' },
+    dose:'3 × 30-45s, light', sets:3, hold_s:30, cue:'Sustained light squeeze on a ball, not maximum crush. Occupational hand pain is an ENDURANCE problem — the tissue is doing low-level work for hours, so train the same quality.' },
   { id:'w_wrist_ext_str', region:'wrist', type:'strength', when:'any', name:'Wrist extensor strengthening',
-    dose:'2 × 15 each side, very light', cue:'Forearm supported, palm down, lift the hand against a light weight or band. Underused antagonist to all that gripping.' },
+    dose:'2 × 15 each side, very light', sets:2, reps:15, perSide:true, cue:'Forearm supported, palm down, lift the hand against a light weight or band. Underused antagonist to all that gripping.' },
 
   // ── Added for healthcare / lifting work (2026-09-07) ──
   { id:'lb_sideplank', region:'lowback', type:'strength', when:'any', name:'Side plank',
-    dose:'20-45s each side', cue:'Stack the hips, don\'t let them sag. Trains the lateral core that resists being pulled sideways — which is what happens every time you take a patient\'s weight on one side.' },
+    dose:'20-45s each side', hold_s:20, perSide:true, cue:'Stack the hips, don\'t let them sag. Trains the lateral core that resists being pulled sideways — which is what happens every time you take a patient\'s weight on one side.' },
   { id:'lb_carry', region:'lowback', type:'strength', when:'any', name:'Suitcase carry',
-    dose:'30-40m each side', cue:'One heavy weight, walk tall, resist the lean. The closest thing in a gym to holding someone up with one arm, and it builds the exact endurance that protects the back.' },
+    dose:'30-40m each side', dist_m:30, perSide:true, cue:'One heavy weight, walk tall, resist the lean. The closest thing in a gym to holding someone up with one arm, and it builds the exact endurance that protects the back.' },
   { id:'cf_calfraise', region:'calf', type:'strength', when:'any', name:'Calf raises',
-    dose:'2 × 15-20', cue:'Off a step, full range, slow down. Standing tolerance is trainable — calves that fatigue at hour eight are why the feet and back start hurting.' },
+    dose:'2 × 15-20', sets:2, reps:15, cue:'Off a step, full range, slow down. Standing tolerance is trainable — calves that fatigue at hour eight are why the feet and back start hurting.' },
   { id:'cf_plantar', region:'calf', type:'static', when:'post', name:'Plantar fascia release',
-    dose:'60s each foot', cue:'Roll the arch over a ball, firm but not sharp. Best done first thing in the morning and at the end of a long shift.' },
+    dose:'60s each foot', hold_s:60, perSide:true, cue:'Roll the arch over a ball, firm but not sharp. Best done first thing in the morning and at the end of a long shift.' },
 
   // ── Scapular strength — the antagonist work that actually fixes posture ──
   { id:'sc_ytw', region:'shoulder', type:'strength', when:'any', name:'Prone Y-T-W raises',
-    dose:'8-10 each shape', cue:'Face down, lift the arms into a Y, then T, then W. No weight needed. The single most useful thing after a day held in front of you.' },
+    dose:'8-10 each shape', reps:8, variants:3, cue:'Face down, lift the arms into a Y, then T, then W. No weight needed. The single most useful thing after a day held in front of you.' },
   { id:'sc_band_row', region:'shoulder', type:'strength', when:'any', name:'Band row',
-    dose:'2-3 × 12-15', cue:'Elbows to the ribs, shoulder blades back and down. Hold the end position for a beat.' },
+    dose:'2-3 × 12-15', sets:2, reps:12, cue:'Elbows to the ribs, shoulder blades back and down. Hold the end position for a beat.' },
   { id:'sc_ext_rot', region:'shoulder', type:'strength', when:'any', name:'Band external rotation',
-    dose:'2 × 15 each side', cue:'Elbow tucked to the side, rotate the forearm out. Light — this is rotator cuff work, not a lift.', flags:['shoulder'] },
+    dose:'2 × 15 each side', sets:2, reps:15, perSide:true, cue:'Elbow tucked to the side, rotate the forearm out. Light — this is rotator cuff work, not a lift.', flags:['shoulder'] },
   { id:'sc_facepull', region:'shoulder', type:'strength', when:'any', name:'Face pull',
-    dose:'2-3 × 15', cue:'Pull to the forehead, elbows high, rotate out at the end. Best single movement for shoulder health.' },
+    dose:'2-3 × 15', sets:2, reps:15, cue:'Pull to the forehead, elbows high, rotate out at the end. Best single movement for shoulder health.' },
 ];
 
 function stretchesFor(regionId, opts) {
@@ -12213,18 +12212,230 @@ function closeStretch() {
 }
 function _stGo(screen, region) { _stScreen = screen; _stRegion = region || null; renderStretchScreen(); }
 
+// ══════════════════════════════════════════════════════════════
+// STRETCH SESSION CLOCK + PER-HOLD TIMERS  (2026-09-20)
+// ══════════════════════════════════════════════════════════════
+// Craig: "stretching should be 'start a timer' (like exercising) and have a
+// global 'I'm stretching time'. Then inside have 2 things. 1 is a chrono 'how
+// long did i hold for?' and 2 is a timer 'how long should I hold for'?"
+//
+// Those are two genuinely different jobs and the first cut of this conflated
+// them into one countdown that degraded into a stopwatch past zero:
+//
+//   CHRONO    counts UP from nothing. You do not know how long you will hold —
+//             you hold to tolerance and press stop. It RECORDS.
+//   COUNTDOWN counts DOWN from the prescribed hold. You know the target and want
+//             to be told when to release, eyes shut, breathing. It INSTRUCTS.
+//
+// Both write the same thing at the end: the seconds that actually elapsed. The
+// difference is what you are looking at while it runs, which is the whole point.
+//
+// The session clock mirrors "I'm at the gym" (gymClockStart) deliberately —
+// same shape, same persistence, same implausible-elapsed guard — so there is one
+// idea of "I am doing a thing now" rather than two that drift apart.
+
+// ── Global "I'm stretching" clock ─────────────────────────────
+let STRETCH_SESSION = null;
+const STRETCH_SESSION_SANE_H = 3;
+
+function _stSessSave() {
+  try {
+    if (STRETCH_SESSION) localStorage.setItem('stretch_session', JSON.stringify(STRETCH_SESSION));
+    else localStorage.removeItem('stretch_session');
+  } catch (e) {}
+}
+function _stSessLoad() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('stretch_session') || 'null');
+    if (raw && raw.startedAt) STRETCH_SESSION = raw;
+  } catch (e) {}
+  return STRETCH_SESSION;
+}
+function stretchSessionElapsedS() {
+  if (!STRETCH_SESSION) return 0;
+  return Math.max(0, Math.round((Date.now() - STRETCH_SESSION.startedAt) / 1000));
+}
+function stretchSessionStart() {
+  STRETCH_SESSION = { startedAt: Date.now(), date: ds(new Date()) };
+  _stSessSave();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  renderStretchScreen();
+}
+// mins optional — the correction path when the clock was left running.
+function stretchSessionStop(mins) {
+  if (!STRETCH_SESSION) return 0;
+  const secs = (mins !== undefined && mins !== null)
+    ? Math.round(Number(mins) * 60) : stretchSessionElapsedS();
+  const dateStr = STRETCH_SESSION.date || ds(new Date());
+  STRETCH_SESSION = null;
+  _stSessSave();
+  // Session TIME is its own row, never a stretch. It is the wrapper around the
+  // movements, so counting it as mobility work would double-count every hold
+  // logged inside it — the same reason gym_time is excluded from muscle staleness.
+  if (secs >= 30) {
+    logActivity({ date: dateStr, kind: 'stretch_time', name: 'Stretching',
+                  exercise_key: 'stretch_time', duration_s: secs, source: 'manual' });
+  }
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  renderStretchScreen();
+  return secs;
+}
+function stretchTimeTodayS() {
+  if (typeof getActivity !== 'function') return 0;
+  return getActivity(ds(new Date()))
+    .filter(r => r.exercise_key === 'stretch_time')
+    .reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
+}
+
+// ── Per-hold timers: chrono and countdown ─────────────────────
+let STRETCH_TIMER = null;                  // { id, mode, startedAt, tick }
+const STRETCH_TIMER_SANE_S = 15 * 60;      // past this it was left running, not held
+const STRETCH_TIMER_MIN_S = 2;             // below this it was a mis-tap
+
+function _stTimerLabel(id, mode) {
+  const s = stretchById(id);
+  const target = (s && s.hold_s) || 30;
+  if (!STRETCH_TIMER || STRETCH_TIMER.id !== id || STRETCH_TIMER.mode !== mode) {
+    return mode === 'chrono' ? '\u23f1 Chrono' : '\u23f2 ' + target + 's';
+  }
+  const elapsed = Math.round((Date.now() - STRETCH_TIMER.startedAt) / 1000);
+  if (mode === 'chrono') return '\u23f9 ' + fmtDurationS(elapsed || 1);
+  const left = target - elapsed;
+  // Past the target the countdown keeps counting so holding longer is still
+  // recorded rather than silently clipped at the prescription.
+  return left > 0 ? '\u23f2 ' + left + 's' : '\u2713 ' + elapsed + 's \u2014 stop';
+}
+
+function _stTimerTick() {
+  if (!STRETCH_TIMER) return;
+  const el = document.getElementById('sttimer-' + STRETCH_TIMER.id + '-' + STRETCH_TIMER.mode);
+  if (!el) return;
+  el.textContent = _stTimerLabel(STRETCH_TIMER.id, STRETCH_TIMER.mode);
+  const s = stretchById(STRETCH_TIMER.id);
+  const target = (s && s.hold_s) || 30;
+  const elapsed = Math.round((Date.now() - STRETCH_TIMER.startedAt) / 1000);
+  el.style.color = (STRETCH_TIMER.mode === 'countdown' && elapsed >= target)
+    ? 'var(--green)' : 'var(--cyan)';
+}
+
+// mode: 'chrono' (count up, record what you managed) | 'countdown' (from hold_s)
+function startStretchTimer(id, mode) {
+  mode = mode === 'chrono' ? 'chrono' : 'countdown';
+  if (STRETCH_TIMER && STRETCH_TIMER.id === id && STRETCH_TIMER.mode === mode) {
+    return stopStretchTimer(id);            // same button again = stop
+  }
+  if (STRETCH_TIMER) stopStretchTimer(STRETCH_TIMER.id);   // one at a time
+  STRETCH_TIMER = { id: id, mode: mode, startedAt: Date.now(),
+                    tick: setInterval(_stTimerTick, 250) };
+  _stTimerTick();
+  _stRefreshTimerButtons(id);
+}
+
+function stopStretchTimer(id) {
+  if (!STRETCH_TIMER || STRETCH_TIMER.id !== id) return 0;
+  const elapsed = Math.round((Date.now() - STRETCH_TIMER.startedAt) / 1000);
+  clearInterval(STRETCH_TIMER.tick);
+  STRETCH_TIMER = null;
+  const s = stretchById(id);
+  _stRefreshTimerButtons(id);
+  // A timer left running while he wandered off is not a hold, and neither is a
+  // mis-tap. Either would poison every duration average he has.
+  if (!s || elapsed < STRETCH_TIMER_MIN_S || elapsed > STRETCH_TIMER_SANE_S) return 0;
+  const entry = stretchDefaultEntry(id) || { w:0, r:0, d:0, t:0 };
+  entry.t = elapsed;                        // what was held, not what was asked for
+  entry.r = 0;                              // a timed hold is not a rep count
+  const rounds = s.perSide ? 2 : 1;
+  for (let i = 0; i < rounds; i++) {
+    addSessionSegment('st_' + id, s.name, Object.assign({}, entry, { side: s.perSide ? 'both' : '' }));
+  }
+  _stMarkDone(id);
+  return elapsed;
+}
+
+function _stRefreshTimerButtons(id) {
+  ['chrono', 'countdown'].forEach(mode => {
+    const el = document.getElementById('sttimer-' + id + '-' + mode);
+    if (!el) return;
+    const live = !!(STRETCH_TIMER && STRETCH_TIMER.id === id && STRETCH_TIMER.mode === mode);
+    el.textContent = _stTimerLabel(id, mode);
+    el.style.borderColor = live ? 'var(--green-border, var(--green))' : 'var(--cyan-border, var(--cyan))';
+    el.style.color = live ? 'var(--green)' : 'var(--cyan)';
+  });
+}
+
+// What a stretch tracks, derived from the structured fields written into
+// STRETCH_LIB. A hold is duration; everything else is reps; a loaded carry is
+// distance. `dose` stays as the display string — it is what Craig reads on the
+// card and it is deliberately NOT the source of truth any more.
+function stretchTracksFor(exKey) {
+  const id = String(exKey || '').replace(/^st_/, '');
+  const s = (typeof stretchById === 'function') ? stretchById(id) : null;
+  if (!s) return null;
+  const kind = s.type === 'strength' ? 'strength' : (s.type === 'mobility' ? 'mobility' : 'stretch');
+  let tracks;
+  if (s.dist_m) tracks = ['distance'];
+  else if (s.hold_s && !s.reps) tracks = ['duration'];   // a pure hold
+  else if (s.hold_s && s.reps) tracks = ['reps', 'duration'];  // e.g. 10 x 3s holds
+  else tracks = ['reps'];
+  return { tracks: tracks, kind: kind, muscle: s.region || '', unit: s.dist_m ? 'm' : '' };
+}
+
+// The dose as STRUCTURED defaults — what the one-tap Done button logs, and what
+// pre-fills the modal. Ranges in the prose ("8-10", "30-45s") take the low end:
+// it is the prescribed floor and the number Craig is most likely to have hit, and
+// he can edit it upward.
+function stretchDefaultEntry(id) {
+  const s = (typeof stretchById === 'function') ? stretchById(id) : null;
+  if (!s) return null;
+  return { w: 0, r: Number(s.reps) || 0, d: Number(s.dist_m) || 0,
+           t: Number(s.hold_s) || 0, flag: '' };
+}
+
+// How many segments one press of Done represents. Per-side doubles it; `variants`
+// covers the two entries where the prose means something else — Y/T/W is three
+// shapes, and the wall calf stretch is bent-knee plus straight-knee.
+function stretchRounds(id) {
+  const s = (typeof stretchById === 'function') ? stretchById(id) : null;
+  if (!s) return 1;
+  return (s.perSide ? 2 : 1) * (Number(s.variants) || 1) * (Number(s.sets) || 1);
+}
+
 // Log a completed movement into the unified activity log.
 function stretchDone(id) {
   const s = stretchById(id);
   if (!s) return;
-  if (typeof logActivity === 'function') {
-    logActivity({
-      kind: s.type === 'strength' ? 'strength' : (s.type === 'mobility' ? 'mobility' : 'stretch'),
-      name: s.name, exercise_key: 'st_' + s.id, muscle: s.region, notes: s.dose,
-    });
+  const exKey = 'st_' + s.id;
+  const entry = stretchDefaultEntry(id);
+  if (!entry) return;
+
+  // Press Done again and you get another round, not an overwrite. The old version
+  // hardcoded set_index 0, so the deterministic client_id made every press upsert
+  // the same row — Cat-cow twice in a day was indistinguishable from once.
+  // addSessionSegment appends at the current length, so rounds accumulate.
+  const rounds = stretchRounds(id);
+  const perSide = !!s.perSide;
+  for (let i = 0; i < rounds; i++) {
+    // Per-side work logs as one row by default (Craig's call 2026-09-20) — the
+    // modal is where left and right get split when asymmetry is the point, which
+    // for him is the ATFL ankle and the shoulder.
+    addSessionSegment(exKey, s.name, Object.assign({}, entry, { side: perSide ? 'both' : '' }));
   }
+  _stMarkDone(id);
+}
+
+// Read-back, not a DOM flourish. The tick used to be set directly on the button
+// and vanished on the next render because nothing ever read the log back.
+function _stCount(id) {
+  if (typeof getActivity !== 'function') return 0;
+  return getActivity(ds(new Date())).filter(r => r.exercise_key === 'st_' + id).length;
+}
+function _stMarkDone(id) {
   const el = document.getElementById('stdone-' + id);
-  if (el) { el.textContent = '✓'; el.style.color = 'var(--green)'; }
+  if (!el) return;
+  const n = _stCount(id);
+  el.textContent = n > 1 ? '\u2713 \u00d7' + n : (n === 1 ? '\u2713 Done' : 'Done');
+  el.style.color = n ? 'var(--green)' : 'var(--text-dim)';
+  el.style.borderColor = n ? 'var(--green-border, var(--green))' : 'var(--card-border)';
 }
 
 function _stCard(s) {
@@ -12232,20 +12443,83 @@ function _stCard(s) {
   const typeColor = { mobility:'var(--cyan)', static:'var(--purple)', strength:'var(--green)' }[s.type] || 'var(--text-muted)';
   const flagNote = (s.flags || []).indexOf('shoulder') !== -1
     ? '<div style="font-size:11px;color:var(--orange);margin-top:5px;line-height:1.45">Shoulder OA — work the pain-free range only, don\'t chase the end of the arc.</div>' : '';
+  const n = _stCount(s.id);
+  const doneLabel = n > 1 ? '\u2713 \u00d7' + n : (n === 1 ? '\u2713 Done' : 'Done');
+  const doneCol = n ? 'var(--green)' : 'var(--text-dim)';
+  const doneBd = n ? 'var(--green-border, var(--green))' : 'var(--card-border)';
+  // A held stretch gets a countdown rather than a number to type. Craig, 2026-09-14:
+  // "Timed exercises should have a timer." A 30s hold you did not time is a guess,
+  // so the timer is the INPUT for duration_s, not a decoration next to it.
+  // Two timers, because they answer different questions. Countdown tells you when
+  // to release a known hold; chrono records a hold you are taking to tolerance.
+  // Chrono is offered on every movement — you can always want to know how long
+  // something took — while the countdown only appears where there IS a target.
+  const tbtn = (mode, tip) => `<button onclick="event.stopPropagation();startStretchTimer('${s.id}','${mode}')"
+      id="sttimer-${s.id}-${mode}" title="${tip}"
+      style="margin-top:8px;margin-left:6px;padding:9px 14px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px">${_stTimerLabel(s.id, mode)}</button>`;
+  const timerBtn = (s.dist_m ? '' : tbtn('chrono', 'How long did I hold for? Counts up, logs what you managed.'))
+    + ((s.hold_s && !s.dist_m) ? tbtn('countdown', 'How long should I hold for? Counts down from ' + s.hold_s + 's.') : '');
   return `<div style="padding:11px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:7px">
-    <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap">
+    <div style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;cursor:pointer"
+         onclick="openExercise('st_${s.id}','${String(s.name).replace(/'/g, "\\'")}')"
+         title="Tap to log it set by set, or change the dose">
       <span style="font-size:13.5px;font-weight:700;color:var(--text)">${s.name}</span>
       <span style="font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:4px;color:${typeColor};border:1px solid ${typeColor}">${typeLabel}</span>
+      <span style="font-size:12px;font-weight:700;color:var(--cyan)">\u203a</span>
     </div>
     <div style="font-size:12px;color:var(--text-dim);margin-top:3px">${s.dose}</div>
     <div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:5px">${s.cue}</div>
     ${flagNote}
     <button onclick="stretchDone('${s.id}')" id="stdone-${s.id}"
-      style="margin-top:8px;padding:9px 16px;border-radius:7px;border:1px solid var(--card-border);background:transparent;color:var(--text-dim);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px">Done</button>
+      style="margin-top:8px;padding:9px 16px;border-radius:7px;border:1px solid ${doneBd};background:transparent;color:${doneCol};font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px">${doneLabel}</button>${timerBtn}
+  </div>`;
+}
+
+// The "I'm stretching" banner. Sits at the top of every stretch screen, the same
+// way the gym clock sits on the workout card — one idea of "I am doing a thing
+// now", not two.
+function stretchSessionBannerHtml() {
+  const today = stretchTimeTodayS();
+  if (STRETCH_SESSION) {
+    return `<div style="padding:11px;border-radius:9px;background:var(--green-bg);border:1px solid var(--green);margin-bottom:12px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:13px;font-weight:700;color:var(--green);flex:1">\ud83e\uddd8 Stretching \u2014 <span id="st-sess-elapsed">${fmtDurationS(stretchSessionElapsedS() || 1)}</span></span>
+      <button onclick="stretchSessionStop()" style="padding:8px 14px;border-radius:7px;border:1px solid var(--green-border, var(--green));background:transparent;color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Finish</button>
+    </div>`;
+  }
+  return `<div style="margin-bottom:12px">
+    <button onclick="stretchSessionStart()" style="width:100%;padding:11px;border-radius:9px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">\ud83e\uddd8 I'm stretching</button>
+    ${today ? `<div style="font-size:10.5px;color:var(--text-muted);text-align:center;margin-top:5px">${fmtDurationS(today)} stretched today</div>` : ''}
   </div>`;
 }
 
 function renderStretchScreen() {
+  _renderStretchScreenInner();
+  // Prepended after the fact so every screen gets it — the region list, the work
+  // programme and the home screen each set body.innerHTML themselves, and one of
+  // them re-enters via an early return. A wrapper cannot fall out of sync the way
+  // four separate edits would.
+  const body = document.getElementById('stretch-body');
+  if (body && typeof stretchSessionBannerHtml === 'function') {
+    body.insertAdjacentHTML('afterbegin', stretchSessionBannerHtml());
+  }
+  _stSessTick();
+}
+
+// Keeps the running clock honest without re-rendering the whole screen under the
+// user's thumb. Derived from the timestamp, so a backgrounded tab catches up
+// rather than under-counting.
+let _stSessTicker = null;
+function _stSessTick() {
+  if (_stSessTicker) { clearInterval(_stSessTicker); _stSessTicker = null; }
+  if (!STRETCH_SESSION) return;
+  _stSessTicker = setInterval(() => {
+    const el = document.getElementById('st-sess-elapsed');
+    if (!el) { clearInterval(_stSessTicker); _stSessTicker = null; return; }
+    el.textContent = fmtDurationS(stretchSessionElapsedS() || 1);
+  }, 1000);
+}
+
+function _renderStretchScreenInner() {
   const body = document.getElementById('stretch-body');
   const title = document.getElementById('stretch-title');
   if (!body) return;
@@ -12253,7 +12527,7 @@ function renderStretchScreen() {
 
   // ── Work programme ──
   if (_stScreen === 'work') {
-    if (!occ) { _stScreen = 'home'; return renderStretchScreen(); }
+    if (!occ) { _stScreen = 'home'; return _renderStretchScreenInner(); }
     if (title) title.textContent = occ.label;
     const sec = (heading, ids, blurb) => {
       const items = ids.map(stretchById).filter(Boolean);
@@ -13004,35 +13278,366 @@ function logCardioInterval(modeId, distVal, minutes, seconds) {
 // ── Per-set storage ───────────────────────────────────────────
 // localStorage stays the immediate buffer (works offline in a gym basement);
 // each set also upserts to Supabase. Before today, sets NEVER left the device.
+// ══════════════════════════════════════════════════════════════
+// WHAT A MOVEMENT TRACKS  (unified logging, 2026-09-12)
+// ══════════════════════════════════════════════════════════════
+// Craig: "all exercise logging should be the same. running — how much, sets,
+// time. situps, body weight exercises. I really mean it." … "saved in 1 table;
+// seen in multiple places, every push button opens the same modal."
+//
+// Before this, the modal could only ever be a strength screen — 'lbs' and 'reps'
+// were written literally into renderExerciseScreen's markup — so everything that
+// wasn't a weighted lift got its own inputs somewhere else, writing somewhere
+// else. Sit-ups ended up in workout_log with the rep count in a column named
+// duration_min and distance_unit set to the string 'reps'.
+//
+// The fix is that a movement DECLARES what it tracks, and one modal builds its
+// inputs from that declaration. A set of bench, a set of sit-ups, a plank and a
+// 1 km interval are then the same row with different fields.
+//
+// TRACK_FIELDS is the single source of truth for how each field is entered,
+// displayed and stored. Adding a new kind of measurement means adding one entry
+// here, not a new screen.
+const TRACK_FIELDS = {
+  weight:   { id: 'w', label: 'lbs',  short: 'lbs',  input: 'decimal', entry: 'w' },
+  reps:     { id: 'r', label: 'reps', short: 'reps', input: 'numeric', entry: 'r' },
+  distance: { id: 'd', label: 'dist', short: '',     input: 'decimal', entry: 'd' },
+  duration: { id: 't', label: 'time', short: '',     input: 'text',    entry: 't' },
+};
+
+// Default for anything in EX_LIB — a gym lift is weight × reps.
+const TRACKS_DEFAULT = ['weight', 'reps'];
+
+// Movements whose tracking is NOT the default. Keyed by the same movement key
+// the rest of the app uses (exSlug output, or the fixed keys for cardio and
+// bodyweight), so there is no second naming scheme to keep in sync.
+//
+// unit is the unit the USER types in. Storage is always SI in activity_log
+// (distance_m metres, duration_s seconds); conversion happens at the boundary in
+// _trackToStorage / _trackFromStorage so nothing downstream has to know.
+const EX_TRACKS = {
+  // ── Bodyweight: reps only. These are the ones that were landing in
+  // workout_log as bw_pushups with the count in duration_min.
+  bw_pushups:          { tracks: ['reps'], kind: 'strength', muscle: 'chest' },
+  bw_situps:           { tracks: ['reps'], kind: 'strength', muscle: 'core' },
+  bw_squats:           { tracks: ['reps'], kind: 'strength', muscle: 'quads' },
+  bw_crunches:         { tracks: ['reps'], kind: 'strength', muscle: 'core' },
+  bw_oblique_crunches: { tracks: ['reps'], kind: 'strength', muscle: 'core' },
+  // ── Kettlebell: loaded, so weight × reps, but keyed separately from EX_LIB.
+  kb_swings:      { tracks: ['weight', 'reps'], kind: 'strength', muscle: 'glutes' },
+  kb_goblet_squat:{ tracks: ['weight', 'reps'], kind: 'strength', muscle: 'quads' },
+  kb_rdl:         { tracks: ['weight', 'reps'], kind: 'strength', muscle: 'hamstrings' },
+  kb_clean_press: { tracks: ['weight', 'reps'], kind: 'strength', muscle: 'shoulders' },
+  kb_bent_row:    { tracks: ['weight', 'reps'], kind: 'strength', muscle: 'back' },
+  // ── Cardio: distance + time, entered in the unit Craig actually reads off the
+  // machine or the watch. Row is metres because a Concept2 reports metres.
+  wo_row:   { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'm'  },
+  wo_walk:  { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'km' },
+  wo_swim:  { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'm'  },
+  gymcardio_treadmill:   { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'mi' },
+  gymcardio_bike:        { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'km' },
+  gymcardio_elliptical:  { tracks: ['duration'], kind: 'cardio' },
+  gymcardio_stairmaster: { tracks: ['duration'], kind: 'cardio' },
+};
+
+const UNIT_TO_M = { m: 1, km: 1000, mi: 1609.344 };
+
+// The resolver every caller goes through. Never read EX_TRACKS directly — an
+// unknown key has to fall back to the default rather than render a modal with no
+// inputs at all, which is how a movement silently becomes unloggable.
+function exTracksFor(exKey, exName) {
+  const hit = EX_TRACKS[exKey];
+  if (hit) return hit;
+  // Stretches resolve from STRETCH_LIB rather than a second hardcoded table, so
+  // adding a movement to the library is all it takes to make it loggable. Before
+  // 2026-09-20 stretchDone() wrote the PRESCRIPTION into `notes` as prose
+  // ("30s each side") and left reps/duration_s/side NULL — nothing could roll it
+  // up, and the log recorded what was asked for rather than what was done.
+  if (typeof stretchTracksFor === 'function' && /^st_/.test(exKey || '')) {
+    const st = stretchTracksFor(exKey);
+    if (st) return st;
+  }
+  if (typeof EX_LIB !== 'undefined' && exName) {
+    const e = EX_LIB.find(x => x.name === exName);
+    if (e) return { tracks: TRACKS_DEFAULT, kind: 'strength', muscle: e.m || '', equip: e.equip || '' };
+  }
+  return { tracks: TRACKS_DEFAULT, kind: 'strength' };
+}
+function exTrackList(exKey, exName) { return exTracksFor(exKey, exName).tracks || TRACKS_DEFAULT; }
+function exTracks(exKey, exName, field) { return exTrackList(exKey, exName).indexOf(field) !== -1; }
+function exUnit(exKey, exName) { return exTracksFor(exKey, exName).unit || ''; }
+
+// m:ss (or plain minutes) → seconds, and back. The app has always taken time as
+// m:ss on the workout rows; keeping that means Craig's typing doesn't change.
+function parseDurationToS(v) {
+  if (v === null || v === undefined) return 0;
+  const str = String(v).trim();
+  if (!str) return 0;
+  if (str.indexOf(':') !== -1) {
+    const parts = str.split(':').map(x => parseFloat(x) || 0);
+    if (parts.length === 3) return Math.round(parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    return Math.round(parts[0] * 60 + parts[1]);
+  }
+  const n = parseFloat(str);
+  return isFinite(n) ? Math.round(n * 60) : 0;   // bare number means minutes
+}
+function fmtDurationS(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  if (!s) return '';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const r = s % 60;
+  return h ? h + ':' + String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0')
+           : m + ':' + String(r).padStart(2, '0');
+}
+
+// Entry (what the user typed, in their unit) → activity_log row fields (SI).
+function _trackToStorage(exKey, exName, entry) {
+  const meta = exTracksFor(exKey, exName);
+  const out = { kind: meta.kind || 'strength', muscle: meta.muscle || '', equip: meta.equip || '' };
+  const list = meta.tracks || TRACKS_DEFAULT;
+  // `tracks` decides what the modal ASKS FOR. It must not decide what gets kept:
+  // a value that is present was put there by something, and discarding a real
+  // measurement because the movement does not nominally track it is exactly the
+  // write-to-nowhere bug this refactor exists to kill.
+  //
+  // Found 2026-09-20 by the chrono: timing a set of open-book rotations produced
+  // a genuine 65-second reading that vanished, because that movement declares
+  // ['reps'] and the duration was dropped on the floor. A stopwatch reading is
+  // ground truth regardless of what the library expected you to record.
+  const keep = (field, val) => list.indexOf(field) !== -1 || val > 0;
+  const w = Number(entry.w) || 0, r = Number(entry.r) || 0;
+  const d = Number(entry.d) || 0, t = Math.round(Number(entry.t) || 0);
+  if (keep('weight', w)) out.weight = w;
+  if (keep('reps', r)) out.reps = r;
+  if (keep('distance', d)) out.distance_m = Math.round(d * (UNIT_TO_M[meta.unit] || 1));
+  if (keep('duration', t)) out.duration_s = t;
+  return out;
+}
+
+// A segment is "real" — worth logging — when the field that MEASURES the effort
+// has a value. For a lift that's reps (a weight with no reps is a half-typed
+// row, which is the bug that logged blank sets as 130×0). For cardio it's
+// distance or duration.
+function _trackEntryIsReal(exKey, exName, entry) {
+  if (!entry) return false;
+  const list = exTrackList(exKey, exName);
+  if (list.indexOf('reps') !== -1) return (Number(entry.r) || 0) > 0;
+  return (Number(entry.d) || 0) > 0 || (Number(entry.t) || 0) > 0;
+}
+
+// Human-readable one segment, used by the modal, the summary line and the rollup
+// so the three cannot describe the same set differently.
+function fmtSegment(exKey, exName, e) {
+  const list = exTrackList(exKey, exName);
+  const unit = exUnit(exKey, exName);
+  const bits = [];
+  if (list.indexOf('weight') !== -1 && list.indexOf('reps') !== -1) {
+    bits.push((Number(e.w) || 0) + '×' + (Number(e.r) || 0));
+  } else if (list.indexOf('reps') !== -1) {
+    bits.push((Number(e.r) || 0) + ' reps');
+  }
+  if (list.indexOf('distance') !== -1 && (Number(e.d) || 0) > 0) bits.push((Number(e.d) || 0) + (unit || ''));
+  if (list.indexOf('duration') !== -1 && (Number(e.t) || 0) > 0) bits.push(fmtDurationS(e.t));
+  return bits.join(' · ');
+}
+
 function getSessionSets(exKey) {
   const dateStr = ds(new Date());
   return (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
 }
+// ══════════════════════════════════════════════════════════════
+// DAILY ROLLUP  (unified logging, 2026-09-12)
+// ══════════════════════════════════════════════════════════════
+// Craig: "roll up to daily total ... seen in multiple places."
+//
+// ONE reader over activity_log, so the daily card, week strip, month cell and
+// stats cannot disagree about what happened today. Before this every surface did
+// its own arithmetic over a different store, which is how the app could show a
+// walk on one screen and not on another.
+//
+// Returns per-exercise totals plus a day summary. Totals are in storage units
+// (metres, seconds); format at the point of display.
+function getDayTotals(dateStr) {
+  const rows = (typeof getActivity === 'function') ? getActivity(dateStr) : [];
+  const byEx = {};
+  rows.forEach(function (r) {
+    const k = r.exercise_key;
+    if (!k) return;
+    if (!byEx[k]) {
+      byEx[k] = { key: k, name: r.exercise_name || k, kind: r.kind || 'strength',
+                  muscle: r.muscle || '', sets: 0, reps: 0, volume: 0,
+                  distance_m: 0, duration_s: 0, topWeight: 0, source: r.source || '' };
+    }
+    const t = byEx[k];
+    t.sets += 1;
+    t.reps += Number(r.reps) || 0;
+    // Volume = load actually moved. Only meaningful where both exist, so a set of
+    // sit-ups contributes reps but not volume rather than contributing zero and
+    // looking like a failed lift.
+    if (r.weight && r.reps) t.volume += Number(r.weight) * Number(r.reps);
+    if (Number(r.weight) > t.topWeight) t.topWeight = Number(r.weight);
+    t.distance_m += Number(r.distance_m) || 0;
+    t.duration_s += Number(r.duration_s) || 0;
+  });
+  const list = Object.keys(byEx).map(k => byEx[k]);
+  const day = {
+    exercises: list.length,
+    sets: list.reduce((a, t) => a + t.sets, 0),
+    reps: list.reduce((a, t) => a + t.reps, 0),
+    volume: list.reduce((a, t) => a + t.volume, 0),
+    distance_m: list.reduce((a, t) => a + t.distance_m, 0),
+    duration_s: list.reduce((a, t) => a + t.duration_s, 0),
+  };
+  return { date: dateStr, byExercise: list, day: day };
+}
+
+// One line per exercise, for whichever surface wants to show the day.
+function dayTotalLine(t) {
+  const bits = [];
+  if (t.sets) bits.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
+  if (t.reps) bits.push(t.reps + ' reps');
+  if (t.distance_m) {
+    bits.push(t.distance_m >= 1000 ? (t.distance_m / 1000).toFixed(2).replace(/\.?0+$/, '') + ' km'
+                                   : t.distance_m + ' m');
+  }
+  if (t.duration_s) bits.push(fmtDurationS(t.duration_s));
+  if (t.volume) bits.push(Math.round(t.volume).toLocaleString() + ' lb vol');
+  return bits.join(' · ');
+}
+
+// ══════════════════════════════════════════════════════════════
+// MIGRATION — legacy local stores → activity_log  (2026-09-12)
+// ══════════════════════════════════════════════════════════════
+// Craig: "for this change over, we should move all customer data to the new
+// structure. a migration tool for local users."
+//
+// WHY THIS RUNS IN THE BROWSER AND NOT AS A SQL SCRIPT: local-mode users
+// (everyone who isn't Craig) never write to Supabase at all. Their history lives
+// in localStorage on their own phone, so a server-side migration reaches exactly
+// none of it. This has to run where the data is.
+//
+// RUN ON READ, NEVER BEHIND A ONE-SHOT FLAG. A latching flag that fires once on
+// an empty list and never retries is precisely what ate the Body module's data.
+// This is idempotent instead: deterministic client_ids mean a second run upserts
+// the same rows rather than duplicating them, so it is safe to call on every
+// load, forever.
+//
+// Sources it converts, all local:
+//   wlog_<date>.<woId>.exercises{}  — bodyweight/kettlebell reps (the bw_/kb_ mess)
+//   wlog_<date>.<woId>.{time,dist}  — row/walk/swim aggregates
+// It does NOT touch exsets_ — that path already writes activity_log.
+const MIGRATED_WO_IDS = ['row', 'walk', 'swim'];
+
+function _migrateWorkoutLogToActivity(dateStr) {
+  if (typeof logActivity !== 'function') return 0;
+  let raw = null;
+  try { raw = JSON.parse(localStorage.getItem('wlog_' + dateStr) || 'null'); } catch (e) { return 0; }
+  if (!raw || typeof raw !== 'object') return 0;
+  let n = 0;
+
+  Object.keys(raw).forEach(function (woId) {
+    const entry = raw[woId] || {};
+
+    // Per-exercise reps: bodyweight and kettlebell.
+    const exs = entry.exercises || {};
+    Object.keys(exs).forEach(function (exKey) {
+      const reps = Number(exs[exKey]) || 0;
+      if (reps <= 0) return;
+      const prefix = EX_PREFIXES[woId];
+      if (!prefix) return;
+      const key = prefix + exKey;
+      const meta = exTracksFor(key, '');
+      logActivity(Object.assign({
+        date: dateStr, name: _legacyExLabel(woId, exKey), exercise_key: key,
+        set_index: 0, source: 'migrated',
+        // Deterministic client_id — this is what makes a re-run an upsert.
+        client_id: 'al-' + dateStr + '-' + key + '-0',
+      }, _trackToStorage(key, '', { r: reps })));
+      n++;
+    });
+
+    // Aggregate cardio: row / walk / swim. One outing = one segment.
+    if (MIGRATED_WO_IDS.indexOf(woId) !== -1) {
+      const t = Number(entry.time) || 0;      // minutes, as the old rows stored it
+      const d = Number(entry.dist) || 0;
+      if (t > 0 || d > 0) {
+        const key = 'wo_' + woId;
+        logActivity(Object.assign({
+          date: dateStr, name: _legacyWoLabel(woId), exercise_key: key,
+          set_index: 0, source: 'migrated',
+          client_id: 'al-' + dateStr + '-' + key + '-0',
+        }, _trackToStorage(key, '', { d: d, t: t * 60 })));
+        n++;
+      }
+    }
+  });
+  return n;
+}
+
+function _legacyWoLabel(woId) {
+  const w = (typeof OTHER_WORKOUTS !== 'undefined') ? OTHER_WORKOUTS.find(x => x.id === woId) : null;
+  return w ? w.label : woId;
+}
+function _legacyExLabel(woId, exKey) {
+  const w = (typeof OTHER_WORKOUTS !== 'undefined') ? OTHER_WORKOUTS.find(x => x.id === woId) : null;
+  const e = w && w.exercises ? w.exercises.find(x => x.key === exKey) : null;
+  return e ? e.label : exKey;
+}
+
+// Sweep every wlog_ day present on this device. Called once per load; cheap
+// because it only touches days that actually have a legacy row, and safe to
+// repeat because every write is a deterministic upsert.
+function migrateLegacyExerciseData() {
+  let days = 0, rows = 0;
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k.indexOf('wlog_') !== 0) continue;
+      const dateStr = k.slice(5);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) continue;
+      const n = _migrateWorkoutLogToActivity(dateStr);
+      if (n) { days++; rows += n; }
+    }
+  } catch (e) { console.warn('legacy exercise migration failed', e); return { days: 0, rows: 0 }; }
+  if (rows) console.log('Exercise migration: ' + rows + ' segment(s) across ' + days + ' day(s) moved into activity_log.');
+  return { days: days, rows: rows };
+}
+
+// Back-compat shim. Every caller should move to addSessionSegment; this keeps
+// the weight×reps signature working so nothing breaks mid-refactor.
 function addSessionSet(exKey, exName, weight, reps, flag) {
+  return addSessionSegment(exKey, exName, { w: weight, r: reps, flag: flag || '' });
+}
+
+// The ONE write path for a logged effort, whatever kind it is. A bench set, a
+// set of sit-ups, a plank and a 1 km interval all arrive here and all land in
+// activity_log. Nothing writes workout_log any more.
+function addSessionSegment(exKey, exName, entry) {
   const dateStr = ds(new Date());
   const entries = getSessionSets(exKey).slice();
   const idx = entries.length;
-  entries.push({ w: weight, r: reps, flag: flag || '' });
+  const e = { w: Number(entry.w) || 0, r: Number(entry.r) || 0,
+              d: Number(entry.d) || 0, t: Number(entry.t) || 0,
+              side: entry.side || '', flag: entry.flag || '' };
+  entries.push(e);
 
-  // Write through the existing per-set helper so the spreadsheet and every
+  // Write through the existing per-set helper so the offline buffer and every
   // legacy stats reader keep working — it maintains the aggregate alongside.
   if (typeof setExSetEntry === 'function') {
     _exSyncSuspended = true;   // this function logs the activity row itself, below
     try {
-      setExSetEntry(dateStr, exKey, idx, 'w', weight);
-      setExSetEntry(dateStr, exKey, idx, 'r', reps);
-      if (flag) setExSetEntry(dateStr, exKey, idx, 'flag', flag);
+      ['w', 'r', 'd', 't'].forEach(function (f) { if (e[f]) setExSetEntry(dateStr, exKey, idx, f, e[f]); });
+      if (e.flag) setExSetEntry(dateStr, exKey, idx, 'flag', e.flag);
     } finally { _exSyncSuspended = false; }
   }
-  // Same set also lands in the unified activity log, so weekly load, muscle
-  // volume and the day review can see strength work alongside cardio and
-  // stretching without reading three different stores.
-  const exMeta = EX_LIB.find(e => e.name === exName) || {};
-  logActivity({
-    kind: 'strength', name: exName, exercise_key: exKey, set_index: idx,
-    muscle: exMeta.m || '', equip: exMeta.equip || '',
-    weight: weight, reps: reps, flag: flag || '',
-  });
+  // _trackToStorage decides kind/muscle and converts the user's unit to SI, so
+  // this call site does not need to know whether it just logged a lift or a run.
+  const stored = _trackToStorage(exKey, exName, e);
+  logActivity(Object.assign({
+    name: exName, exercise_key: exKey, set_index: idx,
+    flag: e.flag || '', side: e.side || '',
+  }, stored));
 
   // Rest belongs to the set BEFORE this one — it's the gap that preceded it.
   const restedFor = _claimRest(exKey);
@@ -13061,13 +13666,10 @@ function removeSessionSet(exKey, idx) {
   getActivity(dateStr)
     .filter(r => r.exercise_key === exKey && r.set_index >= idx)
     .forEach(r => removeActivity(dateStr, r.client_id));
-  const exMeta = EX_LIB.find(e => e.name === _sessExName) || {};
   data.entries.slice(idx).forEach((e, i) => {
-    logActivity({
-      kind: 'strength', name: _sessExName, exercise_key: exKey, set_index: idx + i,
-      muscle: exMeta.m || '', equip: exMeta.equip || '',
-      weight: e.w, reps: e.r, flag: e.flag || '',
-    });
+    logActivity(Object.assign({
+      name: _sessExName, exercise_key: exKey, set_index: idx + i, flag: e.flag || '',
+    }, _trackToStorage(exKey, _sessExName, e)));
   });
   renderExerciseScreen();
 }
@@ -13445,18 +14047,21 @@ function renderExerciseScreen() {
   const suggested = suggestedSetCount();
   const ex = EX_LIB.find(e => e.name === _sessExName) || {};
   const lastW = sets.length ? sets[sets.length - 1].w : '';
+  const _trackList = exTrackList(_sessEx, _sessExName);
 
   const FLAGS = [['', '—', 'var(--text-muted)'], ['S', 'Shoulder', 'var(--orange)'],
                  ['F', 'Form', 'var(--orange)'], ['P', 'Pain', 'var(--red)']];
 
+  // Segment label follows what the movement tracks. A run's segments are not
+  // "sets" in the lifting sense, but they are the same list of efforts and Craig
+  // asked for them explicitly ("running - how much, sets, time"), so the only
+  // thing that changes is the word.
+  const segWord = _trackList.indexOf('reps') !== -1 ? 'Set' : 'Leg';
   const rows = sets.map((s, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--divider)">
-      <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:34px">Set ${i + 1}</span>
-      <span style="font-size:9px;color:var(--text-muted);min-width:26px" title="Normalised strength score">${strengthScore(s.w, s.r, ex) || ''}</span>
-      <span style="font-size:15px;font-weight:700;color:var(--text)">${s.w}</span>
-      <span style="font-size:10px;color:var(--text-muted)">lbs ×</span>
-      <span style="font-size:15px;font-weight:700;color:var(--text)">${s.r}</span>
-      <span style="font-size:10px;color:var(--text-muted);flex:1">reps</span>
+      <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:34px">${segWord} ${i + 1}</span>
+      <span style="font-size:9px;color:var(--text-muted);min-width:26px" title="Normalised strength score">${(_trackList.indexOf('weight') !== -1 ? strengthScore(s.w, s.r, ex) : '') || ''}</span>
+      <span style="font-size:15px;font-weight:700;color:var(--text);flex:1">${fmtSegment(_sessEx, _sessExName, s)}</span>
       ${(function () {
         const r = (getActivity(ds(new Date())).find(a => a.exercise_key === _sessEx && a.set_index === i) || {}).rest_s;
         if (!r) return '';
@@ -13498,13 +14103,34 @@ function renderExerciseScreen() {
     })()}
 
     <div style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg)">
-      <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Set ${sets.length + 1}</div>
+      <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${segWord} ${sets.length + 1}</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
-        <input type="number" id="sess-w" inputmode="decimal" placeholder="${(typeof isPerSideLoaded === 'function' && isPerSideLoaded(ex)) ? 'lbs each' : 'lbs'}" value="${lastW}"
-          style="flex:1;min-width:0;padding:14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center">
-        <span style="font-size:15px;color:var(--text-muted)">×</span>
-        <input type="number" id="sess-r" inputmode="numeric" placeholder="reps"
-          style="flex:1;min-width:0;padding:14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center">
+        ${(function () {
+          // One input per tracked field, in declaration order. This is the whole
+          // point of the refactor: the screen has no idea whether it is logging a
+          // bench press or a 5 km walk.
+          const bigInput = 'flex:1;min-width:0;padding:14px;border-radius:8px;border:1.5px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:22px;font-weight:700;font-family:inherit;text-align:center';
+          const unit = exUnit(_sessEx, _sessExName);
+          return _trackList.map(function (fieldName, i) {
+            const f = TRACK_FIELDS[fieldName];
+            if (!f) return '';
+            let ph = f.label, val = '';
+            if (fieldName === 'weight') {
+              ph = (typeof isPerSideLoaded === 'function' && isPerSideLoaded(ex)) ? 'lbs each' : 'lbs';
+              val = lastW;                       // same load as the last set is the common case
+            } else if (fieldName === 'distance') {
+              ph = unit || 'dist';
+            } else if (fieldName === 'duration') {
+              ph = 'm:ss';
+            }
+            // × only between weight and reps, where it means multiply. Between a
+            // distance and a time it would be nonsense.
+            const sep = (i > 0 && fieldName === 'reps' && _trackList[i - 1] === 'weight')
+              ? '<span style="font-size:15px;color:var(--text-muted)">×</span>' : '';
+            return sep + `<input type="${f.input === 'text' ? 'text' : 'number'}" id="sess-${f.id}"
+              inputmode="${f.input}" placeholder="${ph}" value="${val}" style="${bigInput}">`;
+          }).join('');
+        })()}
       </div>
       <div style="display:flex;gap:4px;margin-bottom:9px">
         ${FLAGS.map(([v, l, c]) => `<button onclick="window._sessFlag='${v}';renderExerciseScreen()"
@@ -13580,14 +14206,24 @@ function renderDayReview() {
 }
 
 function _sessAddSet() {
-  const w = parseFloat((document.getElementById('sess-w') || {}).value);
-  const r = parseInt((document.getElementById('sess-r') || {}).value, 10);
-  if (!isFinite(w) || w <= 0 || !isFinite(r) || r <= 0) {
-    const el = document.getElementById('sess-r');
+  const list = exTrackList(_sessEx, _sessExName);
+  const val = id => (document.getElementById('sess-' + id) || {}).value;
+  const entry = { w: 0, r: 0, d: 0, t: 0, flag: window._sessFlag || '' };
+  if (list.indexOf('weight') !== -1)   entry.w = parseFloat(val('w')) || 0;
+  if (list.indexOf('reps') !== -1)     entry.r = parseInt(val('r'), 10) || 0;
+  if (list.indexOf('distance') !== -1) entry.d = parseFloat(val('d')) || 0;
+  if (list.indexOf('duration') !== -1) entry.t = parseDurationToS(val('t'));
+
+  // Validate on what MEASURES the effort, not on every field. A walk with a
+  // distance and no time is a real walk; a bench press with a weight and no reps
+  // is a half-typed row. _trackEntryIsReal encodes that difference once.
+  if (!_trackEntryIsReal(_sessEx, _sessExName, entry)) {
+    const firstId = TRACK_FIELDS[list.indexOf('reps') !== -1 ? 'reps' : list[list.length - 1]];
+    const el = firstId && document.getElementById('sess-' + firstId.id);
     if (el) { el.style.borderColor = 'var(--red)'; setTimeout(() => { el.style.borderColor = 'var(--input-border)'; }, 1200); }
     return;
   }
-  addSessionSet(_sessEx, _sessExName, w, r, window._sessFlag || '');
+  addSessionSegment(_sessEx, _sessExName, entry);
   window._sessFlag = '';   // flags are per-set, not sticky
 }
 
@@ -18106,23 +18742,24 @@ function syncExSetsToActivity(dateStr, exKey, exName) {
     try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
   }
   const entries = Array.isArray(data.entries) ? data.entries : [];
-  const meta = (typeof EX_LIB !== 'undefined' && EX_LIB.find(e => e.name === name)) || {};
   const existing = getActivity(dateStr).filter(r => r.exercise_key === exKey);
-  // Reps are what make a set a set. addExSetRow pre-fills the new row's weight
-  // from the previous set, so "has a weight" would log every half-typed row as
-  // a completed 130×0.
-  const filled = e => !!(e && Number(e.r) > 0);
+  // What makes a segment real depends on what the movement tracks: reps for a
+  // lift, distance-or-time for cardio. This used to be a hardcoded reps check,
+  // which silently discarded every cardio segment that came through this path.
+  // addExSetRow still pre-fills the new row's weight from the previous set, so
+  // "has a weight" would log every half-typed row as a completed 130×0 — that is
+  // why the reps case survives inside _trackEntryIsReal rather than being relaxed.
+  const filled = e => _trackEntryIsReal(exKey, name, e);
 
   entries.forEach((e, idx) => {
     if (!filled(e)) return;  // a blank row the UI just added is not a logged set
     const prev = existing.find(r => r.set_index === idx);
-    logActivity({
-      date: dateStr, kind: 'strength', name: name, exercise_key: exKey,
-      set_index: idx, muscle: meta.m || '', equip: meta.equip || '',
-      weight: e.w || null, reps: e.r || null, flag: e.flag || '',
+    logActivity(Object.assign({
+      date: dateStr, name: name, exercise_key: exKey,
+      set_index: idx, flag: e.flag || '',
       rest_s: prev ? prev.rest_s : null,   // keep a rest that was actually measured
       source: 'inline',
-    });
+    }, _trackToStorage(exKey, name, e)));
   });
   // Sets cleared or deleted in the UI must not linger in the log. Only ever
   // prune rows this path wrote — a session-logged set for the same movement is
@@ -20634,6 +21271,13 @@ async function refreshData(btn) {
   const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   await loadTrackingData(ds(start), ds(end));
+  // Runs on EVERY load, deliberately — not behind a one-shot flag. A flag that
+  // fires once against an empty list and never retries is what ate the Body
+  // module's data. Every write here is a deterministic upsert, so repeating it
+  // costs a pass over localStorage and changes nothing.
+  try { migrateLegacyExerciseData(); } catch (e) { console.warn('legacy migration skipped', e); }
+  // A stretch session survives a reload the same way the gym clock does.
+  try { _stSessLoad(); } catch (e) {}
   // Record what's cached so the stats view knows when it must widen the range.
   _trackingLoaded = { start: ds(start), end: ds(end) };
 
