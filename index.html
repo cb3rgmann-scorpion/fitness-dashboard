@@ -3546,7 +3546,17 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.20.04';
+// escapeHtml was only ever a LOCAL const inside two render functions, so every
+// other caller referenced an undefined name and threw on render. Caught
+// 2026-09-20 when the new symptom sections used it: the morning prompt rendered
+// zero characters and the Symptoms tab would have done the same. Defined once,
+// globally. The two local copies still shadow this harmlessly.
+function escapeHtml(v) {
+  return String(v === null || v === undefined ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+const APP_VERSION = '2026.09.20.08';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -7893,86 +7903,79 @@ function _renderBodyLogTab(tab) {
   body.innerHTML = tabsHtml + tabContent + realismHtml;
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// SYMPTOMS TAB — retired the part-first form, 2026-09-20
+// ════════════════════════════════════════════════════════════════════════════
+// There were TWO symptom systems and they never met. This tab wrote body_log
+// (pick a part, rate pain and stiffness, save — one disconnected row). The red
+// "Report a symptom" button on the Body card writes health_episodes: a condition
+// that STARTS, accumulates events, and RESOLVES. Both were reachable from the
+// same popup. Flagged as an open duplicate in the 2026-09-07 audit.
+//
+// Craig's own three rows settled which model is right:
+//   2026-09-13  part "Hip"    "Hemmoroids - has been for the last several days"
+//   2026-09-15  part "Other"  "Hemerohoids."
+// The same condition, filed under two different body parts, because a part-first
+// form has nowhere to put it. Episodes would have made that one thing with two
+// events and a duration — which is the shape you actually want to hand a GP.
+//
+// The form is gone. The tab now shows the episode list and routes new reports to
+// the episodes model. body_log is still READ below for the pre-migration history;
+// nothing writes it any more.
 function buildSymptomsHtml() {
-  const editing = !!_bodyEditingId;
-  const sectionLabel = editing ? 'Editing entry' : 'Log new entry';
-  const saveLabel = editing ? 'Update entry' : 'Save';
-  const editBanner = editing ? `
-    <div class="bl-edit-banner" id="bl-edit-banner">
-      <span>✎ You're editing an existing entry. Changes will overwrite the original.</span>
-      <button type="button" class="bl-edit-cancel" onclick="cancelEditBodyLog()">Cancel edit</button>
-    </div>
-  ` : '';
-  const cancelHandler = editing ? 'cancelEditBodyLog()' : 'closePopup()';
-  const cancelLabel = editing ? 'Cancel edit' : 'Cancel';
-  return `
-    <div class="bl-section-label">Active (last 14 days)</div>
-    <div class="bl-active-list">${buildActiveBodyHtml()}</div>
+  const open = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes() : [];
+  const resolved = (typeof EPISODES !== 'undefined')
+    ? EPISODES.filter(e => e.status === 'resolved')
+        .sort((a, b) => (b.ended_on || '').localeCompare(a.ended_on || '')).slice(0, 8)
+    : [];
 
-    <div class="bl-section-label">${sectionLabel}</div>
-    ${editBanner}
-    <div class="bl-form">
-      <div class="bl-row">
-        <label class="bl-label">Body part</label>
-        <select id="bl-part" class="bl-input">
-          <option value="">— pick one —</option>
-          ${BODY_PARTS.map(p => `<option value="${p}">${p}</option>`).join('')}
-        </select>
+  const epRow = (e, isOpen) => {
+    const evs = (typeof epEventsFor === 'function') ? epEventsFor(e.client_id) : [];
+    const last = evs[evs.length - 1];
+    const sev = last && last.severity ? last.severity : null;
+    const tone = !isOpen ? 'text-muted' : (sev >= 7 ? 'red' : sev >= 4 ? 'orange' : 'text-dim');
+    const span = e.started_on + (e.ended_on ? ' \u2192 ' + e.ended_on : ' \u2192 now');
+    return `<div onclick="openSymptomEntry();_epSetScreen('detail','${e.client_id}')"
+      style="padding:10px 11px;border-radius:8px;border:1px solid var(--card-border);background:var(--input-bg);margin-bottom:6px;cursor:pointer">
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:var(--${tone})">${escapeHtml(e.condition || 'Untitled')}</span>
+        ${sev ? `<span style="font-size:10.5px;font-weight:700;color:var(--${tone})">${sev}/10</span>` : ''}
+        <span style="flex:1"></span>
+        <span style="font-size:10px;color:var(--text-muted)">${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}</span>
       </div>
-      <div class="bl-row">
-        <label class="bl-label">Side</label>
-        <div class="bl-side-row">
-          <label class="bl-side"><input type="radio" name="bl-side" value="left"> Left</label>
-          <label class="bl-side"><input type="radio" name="bl-side" value="right"> Right</label>
-          <label class="bl-side"><input type="radio" name="bl-side" value="both"> Both</label>
-          <label class="bl-side"><input type="radio" name="bl-side" value="na" checked> N/A</label>
-        </div>
-      </div>
-      <div class="bl-row">
-        <label class="bl-label">Pain <span id="bl-pain-val" class="bl-val">0</span> / 10</label>
-        <input type="range" id="bl-pain" min="0" max="10" value="0" class="bl-range"
-          oninput="document.getElementById('bl-pain-val').textContent=this.value">
-      </div>
-      <div class="bl-row">
-        <label class="bl-label">Stiffness <span id="bl-stiff-val" class="bl-val">0</span> / 10</label>
-        <input type="range" id="bl-stiff" min="0" max="10" value="0" class="bl-range"
-          oninput="document.getElementById('bl-stiff-val').textContent=this.value">
-      </div>
-      <div class="bl-row">
-        <input type="text" id="bl-note" class="bl-input"
-          placeholder="optional note (e.g. 'after 1.4km walk', 'morning stiffness')">
-      </div>
-      <div class="bl-grid-2">
-        <div class="bl-row">
-          <label class="bl-label">Date (when it happened)</label>
-          <input type="date" id="bl-event-date" class="bl-input" value="${ds(new Date())}">
-        </div>
-        <div class="bl-row">
-          <label class="bl-label">Time (optional)</label>
-          <input type="time" id="bl-event-time" class="bl-input">
-        </div>
-      </div>
-      <div class="bl-row">
-        <label class="bl-label">Link to an appointment (optional)</label>
-        <select id="bl-appt-link" class="bl-input">
-          <option value="">— not linked —</option>
-          ${getRecentAppointments(30).map(a => {
-            const pt = APPT_PROVIDER_TYPES.find(p => p.id === a.provider_type) || APPT_PROVIDER_TYPES[0];
-            const label = `${a.appointment_date} · ${pt.label}${a.provider_name ? ' (' + a.provider_name + ')' : ''}`;
-            return `<option value="${a.id}">${label}</option>`;
-          }).join('')}
-        </select>
-      </div>
-      <div class="bl-row">
-        <label class="bl-flag">
-          <input type="checkbox" id="bl-flag"> Flag for follow-up with a clinician
-        </label>
-      </div>
-      <div class="bl-actions">
-        <button class="bl-cancel" onclick="${cancelHandler}">${cancelLabel}</button>
-        <button class="bl-save" onclick="submitBodyLogEntry()">${saveLabel}</button>
-      </div>
+      <div style="font-size:10.5px;color:var(--text-muted);margin-top:3px">${span}${e.body_part ? ' \u00b7 ' + escapeHtml(e.body_part) : ''}${e.side && e.side !== 'na' ? ' (' + e.side + ')' : ''}</div>
+    </div>`;
+  };
+
+  // The pre-2026-09-20 body_log rows, read-only. Kept visible so the history is
+  // not orphaned, and clearly separated so it is obvious nothing writes here now.
+  const legacy = (typeof _getBodyLog === 'function') ? (_getBodyLog().entries || []) : [];
+  const legacyHtml = legacy.length ? `
+    <div class="bl-section-label" style="margin-top:16px">Older entries (before symptoms became episodes)</div>
+    <div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:7px">
+      Read-only history from the previous symptom log.
     </div>
+    ${legacy.slice(-10).reverse().map(e => `<div style="padding:8px 10px;border-radius:7px;border:1px solid var(--divider);margin-bottom:5px">
+      <div style="font-size:11.5px;color:var(--text-dim)"><b>${escapeHtml(e.part || '?')}</b>${e.side && e.side !== 'na' ? ' (' + e.side + ')' : ''} \u00b7 ${e.entry_date || ''}</div>
+      ${e.note ? `<div style="font-size:11px;color:var(--text-muted);margin-top:3px;line-height:1.45">${escapeHtml(e.note)}</div>` : ''}
+    </div>`).join('')}` : '';
+
+  return `
+    <div onclick="openSymptomEntry()"
+      style="display:flex;align-items:center;gap:9px;padding:12px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border, var(--red));cursor:pointer;margin-bottom:12px;min-height:48px">
+      <span style="font-size:17px">\ud83e\ude79</span>
+      <span style="flex:1;font-size:13.5px;font-weight:700;color:var(--red)">Report a symptom</span>
+      <span style="color:var(--red)">\u203a</span>
+    </div>
+
+    <div class="bl-section-label">Ongoing</div>
+    ${open.length ? open.map(e => epRow(e, true)).join('')
+      : '<div style="font-size:11.5px;color:var(--text-muted);padding:4px 0 8px">Nothing ongoing.</div>'}
+
+    ${resolved.length ? `<div class="bl-section-label" style="margin-top:14px">Recently resolved</div>
+      ${resolved.map(e => epRow(e, false)).join('')}` : ''}
+
+    ${legacyHtml}
   `;
 }
 
@@ -9659,9 +9662,43 @@ function openDoctorVisitSummary(opts) {
   const today = ds(new Date());
 
   // Gather symptom data
+  // Symptoms come from BOTH stores, 2026-09-20.
+  //
+  // This summary is shown to a clinician — the one reader of this data that lives
+  // outside the app. When the part-first form was retired in favour of episodes,
+  // reading only body_log would have left it permanently blank for everything
+  // logged from that day forward: a report that looks fine and silently omits the
+  // present. Episodes are flattened into the same shape the renderer expects so
+  // trends, grouping and flags keep working across both.
   const bodyData = (typeof _getBodyLog === 'function') ? _getBodyLog() : { entries: [] };
-  const symptoms = bodyData.entries.filter(e => {
-    if (e.date < cutoffStr) return false;
+  const _legacySymptoms = bodyData.entries.map(e => Object.assign({}, e, { _src: 'log' }));
+
+  const _episodeSymptoms = [];
+  if (typeof EPISODES !== 'undefined' && typeof epEventsFor === 'function') {
+    EPISODES.forEach(ep => {
+      epEventsFor(ep.client_id).forEach(ev => {
+        _episodeSymptoms.push({
+          _src: 'episode',
+          date: ev.event_date,
+          entry_date: ev.event_date,
+          // The episode names the thing; the old model only had a body part. Use
+          // the condition as the grouping label so "Hemorrhoids" stops being
+          // filed under "Hip" — which is exactly what happened twice.
+          part: ep.condition || ep.body_part || 'Other',
+          side: ep.side || 'na',
+          pain: Number(ev.severity) || 0,
+          stiffness: 0,
+          note: [ev.symptoms, ev.treatment, ev.note].filter(Boolean).join(' \u00b7 '),
+          flag: false,
+          created_at: ev.event_date + 'T' + (ev.event_time || '00:00') + ':00',
+        });
+      });
+    });
+  }
+
+  const symptoms = _legacySymptoms.concat(_episodeSymptoms).filter(e => {
+    const d = e.date || e.entry_date || '';
+    if (d < cutoffStr) return false;
     if (partFilter && e.part !== partFilter) return false;
     return true;
   }).sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
@@ -17830,6 +17867,7 @@ const CHECKIN_QUESTIONS = [
   { id:'anticipated',  prompt:'morning', label:"What's today looking like?", desc:'Anticipated cognitive load. Pairs with the evening "actually".' },
   { id:'lastmeal',     prompt:'morning', label:'When did you stop eating?', desc:'Closes yesterday\'s eating window.' },
   { id:'goal',         prompt:'morning', label:"What's your goal today?",  desc:'Maintain / Slow drop / Deficit / Push. Overlaps exercise intent.' },
+  { id:'symptoms',     prompt:'morning', label:'Symptom check-in',        desc:'Rate anything ongoing, or close it out. Also the way in to report something new.' },
   { id:'missed',       prompt:'morning', label:'Missed-yesterday link',    desc:'Shows what yesterday is missing, with a jump link.' },
   { id:'actualload',   prompt:'evening', label:'How was today, actually?', desc:'The anticipated-vs-actual delta is the real signal.' },
   { id:'dayword',      prompt:'evening', label:'One word for today',       desc:'Builds a personal vocabulary of day-types.' },
@@ -17922,6 +17960,9 @@ function openMorningPrompt(opts) {
     intentChoice: today.exercise_intent || null,
     weightValue: (today.weight > 0 ? today.weight : null),
     missedExpanded: false,
+    // Severity picked per ongoing episode this morning. Held rather than logged
+    // on tap so a mis-tap can be corrected, same as every other section here.
+    symptomChecks: {},
   };
   const bd = document.getElementById('morning-prompt-backdrop');
   if (!bd) return;
@@ -18045,9 +18086,83 @@ function _mpSubmit() {
   if (s.intentChoice) {
     dbSaveDaily(s.todayStr, 'exercise_intent', s.intentChoice);
   }
+  // 7. Symptom check-in. One event per ongoing episode he rated this morning —
+  // which is the whole point of the episodes model: a condition gets a daily
+  // severity against it, so "gout flare, 7 -> 4 -> 2 over five days" exists as a
+  // shape instead of three unrelated rows.
+  if (s.symptomChecks && typeof epLog === 'function') {
+    Object.keys(s.symptomChecks).forEach(cid => {
+      const sev = s.symptomChecks[cid];
+      const ep = (typeof EPISODES !== 'undefined') ? EPISODES.find(e => e.client_id === cid) : null;
+      if (!ep || !sev) return;
+      if (sev === 'gone') { if (typeof epResolve === 'function') epResolve(cid); return; }
+      epLog({ condition: ep.condition, category: ep.category, body_part: ep.body_part,
+              side: ep.side, severity: sev, person: ep.person, symptoms: 'morning check-in' });
+    });
+  }
   closeMorningPrompt();
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
+// Morning symptom check-in (2026-09-20). Two jobs in one section:
+//   - anything ONGOING gets a one-tap severity, or "gone" to close it out
+//   - and a way in for something new
+// Rating an ongoing episode is the cheap, repeatable act that turns a condition
+// into a trend; reporting a new one is rarer and routes to the full entry screen.
+// "Gone" resolves the episode outright, because the end date is the hardest thing
+// to capture retrospectively and the morning after is when you actually know.
+function symptomsSectionHtml(s) {
+  const open = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes() : [];
+  // EP_SEVERITY, not a 1-10 scale. The app has always used three levels and
+  // health_events carries CHECK (severity BETWEEN 1 AND 3) - a 1-10 chip row
+  // would have written 4..10 into localStorage happily and had every sync
+  // rejected by Postgres into a console.warn. Local-only data that looks saved:
+  // the exact failure this codebase keeps producing. Caught 2026-09-20 by
+  // reading the constraint, which no amount of headless rendering would show.
+  // Three taps is also the right ask at 7am.
+  const rows = open.map(ep => {
+    const picked = s.symptomChecks[ep.client_id];
+    const chips = EP_SEVERITY.map(sv => {
+      const on = picked === sv.v;
+      return `<div class="mp-chip ${on ? 'selected' : ''}" style="${on ? 'border-color:' + sv.color + ';color:' + sv.color : ''}"
+        onclick="_mpSymptom('${ep.client_id}',${sv.v})">${sv.label}</div>`;
+    }).join('');
+    const goneOn = picked === 'gone';
+    return `<div style="margin-bottom:10px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">
+        ${escapeHtml(ep.condition || 'Ongoing')}
+        <span style="font-weight:600;color:var(--text-muted);font-size:10.5px">\u00b7 since ${ep.started_on}</span>
+      </div>
+      <div class="mp-chip-grid">${chips}
+        <div class="mp-chip ${goneOn ? 'selected' : ''}" style="${goneOn ? 'border-color:var(--green);color:var(--green)' : ''}"
+          onclick="_mpSymptom('${ep.client_id}','gone')">gone</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="mp-section">
+      <div class="mp-section-label">${open.length ? 'How are these today?' : 'Anything bothering you?'}</div>
+      <div class="mp-section-hint">${open.length
+        ? 'One tap each, or \u201Cgone\u201D to close it out. This is what turns a symptom into a trend.'
+        : 'Nothing ongoing right now.'}</div>
+      ${rows}
+      <div onclick="closeMorningPrompt();openSymptomEntry()"
+        style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border, var(--red));cursor:pointer;margin-top:${open.length ? '4' : '0'}px">
+        <span style="font-size:15px">\ud83e\ude79</span>
+        <span style="flex:1;font-size:12.5px;font-weight:700;color:var(--red)">Report something new</span>
+        <span style="color:var(--red)">\u203a</span>
+      </div>
+    </div>`;
+}
+
+function _mpSymptom(cid, val) {
+  const s = window._morningPromptState;
+  if (!s) return;
+  // Tapping the same value again clears it — nothing is logged by accident.
+  s.symptomChecks[cid] = (s.symptomChecks[cid] === val) ? null : val;
+  renderMorningPrompt();
+}
+
 function renderMorningPrompt() {
   const body = document.getElementById('morning-prompt-body');
   const titleEl = document.getElementById('morning-prompt-title');
@@ -18165,6 +18280,7 @@ function renderMorningPrompt() {
       <div class="mp-section-hint">Sets how the day is framed. You can change this any time.</div>
       <div class="mp-goal-grid">${goalChips}</div>
     </div>` : '') +
+    (on('symptoms') ? symptomsSectionHtml(s) : '') +
     (on('missed') ? missedLink : '') + `
     <div class="mp-footer">
       <button class="mp-done-btn" onclick="_mpSubmit()" ${canSubmit ? '' : 'disabled'}>Save & continue</button>
