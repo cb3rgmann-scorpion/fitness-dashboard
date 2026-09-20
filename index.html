@@ -87,6 +87,14 @@
      THEME: Dark (default)
      ═══════════════════════════════════ */
   :root, [data-theme="dark"] {
+    /* FIXED 2026-09-20. A <select>'s OPEN option list is painted by the browser,
+       not by this stylesheet — .bl-input styles the closed control only. With no
+       color-scheme declared the browser assumes light, so in dark mode the popup
+       came up white while the option text kept the page's pale-on-dark colour:
+       grey on white, effectively unreadable. Declaring it also fixes the native
+       radios, range sliders, date pickers and scrollbars, which were all being
+       drawn for a light page. */
+    color-scheme: dark;
     --bg: #0b0d14;
     --bg-gradient: linear-gradient(145deg, #0f1219 0%, #0b0d14 50%, #10121c 100%);
     --card: #161923;
@@ -128,6 +136,7 @@
      THEME: Light
      ═══════════════════════════════════ */
   [data-theme="light"] {
+    color-scheme: light;
     --bg: #f0f2f5;
     --bg-gradient: linear-gradient(145deg, #f5f7fa 0%, #eef0f4 50%, #f0f2f5 100%);
     --card: #ffffff;
@@ -169,6 +178,7 @@
      THEME: Retro (Pip-Boy)
      ═══════════════════════════════════ */
   [data-theme="retro"] {
+    color-scheme: dark;
     --bg: #0a1208;
     --bg-gradient: linear-gradient(145deg, #0c1409 0%, #091107 50%, #0b130a 100%);
     --card: #0f1a0c;
@@ -204,6 +214,51 @@
     --input-border: rgba(0,255,65,0.12);
     --divider: rgba(0,255,65,0.08);
     --theme-icon: "☢️";
+  }
+  /* Halloween. Pumpkin orange on a near-black plum ground, with a poison-green
+     accent doing the work --cyan does elsewhere. Deliberately NOT a recolour of
+     everything to orange the way retro flattens to green: --red has to stay
+     distinguishable from --orange or the pain flags and the 40%-custody warning
+     stop reading as warnings, which is a real cost for a seasonal skin. */
+  [data-theme="halloween"] {
+    color-scheme: dark;
+    --bg: #120b16;
+    --bg-gradient: linear-gradient(145deg, #150d1a 0%, #0d070f 55%, #170e1c 100%);
+    --card: #1c1122;
+    --card-hover: #241630;
+    --card-border: #3a2347;
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.65), 0 0 8px rgba(255,117,24,0.06);
+    --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.75), 0 0 14px rgba(255,117,24,0.10);
+    --text: #ffb870;
+    --text-dim: #d98a45;
+    --text-muted: #8f6242;
+    --green: #8fdc3a;
+    --green-bg: rgba(143, 220, 58, 0.10);
+    --green-border: rgba(143, 220, 58, 0.28);
+    --pink: #c77dff;
+    --pink-bg: rgba(199, 125, 255, 0.10);
+    --pink-border: rgba(199, 125, 255, 0.26);
+    --blue: #9d7bd8;
+    --blue-bg: rgba(157, 123, 216, 0.10);
+    --blue-border: rgba(157, 123, 216, 0.26);
+    --orange: #ff7518;
+    --orange-bg: rgba(255, 117, 24, 0.12);
+    --orange-border: rgba(255, 117, 24, 0.32);
+    --purple: #b565f0;
+    --purple-bg: rgba(181, 101, 240, 0.12);
+    --purple-border: rgba(181, 101, 240, 0.30);
+    --cyan: #8fdc3a;
+    --cyan-bg: rgba(143, 220, 58, 0.10);
+    --cyan-border: rgba(143, 220, 58, 0.28);
+    --red: #ff3b3b;
+    --red-bg: rgba(255, 59, 59, 0.12);
+    --red-border: rgba(255, 59, 59, 0.30);
+    --check-done-bg: rgba(143, 220, 58, 0.10);
+    --overlay-bg: rgba(8, 4, 10, 0.88);
+    --input-bg: rgba(255, 117, 24, 0.05);
+    --input-border: rgba(255, 117, 24, 0.18);
+    --divider: rgba(255, 117, 24, 0.10);
+    --theme-icon: "\1F383";
   }
 
   /* Pip-Boy monospace font */
@@ -1273,6 +1328,17 @@
     font-size: 13px; font-family: inherit;
   }
   .bl-input:focus { border-color: var(--cyan); outline: none; }
+  /* The option list is a native popup. color-scheme above makes the browser draw
+     its chrome correctly; these make the ROWS legible on every platform rather
+     than inheriting a text colour picked for a dark card. */
+  select option, select optgroup {
+    background-color: var(--card);
+    color: var(--text);
+  }
+  select option:disabled { color: var(--text-muted); }
+  [data-theme="light"] select option, [data-theme="light"] select optgroup {
+    background-color: #ffffff;
+  }
   .bl-side-row { display: flex; gap: 12px; flex-wrap: wrap; padding: 4px 0; }
   .bl-side {
     display: inline-flex; align-items: center; gap: 4px;
@@ -3480,7 +3546,7 @@ function _envBanner() {
 // URL looks like prod to any check based on location.
 //
 // Bump APP_VERSION whenever this file changes. No build step, so it's manual.
-const APP_VERSION = '2026.09.20.02';
+const APP_VERSION = '2026.09.20.04';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -3519,8 +3585,8 @@ function initSupabase() {
 }
 
 // ── Theme ──
-const THEMES = ['dark', 'light', 'retro'];
-const THEME_ICONS = { dark: '🌙', light: '☀️', retro: '☢️' };
+const THEMES = ['dark', 'light', 'retro', 'halloween'];
+const THEME_ICONS = { dark: '🌙', light: '☀️', retro: '☢️', halloween: '🎃' };
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
@@ -8015,8 +8081,12 @@ function buildAppointmentsHtml() {
       </div>
       <div class="bl-grid-2">
         <div class="bl-row">
-          <label class="bl-label">Provider name</label>
-          <input type="text" id="bl-appt-name" class="bl-input" placeholder="e.g. Dr. Smith">
+          <label class="bl-label">Provider</label>
+          <select id="bl-appt-provider" class="bl-input" onchange="_apptProviderChanged()">
+            ${providerOptionsHtml(_apptDraft.provider_id || '')}
+          </select>
+          <input type="text" id="bl-appt-name" class="bl-input" placeholder="New provider's name"
+                 style="margin-top:6px;display:none">
         </div>
         <div class="bl-row">
           <label class="bl-label">Clinic / location</label>
@@ -8387,6 +8457,78 @@ function cancelEditBodyLog() {
   _renderBodyLogTab('symptoms');
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// PROVIDER PICKER ON APPOINTMENTS  (2026-09-20)
+// ────────────────────────────────────────────────────────────────────────────
+// The providers directory shipped 2026-06-16 with a comment saying its records
+// would be "referenced from appointments" — and nothing ever referenced them.
+// providerById() existed with zero callers; _getProviders() was read only by the
+// Providers tab to draw itself. So you could add a doctor and the app would never
+// offer him to you again, while appointments stored a free-text provider_name and
+// left the provider_id column (which exists on the table) null in every row.
+//
+// Craig hit it exactly as designed-in confusion: "I thought I added Dr. Akpan,
+// but I don't know." He had. Nothing showed him.
+//
+// Fifth instance of a writer with no reader in this codebase, and the first to
+// surface as a FEELING rather than as missing data.
+function providerOptionsHtml(selectedId) {
+  const list = _getProviders().entries.filter(p => p.active !== false);
+  const byType = {};
+  list.forEach(p => { (byType[p.provider_type || 'other'] = byType[p.provider_type || 'other'] || []).push(p); });
+  const groups = PROVIDER_TYPES.filter(t => byType[t.id]).map(t =>
+    `<optgroup label="${t.icon} ${t.label}">` +
+    byType[t.id].map(p => `<option value="${p.id}"${p.id === selectedId ? ' selected' : ''}>` +
+      `${escapeHtml(p.name)}${p.clinic_name ? ' \u2014 ' + escapeHtml(p.clinic_name) : ''}</option>`).join('') +
+    `</optgroup>`).join('');
+  return `<option value=""${!selectedId ? ' selected' : ''}>\u2014 pick a provider \u2014</option>`
+    + groups
+    + `<option value="__new">+ Add a new provider\u2026</option>`;
+}
+
+// "+ Add new" reveals a name box rather than sending him to another tab and
+// losing the half-filled appointment he is in the middle of.
+function _apptProviderChanged() {
+  const sel = document.getElementById('bl-appt-provider');
+  const nameEl = document.getElementById('bl-appt-name');
+  if (!sel || !nameEl) return;
+  const isNew = sel.value === '__new';
+  nameEl.style.display = isNew ? '' : 'none';
+  if (isNew) { nameEl.value = ''; nameEl.focus(); }
+  // Picking an existing provider fills the clinic from the record, so the two
+  // cannot disagree about where he was seen.
+  if (sel.value && !isNew) {
+    const prov = providerById(sel.value);
+    const clinicEl = document.getElementById('bl-appt-clinic');
+    if (prov && clinicEl && !clinicEl.value) clinicEl.value = prov.clinic_name || '';
+    const typeEl = document.getElementById('bl-appt-type');
+    if (prov && typeEl && prov.provider_type) typeEl.value = prov.provider_type;
+  }
+}
+
+// Returns { id, name } for whatever the picker is currently expressing, creating
+// the provider record when "+ Add new" was used. Returns null only if the user
+// chose "add new" and typed nothing, which is a validation failure, not an empty
+// selection — an appointment with no provider at all is still allowed.
+function _resolveApptProvider() {
+  const sel = document.getElementById('bl-appt-provider');
+  if (!sel) return { id: '', name: '' };
+  if (sel.value === '__new') {
+    const name = (document.getElementById('bl-appt-name').value || '').trim();
+    if (!name) return null;
+    const id = addProvider({
+      name: name,
+      provider_type: (document.getElementById('bl-appt-type') || {}).value || 'doctor',
+      clinic_name: (document.getElementById('bl-appt-clinic') || {}).value || '',
+      active: true,
+    });
+    return { id: id, name: name };
+  }
+  if (!sel.value) return { id: '', name: '' };
+  const prov = providerById(sel.value);
+  return { id: sel.value, name: prov ? prov.name : '' };
+}
+
 function submitAppointment() {
   const dateEl = document.getElementById('bl-appt-date');
   const date = dateEl ? dateEl.value : '';
@@ -8396,7 +8538,17 @@ function submitAppointment() {
     return;
   }
   const provType = document.getElementById('bl-appt-type').value;
-  const provName = (document.getElementById('bl-appt-name').value || '').trim();
+  const resolved = _resolveApptProvider();
+  if (!resolved) {
+    const el = document.getElementById('bl-appt-name');
+    if (el) el.focus();
+    alert("Enter the new provider's name, or pick one from the list.");
+    return;
+  }
+  // provider_name stays populated alongside provider_id. Nine render sites read
+  // it, and old appointments have only the text — dropping it would blank them.
+  const provName = resolved.name;
+  const provId = resolved.id;
   const clinic = (document.getElementById('bl-appt-clinic').value || '').trim();
   const parts = Object.keys(_apptDraft.body_parts || {});
   const reason = (document.getElementById('bl-appt-reason').value || '').trim();
@@ -8409,6 +8561,7 @@ function submitAppointment() {
     appointment_date: date,
     provider_type: provType,
     provider_name: provName,
+    provider_id: provId || null,
     clinic_name: clinic,
     body_parts: parts,
     reason: reason,
@@ -8447,7 +8600,20 @@ function startEditAppointment(id) {
     const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
     setVal('bl-appt-date', entry.appointment_date);
     setVal('bl-appt-type', entry.provider_type || 'doctor');
-    setVal('bl-appt-name', entry.provider_name);
+    setVal('bl-appt-name', '');
+    _apptDraft.provider_id = entry.provider_id || '';
+    const provSel = document.getElementById('bl-appt-provider');
+    if (provSel) {
+      provSel.innerHTML = providerOptionsHtml(entry.provider_id || '');
+      // An old appointment carries a name but no link. Rather than silently
+      // showing "pick a provider" as if nothing were recorded, match on the name
+      // so the link can be completed just by saving.
+      if (!entry.provider_id && entry.provider_name) {
+        const hit = _getProviders().entries.find(p =>
+          (p.name || '').toLowerCase() === (entry.provider_name || '').toLowerCase());
+        if (hit) provSel.value = hit.id;
+      }
+    }
     setVal('bl-appt-clinic', entry.clinic_name);
     setVal('bl-appt-reason', entry.reason);
     setVal('bl-appt-findings', entry.findings);
@@ -15180,6 +15346,7 @@ function addAppointment(payload) {
     appointment_date: payload.appointment_date,
     provider_type: payload.provider_type || 'doctor',
     provider_name: payload.provider_name || '',
+    provider_id: payload.provider_id || '',
     clinic_name: payload.clinic_name || '',
     body_parts: payload.body_parts || [],
     reason: payload.reason || '',
@@ -15217,6 +15384,7 @@ function updateAppointment(id, payload) {
     appointment_date: payload.appointment_date || original.appointment_date,
     provider_type: payload.provider_type || 'doctor',
     provider_name: payload.provider_name || '',
+    provider_id: payload.provider_id || '',
     clinic_name: payload.clinic_name || '',
     body_parts: payload.body_parts || [],
     reason: payload.reason || '',
@@ -15291,6 +15459,9 @@ async function _syncAppointmentToSupabase(entry) {
       appointment_date: entry.appointment_date,
       provider_type: entry.provider_type,
       provider_name: entry.provider_name,
+      // Local ids are client strings; the column is a uuid. Resolve it, and send
+      // null rather than a string Postgres would reject outright.
+      provider_id: entry.provider_id ? providerServerId(entry.provider_id) : null,
       clinic_name: entry.clinic_name,
       body_parts: entry.body_parts,
       reason: entry.reason,
@@ -15320,8 +15491,11 @@ async function _refreshAppointmentsFromSupabase() {
       .select('*').order('appointment_date', { ascending: false });
     if (error) { console.warn('body_appointments fetch failed:', error); return; }
     if (!Array.isArray(data)) return;
+    const _provByServer = {};
+    _getProviders().entries.forEach(pr => { if (pr.server_id) _provByServer[pr.server_id] = pr.id; });
     const entries = data.map(r => ({
       id: r.client_id || r.id,
+      provider_id: (r.provider_id && _provByServer[r.provider_id]) || '',
       appointment_date: r.appointment_date,
       provider_type: r.provider_type,
       provider_name: r.provider_name || '',
@@ -15439,14 +15613,33 @@ function findProviderById(id) {
 async function _syncProviderToSupabase(entry) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
-    const { error } = await sb.from('providers').upsert({
+    const { data, error } = await sb.from('providers').upsert({
       client_id: entry.id, name: entry.name, provider_type: entry.provider_type,
       specialty: entry.specialty, clinic_name: entry.clinic_name, address: entry.address,
       phone: entry.phone, email: entry.email, website: entry.website,
       notes: entry.notes, active: entry.active, created_at: entry.created_at
-    }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('providers upsert failed:', error);
+    }, { onConflict: 'user_id,client_id' }).select('id, client_id').maybeSingle();
+    if (error) { console.warn('providers upsert failed:', error); return; }
+    // body_appointments.provider_id is a uuid FK -> providers.id, but every local
+    // id in this app is a client string. Without carrying the uuid back, the FK
+    // could never be written and the link would stay null forever — the bug being
+    // fixed, one layer down.
+    if (data && data.id) _setProviderServerId(entry.id, data.id);
   } catch (e) { console.warn('providers upsert threw:', e); }
+}
+
+function _setProviderServerId(localId, serverId) {
+  const d = _getProviders();
+  const e = d.entries.find(x => x.id === localId);
+  if (!e || e.server_id === serverId) return;
+  e.server_id = serverId;
+  _saveProviders(d);
+}
+
+// The uuid for a local provider id, if the server row has been seen.
+function providerServerId(localId) {
+  const e = _getProviders().entries.find(x => x.id === localId);
+  return (e && e.server_id) || null;
 }
 
 async function _syncDeleteProvider(clientId) {
@@ -15468,7 +15661,8 @@ async function _refreshProvidersFromSupabase() {
       specialty: r.specialty || '', clinic_name: r.clinic_name || '',
       address: r.address || '', phone: r.phone || '', email: r.email || '',
       website: r.website || '', notes: r.notes || '',
-      active: r.active !== false, created_at: r.created_at
+      active: r.active !== false, created_at: r.created_at,
+      server_id: r.id
     }));
     _saveProviders({ entries: entries });
   } catch (e) { console.warn('providers refresh threw:', e); }
