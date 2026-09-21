@@ -3667,7 +3667,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.01';
+const APP_VERSION = '2026.09.21.02';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -3928,6 +3928,7 @@ async function loadTrackingData(startDate, endDate) {
       DB_CACHE.checkboxes[row.date][row.item_key] = true;
     });
     // Load ratings
+    if (shouldRefetch('exercise_ratings')) {
     const { data: rats } = await sb.from('exercise_ratings').select('*')
       .gte('date', startDate).lte('date', endDate);
     if (rats) rats.forEach(row => {
@@ -3935,6 +3936,8 @@ async function loadTrackingData(startDate, endDate) {
       DB_CACHE.ratings[row.date][row.exercise_key] = row.rating;
     });
     // Load workout logs
+    }
+    if (shouldRefetch('workout_log')) {
     const { data: wlogs } = await sb.from('workout_log').select('*')
       .gte('log_date', startDate).lte('log_date', endDate);
     if (wlogs) wlogs.forEach(row => {
@@ -4013,7 +4016,9 @@ async function loadTrackingData(startDate, endDate) {
         });
       } catch(e) {}
     }
+    }
     // Load Apple Health daily metrics
+    if (shouldRefetch('health_sync')) {
     const { data: healthRows } = await sb.from('health_sync').select('*')
       .gte('sync_date', startDate).lte('sync_date', endDate).order('sync_date');
     if (healthRows) healthRows.forEach(row => {
@@ -4027,6 +4032,8 @@ async function loadTrackingData(startDate, endDate) {
     });
 
     // Load Apple Health workouts and auto-fill workout log
+    }
+    if (shouldRefetch('health_workouts')) {
     const { data: hWorkouts } = await sb.from('health_workouts').select('*')
       .gte('workout_date', startDate).lte('workout_date', endDate).order('workout_date');
     if (hWorkouts) hWorkouts.forEach(row => {
@@ -4100,6 +4107,7 @@ async function loadTrackingData(startDate, endDate) {
       }
       // Note: 'rowing' is intentionally skipped — C2 API data is more detailed
     });
+    }
 
     console.log('Tracking data loaded for ' + startDate + ' to ' + endDate);
   } catch(e) {
@@ -22099,25 +22107,83 @@ document.addEventListener('click', (ev) => {
 });
 
 // ── Refresh ──
+// ════════════════════════════════════════════════════════════════════════════
+// A REFRESH DOES NOT MEAN EVERYTHING IS STALE (2026-09-21)
+// ────────────────────────────────────────────────────────────────────────────
+// refreshData() fires nine queries. Measured with the Supabase client stubbed
+// and the calls counted, not estimated — the first estimate was "about 136",
+// which was 1,634 requests/hour divided by 12 ticks and silently assumed one
+// client. It is nine per client, and there were about four clients.
+//
+// Nine is lean. The problem was that all nine ran every five minutes, per open
+// client, forever, against a free-tier instance whose disk IO is burst credit.
+//
+// Most of the nine are not five-minute data. Routines change when Craig edits a
+// routine. The schedule changes when he uploads one. Apple Health rows change
+// when he runs an import. Refetching three months of them every tick is work
+// nobody asked for.
+//
+// So they are tiered. Today's numbers refresh every time; everything else gets
+// a TTL. A manual refresh (the button) forces all of it — when a person asks
+// for fresh data they get fresh data, and that escape hatch is what makes the
+// caching safe to be wrong about.
+const REFRESH_TTL_MS = {
+  user_profiles:    15 * 60000,   // permissions — must not go stale for long
+  routines:         30 * 60000,
+  schedule:         30 * 60000,
+  exercise_ratings: 10 * 60000,
+  workout_log:      10 * 60000,
+  health_sync:      30 * 60000,   // only changes when an Apple Health import runs
+  health_workouts:  30 * 60000,
+  // daily_log and checkboxes are deliberately ABSENT: that is today's data,
+  // possibly edited on another device, and it refreshes on every tick.
+};
+const _refreshFetchedAt = {};
+let _refreshForce = false;
+
+// Has this source gone stale? Records the fetch time as a side effect, so a
+// caller handed `true` is expected to actually go and fetch.
+function shouldRefetch(key) {
+  if (_refreshForce) { _refreshFetchedAt[key] = Date.now(); return true; }
+  const ttl = REFRESH_TTL_MS[key] || 0;
+  if (!ttl) return true;
+  if (Date.now() - (_refreshFetchedAt[key] || 0) < ttl) return false;
+  _refreshFetchedAt[key] = Date.now();
+  return true;
+}
+// Something changed locally — drop the stamp so the next refresh re-reads.
+function refreshInvalidate(key) { _refreshFetchedAt[key] = 0; }
+
 async function refreshData(btn) {
+  // A human pressing refresh means "I think this is wrong" — honour that by
+  // bypassing every TTL for this pass.
+  _refreshForce = !!btn;
+  try {
+    return await _refreshDataInner(btn);
+  } finally {
+    _refreshForce = false;
+  }
+}
+
+async function _refreshDataInner(btn) {
   window._lastRefreshAt = Date.now();
   if (btn) { btn.classList.add('spinning'); }
   if (typeof _envBanner === 'function' && !window._envBannerDone) { window._envBannerDone = true; _envBanner(); }
   if (typeof initPWA === 'function' && !window._pwaInit) { window._pwaInit = true; initPWA(); }
   // Who is this, and what are they allowed to see? Must run before the first
   // render so a restricted user never sees a flash of modules they don't have.
-  await loadUserProfile();
+  if (shouldRefetch('user_profiles')) await loadUserProfile();
   applyModuleVisibility();
   applyViewerMode();
   // Load exercises from Supabase (falls back to hardcoded ROUTINES)
-  await loadRoutinesFromDB();
+  if (shouldRefetch('routines')) await loadRoutinesFromDB();
   // Supabase is authoritative. A SUCCESSFUL query returning zero rows is a real
   // answer — "this user has no schedule" — not a failure to be papered over. That
   // distinction is the whole bug of 2026-09-12: an empty result fell through to a
   // hardcoded constant and rendered Craig's custody calendar on someone else's
   // phone. loadScheduleFromDB() therefore returns true on an empty-but-clean read,
   // and only a genuine error (offline, RLS explosion, sbReady false) returns false.
-  const dbLoaded = await loadScheduleFromDB();
+  const dbLoaded = shouldRefetch('schedule') ? await loadScheduleFromDB() : true;
   if (!dbLoaded) {
     // Offline or Supabase down. Fall back to THIS user's own cached rows — never
     // to anything baked into the file.
