@@ -2504,6 +2504,14 @@
     backdrop-filter: blur(4px);
   }
   .popup-backdrop.open { display: flex; }
+  /* The episode screen is declared early in the document (line ~3282) and the
+     morning prompt late (~3521). At equal z-index the later element wins, so
+     opening the symptom entry from inside the morning check-in put it BEHIND
+     the prompt — invisible. The old code worked around that by closing the
+     prompt first, which threw away everything already answered. Let it stack
+     instead: it is the more modal of the two, and it is always opened FROM
+     something rather than alongside it. */
+  #episode-backdrop.open { z-index: 120; }
   .popup {
     background: var(--card);
     border: 1px solid var(--card-border); border-radius: 16px;
@@ -3667,7 +3675,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.02';
+const APP_VERSION = '2026.09.21.04';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -8324,7 +8332,7 @@ function buildAppointmentRow(a) {
       </div>
     </div>
   `;
-  return `<details class="bl-appt-row">
+  return `<details class="bl-appt-row" ${discAttr('appt-' + a.id)}>
     <summary class="bl-appt-summary">
       <span class="bl-appt-icon">${provType.icon}</span>
       <span class="bl-appt-prov">${provType.label}${a.provider_name ? ' · ' + a.provider_name : ''}</span>
@@ -13401,6 +13409,17 @@ function openSymptomEntry(prefill) {
 function closeSymptomEntry() {
   const bd = document.getElementById('episode-backdrop');
   if (bd) bd.classList.remove('open');
+  // Came here from the morning check-in? Go back to it. The prompt never
+  // closed, so nothing was lost — but it needs a re-render to show the episode
+  // that was just reported.
+  if (_mpResumeAfterSymptom) {
+    _mpResumeAfterSymptom = false;
+    const mp = document.getElementById('morning-prompt-backdrop');
+    if (mp && mp.classList.contains('open')) {
+      if (typeof _epLoadLocal === 'function') _epLoadLocal();
+      if (typeof renderMorningPrompt === 'function') renderMorningPrompt();
+    }
+  }
 }
 function _epSetScreen(s, id) { _epScreen = s; _epDetailId = id || null; renderEpisodeScreen(); }
 function _epPick(field, val) {
@@ -13439,6 +13458,45 @@ function _epSubmit() {
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   return existing;
 }
+
+const DISCLOSURE_KEY = 'disclosure_open';
+let _disclosure = null;
+
+function _discLoad() {
+  if (_disclosure) return _disclosure;
+  try {
+    const raw = localStorage.getItem(DISCLOSURE_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+    _disclosure = (p && typeof p === 'object' && !Array.isArray(p)) ? p : {};
+  } catch (e) { _disclosure = {}; }
+  return _disclosure;
+}
+
+function discIsOpen(id, fallback) {
+  const d = _discLoad();
+  return Object.prototype.hasOwnProperty.call(d, id) ? !!d[id] : !!fallback;
+}
+
+function discSet(id, open) {
+  const d = _discLoad();
+  d[id] = !!open;
+  try { localStorage.setItem(DISCLOSURE_KEY, JSON.stringify(d)); } catch (e) {}
+}
+
+// Drop straight into a <details> tag: `<details ${discAttr('some-id')}>`.
+// Emits the data-disc hook as well, so the listener below knows what to record.
+function discAttr(id, defaultOpen) {
+  return 'data-disc="' + id + '"' + (discIsOpen(id, defaultOpen) ? ' open' : '');
+}
+
+// `toggle` does not bubble — capture it. One listener covers every <details>
+// in the app, including ones rendered long after this runs.
+document.addEventListener('toggle', function (e) {
+  const el = e.target;
+  if (!el || el.tagName !== 'DETAILS') return;
+  const id = el.getAttribute('data-disc');
+  if (id) discSet(id, el.open);
+}, true);
 
 function renderEpisodeScreen() {
   const body = document.getElementById('episode-body');
@@ -13482,7 +13540,7 @@ function renderEpisodeScreen() {
       }).join('')}
     </div>
 
-    <details style="margin-bottom:16px">
+    <details ${discAttr('ep-add-detail')} style="margin-bottom:16px">
       <summary style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:6px 0">Add detail (optional)</summary>
       <div style="padding-top:8px">
         <input type="text" id="ep-symptoms" value="${(_epDraft.symptoms || '').replace(/"/g,'&quot;')}"
@@ -18677,7 +18735,7 @@ function symptomsSectionHtml(s) {
         ? 'One tap each, or \u201Cgone\u201D to close it out. This is what turns a symptom into a trend.'
         : 'Nothing ongoing right now.'}</div>
       ${rows}
-      <div onclick="closeMorningPrompt();openSymptomEntry()"
+      <div onclick="_mpReportNew()"
         style="display:flex;align-items:center;gap:8px;padding:10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border, var(--red));cursor:pointer;margin-top:${open.length ? '4' : '0'}px">
         <span style="font-size:15px">\ud83e\ude79</span>
         <span style="flex:1;font-size:12.5px;font-weight:700;color:var(--red)">Report something new</span>
@@ -18685,6 +18743,19 @@ function symptomsSectionHtml(s) {
       </div>
     </div>`;
 }
+
+// Report something new WITHOUT losing the check-in.
+//
+// The symptom screen opens on top; the morning prompt stays open underneath
+// with everything already answered still in _morningPromptState. Closing the
+// symptom screen returns to it, re-rendered so the episode just reported is in
+// the list and can be rated in the same breath.
+function _mpReportNew() {
+  _mpResumeAfterSymptom = true;
+  openSymptomEntry();
+}
+
+let _mpResumeAfterSymptom = false;
 
 function _mpSymptom(cid, val) {
   const s = window._morningPromptState;
@@ -18884,11 +18955,11 @@ function closeEveningPrompt() {
   const bd = document.getElementById('evening-prompt-backdrop');
   if (bd) bd.classList.remove('open');
 }
-function _epSelectActual(level) {
+function _evpSelectActual(level) {
   window._eveningPromptState.actualChoice = level;
   renderEveningPrompt();
 }
-function _epToggleBehavior(behaviorId) {
+function _evpToggleBehavior(behaviorId) {
   const s = window._eveningPromptState;
   if (!s) return;
   if (!s.behaviors) s.behaviors = {};
@@ -18896,7 +18967,7 @@ function _epToggleBehavior(behaviorId) {
   if (!s.behaviors[behaviorId]) delete s.behaviors[behaviorId];
   renderEveningPrompt();
 }
-function _epSyncWord() {
+function _evpSyncWord() {
   // Sync input value into state without re-rendering (preserves cursor position).
   const inp = document.getElementById('ep-word');
   if (inp && window._eveningPromptState) {
@@ -18920,21 +18991,21 @@ const DAY_WORDS = [
   'flat', 'tired', 'drained', 'wired', 'heavy', 'scattered', 'rough',
 ];
 
-function _epSelectWord(w) {
+function _evpSelectWord(w) {
   const s = window._eveningPromptState;
   if (!s) return;
   s.wordValue = (s.wordValue === w) ? '' : w;   // tap again to clear
   renderEveningPrompt();
 }
-function _epSyncNote() {
+function _evpSyncNote() {
   const inp = document.getElementById('ep-note');
   if (inp && window._eveningPromptState) window._eveningPromptState.noteValue = inp.value;
 }
-function _epSubmit() {
+function _evpSubmit() {
   const s = window._eveningPromptState;
   if (!s) return;
   if (s.actualChoice) dbSaveDaily(s.todayStr, 'actual_load', s.actualChoice);
-  // Always read directly from input on submit (in case _epSyncWord didn't fire)
+  // Always read directly from input on submit (in case _evpSyncWord didn't fire)
   const inp = document.getElementById('ep-word');
   const word = (inp && inp.value.trim()) ? inp.value.trim().slice(0, 24) : (s.wordValue || '');
   if (word) dbSaveDaily(s.todayStr, 'day_word', word);
@@ -18979,7 +19050,7 @@ function renderEveningPrompt() {
     `<div class="mp-section-hint">This morning you anticipated: <strong>${LOAD_LEVELS.find(l => l.id === s.anticipated).label}</strong>.</div>` :
     '<div class="mp-section-hint">No big analysis — just whatever lands first.</div>';
   const loadChips = LOAD_LEVELS.map(l =>
-    `<div class="mp-goal-chip ${s.actualChoice === l.id ? 'selected' : ''}" onclick="_epSelectActual(${l.id})">
+    `<div class="mp-goal-chip ${s.actualChoice === l.id ? 'selected' : ''}" onclick="_evpSelectActual(${l.id})">
       <div class="mp-goal-name">${l.label}</div>
       <div class="mp-goal-desc">${l.desc}</div>
     </div>`
@@ -18988,7 +19059,7 @@ function renderEveningPrompt() {
   // Task #14 — late-evening downshift triggers as check-rows
   const behaviorRows = SLEEP_BEHAVIORS.map(b => {
     const checked = !!(s.behaviors && s.behaviors[b.id]);
-    return `<div class="ep-behavior-row ${checked ? 'checked' : ''}" onclick="_epToggleBehavior('${b.id}')">
+    return `<div class="ep-behavior-row ${checked ? 'checked' : ''}" onclick="_evpToggleBehavior('${b.id}')">
       <div class="ep-behavior-check">${checked ? '✓' : ''}</div>
       <div class="ep-behavior-text">
         <div class="ep-behavior-label">${b.icon} ${b.label}</div>
@@ -19014,7 +19085,7 @@ function renderEveningPrompt() {
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px">
         ${DAY_WORDS.map(w => {
           const sel = (s.wordValue || '').toLowerCase() === w;
-          return `<button onclick="_epSelectWord('${w}')"
+          return `<button onclick="_evpSelectWord('${w}')"
             style="padding:5px 10px;border-radius:14px;border:1px solid ${sel ? 'var(--purple-border)' : 'var(--card-border)'};background:${sel ? 'var(--purple-bg)' : 'var(--input-bg)'};color:${sel ? 'var(--purple)' : 'var(--text-muted)'};font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">${w}</button>`;
         }).join('')}
       </div>
@@ -19022,10 +19093,10 @@ function renderEveningPrompt() {
         placeholder="…or type your own"
         value="${wordValue}"
         maxlength="24"
-        oninput="_epSyncWord()">
+        oninput="_evpSyncWord()">
       <textarea id="ep-note" rows="2"
         placeholder="Anything worth keeping? A blank here is a fine answer."
-        oninput="_epSyncNote()"
+        oninput="_evpSyncNote()"
         style="width:100%;margin-top:6px;padding:8px 10px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11.5px;font-family:inherit;resize:vertical;box-sizing:border-box">${(s.noteValue || '').replace(/</g, '&lt;')}</textarea>
       <div style="font-size:9.5px;color:var(--text-muted);margin-top:4px;line-height:1.45">Anything you write is saved to that day's notes, where you can edit it later.</div>
     </div>` : '') +
@@ -19036,7 +19107,7 @@ function renderEveningPrompt() {
       <div class="ep-behavior-list">${behaviorRows}</div>
     </div>` : '') + `
     <div class="mp-footer">
-      <button class="mp-done-btn" onclick="_epSubmit()" ${canSubmit ? '' : 'disabled'}>Save & wind down</button>
+      <button class="mp-done-btn" onclick="_evpSubmit()" ${canSubmit ? '' : 'disabled'}>Save & wind down</button>
     </div>
   `;
 }
