@@ -1378,6 +1378,100 @@
   }
   .bl-realism strong { color: var(--red); font-weight: 700; }
 
+  /* ── Body "now" screen (rebuild 2026-09-21) ───────────────────────────────
+     Touch targets are 48px+ because this gets used one-handed, often when
+     something hurts. Nothing here is a form until you ask for one.          */
+  .bn-actions { margin-bottom: 12px; }
+  .bn-action {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 14px 12px; min-height: 52px; border-radius: 10px; cursor: pointer;
+    font: inherit; text-align: left; border: 1px solid var(--card-border);
+    background: var(--card-bg); color: var(--text);
+  }
+  .bn-action-primary { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+  .bn-action-icon { font-size: 18px; }
+  .bn-action-label { flex: 1; font-size: 14px; font-weight: 700; }
+
+  .bn-section { margin-bottom: 14px; }
+  .bn-section-head {
+    display: flex; align-items: baseline; gap: 8px; padding: 0 2px 6px;
+    font-size: 11px; font-weight: 800; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .bn-section-aux { margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 0; text-transform: none; }
+
+  .bn-med {
+    display: flex; align-items: center; gap: 8px; padding: 9px 8px; min-height: 48px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .bn-med-done { opacity: .55; }
+  .bn-med-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .bn-med-name { flex: 1; font-size: 13px; color: var(--text); }
+  .bn-med-dose { color: var(--text-muted); font-size: 11.5px; }
+  .bn-med-count { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .bn-med-btn {
+    font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+    padding: 8px 12px; min-height: 36px; border-radius: 7px;
+    border: 1px solid var(--cyan); background: var(--cyan-bg, transparent); color: var(--cyan);
+  }
+  .bn-med-btn-done { border-color: var(--green); color: var(--green); background: transparent; }
+
+  .bn-item {
+    display: flex; align-items: center; gap: 8px; padding: 10px 8px; min-height: 48px;
+    border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .bn-item-urgent { background: var(--orange-bg); border-radius: 8px; border-bottom-color: transparent; }
+  .bn-item-icon { font-size: 14px; flex: none; }
+  .bn-item-label { flex: 1; font-size: 13px; color: var(--text); }
+  .bn-item-aux { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .bn-item-stale { color: var(--orange); font-weight: 900; font-size: 15px; line-height: 1; }
+  .bn-item-chev { color: var(--text-muted); font-size: 15px; flex: none; }
+  .bn-tag { font-size: 11px; font-weight: 700; }
+
+  .bn-clear {
+    display: flex; align-items: center; gap: 9px; padding: 16px 12px;
+    border-radius: 10px; background: var(--card-bg); border: 1px solid var(--divider);
+    margin-bottom: 14px;
+  }
+  .bn-clear-tick { color: var(--green); font-size: 16px; font-weight: 900; }
+  .bn-clear-text { font-size: 13px; color: var(--text-muted); }
+
+  .bn-visit {
+    display: flex; align-items: center; gap: 10px; padding: 13px 12px; min-height: 56px;
+    border-radius: 10px; cursor: pointer; margin-bottom: 14px;
+    background: var(--card-bg); border: 1px solid var(--cyan);
+  }
+  .bn-visit-icon { font-size: 17px; flex: none; }
+  .bn-visit-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .bn-visit-text strong { font-size: 13px; color: var(--cyan); font-weight: 700; }
+  .bn-visit-text em { font-size: 11.5px; color: var(--text-muted); font-style: normal; }
+
+  .bn-records { border-top: 1px solid var(--divider); padding-top: 4px; }
+  .bn-records-head {
+    display: flex; align-items: center; padding: 12px 4px; min-height: 44px; cursor: pointer;
+    font-size: 11px; font-weight: 800; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .bn-records-chev { margin-left: auto; font-size: 14px; }
+  .bn-record {
+    display: flex; align-items: center; gap: 10px; padding: 10px 8px; min-height: 52px;
+    border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .bn-record-icon { font-size: 16px; flex: none; }
+  .bn-record-text { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .bn-record-text strong { font-size: 13px; color: var(--text); font-weight: 600; }
+  .bn-record-text em { font-size: 11px; color: var(--text-muted); font-style: normal; }
+
+  .bn-back {
+    display: flex; align-items: center; gap: 4px; padding: 10px 4px 12px;
+    margin-bottom: 8px; border-bottom: 1px solid var(--divider);
+    cursor: pointer; font-size: 13px; color: var(--cyan); font-weight: 600;
+  }
+  .bn-back-chev { font-size: 17px; line-height: 1; }
+  .bn-back-title {
+    margin-left: auto; color: var(--text); font-weight: 700; font-size: 13.5px;
+  }
+
   /* Tabs */
   .bl-tabs {
     display: flex; gap: 4px;
@@ -1620,6 +1714,13 @@
   .med-row-main {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
   }
+  /* Keep edit and delete together at the end of the row. They were wrapping to
+     their own line at phone width, which left a bare × sitting under a
+     medication name with nothing to say what it deletes. */
+  .med-row-main .med-action-btn { margin-left: auto; }
+  .med-row-main .bl-active-edit, .med-row-main .bl-active-del {
+    font-size: 15px; padding: 6px 5px; min-width: 28px; text-align: center;
+  }
   .med-name { font-weight: 700; font-size: 12px; color: var(--text); }
   .med-dose {
     font-size: 10px; color: var(--text-muted);
@@ -1633,6 +1734,9 @@
   }
   .med-type-rx { background: var(--purple); color: #000; }
   .med-type-otc { background: var(--card-bg); color: var(--text-muted); border: 1px solid var(--card-border); }
+  .med-type-supplement { background: var(--green-bg, var(--card-bg)); color: var(--green); border: 1px solid var(--green); }
+  .med-type-vitamin { background: var(--amber-bg, var(--card-bg)); color: var(--amber, var(--orange)); border: 1px solid var(--amber, var(--orange)); }
+  .med-type-mineral { background: var(--cyan-bg, var(--card-bg)); color: var(--cyan); border: 1px solid var(--cyan); }
   .med-status {
     font-size: 9px; font-weight: 800; text-transform: uppercase;
     padding: 2px 6px; border-radius: 8px; letter-spacing: 0.3px;
@@ -1860,6 +1964,13 @@
     color: var(--cyan); font-size: 11px; font-weight: 700;
   }
   .body-card-footer:hover { background: var(--input-bg); border-radius: 4px; }
+  /* Primary action on the Body card (rebuild 2026-09-21) */
+  .body-card-report {
+    display: flex; align-items: center; gap: 9px;
+    padding: 12px 10px; min-height: 48px; margin-bottom: 8px;
+    border-radius: 8px; cursor: pointer;
+    background: var(--red-bg); border: 1px solid var(--red);
+  }
 
   /* Grid layout for 4 zones (was 3) on wider screens */
   @media (min-width: 1100px) {
@@ -3556,7 +3667,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.20.08';
+const APP_VERSION = '2026.09.20.09';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -7829,7 +7940,7 @@ let _bodyEditingId = null;
 let _apptEditingId = null;
 
 function openBodyLog(tab) {
-  tab = tab || 'symptoms';
+  tab = tab || 'now';
   document.getElementById('popup-title').textContent = '🩹 Body';
   _renderBodyLogTab(tab);
   document.getElementById('popup-backdrop').classList.add('open');
@@ -7871,36 +7982,223 @@ function openBodyLog(tab) {
   }
 }
 
-function _renderBodyLogTab(tab) {
-  const body = document.getElementById('popup-body');
-  if (!body) return;
-  const tabsHtml = `
-    <div class="bl-tabs">
-      <button type="button" class="bl-tab ${tab === 'symptoms' ? 'active' : ''}" onclick="_renderBodyLogTab('symptoms')">Symptoms</button>
-      <button type="button" class="bl-tab ${tab === 'meds' ? 'active' : ''}" onclick="_renderBodyLogTab('meds')">Meds</button>
-      <button type="button" class="bl-tab ${tab === 'library' ? 'active' : ''}" onclick="_renderBodyLogTab('library')">Library</button>
-      <button type="button" class="bl-tab ${tab === 'appointments' ? 'active' : ''}" onclick="_renderBodyLogTab('appointments')">Appts</button>
-      <button type="button" class="bl-tab ${tab === 'providers' ? 'active' : ''}" onclick="_renderBodyLogTab('providers')">Providers</button>
-      <button type="button" class="bl-tab ${tab === 'care' ? 'active' : ''}" onclick="_renderBodyLogTab('care')">Care</button>
-      <button type="button" class="bl-tab ${tab === 'summary' ? 'active' : ''}" onclick="_renderBodyLogTab('summary')">Summary</button>
-    </div>
-  `;
-  const realismHtml = (tab === 'summary' || tab === 'care' || tab === 'meds' || tab === 'library' || tab === 'providers') ? '' : `
-    <div class="bl-realism">
+// ════════════════════════════════════════════════════════════════════════════
+// BODY — rebuilt 2026-09-21
+// ────────────────────────────────────────────────────────────────────────────
+// It was seven tabs across the top: Symptoms, Meds, Library, Appts, Providers,
+// Care, Summary. Every one of them opened to a form. The row counts say what
+// that cost:
+//
+//     medication_doses   176 rows — but 25 real events, each duplicated 7x by
+//                                   a re-migration loop, all orphaned
+//     health_events        3      body_log            3
+//     health_episodes      2      providers           2
+//     body_appointments    1      care_cadence        0
+//
+// There is no load-bearing tab. There never was. Seven tabs of furniture.
+//
+// The Body module is not badly used because it is useless — it is barely used
+// because Craig has been well, and that is the point of it. It is insurance:
+// near-zero use, high value on the one day it is needed. So nothing here is
+// deleted. It is demoted. A small permanent core that answers "what do I need
+// to do?", and everything else quiet until it is relevant.
+//
+// The core is three things:
+//   1. Report a symptom          — the one action that starts everything else
+//   2. Meds due today            — the only recurring action there is
+//   3. What needs attention      — and NOTHING when nothing does
+//
+// Records (meds list, history, appointments, providers, care, library) live
+// behind one disclosure. Each opens as a focused screen with a back link, not
+// as one of seven competing tabs.
+// ════════════════════════════════════════════════════════════════════════════
+const BODY_RECORDS = [
+  { id:'meds',         icon:'💊', label:'Medications',    desc:'What you take and when' },
+  { id:'symptoms',     icon:'🩹', label:'Symptom history', desc:'Past and resolved episodes' },
+  { id:'appointments', icon:'📅', label:'Appointments',   desc:'Visits and follow-ups' },
+  { id:'providers',    icon:'👤', label:'Providers',      desc:'Who you see' },
+  { id:'care',         icon:'🔁', label:'Care schedule',  desc:'Dental, massage, eye exams' },
+  { id:'library',      icon:'📖', label:'Library',        desc:'Drug and supplement reference' },
+];
+
+let _bodyRecordsOpen = false;
+function _toggleBodyRecords() {
+  _bodyRecordsOpen = !_bodyRecordsOpen;
+  _renderBodyLogTab('now');
+}
+
+// The escalation rule. It used to sit under five of the seven tabs, which meant
+// it was wallpaper. It appears once, on the screen you reach for when something
+// is wrong, and only when something is actually open.
+function _bodyEscalationHtml() {
+  return `<div class="bl-realism">
       <strong>When to escalate:</strong> sustained pain ≥7 for 3+ days, pain that's
       getting worse not better, OR new neurological symptoms (numbness, tingling,
       weakness, joint locking) — flag and contact a clinician. This log is for
       pattern recognition over weeks, not for diagnosing what's happening.
-    </div>
-  `;
-  const tabContent = tab === 'appointments' ? buildAppointmentsHtml()
+    </div>`;
+}
+
+function buildBodyNowHtml() {
+  if (typeof EPISODES !== 'undefined' && !EPISODES.length && typeof _epLoadLocal === 'function') _epLoadLocal();
+  const today = ds(new Date());
+  const openEps = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes() : [];
+
+  // ── 1. The two actions ────────────────────────────────────────────────────
+  let html = `<div class="bn-actions">
+    <button type="button" class="bn-action bn-action-primary" onclick="openSymptomEntry()">
+      <span class="bn-action-icon">🩹</span>
+      <span class="bn-action-label">Report a symptom</span>
+    </button>
+  </div>`;
+
+  // ── 2. Meds due today — the only recurring action in the module ───────────
+  const dueMeds = (typeof getActiveMedications === 'function' ? getActiveMedications() : [])
+    .map(m => ({ m: m, expected: medExpectedTodayCount(m), taken: medDosesTodayCount(m.id) }))
+    .filter(x => x.expected > 0);
+  if (dueMeds.length) {
+    const allDone = dueMeds.every(x => x.taken >= x.expected);
+    html += `<div class="bn-section">
+      <div class="bn-section-head">
+        <span>Today's medications</span>
+        <span class="bn-section-aux" style="color:${allDone ? 'var(--green)' : 'var(--cyan)'}">${allDone ? 'all taken ✓' : dueMeds.filter(x => x.taken < x.expected).length + ' pending'}</span>
+      </div>` +
+      dueMeds.map(x => {
+        const done = x.taken >= x.expected;
+        const mt = (typeof MED_TYPES !== 'undefined' ? MED_TYPES.find(t => t.id === x.m.med_type) : null);
+        return `<div class="bn-med ${done ? 'bn-med-done' : ''}">
+          <span class="bn-med-dot" style="background:${_colorVar(x.m.color)}"></span>
+          <span class="bn-med-name">${escapeHtml(x.m.name)}${x.m.dose ? ` <span class="bn-med-dose">${escapeHtml(x.m.dose)}</span>` : ''}</span>
+          ${mt ? `<span class="med-type-badge med-type-${mt.id}">${mt.badge}</span>` : ''}
+          ${x.expected > 1 ? `<span class="bn-med-count">${x.taken}/${x.expected}</span>` : ''}
+          <button type="button" class="bn-med-btn ${done ? 'bn-med-btn-done' : ''}"
+            onclick="markMedTakenNow('${x.m.id}');_renderBodyLogTab('now')">${done ? '✓ taken' : 'Take'}</button>
+        </div>`;
+      }).join('') + `</div>`;
+  }
+
+  // ── 3. What needs attention — and nothing at all when nothing does ────────
+  const items = [];
+
+  openEps.forEach(e => {
+    const evs = (typeof epEventsFor === 'function') ? epEventsFor(e.client_id) : [];
+    const last = evs[0];
+    const sev = (last && last.severity && typeof EP_SEVERITY !== 'undefined')
+      ? EP_SEVERITY.find(x => x.v === last.severity) : null;
+    const days = Math.max(1, Math.round((new Date(today) - new Date(e.started_on)) / 86400000) + 1);
+    const lastDay = last && last.event_date ? Math.round((new Date(today) - new Date(last.event_date)) / 86400000) : null;
+    items.push({
+      icon: '🩹',
+      label: (typeof discreetLabel === 'function' ? discreetLabel(e.condition) : e.condition) + (e.body_part ? ' · ' + e.body_part : ''),
+      aux: 'day ' + days,
+      tag: sev ? `<span class="bn-tag" style="color:${sev.color}">${sev.label}</span>` : '',
+      stale: lastDay !== null && lastDay >= 3,
+      click: `openSymptomEntry();_epSetScreen('detail','${e.client_id}')`,
+    });
+  });
+
+  const todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
+  todayFollowUps.forEach(a => {
+    const prov = PROVIDER_TYPES.find(p => p.id === a.provider_type) || PROVIDER_TYPES[0];
+    items.push({ icon: '⏰', urgent: true,
+      label: prov.label + (a.provider_name ? ' · ' + escapeHtml(a.provider_name) : ''),
+      aux: 'TODAY', click: `_renderBodyLogTab('appointments')` });
+  });
+
+  const upcoming = (typeof getUpcomingFollowUps === 'function')
+    ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== today) : [];
+  upcoming.slice(0, 2).forEach(a => {
+    const prov = PROVIDER_TYPES.find(p => p.id === a.provider_type) || PROVIDER_TYPES[0];
+    const days = Math.round((new Date(a.follow_up_date) - new Date(today)) / 86400000);
+    items.push({ icon: '📅',
+      label: prov.label + (a.provider_name ? ' · ' + escapeHtml(a.provider_name) : ''),
+      aux: 'in ' + days + 'd', click: `_renderBodyLogTab('appointments')` });
+  });
+
+  const care = (typeof getActiveCareCadence === 'function') ? getActiveCareCadence() : [];
+  care.filter(c => typeof careStatus === 'function' && careStatus(c) === 'overdue').forEach(c => {
+    const over = typeof careDaysUntilDue === 'function' ? careDaysUntilDue(c) : null;
+    items.push({ icon: '🔁', urgent: true, label: escapeHtml(c.name || c.category),
+      aux: over !== null ? Math.abs(over) + 'd overdue' : 'overdue',
+      click: `_renderBodyLogTab('care')` });
+  });
+  care.filter(c => typeof careStatus === 'function' && careStatus(c) === 'due-soon').forEach(c => {
+    const until = typeof careDaysUntilDue === 'function' ? careDaysUntilDue(c) : null;
+    items.push({ icon: '🔁', label: escapeHtml(c.name || c.category),
+      aux: until !== null ? 'in ' + until + 'd' : 'due soon', click: `_renderBodyLogTab('care')` });
+  });
+
+  if (items.length) {
+    html += `<div class="bn-section">
+      <div class="bn-section-head"><span>Needs attention</span></div>` +
+      items.map(it => `<div class="bn-item ${it.urgent ? 'bn-item-urgent' : ''}" onclick="${it.click}">
+        <span class="bn-item-icon">${it.icon}</span>
+        <span class="bn-item-label">${it.label}</span>
+        ${it.tag || ''}
+        <span class="bn-item-aux">${it.aux}</span>
+        ${it.stale ? `<span class="bn-item-stale" title="No check-in for 3+ days">·</span>` : ''}
+        <span class="bn-item-chev">›</span>
+      </div>`).join('') + `</div>`;
+    html += _bodyEscalationHtml();
+  } else {
+    // The most common state, and it should feel like the most common state —
+    // one calm line, not seven empty forms.
+    html += `<div class="bn-clear">
+      <span class="bn-clear-tick">✓</span>
+      <span class="bn-clear-text">Nothing needs attention.</span>
+    </div>`;
+  }
+
+  // ── 4. The one-day-it-matters button ──────────────────────────────────────
+  html += `<div class="bn-visit" onclick="openDoctorVisitSummary()">
+    <span class="bn-visit-icon">📋</span>
+    <span class="bn-visit-text">
+      <strong>Going to an appointment?</strong>
+      <em>Everything from the last 90 days, in one page you can hand over.</em>
+    </span>
+    <span class="bn-item-chev">›</span>
+  </div>`;
+
+  // ── 5. Records — one disclosure, six quiet things ─────────────────────────
+  html += `<div class="bn-records">
+    <div class="bn-records-head" onclick="_toggleBodyRecords()">
+      <span>Records</span>
+      <span class="bn-records-chev">${_bodyRecordsOpen ? '▾' : '›'}</span>
+    </div>` +
+    (_bodyRecordsOpen ? BODY_RECORDS.map(r => `<div class="bn-record" onclick="_renderBodyLogTab('${r.id}')">
+        <span class="bn-record-icon">${r.icon}</span>
+        <span class="bn-record-text"><strong>${r.label}</strong><em>${r.desc}</em></span>
+        <span class="bn-item-chev">›</span>
+      </div>`).join('') : '') +
+  `</div>`;
+
+  return html;
+}
+
+function _renderBodyLogTab(tab) {
+  const body = document.getElementById('popup-body');
+  if (!body) return;
+  tab = tab || 'now';
+
+  if (tab === 'now') { body.innerHTML = buildBodyNowHtml(); body.scrollTop = 0; return; }
+
+  const rec = BODY_RECORDS.find(r => r.id === tab);
+  const title = tab === 'summary' ? 'Summary' : (rec ? rec.label : tab);
+  const backHtml = `<div class="bn-back" onclick="_renderBodyLogTab('now')">
+      <span class="bn-back-chev">‹</span><span>Body</span>
+      <span class="bn-back-title">${title}</span>
+    </div>`;
+
+  const content = tab === 'appointments' ? buildAppointmentsHtml()
     : tab === 'summary' ? buildSummaryHtml()
     : tab === 'care' ? buildCareHtml()
     : tab === 'meds' ? buildMedsHtml()
     : tab === 'library' ? buildLibraryHtml()
     : tab === 'providers' ? buildProvidersHtml()
     : buildSymptomsHtml();
-  body.innerHTML = tabsHtml + tabContent + realismHtml;
+
+  body.innerHTML = backHtml + content + (tab === 'symptoms' ? _bodyEscalationHtml() : '');
+  body.scrollTop = 0;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -8646,7 +8944,13 @@ let _doseEditingId = null;
 let _expandedMedHistory = {};  // {medId: bool} — which med's recent-doses panel is expanded
 
 function _colorVar(color) {
-  return 'var(--' + (color || 'cyan') + ')';
+  // Only resolve colours the stylesheet actually defines. An undefined custom
+  // property makes the whole declaration invalid, so a bad value here does not
+  // fall back — it disappears. Vitamin D3 was assigned 'amber', which no theme
+  // defines, and has been rendering with no dot and no left border ever since.
+  const KNOWN = ['cyan','green','orange','purple','red','pink','blue'];
+  const c = String(color || '').toLowerCase();
+  return 'var(--' + (KNOWN.indexOf(c) !== -1 ? c : 'cyan') + ')';
 }
 
 function buildMedsHtml() {
@@ -8685,7 +8989,8 @@ function buildMedsHtml() {
       statusLabel = `<span class="med-status med-status-pending">${expected} due today</span>`;
     }
     const colorCss = _colorVar(m.color);
-    const typeBadge = m.med_type === 'rx' ? `<span class="med-type-badge med-type-rx">Rx</span>` : `<span class="med-type-badge med-type-otc">OTC</span>`;
+    const mt = MED_TYPES.find(t => t.id === m.med_type) || MED_TYPES[1];
+    const typeBadge = `<span class="med-type-badge med-type-${mt.id}">${mt.badge}</span>`;
     const recent = getDosesForMedication(m.id, 14);
     return `<div class="med-row" style="border-left:3px solid ${colorCss}">
       <div class="med-row-main">
@@ -8741,8 +9046,7 @@ function buildMedsHtml() {
         <div class="bl-row">
           <label class="bl-label">Type</label>
           <select id="med-type" class="bl-input">
-            <option value="rx" ${fType === 'rx' ? 'selected' : ''}>Rx — prescription</option>
-            <option value="otc" ${fType === 'otc' ? 'selected' : ''}>OTC — over the counter</option>
+            ${MED_TYPES.map(t => `<option value="${t.id}" ${fType === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}
           </select>
         </div>
       </div>
@@ -9053,133 +9357,115 @@ function _migrateAllopurinolToMedTracker() {
 // Click the card header or any row to drill into the Body popup detail view.
 // ════════════════════════════════════════════════════════════════════════════
 function buildBodyCardHtml() {
-  // Episodes are the primary surface now (2026-09-03). The old part-first
-  // body_log list stays below for anything already recorded, but a symptom
-  // report starts here — one tap from the daily view.
-  if (!EPISODES.length) _epLoadLocal();
+  // Rebuilt 2026-09-21 alongside the Body popup.
+  //
+  // The old card listed "active body items" from body_log AND open episodes.
+  // Those are the same events since the 2026-09-20 migration, so a symptom
+  // appeared twice — which is the duplicate Craig spotted from the other end
+  // ("is 'report a symptom' a different thing than the body log?"). The legacy
+  // list is gone from the card; its history is still readable under
+  // Records → Symptom history.
+  //
+  // Order is by what you would do about it, not by which table it came from:
+  // the action, then what is ongoing, then what is due, then what is scheduled.
+  if (typeof EPISODES !== 'undefined' && !EPISODES.length && typeof _epLoadLocal === 'function') _epLoadLocal();
+  const today = ds(new Date());
   const openEps = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes() : [];
-  const epHtml =
-    `<div onclick="openSymptomEntry()" style="display:flex;align-items:center;gap:9px;padding:12px 10px;border-radius:8px;background:var(--red-bg);border:1px solid var(--red-border, var(--red));cursor:pointer;margin-bottom:8px;min-height:48px">
+
+  let html =
+    `<div onclick="openSymptomEntry()" class="body-card-report">
        <span style="font-size:17px">🩹</span>
        <span style="flex:1;font-size:13.5px;font-weight:700;color:var(--red)">Report a symptom</span>
        <span style="color:var(--red)">›</span>
-     </div>` +
-    openEps.slice(0, 3).map(e => {
-      const evs = epEventsFor(e.client_id);
-      const last = evs[0];
-      const sev = last && last.severity ? EP_SEVERITY.find(s => s.v === last.severity) : null;
-      const days = Math.max(1, Math.round((new Date(ds(new Date())) - new Date(e.started_on)) / 86400000) + 1);
-      return `<div onclick="openSymptomEntry();_epSetScreen('detail','${e.client_id}')"
-        style="display:flex;align-items:center;gap:8px;padding:10px 8px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
-        <span style="flex:1;font-size:12.5px;color:var(--text)">${discreetLabel(e.condition)}${e.body_part ? ' · ' + e.body_part : ''}</span>
-        <span style="font-size:11px;color:var(--text-muted)">day ${days}</span>
-        ${sev ? `<span style="font-size:11px;font-weight:700;color:${sev.color}">${sev.label}</span>` : ''}
-      </div>`;
-    }).join('') +
-    (openEps.length > 3 ? `<div onclick="openSymptomEntry();_epSetScreen('list')" style="font-size:11.5px;color:var(--cyan);padding:7px 8px;cursor:pointer">+ ${openEps.length - 3} more ongoing</div>` : '');
+     </div>`;
 
-  // Active body items (last 14 days)
-  const activeItems = (typeof getActiveBodyItems === 'function') ? getActiveBodyItems(14) : [];
-  // Today's meds status
-  const medStatus = (typeof getTodaysMedStatus === 'function') ? getTodaysMedStatus() : { taken: 0, expected: 0, pending: 0 };
-  // Today's follow-ups
-  const todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
-  // Upcoming follow-ups (next 14 days)
-  const upcomingFollowUps = (typeof getUpcomingFollowUps === 'function') ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== ds(new Date())) : [];
-  // Overdue care
-  const careOverdue = (typeof getActiveCareCadence === 'function') ?
-    getActiveCareCadence().filter(c => typeof careStatus === 'function' && careStatus(c) === 'overdue') : [];
-  const careDueSoon = (typeof getActiveCareCadence === 'function') ?
-    getActiveCareCadence().filter(c => typeof careStatus === 'function' && careStatus(c) === 'due-soon') : [];
-
-  // ── Row helpers ──
-  const escapeHtml = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-
-  const flaggedActive = activeItems.filter(i => i.flag).length;
-  const highPainActive = activeItems.filter(i => i.pain >= 6).length;
-
-  // ── Compact summary rows ──
-  let rows = [];
-
-  // Active body items
-  if (activeItems.length === 0) {
-    rows.push(`<div class="body-card-row body-card-empty" onclick="openBodyLog('symptoms')">
-      <span class="body-card-icon">✓</span>
-      <span class="body-card-label">No active body items</span>
-    </div>`);
-  } else {
-    const top3 = activeItems.slice(0, 3);
-    top3.forEach(it => {
-      const sideLabel = (!it.side || it.side === 'na') ? '' :
-        (it.side === 'both' ? 'Both ' : (it.side[0].toUpperCase() + it.side.slice(1) + ' '));
-      const painColor = it.pain >= 7 ? 'var(--red)' : it.pain >= 4 ? 'var(--orange)' : 'var(--green)';
-      rows.push(`<div class="body-card-row" onclick="openBodyLog('symptoms')">
-        <span class="body-card-pain" style="color:${painColor}">${it.pain}/10</span>
-        <span class="body-card-label">${sideLabel}${escapeHtml(it.part)}${it.flag ? ' ⚑' : ''}</span>
-        <span class="body-card-aux">${it.event_time_local ? it.event_time_local : ''}</span>
-      </div>`);
-    });
-    if (activeItems.length > 3) {
-      rows.push(`<div class="body-card-row body-card-more" onclick="openBodyLog('symptoms')">
-        <span class="body-card-label">+ ${activeItems.length - 3} more active items</span>
-      </div>`);
-    }
+  // Ongoing episodes
+  html += openEps.slice(0, 3).map(e => {
+    const evs = (typeof epEventsFor === 'function') ? epEventsFor(e.client_id) : [];
+    const last = evs[0];
+    const sev = (last && last.severity && typeof EP_SEVERITY !== 'undefined')
+      ? EP_SEVERITY.find(x => x.v === last.severity) : null;
+    const days = Math.max(1, Math.round((new Date(today) - new Date(e.started_on)) / 86400000) + 1);
+    return `<div class="body-card-row" onclick="openSymptomEntry();_epSetScreen('detail','${e.client_id}')">
+      <span class="body-card-label">${(typeof discreetLabel === 'function' ? discreetLabel(e.condition) : escapeHtml(e.condition))}${e.body_part ? ' · ' + escapeHtml(e.body_part) : ''}</span>
+      ${sev ? `<span class="body-card-aux" style="color:${sev.color};font-weight:700">${sev.label}</span>` : ''}
+      <span class="body-card-aux">day ${days}</span>
+    </div>`;
+  }).join('');
+  if (openEps.length > 3) {
+    html += `<div class="body-card-row body-card-more" onclick="openSymptomEntry();_epSetScreen('list')">
+      <span class="body-card-label">+ ${openEps.length - 3} more ongoing</span>
+    </div>`;
   }
 
-  // Meds status
+  const rows = [];
+
+  // Meds today
+  const medStatus = (typeof getTodaysMedStatus === 'function') ? getTodaysMedStatus() : { taken: 0, expected: 0, pending: 0 };
   if (medStatus.expected > 0) {
-    const isComplete = medStatus.pending === 0;
-    const statusColor = isComplete ? 'var(--green)' : 'var(--cyan)';
-    rows.push(`<div class="body-card-row body-card-divider" onclick="openBodyLog('meds')">
+    const done = medStatus.pending === 0;
+    rows.push(`<div class="body-card-row body-card-divider" onclick="openBodyLog('now')">
       <span class="body-card-icon">💊</span>
       <span class="body-card-label">Meds today</span>
-      <span class="body-card-aux" style="color:${statusColor};font-weight:800">${medStatus.taken}/${medStatus.expected}${isComplete ? ' ✓' : ' pending'}</span>
+      <span class="body-card-aux" style="color:${done ? 'var(--green)' : 'var(--cyan)'};font-weight:800">${medStatus.taken}/${medStatus.expected}${done ? ' ✓' : ' pending'}</span>
     </div>`);
   }
 
-  // Today's follow-ups (highest priority)
-  if (todayFollowUps.length > 0) {
-    todayFollowUps.forEach(a => {
-      const prov = PROVIDER_TYPES.find(p => p.id === a.provider_type) || PROVIDER_TYPES[0];
-      rows.push(`<div class="body-card-row body-card-urgent" onclick="openBodyLog('appointments')">
-        <span class="body-card-icon">⏰</span>
-        <span class="body-card-label">Follow-up TODAY: ${prov.label}${a.provider_name ? ' · ' + escapeHtml(a.provider_name) : ''}</span>
-      </div>`);
-    });
-  }
-
-  // Upcoming follow-ups
-  if (upcomingFollowUps.length > 0) {
-    const next = upcomingFollowUps[0];
-    const prov = PROVIDER_TYPES.find(p => p.id === next.provider_type) || PROVIDER_TYPES[0];
-    const days = Math.round((new Date(next.follow_up_date) - new Date()) / 86400000);
-    rows.push(`<div class="body-card-row" onclick="openBodyLog('summary')">
-      <span class="body-card-icon">📅</span>
-      <span class="body-card-label">Next follow-up: ${prov.label}${next.provider_name ? ' · ' + escapeHtml(next.provider_name) : ''}</span>
-      <span class="body-card-aux">in ${days}d</span>
+  // Follow-up today
+  const todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
+  todayFollowUps.forEach(a => {
+    const prov = PROVIDER_TYPES.find(p => p.id === a.provider_type) || PROVIDER_TYPES[0];
+    rows.push(`<div class="body-card-row body-card-urgent" onclick="openBodyLog('appointments')">
+      <span class="body-card-icon">⏰</span>
+      <span class="body-card-label">Follow-up TODAY: ${prov.label}${a.provider_name ? ' · ' + escapeHtml(a.provider_name) : ''}</span>
     </div>`);
-  }
+  });
 
-  // Overdue care
-  if (careOverdue.length > 0) {
+  // Overdue care outranks a future appointment — it is the thing that has
+  // already slipped.
+  const care = (typeof getActiveCareCadence === 'function') ? getActiveCareCadence() : [];
+  const overdue = care.filter(c => typeof careStatus === 'function' && careStatus(c) === 'overdue');
+  const dueSoon = care.filter(c => typeof careStatus === 'function' && careStatus(c) === 'due-soon');
+  if (overdue.length) {
     rows.push(`<div class="body-card-row body-card-urgent" onclick="openBodyLog('care')">
       <span class="body-card-icon">🚨</span>
-      <span class="body-card-label">${careOverdue.length} care item${careOverdue.length === 1 ? '' : 's'} overdue</span>
-    </div>`);
-  } else if (careDueSoon.length > 0) {
-    rows.push(`<div class="body-card-row" onclick="openBodyLog('care')">
-      <span class="body-card-icon">⏰</span>
-      <span class="body-card-label">${careDueSoon.length} care item${careDueSoon.length === 1 ? '' : 's'} due soon</span>
+      <span class="body-card-label">${overdue.length} care item${overdue.length === 1 ? '' : 's'} overdue</span>
     </div>`);
   }
 
-  // Footer action row — always present. The old body log is still reachable for
-  // meds, appointments, providers and care; symptoms now start with episodes.
-  rows.push(`<div class="body-card-footer" onclick="openBodyLog()">
-    <span class="body-card-footer-label">→ Meds, appointments &amp; care</span>
-  </div>`);
+  // Next follow-up
+  const upcoming = (typeof getUpcomingFollowUps === 'function')
+    ? getUpcomingFollowUps(14).filter(a => a.follow_up_date !== today) : [];
+  if (upcoming.length) {
+    const next = upcoming[0];
+    const prov = PROVIDER_TYPES.find(p => p.id === next.provider_type) || PROVIDER_TYPES[0];
+    const days = Math.round((new Date(next.follow_up_date) - new Date(today)) / 86400000);
+    rows.push(`<div class="body-card-row" onclick="openBodyLog('appointments')">
+      <span class="body-card-icon">📅</span>
+      <span class="body-card-label">${prov.label}${next.provider_name ? ' · ' + escapeHtml(next.provider_name) : ''}</span>
+      <span class="body-card-aux">in ${days}d</span>
+    </div>`);
+  } else if (!overdue.length && dueSoon.length) {
+    rows.push(`<div class="body-card-row" onclick="openBodyLog('care')">
+      <span class="body-card-icon">⏰</span>
+      <span class="body-card-label">${dueSoon.length} care item${dueSoon.length === 1 ? '' : 's'} due soon</span>
+    </div>`);
+  }
 
-  return epHtml + rows.join('');
+  // Nothing ongoing, nothing due: say so once, quietly. The old card printed
+  // "No active body items" — an empty-table message, not an answer.
+  if (!openEps.length && !rows.length) {
+    rows.push(`<div class="body-card-row body-card-empty" onclick="openBodyLog('now')">
+      <span class="body-card-icon" style="color:var(--green)">✓</span>
+      <span class="body-card-label">Nothing to report</span>
+    </div>`);
+  }
+
+  html += rows.join('');
+  html += `<div class="body-card-footer" onclick="openBodyLog('now')">
+    <span class="body-card-footer-label">→ Meds, appointments &amp; records</span>
+  </div>`;
+  return html;
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -12911,8 +13197,20 @@ function _epSave() {
   } catch (e) {}
 }
 function _epLoadLocal() {
-  try { EPISODES  = JSON.parse(localStorage.getItem('health_episodes') || '[]'); } catch (e) { EPISODES = []; }
-  try { EP_EVENTS = JSON.parse(localStorage.getItem('health_events')   || '[]'); } catch (e) { EP_EVENTS = []; }
+  // Guard the SHAPE, not just the parse. JSON.parse succeeds on '{}' and on
+  // '{"entries":[...]}' — both are the shape every other store in this app
+  // uses — and then EPISODES.filter() throws and takes the entire Body screen
+  // down with it. A store that fails to be an array is an empty store.
+  const arr = (raw) => {
+    try {
+      const v = JSON.parse(raw || '[]');
+      if (Array.isArray(v)) return v;
+      if (v && Array.isArray(v.entries)) return v.entries;   // tolerate the {entries:[]} shape
+      return [];
+    } catch (e) { return []; }
+  };
+  EPISODES  = arr(localStorage.getItem('health_episodes'));
+  EP_EVENTS = arr(localStorage.getItem('health_events'));
 }
 
 // Surfaced, not swallowed — the old module hid every failure in console.warn.
@@ -15788,6 +16086,25 @@ function findProductById(id) {
   return _getProductsCache().entries.find(p => p.id === id) || null;
 }
 
+// Merge a server list into a local one by client id.
+//
+// Server rows win where both sides have the row; local-only rows survive. The
+// optional reconcile(local, server) gets the last word on a row both sides hold.
+// Use this for EVERY hybrid-cache pull. A bare _saveX({entries: serverRows}) is
+// a delete of everything the server has not acknowledged.
+function _mergeByClientId(localEntries, serverEntries, reconcile) {
+  const out = [];
+  const seen = {};
+  (serverEntries || []).forEach(srv => {
+    const loc = (localEntries || []).find(l => l.id === srv.id);
+    const row = (loc && typeof reconcile === 'function') ? reconcile(loc, srv) : srv;
+    seen[String(srv.id)] = true;
+    out.push(row);
+  });
+  (localEntries || []).forEach(loc => { if (!seen[String(loc.id)]) out.push(loc); });
+  return out;
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // MEDICATIONS + DOSES (task #26, 2026-05-29)
 // ────────────────────────────────────────────────────────────────────────────
@@ -15796,6 +16113,14 @@ function findProductById(id) {
 // Same hybrid cache pattern. Dose-to-medication linkage uses client_id locally,
 // resolved to UUID at sync time (mirroring body_log.appointment_id pattern).
 // ════════════════════════════════════════════════════════════════════════════
+const MED_TYPES = [
+  { id: 'rx',         badge: 'Rx',   label: 'Rx — prescription' },
+  { id: 'otc',        badge: 'OTC',  label: 'OTC — over the counter' },
+  { id: 'supplement', badge: 'Supp', label: 'Supplement' },
+  { id: 'vitamin',    badge: 'Vit',  label: 'Vitamin' },
+  { id: 'mineral',    badge: 'Min',  label: 'Mineral' },
+];
+
 const MED_FREQUENCY_TYPES = [
   { id: 'daily',                 label: 'Every day',                  needsValue: false, needsDays: false },
   { id: 'every_n_days',          label: 'Every N days',               needsValue: true,  needsDays: false, valueLabel: 'days between doses' },
@@ -16010,13 +16335,35 @@ function getTodaysMedStatus() {
 }
 
 // ── Sync helpers ──
+// Resolve a local medication client_id to its server uuid, CREATING the server
+// row if it is missing.
+//
+// The old version selected once and returned null on a miss. That null then went
+// straight into medication_doses.medication_id, and nothing ever repaired it — so
+// a dose whose parent had not synced yet became permanently orphaned. Every one
+// of the 176 doses in the database was written that way, because the medications
+// upsert was being rejected by a CHECK constraint that only allowed 'rx' and
+// 'otc' while the supplement migration wrote 'vitamin' / 'supplement' / 'mineral'.
+// The rejection was a console.warn; the consequence was silent and total.
+//
+// Two changes: on a miss, push the local row and look again; and the caller now
+// treats an unresolvable parent as "retry later", never as "write null".
 async function _resolveMedicationUuid(clientId) {
   if (!clientId || typeof sbReady === 'undefined' || !sbReady) return null;
   try {
     const { data, error } = await sb.from('medications').select('id').eq('client_id', clientId).maybeSingle();
-    if (error || !data) return null;
-    return data.id;
-  } catch (e) { return null; }
+    if (!error && data) return data.id;
+  } catch (e) { /* fall through to the create path */ }
+  // Miss. If we hold the medication locally, push it and try once more.
+  try {
+    if (typeof _getMedications !== 'function') return null;
+    const local = _getMedications().entries.find(m => m.id === clientId);
+    if (!local) return null;
+    await _syncMedicationToSupabase(local);
+    const { data, error } = await sb.from('medications').select('id').eq('client_id', clientId).maybeSingle();
+    if (!error && data) return data.id;
+  } catch (e) { /* stays unresolved; caller will retry on a later load */ }
+  return null;
 }
 
 async function _syncMedicationToSupabase(entry) {
@@ -16044,6 +16391,13 @@ async function _syncDoseToSupabase(entry) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const medUuid = await _resolveMedicationUuid(entry.medication_id);
+    // A dose with no parent is not a dose, it is a number with no meaning. Leave
+    // it in localStorage rather than writing an orphan: _migrateLocalMedDosesToSupabase
+    // runs on every Body open and will push it once the medication exists.
+    if (!medUuid) {
+      console.warn('dose sync deferred — no resolvable medication for dose ' + entry.id);
+      return;
+    }
     const { error } = await sb.from('medication_doses').upsert({
       client_id: entry.id, medication_id: medUuid,
       taken_at: entry.taken_at, dose_override: entry.dose_override, notes: entry.notes,
@@ -16074,7 +16428,7 @@ async function _refreshMedicationsFromSupabase() {
       notes: r.notes || '', active: r.active !== false, color: r.color || 'cyan',
       created_at: r.created_at
     }));
-    _saveMedications({ entries: entries });
+    _saveMedications({ entries: _mergeByClientId(_getMedications().entries, entries) });
   } catch (e) { console.warn('medications refresh threw:', e); }
 }
 
@@ -16096,7 +16450,13 @@ async function _refreshMedDosesFromSupabase() {
       taken_at: r.taken_at, dose_override: r.dose_override, notes: r.notes || '',
       created_at: r.created_at
     }));
-    _saveMedDoses({ entries: entries });
+    // Server wins on shared rows, but a local row the server has never seen —
+    // or has seen and stripped (medication_id null) — is kept, not deleted.
+    _saveMedDoses({ entries: _mergeByClientId(_getMedDoses().entries, entries, (loc, srv) => {
+      // Never let a null server FK overwrite a good local link.
+      if (!srv.medication_id && loc.medication_id) srv.medication_id = loc.medication_id;
+      return srv;
+    }) });
   } catch (e) { console.warn('med_doses refresh threw:', e); }
 }
 
@@ -16127,6 +16487,7 @@ async function _migrateLocalMedDosesToSupabase() {
   for (const e of local.entries) {
     try {
       const medUuid = await _resolveMedicationUuid(e.medication_id);
+      if (!medUuid) { allOk = false; continue; }   // retry next load, never orphan
       const { error } = await sb.from('medication_doses').upsert({
         client_id: e.id, medication_id: medUuid,
         taken_at: e.taken_at, dose_override: e.dose_override, notes: e.notes,
@@ -18546,10 +18907,10 @@ function getPhaseLabel(phaseId) {
 // The definitions survive only to migrate the history into `medications` /
 // `medication_doses`. Nothing renders from this array any more.
 const LEGACY_SUPPLEMENTS = [
-  { id: 'd3',       name: 'Vitamin D3', med_type: 'vitamin',    color: 'amber'  },
+  { id: 'd3',       name: 'Vitamin D3', med_type: 'vitamin',    color: 'orange' },
   { id: 'omega3',   name: 'Omega-3',    med_type: 'supplement', color: 'cyan'   },
   { id: 'mag',      name: 'Magnesium',  med_type: 'mineral',    color: 'purple' },
-  { id: 'vitc',     name: 'Vitamin C',  med_type: 'vitamin',    color: 'orange' },
+  { id: 'vitc',     name: 'Vitamin C',  med_type: 'vitamin',    color: 'pink'   },
   { id: 'creatine', name: 'Creatine',   med_type: 'supplement', color: 'green'  },
 ];
 
@@ -18560,7 +18921,24 @@ const LEGACY_SUPPLEMENTS = [
 // an empty list never retries, so anything arriving later is stranded. This is
 // idempotent instead — it re-derives what is missing every run and does nothing
 // when there is nothing to do, so it is safe to call on every load.
+function _pruneOrphanedSupplementDoses() {
+  if (typeof _getMedDoses !== 'function' || typeof _getMedications !== 'function') return 0;
+  const known = {};
+  _getMedications().entries.forEach(m => { known[m.id] = true; });
+  const data = _getMedDoses();
+  const before = data.entries.length;
+  data.entries = data.entries.filter(d =>
+    !(d.notes === 'Migrated from supplement chiclets' && !known[d.medication_id]));
+  const removed = before - data.entries.length;
+  if (removed) {
+    _saveMedDoses(data);
+    console.log('Pruned ' + removed + ' orphaned supplement dose(s) with no medication.');
+  }
+  return removed;
+}
+
 async function _migrateSuppsToMedications() {
+  _pruneOrphanedSupplementDoses();
   if (typeof _getMedications !== 'function' || typeof addMedication !== 'function') return 0;
   if (typeof _getMedDoses !== 'function' || typeof addMedDose !== 'function') return 0;
 
@@ -18634,7 +19012,14 @@ async function _migrateSuppsToMedications() {
   }
 
   // One dose per supplement per day is what the old blob could express.
-  const doseKey = d => String(d.medication_id) + '|' + String(d.taken_at || '').slice(0, 10);
+  //
+  // Key on the medication NAME, not its client_id. client_id is local identity
+  // and can be regenerated; name is what is actually stable across a wipe. The
+  // old client_id key is why a refresh that dropped the medications made every
+  // historical day look new again, seven times over.
+  const medNameById = {};
+  _getMedications().entries.forEach(m => { medNameById[m.id] = String(m.name || '').toLowerCase(); });
+  const doseKey = d => (medNameById[d.medication_id] || String(d.medication_id)) + '|' + String(d.taken_at || '').slice(0, 10);
   const existing = {};
   _getMedDoses().entries.forEach(d => { existing[doseKey(d)] = true; });
 
@@ -18644,7 +19029,7 @@ async function _migrateSuppsToMedications() {
       const legacy = LEGACY_SUPPLEMENTS.find(s => s.id === suppId);
       if (!legacy) return;
       const medId = medIdFor(legacy);
-      const key = medId + '|' + dateStr;
+      const key = legacy.name.toLowerCase() + '|' + dateStr;
       if (existing[key]) return;           // already migrated, or logged by hand
       addMedDose({
         medication_id: medId,
