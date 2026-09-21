@@ -3667,7 +3667,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.20.10';
+const APP_VERSION = '2026.09.21.01';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -3757,6 +3757,10 @@ async function doLogout() {
 
 async function startDashboard() {
   await migrateLocalStorage();
+  // Before refreshData(), because renderDaily() at the end of it is what decides
+  // whether to auto-fire a check-in prompt — and that decision now reads a
+  // per-user flag that has to be here first.
+  await pullSyncedSettings();
   await refreshData();
   // Preload profile so getProfileSync() in render code returns the real values
   // rather than the empty fallback on first paint.
@@ -10771,8 +10775,17 @@ function _dnSaveLocal() {
 }
 function getDayNotes(dateStr) { return (DAY_NOTES[dateStr] || []); }
 
-async function _dnFetch(dateStr) {
+// When each date was last fetched. renderDaily() runs on every repaint — a
+// scroll, a toggle, a re-render after any edit — and each one was a round trip
+// for a date we already held. Paint from cache; refresh at most every 60s, or
+// immediately when something local changed (force).
+const _dnFetchedAt = {};
+const DN_FETCH_MIN_MS = 60000;
+async function _dnFetch(dateStr, force) {
   if (!sbReady) return;
+  const last = _dnFetchedAt[dateStr] || 0;
+  if (!force && (Date.now() - last) < DN_FETCH_MIN_MS) return;
+  _dnFetchedAt[dateStr] = Date.now();
   try {
     const { data, error } = await sb.from('day_notes').select('*').eq('note_date', dateStr);
     if (error) throw error;
@@ -10803,6 +10816,7 @@ async function dnSave(dateStr) {
 
   if (sbReady) {
     try {
+      _dnFetchedAt[dateStr] = 0;   // a local change: let the next render re-read
       const { error } = await sb.from('day_notes').upsert([row], { onConflict: 'user_id,client_id' });
       if (error) throw error;
     } catch (e) { console.warn('day_notes save failed — kept locally', e); }
@@ -13669,6 +13683,22 @@ function _actSave(dateStr, rows) {
 }
 
 // Log one effort. Everything optional except kind + name.
+// Do these two rows carry the same information? created_at is excluded because
+// it is regenerated on every call and would make every row look different —
+// which is precisely how an unconditional upsert hides behind a dirty check.
+const _ACT_COMPARED = ['log_date','kind','movement_id','exercise_key','exercise_name',
+  'muscle','equip','set_index','weight','reps','distance_m','duration_s','side',
+  'rest_s','flag','rpe','notes','source'];
+function _actSameRow(a, b) {
+  if (!a || !b) return false;
+  for (const k of _ACT_COMPARED) {
+    const x = a[k] === undefined ? null : a[k];
+    const y = b[k] === undefined ? null : b[k];
+    if (x !== y) return false;
+  }
+  return true;
+}
+
 function logActivity(o) {
   const dateStr = o.date || ds(new Date());
   const rows = getActivity(dateStr);
@@ -13698,11 +13728,16 @@ function logActivity(o) {
     created_at: new Date().toISOString(),
   };
   const existing = rows.findIndex(r => r.client_id === row.client_id);
+  // Compare BEFORE merging — afterwards the old values are gone.
+  const unchanged = existing >= 0 && _actSameRow(rows[existing], row);
   if (existing >= 0) rows[existing] = Object.assign({}, rows[existing], row);
   else rows.push(row);
   _actSave(dateStr, rows);
 
-  if (sbReady) {
+  // Only write when something actually differs. A re-render, a refresh tick or a
+  // repeated sync call is not a change, and on a free-tier instance a write it
+  // did not need is disk IO budget it does not get back.
+  if (sbReady && !unchanged) {
     const { created_at, ...payload } = row;
     sb.from('activity_log').upsert([payload], { onConflict: 'user_id,client_id' })
       .then(r => { if (r && r.error) console.warn('activity sync failed — kept locally', r.error); });
@@ -16226,7 +16261,30 @@ function getActiveMedications() {
 }
 
 // ── Doses ──
+const MED_DOSE_REPEAT_GUARD_S = 90;
+
+// Was this same medication logged a moment ago? Returns the offending dose.
+function _recentDoseFor(medId, whenIso) {
+  const when = new Date(whenIso || new Date()).getTime();
+  if (isNaN(when)) return null;
+  return _getMedDoses().entries.find(d => {
+    if (d.medication_id !== medId) return false;
+    const t = new Date(d.taken_at).getTime();
+    return !isNaN(t) && Math.abs(when - t) < MED_DOSE_REPEAT_GUARD_S * 1000;
+  }) || null;
+}
+
 function addMedDose(payload) {
+  // Migrated history passes an explicit taken_at and is allowed through — the
+  // guard is for taps, not for backfill.
+  if (payload && payload.medication_id && !payload.notes) {
+    const dup = _recentDoseFor(payload.medication_id, payload.taken_at);
+    if (dup) {
+      console.warn('duplicate dose suppressed — ' + payload.medication_id + ' logged ' +
+        Math.round((Date.now() - new Date(dup.taken_at).getTime()) / 1000) + 's ago');
+      return dup.id;
+    }
+  }
   const data = _getMedDoses();
   const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const entry = {
@@ -18245,6 +18303,93 @@ const CHECKIN_QUESTIONS = [
   { id:'behaviors',    prompt:'evening', label:'Wind-down triggers',       desc:'Caffeine cutoff, late exercise, screens, ritual.' },
 ];
 
+// ════════════════════════════════════════════════════════════════════════════
+// SYNCED SETTINGS (2026-09-21)
+// ────────────────────────────────────────────────────────────────────────────
+// Two suggestion-box entries, one cause:
+//
+//   "I opened the app on my phone, answered the good morning questions. Then I
+//    opened the app on my computer, and the same questions popped up — half of
+//    them filled out."
+//   "The settings for morning check in is all checked, even though I've removed
+//    a bunch. Are these settings not being saved and accessed every load?"
+//
+// They were being saved. To localStorage — which is a per-DEVICE store. The
+// ANSWERS sync through Supabase (hence "half of them filled out"), but the
+// preferences and the already-asked-today flag never left the device they were
+// set on. So every device had its own idea of which questions exist and whether
+// this morning had happened.
+//
+// user_settings (user_id, setting_key, setting_value) already exists, is
+// per-USER, and is RLS-scoped to auth.uid(). These move onto it. localStorage
+// stays as the offline cache — read local first so nothing blocks on the
+// network, write both.
+// ════════════════════════════════════════════════════════════════════════════
+const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done', 'evening_prompt_last_done'];
+
+async function pullSyncedSettings() {
+  if (typeof sbReady === 'undefined' || !sbReady) return false;
+  try {
+    const { data, error } = await sb.from('user_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', SYNCED_SETTING_KEYS);
+    if (error) { console.warn('synced settings pull failed:', error); return false; }
+    const onServer = {};
+    (data || []).forEach(r => {
+      if (r.setting_value == null) return;
+      onServer[r.setting_key] = true;
+      try { localStorage.setItem(r.setting_key, r.setting_value); } catch (e) {}
+    });
+    // First run after this change: the server has never seen these. Whichever
+    // device holds the preferences seeds them rather than being silently reset
+    // to defaults — Craig turned questions off months ago and that choice is
+    // sitting in one browser's localStorage, not in the database.
+    if (!onServer['checkin_prefs']) {
+      let local = null;
+      try { local = localStorage.getItem('checkin_prefs'); } catch (e) {}
+      if (local && local !== '{}') pushSyncedSetting('checkin_prefs', local);
+    }
+    _checkinPrefs = null;            // drop the memo so the next read sees the pull
+    _pruneLegacyPromptFlags();
+    return true;
+  } catch (e) { console.warn('synced settings pull threw:', e); return false; }
+}
+
+function pushSyncedSetting(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) {}
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  (async () => {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+      const { error } = await sb.from('user_settings').upsert({
+        user_id: session.user.id, setting_key: key, setting_value: String(value),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id,setting_key' });
+      if (error) console.warn('synced setting push failed (' + key + '):', error);
+    } catch (e) { console.warn('synced setting push threw (' + key + '):', e); }
+  })();
+}
+
+// The old scheme wrote one key PER DAY — morning_prompt_shown_2026-09-21 — and
+// never removed them, so they accumulate forever. The new scheme is a single
+// key holding the last date. Clear the old ones out, but keep today's: it is
+// what stops the prompt re-firing on the device that just upgraded.
+function _pruneLegacyPromptFlags() {
+  try {
+    const today = ds(new Date());
+    const doomed = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (k.indexOf('morning_prompt_shown_') !== 0 && k.indexOf('evening_prompt_shown_') !== 0) continue;
+      if (k.slice(-10) === today) continue;
+      doomed.push(k);
+    }
+    doomed.forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+  } catch (e) { /* best effort */ }
+}
+
 let _checkinPrefs = null;
 function getCheckinPrefs() {
   if (_checkinPrefs) return _checkinPrefs;
@@ -18258,7 +18403,7 @@ function setCheckinOn(id, on) {
   const p = getCheckinPrefs();
   if (on) delete p[id]; else p[id] = false;
   _checkinPrefs = p;
-  try { localStorage.setItem('checkin_prefs', JSON.stringify(p)); } catch (e) {}
+  pushSyncedSetting('checkin_prefs', JSON.stringify(p));
   renderCheckinPrefs();
 }
 function renderCheckinPrefs() {
@@ -18292,11 +18437,13 @@ function renderCheckinPrefs() {
 // Per-day flag to avoid re-popping during the same morning
 function _morningPromptShownToday() {
   const today = ds(new Date());
+  // The per-user flag first, then the old per-device key so the device that
+  // upgrades mid-morning doesn't get asked a second time.
+  if (localStorage.getItem('morning_prompt_last_done') === today) return true;
   return localStorage.getItem('morning_prompt_shown_' + today) === '1';
 }
 function _markMorningPromptShown() {
-  const today = ds(new Date());
-  localStorage.setItem('morning_prompt_shown_' + today, '1');
+  pushSyncedSetting('morning_prompt_last_done', ds(new Date()));
 }
 function _shouldAutoFireMorningPrompt() {
   // Fire if: 5am-11am local time and not already shown today.
@@ -18312,6 +18459,11 @@ function _shouldAutoFireMorningPrompt() {
   const hr = now.getHours();
   if (hr < 5 || hr >= 11) return false;
   if (_morningPromptShownToday()) return false;
+  // Belt and braces: the flag is a claim, the data is the fact. felt_rested is
+  // written by this prompt and nowhere else, and it syncs — so if today has one,
+  // this morning has been answered somewhere and we do not ask again.
+  const d = (typeof DB_CACHE !== 'undefined' && DB_CACHE.daily && DB_CACHE.daily[ds(now)]) || {};
+  if (d.felt_rested) return false;
   return true;
 }
 function openMorningPrompt(opts) {
@@ -18670,11 +18822,11 @@ function renderMorningPrompt() {
 // ════════════════════════════════════════════════════════════════════════════
 function _eveningPromptShownToday() {
   const today = ds(new Date());
+  if (localStorage.getItem('evening_prompt_last_done') === today) return true;
   return localStorage.getItem('evening_prompt_shown_' + today) === '1';
 }
 function _markEveningPromptShown() {
-  const today = ds(new Date());
-  localStorage.setItem('evening_prompt_shown_' + today, '1');
+  pushSyncedSetting('evening_prompt_last_done', ds(new Date()));
 }
 function _shouldAutoFireEveningPrompt() {
   // Fire if: after 8pm (before midnight), today's actual_load empty, not shown today.
@@ -21948,6 +22100,7 @@ document.addEventListener('click', (ev) => {
 
 // ── Refresh ──
 async function refreshData(btn) {
+  window._lastRefreshAt = Date.now();
   if (btn) { btn.classList.add('spinning'); }
   if (typeof _envBanner === 'function' && !window._envBannerDone) { window._envBannerDone = true; _envBanner(); }
   if (typeof initPWA === 'function' && !window._pwaInit) { window._pwaInit = true; initPWA(); }
@@ -22010,7 +22163,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // If not logged in, login screen stays visible — doLogin() triggers startDashboard()
 
   // Auto-refresh every 5 minutes
-  setInterval(() => refreshData(), 300000);
+  setInterval(() => {
+    // document.hidden covers a backgrounded tab, a minimised window and a
+    // locked phone. There is no one to show the result to, so don't fetch it.
+    if (typeof document !== 'undefined' && document.hidden) return;
+    refreshData();
+  }, 300000);
+
+  // Coming back to the tab: catch up once, but only if it has actually gone
+  // stale. Flipping between tabs must not become its own request source.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const since = Date.now() - (window._lastRefreshAt || 0);
+    if (since > 300000) refreshData();
+  });
   // Update time display every 60 seconds (all views)
   function updateAllClocks() {
     const t = fmtTime(new Date());
