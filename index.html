@@ -3667,7 +3667,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.20.09';
+const APP_VERSION = '2026.09.20.10';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -7911,7 +7911,7 @@ function buildActiveBodyHtml() {
       (e.side === 'both' ? 'Both ' : (e.side[0].toUpperCase() + e.side.slice(1) + ' '));
     const noteText = (e.note || '').replace(/"/g,'&quot;').replace(/</g,'&lt;');
     // Task #26 — prefer event date (when it happened) over created_at (when logged)
-    const eventDate = e.date || e.created_at.slice(0, 10);
+    const eventDate = e.date || ds(new Date(e.created_at));   // local day, not the UTC slice
     const dayCount = Math.floor((Date.now() - new Date(eventDate + 'T12:00:00').getTime()) / 86400000);
     const eventLabel = e.event_time_local
       ? dayLabel(dayCount) + ' @ ' + e.event_time_local
@@ -8560,9 +8560,10 @@ function buildSummaryHtml() {
         else trendHtml = `<span class="bl-sum-trend-flat">→ stable</span>`;
       }
       const flagBadge = hasFlag ? `<span class="bl-sum-flag">⚑ flagged</span>` : '';
+      const localDay = (iso) => { const t = new Date(iso); return isNaN(t.getTime()) ? String(iso).slice(0,10) : ds(t); };
       const dateRange = sorted.length > 1
-        ? `${fmtDate(first.created_at.slice(0,10))} – ${fmtDate(latest.created_at.slice(0,10))}`
-        : fmtDate(first.created_at.slice(0,10));
+        ? `${fmtDate(localDay(first.created_at))} – ${fmtDate(localDay(latest.created_at))}`
+        : fmtDate(localDay(first.created_at));
       const noteText = latest.note ? `<div class="bl-sum-note">"${latest.note}"</div>` : '';
       return `
         <div class="bl-sum-row" style="flex-direction:column;align-items:flex-start;gap:3px">
@@ -10144,8 +10145,8 @@ ${(() => {
   const doses = (typeof _getMedDoses === 'function') ? _getMedDoses().entries : [];
   const typeLabel = { rx:'Prescription', otc:'OTC', supplement:'Supplement', vitamin:'Vitamin', mineral:'Mineral', food:'Food' };
   const rows = meds.map(m => {
-    const mine = doses.filter(d => d.medication_id === m.id && String(d.taken_at || '').slice(0, 10) >= cutoffStr);
-    const last = mine.map(d => String(d.taken_at || '').slice(0, 10)).sort().pop();
+    const mine = doses.filter(d => d.medication_id === m.id && doseLocalDate(d) >= cutoffStr);
+    const last = mine.map(d => doseLocalDate(d)).sort().pop();
     const freq = m.frequency_type === 'daily'
       ? (m.frequency_value > 1 ? m.frequency_value + '× daily' : 'Daily')
       : m.frequency_type === 'as_needed' ? 'As needed'
@@ -16312,10 +16313,19 @@ function medExpectedTodayCount(med) {
 }
 
 // Returns count of doses logged today for a med.
+// The local calendar day a dose belongs to. NEVER slice an ISO string to get
+// this — that yields the UTC day, which is a different day for six hours every
+// evening in Calgary.
+function doseLocalDate(dose) {
+  if (!dose || !dose.taken_at) return '';
+  const t = new Date(dose.taken_at);
+  return isNaN(t.getTime()) ? '' : ds(t);
+}
+
 function medDosesTodayCount(medId) {
   const todayStr = ds(new Date());
   return _getMedDoses().entries.filter(d =>
-    d.medication_id === medId && d.taken_at && d.taken_at.slice(0, 10) === todayStr
+    d.medication_id === medId && doseLocalDate(d) === todayStr
   ).length;
 }
 
@@ -19019,7 +19029,7 @@ async function _migrateSuppsToMedications() {
   // historical day look new again, seven times over.
   const medNameById = {};
   _getMedications().entries.forEach(m => { medNameById[m.id] = String(m.name || '').toLowerCase(); });
-  const doseKey = d => (medNameById[d.medication_id] || String(d.medication_id)) + '|' + String(d.taken_at || '').slice(0, 10);
+  const doseKey = d => (medNameById[d.medication_id] || String(d.medication_id)) + '|' + doseLocalDate(d);
   const existing = {};
   _getMedDoses().entries.forEach(d => { existing[doseKey(d)] = true; });
 
