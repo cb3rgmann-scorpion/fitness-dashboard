@@ -1390,6 +1390,14 @@
     opacity: 0; transition: opacity .18s ease, transform .18s ease;
   }
   .app-toast.show { opacity: 1; transform: translate(-50%, 0); }
+  /* Only the actionable variant takes pointer events — a plain confirmation
+     must never sit between a finger and the thing underneath it. */
+  .app-toast-undo { pointer-events: auto; display: flex; align-items: center; gap: 12px; }
+  .app-toast-btn {
+    font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer;
+    padding: 6px 12px; min-height: 34px; border-radius: 6px;
+    border: 1px solid var(--green); background: transparent; color: var(--green);
+  }
   .app-toast-warn { border-color: var(--orange); color: var(--orange); }
   .app-toast-err  { border-color: var(--red);    color: var(--red); }
 
@@ -1412,6 +1420,43 @@
   }
   .reflect-btn-ghost { border: 1px solid var(--card-border); background: transparent; color: var(--text-muted); }
   .reflect-btn-go { border: 1px solid var(--purple); background: var(--purple-bg); color: var(--purple); }
+
+  /* Dose sheet */
+  .ms-head { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+  .ms-dot { width:10px; height:10px; border-radius:50%; flex:none; }
+  .ms-name { font-size:15px; font-weight:700; color:var(--text); }
+  .ms-dose { font-size:12px; color:var(--text-muted); }
+  .ms-stepper {
+    display:flex; align-items:center; gap:14px; justify-content:center;
+    padding:14px; border-radius:10px; background:var(--input-bg);
+    border:1px solid var(--card-border); margin-bottom:12px;
+  }
+  .ms-step {
+    width:52px; height:52px; border-radius:50%; font:inherit; font-size:24px;
+    font-weight:700; cursor:pointer; flex:none;
+    border:1px solid var(--cyan); background:var(--cyan-bg); color:var(--cyan);
+  }
+  .ms-count { flex:1; text-align:center; }
+  .ms-count-n { font-size:26px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; }
+  .ms-count-l { font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; }
+  .ms-list { margin-bottom:12px; }
+  .ms-row { display:flex; align-items:center; gap:9px; padding:9px 6px; border-bottom:1px solid var(--divider); min-height:42px; }
+  .ms-time { font-size:12.5px; color:var(--text); flex:1; font-variant-numeric:tabular-nums; }
+  .ms-od { font-size:11px; color:var(--text-muted); }
+  .ms-del { cursor:pointer; color:var(--text-muted); font-size:18px; padding:4px 8px; }
+  .ms-del:hover { color:var(--red); }
+  .ms-empty { font-size:12px; color:var(--text-muted); padding:8px 6px; margin-bottom:12px; }
+  .ms-field { margin-bottom:11px; }
+  .ms-label { display:block; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:5px; }
+  .ms-input {
+    width:100%; padding:11px; border-radius:8px; box-sizing:border-box;
+    border:1px solid var(--input-border); background:var(--input-bg);
+    color:var(--text); font-size:16px; font-family:inherit;
+  }
+  .ms-actions { display:flex; gap:8px; margin-top:14px; }
+  .ms-btn { flex:1; padding:12px; min-height:44px; border-radius:8px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+  .ms-btn-ghost { border:1px solid var(--card-border); background:transparent; color:var(--text-muted); }
+  .ms-btn-edit { border:1px solid var(--cyan); background:var(--cyan-bg); color:var(--cyan); }
 
   .sync-pill {
     display: flex; align-items: center; gap: 5px; cursor: pointer;
@@ -3585,6 +3630,16 @@
 </div>
 
 <!-- ═══════════════ MORNING CHECK-IN POPUP ═══════════════ -->
+<div class="popup-backdrop" id="med-sheet-backdrop" onclick="if(event.target===this)closeMedSheet()">
+  <div class="popup" style="max-width:420px">
+    <div class="popup-header">
+      <div class="popup-title" id="med-sheet-title">Medication</div>
+      <button class="popup-close" onclick="closeMedSheet()">✕ Close</button>
+    </div>
+    <div class="popup-body" id="med-sheet-body"></div>
+  </div>
+</div>
+
 <div class="popup-backdrop" id="morning-prompt-backdrop" onclick="if(event.target===this)closeMorningPrompt()">
   <div class="popup" style="max-width:480px">
     <div class="popup-header">
@@ -3734,7 +3789,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.10';
+const APP_VERSION = '2026.09.21.11';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -9385,7 +9440,10 @@ function buildTodaysMedChiclets(dateStr) {
     return `<div class="${classes.join(' ')}"
       style="--med-color:${colorVar}"
       onclick="quickLogMedDose('${m.id}')"
-      title="${attentionReason ? attentionReason + ' · ' : ''}Tap to log a dose">
+      oncontextmenu="event.preventDefault();openMedSheet('${m.id}');return false"
+      ontouchstart="_medPressStart('${m.id}')" ontouchend="_medPressEnd()"
+      ontouchmove="_medPressEnd()" ontouchcancel="_medPressEnd()"
+      title="${attentionReason ? attentionReason + ' · ' : ''}Tap to log a dose. Hold for options.">
       <span class="med-chiclet-icon">💊</span>
       <span class="med-chiclet-name">${safeName}</span>
       ${m.dose ? `<span class="med-chiclet-dose">${safeDose}</span>` : ''}
@@ -9399,7 +9457,164 @@ function buildTodaysMedChiclets(dateStr) {
   </div>`;
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// THE DOSE SHEET — a tap that can be taken back (2026-09-22)
+// ────────────────────────────────────────────────────────────────────────────
+// Craig: "now I have recorded 5 magnesium, and can't remove it... when I press
+// on it, it increments by 1 ... maybe if I right click (hold finger on it) it'll
+// give me up down arrows? and a description / concentration level / eat with
+// food etc?"
+//
+// He is describing the missing half of the interaction. The chiclet could only
+// ever count UP. Every mistap was permanent, and the only repair was a database
+// statement. An action with no inverse is not a control, it is a ratchet — and
+// on a medication record a ratchet is actively dangerous, because the log stops
+// describing what was taken.
+//
+// So: tap still logs (the common case stays one tap), and now
+//   · the toast offers UNDO for a few seconds — the mistap you notice instantly
+//   · long-press, or right-click on a desktop, opens this sheet — everything else
+//
+// Long-press is Craig's own suggestion and the right gesture: it keeps the
+// primary action instant while giving the rare one a home. Because a hidden
+// gesture is a gesture nobody finds, the chiclet also carries a visible "hold
+// for options" hint on its title and a subtle dotted underline on the count.
+let _medSheetId = null;
+
+function openMedSheet(medId) {
+  _medSheetId = medId;
+  const bd = document.getElementById('med-sheet-backdrop');
+  if (bd) bd.classList.add('open');
+  renderMedSheet();
+}
+function closeMedSheet() {
+  _medSheetId = null;
+  const bd = document.getElementById('med-sheet-backdrop');
+  if (bd) bd.classList.remove('open');
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// Today's doses for this medication, newest first — the thing being edited.
+function _medSheetDoses(medId) {
+  const today = ds(new Date());
+  return _getMedDoses().entries
+    .filter(d => d.medication_id === medId && doseLocalDate(d) === today)
+    .sort((a, b) => new Date(b.taken_at) - new Date(a.taken_at));
+}
+
+// Remove the most recent dose. Down is the inverse of up, and nothing else:
+// it does not touch yesterday, and it does not reach past today's list.
+function medDoseDown(medId) {
+  const mine = _medSheetDoses(medId);
+  if (!mine.length) { if (typeof toast === 'function') toast('Nothing logged today', 'warn'); return; }
+  removeMedDose(mine[0].id);
+  renderMedSheet();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+function medDoseUp(medId) {
+  // Bypasses the 90-second repeat guard ON PURPOSE. That guard exists to stop
+  // an impatient thumb on the chiclet; in here the person is looking at the
+  // count and asking for one more, which is a different intention entirely.
+  addMedDose({ medication_id: medId, taken_at: new Date().toISOString(), notes: 'stepper' });
+  renderMedSheet();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+function renderMedSheet() {
+  const body = document.getElementById('med-sheet-body');
+  const title = document.getElementById('med-sheet-title');
+  if (!body || !_medSheetId) return;
+  const m = _getMedications().entries.find(x => x.id === _medSheetId);
+  if (!m) { closeMedSheet(); return; }
+  const mine = _medSheetDoses(m.id);
+  const expected = (typeof medExpectedTodayCount === 'function') ? medExpectedTodayCount(m) : 0;
+  const mt = (typeof MED_TYPES !== 'undefined' ? MED_TYPES.find(t => t.id === m.med_type) : null);
+  if (title) title.textContent = m.name;
+
+  body.innerHTML = `
+    <div class="ms-head">
+      <span class="ms-dot" style="background:${_colorVar(m.color)}"></span>
+      <span class="ms-name">${escapeHtml(m.name)}</span>
+      ${m.dose ? `<span class="ms-dose">${escapeHtml(m.dose)}</span>` : ''}
+      ${mt ? `<span class="med-type-badge med-type-${mt.id}">${mt.badge}</span>` : ''}
+    </div>
+
+    <div class="ms-stepper">
+      <button class="ms-step" onclick="medDoseDown('${m.id}')" aria-label="One fewer">−</button>
+      <div class="ms-count">
+        <div class="ms-count-n">${mine.length}${expected ? ' / ' + expected : ''}</div>
+        <div class="ms-count-l">taken today</div>
+      </div>
+      <button class="ms-step" onclick="medDoseUp('${m.id}')" aria-label="One more">+</button>
+    </div>
+
+    ${mine.length ? `<div class="ms-list">${mine.map(d => `
+      <div class="ms-row">
+        <span class="ms-time">${fmtTime(new Date(d.taken_at))}</span>
+        ${d.dose_override ? `<span class="ms-od">${escapeHtml(d.dose_override)}</span>` : ''}
+        <span class="ms-del" onclick="removeMedDose('${d.id}');renderMedSheet();scheduleRender(renderDaily)"
+              title="Remove this one">×</span>
+      </div>`).join('')}</div>` : '<div class="ms-empty">Nothing logged today.</div>'}
+
+    <div class="ms-field">
+      <label class="ms-label">When to take it</label>
+      <select class="ms-input" onchange="medSaveTiming('${m.id}', this.value)">
+        ${MED_TIMINGS.map(t => `<option value="${t.id}" ${(m.timing || '') === t.id ? 'selected' : ''}>${t.label}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="ms-field">
+      <label class="ms-label">Dose / concentration</label>
+      <input type="text" class="ms-input" value="${escapeHtml(m.dose || '')}"
+        placeholder="200mg, 1 cap, 1000 IU…"
+        onchange="medSaveField('${m.id}','dose', this.value)">
+    </div>
+
+    <div class="ms-field">
+      <label class="ms-label">Notes for taking it</label>
+      <input type="text" class="ms-input" value="${escapeHtml(m.instructions || '')}"
+        placeholder="Separate from calcium by 2h; take with food…"
+        onchange="medSaveField('${m.id}','instructions', this.value)">
+    </div>
+
+    <div class="ms-actions">
+      <button class="ms-btn ms-btn-ghost" onclick="closeMedSheet()">Done</button>
+      <button class="ms-btn ms-btn-edit" onclick="closeMedSheet();openBodyLog('meds');startEditMed('${m.id}')">Edit medication</button>
+    </div>`;
+}
+
+function medSaveField(medId, field, val) {
+  const p = {}; p[field] = val;
+  updateMedication(medId, p);
+  if (typeof toast === 'function') toast('Saved');
+  renderMedSheet();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+function medSaveTiming(medId, val) { medSaveField(medId, 'timing', val); }
+
+// Long-press on touch, right-click on a desktop. 500ms is long enough not to
+// fire on a tap and short enough to feel deliberate. Cancelled by any movement,
+// so a scroll that begins on a chiclet never opens the sheet.
+let _medPressTimer = null;
+let _medPressFired = false;
+function _medPressStart(medId) {
+  _medPressFired = false;
+  if (_medPressTimer) clearTimeout(_medPressTimer);
+  _medPressTimer = setTimeout(() => {
+    _medPressFired = true;
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+    openMedSheet(medId);
+  }, 500);
+}
+function _medPressEnd() {
+  if (_medPressTimer) { clearTimeout(_medPressTimer); _medPressTimer = null; }
+}
+
 function quickLogMedDose(medId) {
+  // A long-press already opened the sheet; the tap that ends it must not also
+  // log a dose.
+  if (_medPressFired) { _medPressFired = false; return; }
   if (typeof addMedDose !== 'function') return;
   const meds = (typeof _getMedications === 'function') ? _getMedications().entries : [];
   const med = meds.find(m => m.id === medId);
@@ -9407,7 +9622,16 @@ function quickLogMedDose(medId) {
   if (med && med.frequency_type === 'one_time') {
     if (!confirm('Log this one-time dose now? This will mark "' + med.name + '" as administered.')) return;
   }
-  addMedDose({ medication_id: medId });
+  const doseId = addMedDose({ medication_id: medId });
+  // The mistap you notice immediately should cost one tap to undo, not a
+  // database statement. This is why toast() exists.
+  if (typeof toast === 'function' && med) {
+    toastWithUndo(med.name + ' logged', () => {
+      removeMedDose(doseId);
+      if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+      toast('Removed');
+    });
+  }
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 
@@ -16684,6 +16908,25 @@ function _mergeByClientId(localEntries, serverEntries, reconcile) {
 // Same hybrid cache pattern. Dose-to-medication linkage uses client_id locally,
 // resolved to UUID at sync time (mirroring body_log.appointment_id pattern).
 // ════════════════════════════════════════════════════════════════════════════
+// Craig: "'with food' or 'morning' or 'separate from this other med' type deal."
+// The picker holds the common cases; anything it cannot hold — spacing from
+// another drug above all — goes in the free-text instructions beside it.
+const MED_TIMINGS = [
+  { id:'',               label:'No particular time' },
+  { id:'morning',        label:'Morning' },
+  { id:'with_breakfast', label:'With breakfast' },
+  { id:'midday',         label:'Midday' },
+  { id:'with_dinner',    label:'With dinner' },
+  { id:'evening',        label:'Evening' },
+  { id:'bedtime',        label:'Bedtime' },
+  { id:'with_food',      label:'With food (any meal)' },
+  { id:'empty_stomach',  label:'Empty stomach' },
+];
+function medTimingLabel(id) {
+  const t = MED_TIMINGS.find(x => x.id === (id || ''));
+  return t ? t.label : '';
+}
+
 const MED_TYPES = [
   { id: 'rx',         badge: 'Rx',   label: 'Rx — prescription' },
   { id: 'otc',        badge: 'OTC',  label: 'OTC — over the counter' },
@@ -16746,6 +16989,46 @@ function _findMedByNameDose(name, dose) {
 // on every Body open for the same reason the supplement migration is: a latching
 // flag that fires once against a clean store never repairs the one that breaks
 // later.
+// Collapse a burst of taps on the same medication into one dose.
+//
+// Saturday's 19 Allopurinol doses were deduped server-side and CAME BACK — the
+// phone still held its local copies and re-pushed them. Third time this lesson
+// has arrived: a server-side delete does not hold while clients carry copies.
+// So the repair lives here, runs on the startup path, and is idempotent.
+//
+// The window is deliberately narrow. 19 taps in 27 seconds is one dose and
+// eighteen expressions of frustration; two doses hours apart are two doses. Only
+// the former is repaired, and a dose the person entered from the stepper is
+// never touched, because in there they were looking at the count when they asked.
+const DOSE_BURST_WINDOW_S = 120;
+function dedupeDoses() {
+  const data = _getMedDoses();
+  const byMed = {};
+  data.entries.forEach(d => { (byMed[d.medication_id] = byMed[d.medication_id] || []).push(d); });
+  const doomed = {};
+  Object.keys(byMed).forEach(medId => {
+    const list = byMed[medId]
+      .filter(d => d.notes !== 'stepper')
+      .sort((a, b) => new Date(a.taken_at) - new Date(b.taken_at));
+    let anchor = null;
+    list.forEach(d => {
+      const t = new Date(d.taken_at).getTime();
+      if (anchor !== null && (t - anchor) < DOSE_BURST_WINDOW_S * 1000) { doomed[d.id] = true; return; }
+      anchor = t;
+    });
+  });
+  const n = Object.keys(doomed).length;
+  if (!n) return 0;
+  data.entries = data.entries.filter(d => !doomed[d.id]);
+  _saveMedDoses(data);
+  // Remove them on the server too, so this device stops re-pushing them.
+  if (typeof sbReady !== 'undefined' && sbReady) {
+    Object.keys(doomed).forEach(id => { try { _syncDeleteDose(id); } catch (e) {} });
+  }
+  console.log('Collapsed ' + n + ' duplicate dose tap(s).');
+  return n;
+}
+
 function dedupeMedications() {
   const data = _getMedications();
   const keyOf = m => String(m.name || '').trim().toLowerCase() + '|' + String(m.dose || '').trim().toLowerCase();
@@ -16787,6 +17070,8 @@ function addMedication(payload) {
     start_date: payload.start_date || ds(new Date()),
     end_date: payload.end_date || null,
     notes: payload.notes || '',
+    timing: payload.timing || '',
+    instructions: payload.instructions || '',
     active: payload.active !== false,
     color: payload.color || 'cyan',
     created_at: new Date().toISOString()
@@ -16813,6 +17098,8 @@ function updateMedication(id, payload) {
     start_date: payload.start_date !== undefined ? payload.start_date : original.start_date,
     end_date: payload.end_date !== undefined ? payload.end_date : original.end_date,
     notes: payload.notes != null ? payload.notes : original.notes,
+    timing: payload.timing !== undefined ? payload.timing : (original.timing || ''),
+    instructions: payload.instructions !== undefined ? payload.instructions : (original.instructions || ''),
     active: payload.active !== undefined ? !!payload.active : original.active,
     color: payload.color || original.color,
   };
@@ -17019,7 +17306,8 @@ async function _syncMedicationToSupabase(entry) {
       client_id: entry.id, name: entry.name, med_type: entry.med_type, dose: entry.dose,
       frequency_type: entry.frequency_type, frequency_value: entry.frequency_value,
       weekly_days: entry.weekly_days, start_date: entry.start_date, end_date: entry.end_date,
-      notes: entry.notes, active: entry.active, color: entry.color, created_at: entry.created_at
+      notes: entry.notes, timing: entry.timing || null, instructions: entry.instructions || null,
+      active: entry.active, color: entry.color, created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
     if (error) syncNote('Medications', error);
   } catch (e) { console.warn('medications upsert threw:', e); }
@@ -17071,7 +17359,8 @@ async function _refreshMedicationsFromSupabase() {
       id: r.client_id || r.id, name: r.name, med_type: r.med_type, dose: r.dose,
       frequency_type: r.frequency_type, frequency_value: r.frequency_value,
       weekly_days: r.weekly_days || [], start_date: r.start_date, end_date: r.end_date,
-      notes: r.notes || '', active: r.active !== false, color: r.color || 'cyan',
+      notes: r.notes || '', timing: r.timing || '', instructions: r.instructions || '',
+      active: r.active !== false, color: r.color || 'cyan',
       created_at: r.created_at
     }));
     _saveMedications({ entries: _mergeByClientId(_getMedications().entries, entries) });
@@ -17121,7 +17410,8 @@ async function _migrateLocalMedicationsToSupabase() {
         client_id: e.id, name: e.name, med_type: e.med_type, dose: e.dose,
         frequency_type: e.frequency_type, frequency_value: e.frequency_value,
         weekly_days: e.weekly_days, start_date: e.start_date, end_date: e.end_date,
-        notes: e.notes, active: e.active, color: e.color, created_at: e.created_at
+        notes: e.notes, timing: e.timing || null, instructions: e.instructions || null,
+        active: e.active, color: e.color, created_at: e.created_at
       }, { onConflict: 'user_id,client_id' });
       if (error) { allOk = false; }
     } catch (ex) { allOk = false; }
@@ -22847,6 +23137,7 @@ async function _refreshDataInner(btn) {
   // behind the Body popup — the chiclets on the meals card are where duplicates
   // actually show.
   try { if (typeof dedupeMedications === 'function') dedupeMedications(); } catch (e) {}
+  try { if (typeof dedupeDoses === 'function') dedupeDoses(); } catch (e) {}
   // Runs on EVERY load, deliberately — not behind a one-shot flag. A flag that
   // fires once against an empty list and never retries is what ate the Body
   // module's data. Every write here is a deterministic upsert, so repeating it
@@ -22897,6 +23188,33 @@ function toast(msg, kind, ms) {
     if (_toastTimer) clearTimeout(_toastTimer);
     _toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2200);
   } catch (e) { /* a confirmation must never break the thing it confirms */ }
+}
+
+// A toast that can be acted on. Same element, plus one button — an undo that
+// lives somewhere other than the toast is an undo nobody reaches in time.
+let _toastUndo = null;
+function toastWithUndo(msg, undoFn, ms) {
+  try {
+    let el = document.getElementById('app-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'app-toast'; document.body.appendChild(el); }
+    _toastUndo = undoFn;
+    el.className = 'app-toast app-toast-ok app-toast-undo';
+    el.innerHTML = '';
+    const span = document.createElement('span');
+    span.textContent = msg;
+    const btn = document.createElement('button');
+    btn.className = 'app-toast-btn';
+    btn.textContent = 'Undo';
+    btn.onclick = () => {
+      const f = _toastUndo; _toastUndo = null;
+      el.classList.remove('show');
+      if (typeof f === 'function') f();
+    };
+    el.appendChild(span); el.appendChild(btn);
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.classList.remove('show'); _toastUndo = null; }, ms || 5000);
+  } catch (e) { /* never break the thing being confirmed */ }
 }
 
 // Anything that failed to reach the server, kept on this device.
