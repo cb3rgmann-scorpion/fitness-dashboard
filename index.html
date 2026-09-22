@@ -1378,6 +1378,47 @@
   }
   .bl-realism strong { color: var(--red); font-weight: 700; }
 
+  /* Confirmation toast — bottom centre, above everything, never interactive
+     so it can't swallow a tap meant for the thing underneath. */
+  .app-toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px);
+    z-index: 400; pointer-events: none;
+    max-width: min(90vw, 420px); padding: 11px 16px; border-radius: 10px;
+    font-size: 13px; font-weight: 700; line-height: 1.4; text-align: center;
+    background: var(--card); border: 1px solid var(--green);
+    color: var(--green); box-shadow: 0 6px 24px rgba(0,0,0,.35);
+    opacity: 0; transition: opacity .18s ease, transform .18s ease;
+  }
+  .app-toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .app-toast-warn { border-color: var(--orange); color: var(--orange); }
+  .app-toast-err  { border-color: var(--red);    color: var(--red); }
+
+  /* Reflect card. Quiet on purpose — it must not read as another thing to do. */
+  .reflect-card {
+    padding: 13px; border-radius: 10px; margin-bottom: 8px;
+    background: var(--card-bg); border: 1px solid var(--purple);
+  }
+  .reflect-text { font-size: 13.5px; line-height: 1.55; color: var(--text); font-weight: 600; }
+  .reflect-input {
+    width: 100%; margin-top: 9px; padding: 10px; border-radius: 8px;
+    border: 1px solid var(--input-border); background: var(--input-bg);
+    color: var(--text); font-size: 15px; font-family: inherit;
+    box-sizing: border-box; resize: vertical;
+  }
+  .reflect-actions { display: flex; gap: 7px; margin-top: 9px; }
+  .reflect-btn {
+    flex: 1; padding: 9px 12px; min-height: 40px; border-radius: 7px;
+    font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+  }
+  .reflect-btn-ghost { border: 1px solid var(--card-border); background: transparent; color: var(--text-muted); }
+  .reflect-btn-go { border: 1px solid var(--purple); background: var(--purple-bg); color: var(--purple); }
+
+  .sync-pill {
+    display: flex; align-items: center; gap: 5px; cursor: pointer;
+    padding: 4px 9px; border-radius: 12px; font-size: 10.5px; font-weight: 800;
+    background: var(--orange-bg); border: 1px solid var(--orange); color: var(--orange);
+  }
+
   /* ── Body "now" screen (rebuild 2026-09-21) ───────────────────────────────
      Touch targets are 48px+ because this gets used one-handed, often when
      something hurts. Nothing here is a form until you ask for one.          */
@@ -3099,6 +3140,8 @@
       </div>
     </div>
     <div class="time-display" id="time-display"></div>
+    <!-- Saved-here-but-not-on-the-server. Hidden until there is something to say. -->
+    <div class="sync-pill" id="sync-pill" style="display:none" title="Not synced"></div>
     <div class="nav-btns">
       <button class="nav-btn" onclick="changeDay(-1)">‹</button>
       <button class="nav-btn" onclick="showDailyView()">Today</button>
@@ -3402,10 +3445,26 @@
           </label>
         </div>
       </div>
-      <!-- Check-in question toggles (2026-08-18). Lives in the "You" tab — these
-           are personal preferences, not data config. -->
+      <!-- What you see (2026-09-21). Until now there was NO self-service control
+           over what appeared — only an admin editing your user_profiles row.
+           This hides things you have been granted; it can never grant. -->
       <div style="margin-bottom:16px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">☀️ Profile — check-in questions</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">👁 What you see</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Turn off anything you don't use — it disappears from the app until you turn it back on. Nothing is deleted, and this follows you to your other devices.</div>
+        <div id="view-prefs-body"></div>
+      </div>
+      <!-- Reflect (2026-09-22). The frequency is HIS choice rather than our
+           guess — the spec says nightly, he asked for every app load, and
+           making it a setting is the honest resolution of that. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🪞 Reflect</div>
+        <div id="reflect-prefs-body"></div>
+      </div>
+      <!-- Check-in question toggles (2026-08-18). Same tab as the module
+           toggles now: "what the app shows me" and "what the app asks me" are
+           one question to a person, even though they are two stores to us. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">☀️ Check-in questions</div>
         <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Choose what the morning and evening prompts ask. Fewer questions get answered more often than more questions do.</div>
         <div id="checkin-prefs-body"></div>
       </div>
@@ -3675,7 +3734,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.04';
+const APP_VERSION = '2026.09.21.08';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -4550,6 +4609,8 @@ async function openSettings() {
   if (typeof renderQolTasksList === 'function') renderQolTasksList();
   if (typeof renderBuildInfo === 'function') renderBuildInfo();
   if (typeof renderOccupationSettings === 'function') renderOccupationSettings();
+  if (typeof renderViewPrefs === 'function') renderViewPrefs();
+  if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
   if (typeof loadTrainingPlan === 'function') loadTrainingPlan().then(() => {
     if (typeof renderTrainingSettings === 'function') renderTrainingSettings();
@@ -4760,6 +4821,7 @@ function closeSettings() { document.getElementById('settings-backdrop').classLis
 // sections added later fall into 'data' automatically rather than vanishing —
 // failing visible beats failing hidden.
 const SETTINGS_TABS = [
+  { id: 'see',      label: '👁 What you see', match: ['what you see', 'check-in questions', 'reflect'] },
   { id: 'you',      label: '👤 You',       match: ['profile', 'tdee'] },
   { id: 'schedule', label: '🗓️ Schedule',  match: ['schedule', 'custody'] },
   { id: 'home',     label: '🏠 Home',      match: ['qol', 'home tasks', 'daily habits', 'home / qol'] },
@@ -5266,7 +5328,7 @@ async function _syncScheduleRowsToSupabase(dates) {
     if (error) throw error;
     return true;
   } catch (e) {
-    console.warn('schedule upsert failed', e);
+    syncNote('Schedule', e);
     return false;
   }
 }
@@ -8720,6 +8782,7 @@ function submitBodyLogEntry() {
   } else {
     addBodyStateEntry(payload);
   }
+  toast('Symptom saved');
   _renderBodyLogTab('symptoms');
   if (typeof renderDaily === 'function') { try { renderDaily(); } catch (e) {} }
 }
@@ -8899,6 +8962,7 @@ function submitAppointment() {
   } else {
     addAppointment(payload);
   }
+  toast('Appointment saved');
   _renderBodyLogTab('appointments');
 }
 
@@ -9212,6 +9276,7 @@ function submitMedEntry() {
   } else {
     addMedication(payload);
   }
+  toast('Medication saved');
   _renderBodyLogTab('meds');
 }
 
@@ -9630,6 +9695,7 @@ function submitProviderEntry() {
   } else {
     addProvider(payload);
   }
+  toast('Provider saved');
   _renderBodyLogTab('providers');
 }
 
@@ -9925,6 +9991,7 @@ function submitCareEntry() {
   } else {
     addCareCadence(payload);
   }
+  toast('Care item saved');
   _renderBodyLogTab('care');
 }
 
@@ -10857,7 +10924,7 @@ async function dnDelete(dateStr, cid) {
   renderDayNotes(dateStr);
   if (sbReady) {
     try { await sb.from('day_notes').delete().eq('client_id', cid); }
-    catch (e) { console.warn('day_notes delete failed', e); }
+    catch (e) { syncNote('Day notes', e); }
   }
 }
 function dnSetCat(dateStr, cat) { _dnDraft.cat = cat; renderDayNotes(dateStr); }
@@ -10903,7 +10970,14 @@ function buildDayNotesHtml(dateStr) {
 }
 function renderDayNotes(dateStr) {
   const host = document.getElementById('day-notes-host');
-  if (host) host.innerHTML = buildDayNotesHtml(dateStr);
+  // The prompt sits ABOVE the notes, because answering it produces a note —
+  // it is the way in to this surface, not a separate feature parked beside it.
+  // Returns '' when the module is off, the mode is 'off', it is too early for
+  // an evening-only prompt, or the prompt has been answered: in every one of
+  // those cases the card is absent rather than empty, so nothing on the day
+  // view says "here is a thing you did not do".
+  const reflect = (typeof reflectCardHtml === 'function') ? reflectCardHtml(dateStr) : '';
+  if (host) host.innerHTML = reflect + buildDayNotesHtml(dateStr);
 }
 
 // Duplicate QoL implementation removed 2026-08-19 — merged into the original
@@ -11003,6 +11077,7 @@ const APP_MODULES = [
   // an existing profile's `modules` array, canSee('custody') is false.
   { id:'custody',  icon:'⚖️', label:'Custody',    desc:'Custody calendar, 40% share panel, coverage banner' },
   { id:'notes',    icon:'🗒️', label:'Notes',      desc:'Day notes and (later) photos' },
+  { id:'reflect',  icon:'🪞', label:'Reflect',    desc:'A prompt to think about. Never a streak, never a nag.' },
   { id:'checkins', icon:'☀️', label:'Check-ins',  desc:'Morning and evening prompts' },
   { id:'stats',    icon:'📊', label:'Stats',      desc:'Trends, rowing, cardio, health' },
   { id:'admin',    icon:'🔑', label:'Admin',      desc:'Manage users and their access' },
@@ -11170,10 +11245,63 @@ function importLocalData(file) {
 }
 
 // The UI gate. Absent profile = show everything (see fail-open note above).
-function canSee(moduleId) {
+// ════════════════════════════════════════════════════════════════════════════
+// WHAT YOU SEE (2026-09-21)
+// ────────────────────────────────────────────────────────────────────────────
+// `modules` on user_profiles is a PERMISSION, granted by an admin. Until now it
+// was also the only control over what appeared, and there was no self-service
+// UI at all — the only way to change what you see was for an admin to edit your
+// row.
+//
+// The new layer is a PREFERENCE, and the distinction is load-bearing:
+//
+//     you may HIDE anything you have been granted.
+//     you may never GRANT yourself anything.
+//
+// So hiding is subtractive only. It cannot widen access, which matters most for
+// `custody` — the module whose accidental exposure was the 2026-09-12 leak. A
+// preference that could un-hide an ungranted module would be that leak with a
+// friendlier name.
+const VIEW_HIDDEN_KEY = 'view_hidden';
+let _viewHidden = null;
+
+function viewHidden() {
+  if (_viewHidden) return _viewHidden;
+  try {
+    const raw = localStorage.getItem(VIEW_HIDDEN_KEY);
+    const p = raw ? JSON.parse(raw) : null;
+    _viewHidden = Array.isArray(p) ? p : [];
+  } catch (e) { _viewHidden = []; }
+  return _viewHidden;
+}
+function isHiddenByChoice(moduleId) { return viewHidden().indexOf(moduleId) !== -1; }
+function setModuleVisible(moduleId, visible) {
+  const h = viewHidden().slice();
+  const i = h.indexOf(moduleId);
+  if (visible && i >= 0) h.splice(i, 1);
+  else if (!visible && i < 0) h.push(moduleId);
+  _viewHidden = h;
+  // Rides this morning's synced-settings layer, so the choice follows him to
+  // the phone instead of living on one device like checkin_prefs used to.
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(VIEW_HIDDEN_KEY, JSON.stringify(h));
+  else { try { localStorage.setItem(VIEW_HIDDEN_KEY, JSON.stringify(h)); } catch (e) {} }
+  if (typeof renderViewPrefs === 'function') renderViewPrefs();
+  if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
+  if (typeof applyModuleVisibility === 'function') applyModuleVisibility();
+  if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// Has this module been GRANTED? Permission only — no preference in here.
+function isGranted(moduleId) {
   if (!USER_PROFILE || !USER_PROFILE.modules) return true;
   if (USER_PROFILE.is_admin) return true;
   return USER_PROFILE.modules.indexOf(moduleId) !== -1;
+}
+
+function canSee(moduleId) {
+  // Permission first, then preference. Never the other way round.
+  if (!isGranted(moduleId)) return false;
+  return !isHiddenByChoice(moduleId);
 }
 function isAppAdmin() { return !!(USER_PROFILE && USER_PROFILE.is_admin); }
 
@@ -12166,7 +12294,7 @@ function _sessSave() {
     client_id: SESSION.client_id, session_date: SESSION.date,
     plan: SESSION.plan, done: SESSION.done, status: SESSION.status,
   }], { onConflict: 'user_id,client_id' })
-    .then(r => { if (r && r.error) console.warn('session sync failed', r.error); });
+    .then(r => { if (r && r.error) syncNote('Workout session', r.error); });
 }
 function _sessLoad() {
   try { SESSION = JSON.parse(localStorage.getItem('workout_session') || 'null'); }
@@ -12238,51 +12366,384 @@ const REGION_CONTRIBUTORS = {
   chest:     ['chest', 'thoracic'],
 };
 
+
+// The card. Deliberately plain: no streak, no count, no "you haven't written
+// today", no badge that goes red. It is a line of text and an optional box.
+//
+// Craig: prompts are "to be ignored! but occasionally typed in." So the dismiss
+// is as prominent as the answer, and dismissing costs nothing and is recorded
+// nowhere except the local seen-list.
+function reflectCardHtml(dateStr) {
+  if (typeof canSee === 'function' && !canSee('reflect')) return '';
+  const mode = reflectMode();
+  if (mode === 'off') return '';
+  const day = dateStr || ds(new Date());
+  if (mode === 'nightly' && new Date().getHours() < 17) return '';
+  const p = reflectPick(day);
+  if (!p) return '';
+  const answered = reflectAnswered()[p.id];
+  if (answered) return '';
+  const open = _reflectOpen === p.id;
+  return `<div class="reflect-card" id="reflect-card">
+    <div class="reflect-text">${escapeHtml(p.text)}</div>
+    ${open ? `
+      <textarea id="reflect-input" class="reflect-input" rows="3"
+        placeholder="Only if you want to."></textarea>
+      <div class="reflect-actions">
+        <button class="reflect-btn reflect-btn-ghost" onclick="reflectDismiss('${p.id}')">Not today</button>
+        <button class="reflect-btn reflect-btn-go" onclick="reflectSave('${p.id}','${day}')">Save it</button>
+      </div>`
+    : `<div class="reflect-actions">
+        <button class="reflect-btn reflect-btn-ghost" onclick="reflectDismiss('${p.id}')">Not today</button>
+        <button class="reflect-btn reflect-btn-go" onclick="reflectOpen('${p.id}')">Write something</button>
+      </div>`}
+  </div>`;
+}
+
+let _reflectOpen = null;
+function reflectOpen(id) {
+  _reflectOpen = id;
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+// Dismissing is a first-class outcome, not a failure. It marks the prompt seen
+// so the next one differs, and records nothing anywhere else.
+function reflectDismiss(id) {
+  reflectMarkSeen(id);
+  _reflectOpen = null;
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+function reflectSave(id, dateStr) {
+  const el = document.getElementById('reflect-input');
+  const txt = (el && el.value || '').trim();
+  if (!txt) { reflectDismiss(id); return; }
+  // Into day_notes, with prompt_id — which is what lets the pool self-prune.
+  // One store, not a second silo: the evening prompt already writes here.
+  try {
+    const cid = 'dn-reflect-' + dateStr + '-' + id;
+    const list = DAY_NOTES[dateStr] || (DAY_NOTES[dateStr] = []);
+    const row = { note_date: dateStr, category: 'personal', body: txt,
+                  client_id: cid, prompt_id: id };
+    const i = list.findIndex(n => n.client_id === cid);
+    if (i >= 0) list[i] = Object.assign({}, list[i], row);
+    else list.push(Object.assign({ created_at: new Date().toISOString() }, row));
+    if (typeof _dnSaveLocal === 'function') _dnSaveLocal();
+    if (typeof sbReady !== 'undefined' && sbReady) {
+      sb.from('day_notes').upsert([row], { onConflict: 'user_id,client_id' })
+        .then(r => { if (r && r.error) syncNote('Day notes', r.error); });
+    }
+  } catch (e) { if (typeof syncNote === 'function') syncNote('Day notes', e); }
+  reflectMarkSeen(id);
+  _reflectOpen = null;
+  if (typeof toast === 'function') toast('Saved');
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// REFLECT — the picker and the setting (2026-09-22)
+// ────────────────────────────────────────────────────────────────────────────
+// Per the spec, the smart lives HERE and not in the schema. Four rules, in order.
+//
+// NOTE ON SCOPE: the design is quote-most-nights with a prompt ~2x/week, because
+// "a prompt asks something of you, a quote gives you something" and prompts-only
+// makes the slot a permanent small demand. The QUOTE CORPUS DOES NOT EXIST YET —
+// it is blocked on verified public-domain sources, since modern Stoic and
+// Buddhist translations are in copyright and a large share of popular Stoic
+// quotes are outright fabricated. So this ships prompt-only, the frequency is
+// Craig's explicit choice rather than our imposition, and the default is OFF.
+// ════════════════════════════════════════════════════════════════════════════
+const REFLECT_MODES = [
+  { id:'off',     label:'Off',            desc:"Nothing. This is the default, and it is a fine answer." },
+  { id:'nightly', label:'Evenings',       desc:'One, with the wind-down. The slot it was designed for.' },
+  { id:'load',    label:'Every app load', desc:'Ambient. You will see the same one several times a day.' },
+];
+const REFLECT_MODE_KEY = 'reflect_mode';
+const REFLECT_SEEN_KEY = 'reflect_seen';     // local on purpose — see below
+
+function reflectMode() {
+  try { return localStorage.getItem(REFLECT_MODE_KEY) || 'off'; } catch (e) { return 'off'; }
+}
+function setReflectMode(mode) {
+  if (!REFLECT_MODES.some(m => m.id === mode)) return;
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(REFLECT_MODE_KEY, mode);
+  else { try { localStorage.setItem(REFLECT_MODE_KEY, mode); } catch (e) {} }
+  if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
+  if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
+// What has this device shown lately.
+//
+// DELIBERATELY LOCAL, not synced. The spec splits per-user state by cost of
+// loss: favourites are durable and belong in Supabase because losing them
+// matters; "what has been shown" is cheap and must not fight the phone over it.
+// A no-repeat window that round-trips is a no-repeat window that fails offline.
+function reflectSeen() {
+  try {
+    const p = JSON.parse(localStorage.getItem(REFLECT_SEEN_KEY) || '[]');
+    return Array.isArray(p) ? p : [];
+  } catch (e) { return []; }
+}
+function reflectMarkSeen(id) {
+  const seen = reflectSeen().filter(x => x !== id);
+  seen.push(id);
+  // Keep only a full cycle's worth. Beyond that the pool has turned over and
+  // the oldest entries are no longer suppressing anything.
+  while (seen.length > REFLECT_PROMPTS.length) seen.shift();
+  try { localStorage.setItem(REFLECT_SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+}
+
+// Which profile gates does this user satisfy? Conservative by design: unknown
+// means NO. 71 prompts need nothing at all, which the spec establishes is
+// enough for a full cycle, so guessing wrong costs variety, never awkwardness.
+function reflectHas(gate) {
+  if (gate === 'kids')  return typeof canSee === 'function' && canSee('custody');
+  if (gate === 'work')  return !!(USER_PROFILE && USER_PROFILE.occupation);
+  return false;   // 'partner', 'dating' — the app holds no such field
+}
+
+// Prompts already answered are SPENT. A question you have answered is not worth
+// reshowing; that is what day_notes.prompt_id is for.
+function reflectAnswered() {
+  const out = {};
+  try {
+    Object.keys(DAY_NOTES || {}).forEach(d => {
+      (DAY_NOTES[d] || []).forEach(n => { if (n && n.prompt_id) out[n.prompt_id] = true; });
+    });
+  } catch (e) {}
+  return out;
+}
+
+// Rule 3, which the spec calls the genuinely smart part: tone-match the day.
+// If he flagged a rough morning, a prompt asking what he crushed today is
+// tone-deaf. This needs NO new storage — the morning check-in already holds it.
+function reflectDayTone(dateStr) {
+  const d = (typeof DB_CACHE !== 'undefined' && DB_CACHE.daily && DB_CACHE.daily[dateStr]) || {};
+  const rested = String(d.felt_rested || '').toLowerCase();
+  const energy = Number(d.energy_am || d.energy || 0);
+  const rough = rested === 'bad' || rested === 'rough' || rested === 'poor' || (energy > 0 && energy <= 2);
+  return rough ? 'rough' : 'ok';
+}
+
+function reflectEligible(dateStr) {
+  if (typeof REFLECT_PROMPTS === 'undefined') return [];
+  const answered = reflectAnswered();
+  const tone = reflectDayTone(dateStr || ds(new Date()));
+  return REFLECT_PROMPTS.filter(p => {
+    if (answered[p.id]) return false;
+    if ((p.requires || []).some(g => !reflectHas(g))) return false;
+    // A rough day gets steady prompts only. 'up' asks for something good and
+    // 'deep' is heavier than a bad morning has earned.
+    if (tone === 'rough' && p.tone !== 'steady') return false;
+    return true;
+  });
+}
+
+// One prompt for this day. Stable within the day — the same date always yields
+// the same prompt, so a re-render (or 'every app load') does not shuffle it.
+function reflectPick(dateStr) {
+  const day = dateStr || ds(new Date());
+  let pool = reflectEligible(day);
+  if (!pool.length) {
+    // Full cycle done, or a rough day with everything steady already answered.
+    // Fall back to the unspent-but-off-tone set before repeating anything.
+    const answered = reflectAnswered();
+    pool = REFLECT_PROMPTS.filter(p => !answered[p.id] && !(p.requires || []).some(g => !reflectHas(g)));
+  }
+  if (!pool.length) pool = REFLECT_PROMPTS.filter(p => !(p.requires || []).some(g => !reflectHas(g)));
+  if (!pool.length) pool = REFLECT_PROMPTS.slice();
+  if (!pool.length) return null;
+  const seen = reflectSeen();
+  const fresh = pool.filter(p => seen.indexOf(p.id) === -1);
+  const from = fresh.length ? fresh : pool;
+  // Deterministic per day: a stable hash of the date, not Math.random().
+  let h = 0;
+  for (let i = 0; i < day.length; i++) h = (h * 31 + day.charCodeAt(i)) >>> 0;
+  return from[h % from.length];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// REFLECT — prompts (folded in 2026-09-22 from docs/reflect_prompts.js)
+// Design: AI/Reflect-Module-Spec.md, settled 2026-09-12.
+// ────────────────────────────────────────────────────────────────────────────
+// THE GOVERNING RULE, inherited from DAY_NOTE_CATS: no streak counter, no "you
+// haven't written today". A streak on emotional writing creates an obligation
+// to produce distress on schedule — that is the mechanism by which this feature
+// could actively harm its user. No streaks. Ever.
+//
+// Craig's framing, which is load-bearing: prompts are "to be ignored! but
+// occasionally typed in." A prompt allowed to go unanswered cannot become a
+// demand, and it still works unanswered — reading "what did you do that made
+// you smile?" directs attention whether or not anything gets typed.
+// THE PROMPT POOL IS THE PRODUCT; THE TEXT BOX IS OPTIONAL.
+//
+// 101 prompts. 71 need nothing from the profile, which is what lets a user who
+// filled in nothing still get a full cycle before any repeat.
+const REFLECT_PROMPTS = [
+
+  // ── Noticing good · 15 ────────────────────────────────────────────────
+  { id:'rp_smile',          text:'What did you do today that made you smile?', tags:['gratitude'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_small_good',     text:'Something small went right today. What was it?', tags:['gratitude'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_nearly_missed',  text:'What good thing today did you almost not notice?', tags:['gratitude'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_grateful_who',   text:'Who made your day easier today?', tags:['gratitude','relationships'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_would_repeat',   text:'What part of today would you happily do again tomorrow?', tags:['gratitude'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_kind_to_you',    text:'Was anyone kind to you today? Even slightly.', tags:['gratitude','relationships'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_ordinary_good',  text:'What ordinary thing felt good today?', tags:['gratitude'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_laughed',        text:'When did you last properly laugh?', tags:['gratitude'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_beauty',         text:'Did you see anything today that was just good to look at?', tags:['gratitude'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_food_good',      text:'What did you eat today that you actually enjoyed?', tags:['gratitude','body'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_easier_now',     text:'What is easier now than it was six months ago?', tags:['gratitude','growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_no_thanks',      text:'What went well today that nobody thanked you for?', tags:['gratitude','pride'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_glad_over',      text:'What are you glad is over?', tags:['gratitude'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_lucky',          text:'Where did you get lucky today?', tags:['gratitude'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_quiet_moment',   text:'Did you get a quiet moment today? What was it like?', tags:['gratitude','self'], requires:[], tone:'steady', allowsNegative:true },
+
+  // ── Pride and competence · 12 ─────────────────────────────────────────
+  { id:'rp_proud_today',    text:'What did you do today that made you proud?', tags:['pride'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_hard_did_anyway',text:'What did you do today that was hard, and you did it anyway?', tags:['pride','hard'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_showed_up',      text:'Where did you show up today when you did not feel like it?', tags:['pride','hard'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_good_at',        text:'What did you do today that you are genuinely good at?', tags:['pride'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_kept_word',      text:'What did you say you would do, and then did?', tags:['pride'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_handled_better', text:'What did you handle better today than you would have a year ago?', tags:['pride','growth'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_said_no',        text:'Did you say no to anything today? How did it feel?', tags:['pride','self'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_fixed',          text:'What did you fix today — object, problem, or situation?', tags:['pride','work'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_didnt_quit',     text:'What did you not quit today?', tags:['pride','hard'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_someone_noticed',text:'Did anyone notice something you did? What was it?', tags:['pride','relationships'], requires:[], tone:'up', allowsNegative:true },
+  { id:'rp_own_standard',   text:'Did you meet your own standard today, or someone else’s?', tags:['pride','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_effort_unseen',  text:'What effort did you put in today that nobody will ever see?', tags:['pride'], requires:[], tone:'steady', allowsNegative:false },
+
+  // ── Relationships, general · 12 ───────────────────────────────────────
+  { id:'rp_rel_good_bad',   text:'Tell me about your relationships. What is good and what is bad right now?', tags:['relationships'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_who_matters',    text:'Who mattered to you today?', tags:['relationships'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_reached_out',    text:'Did you reach out to anyone today, or wait to be reached?', tags:['relationships'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_meant_to_call',  text:'Who have you been meaning to call?', tags:['relationships'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_good_convo',     text:'What was the best conversation you had today?', tags:['relationships'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_gave_attention', text:'Who got your full attention today? Not your divided attention.', tags:['relationships'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_had_left',       text:'Did you have anything left for the people around you today?', tags:['relationships','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hard_convo',     text:'Is there a conversation you are avoiding?', tags:['relationships','hard'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_felt_seen',      text:'Did you feel understood by anyone today?', tags:['relationships'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_helped_someone', text:'Did you make anything easier for someone today?', tags:['relationships'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_forgave',        text:'Did you let something go today that you could have held onto?', tags:['relationships','growth'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_lonely',         text:'Were you alone today, or lonely? They are not the same.', tags:['relationships','self'], requires:[], tone:'deep', allowsNegative:true },
+
+  // ── Kids · 12 (requires: kids) ────────────────────────────────────────
+  { id:'rp_kid_proud',      text:'What did your kids do today that made you proud?', tags:['kids','pride'], requires:['kids'], tone:'up', allowsNegative:false },
+  { id:'rp_kid_laugh',      text:'What made your kids laugh today?', tags:['kids','gratitude'], requires:['kids'], tone:'up', allowsNegative:false },
+  { id:'rp_kid_learned',    text:'What did you learn about one of your kids today?', tags:['kids'], requires:['kids'], tone:'steady', allowsNegative:false },
+  { id:'rp_kid_present',    text:'Were you present with your kids today, or just in the room?', tags:['kids','relationships'], requires:['kids'], tone:'deep', allowsNegative:true },
+  { id:'rp_kid_patience',   text:'Where did you find patience today that you did not think you had?', tags:['kids','pride'], requires:['kids'], tone:'steady', allowsNegative:false },
+  { id:'rp_kid_hard',       text:'What was hard about parenting today?', tags:['kids','hard'], requires:['kids'], tone:'steady', allowsNegative:true },
+  { id:'rp_kid_said',       text:'What did one of your kids say today that stuck with you?', tags:['kids'], requires:['kids'], tone:'steady', allowsNegative:false },
+  { id:'rp_kid_saw_you',    text:'What did your kids see you do today? Not tell them — do.', tags:['kids','deep'], requires:['kids'], tone:'deep', allowsNegative:true },
+  { id:'rp_kid_growing',    text:'What has changed about your kids recently that you have not stopped to notice?', tags:['kids','growth'], requires:['kids'], tone:'steady', allowsNegative:false },
+  { id:'rp_kid_ritual',     text:'Is there a small thing you and your kids do that you would miss?', tags:['kids','gratitude'], requires:['kids'], tone:'up', allowsNegative:false },
+  { id:'rp_kid_repair',     text:'Did you get something wrong with your kids today, and fix it?', tags:['kids','growth'], requires:['kids'], tone:'deep', allowsNegative:true },
+  { id:'rp_kid_miss',       text:'What do you miss about them when they are not with you?', tags:['kids'], requires:['kids'], tone:'deep', allowsNegative:true },
+
+  // ── Dating and partnership · 10 (requires: dating or partner) ─────────
+  { id:'rp_dt_drawn',       text:'What are you actually drawn to in someone right now?', tags:['dating','relationships'], requires:['dating'], tone:'deep', allowsNegative:false },
+  { id:'rp_dt_yourself',    text:'Were you yourself today, or a version of yourself?', tags:['dating','self'], requires:['dating'], tone:'deep', allowsNegative:true },
+  { id:'rp_dt_good_sign',   text:'What is one thing that has gone well that you did not expect?', tags:['dating'], requires:['dating'], tone:'up', allowsNegative:false },
+  { id:'rp_dt_pace',        text:'Does the pace of things feel right to you, or are you going along with it?', tags:['dating','self'],   requires:['dating'], tone:'deep', allowsNegative:true },
+  { id:'rp_dt_old_pattern', text:'Is there an old pattern showing up that you recognise?', tags:['dating','growth'], requires:['dating'], tone:'deep', allowsNegative:true },
+  { id:'rp_dt_want',        text:'What do you actually want out of this? Not what you should want.', tags:['dating','self'], requires:['dating'], tone:'deep', allowsNegative:true },
+  { id:'rp_pt_good_today',  text:'What did your partner do today that you appreciated?', tags:['partner','gratitude'], requires:['partner'], tone:'up', allowsNegative:false },
+  { id:'rp_pt_said_it',     text:'Did you tell them, or just think it?', tags:['partner','relationships'], requires:['partner'], tone:'steady', allowsNegative:true },
+  { id:'rp_pt_friction',    text:'What is the friction right now, honestly?', tags:['partner','hard'], requires:['partner'], tone:'deep', allowsNegative:true },
+  { id:'rp_pt_team',        text:'Did you feel like a team today?', tags:['partner','relationships'], requires:['partner'], tone:'steady', allowsNegative:true },
+
+  // ── Body and health · 10 ──────────────────────────────────────────────
+  { id:'rp_body_felt',      text:'How did your body actually feel today?', tags:['body'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_body_good',      text:'What did your body do well today?', tags:['body','pride'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_body_kind',      text:'Were you kind to your body today, or just demanding of it?', tags:['body','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_body_energy',    text:'Where did your energy go today?', tags:['body','self'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_body_rest',      text:'Did you rest today, or just stop moving?', tags:['body','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_body_signal',    text:'Is your body telling you something you have been talking over?', tags:['body','hard'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_body_stronger',  text:'What can you do now that you could not do before?', tags:['body','growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_body_clothes',   text:'Has anything changed in how your clothes fit?', tags:['body','growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_body_sleep',     text:'What would make tomorrow morning easier?', tags:['body','self'], requires:[], tone:'steady', allowsNegative:false },
+  { id:'rp_body_pain',      text:'Is anything hurting that you have stopped mentioning?', tags:['body','hard'], requires:[], tone:'steady', allowsNegative:true },
+
+  // ── Work · 8 (requires: work) ─────────────────────────────────────────
+  { id:'rp_wk_good',        text:'What went well at work today?', tags:['work'], requires:['work'], tone:'up', allowsNegative:false },
+  { id:'rp_wk_absorbed',    text:'What absorbed you today? Where did the time go?', tags:['work'], requires:['work'], tone:'steady', allowsNegative:false },
+  { id:'rp_wk_drained',     text:'What drained you today, and was it worth it?', tags:['work','hard'], requires:['work'], tone:'steady', allowsNegative:true },
+  { id:'rp_wk_left_it',     text:'Did you leave work at work today?', tags:['work','self'], requires:['work'], tone:'deep', allowsNegative:true },
+  { id:'rp_wk_helped',      text:'Who did you help at work today?', tags:['work','relationships'], requires:['work'], tone:'up', allowsNegative:false },
+  { id:'rp_wk_learned',     text:'What did you learn today, even something small?', tags:['work','growth'], requires:['work'], tone:'steady', allowsNegative:false },
+  { id:'rp_wk_avoiding',    text:'What are you putting off, and what is it actually about?', tags:['work','hard'], requires:['work'], tone:'deep', allowsNegative:true },
+  { id:'rp_wk_matters',     text:'Did any of it matter today? It is fine if the answer is no.', tags:['work','deep'], requires:['work'], tone:'deep', allowsNegative:true },
+
+  // ── The honest ones · 12 (all allowsNegative) ─────────────────────────
+  { id:'rp_hn_today_was',   text:'Today was what it was. Describe it in one sentence.', tags:['hard','self'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_hn_heavy',       text:'What felt heavy today?', tags:['hard'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_hn_carrying',    text:'What are you carrying that you have not put down?', tags:['hard','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_not_fine',    text:'Is there something you have been calling fine that is not fine?', tags:['hard','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_snapped',     text:'Did you snap at anyone today? What was underneath it?', tags:['hard','relationships'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_tired_of',    text:'What are you tired of?', tags:['hard'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_hn_grief',       text:'Is there something you are still grieving?', tags:['hard','deep'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_scared',      text:'What are you quietly worried about?', tags:['hard','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_needed',      text:'What did you need today that you did not ask for?', tags:['hard','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_bad_day_ok',  text:'Bad day? You do not have to make it mean anything.', tags:['hard','self'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_hn_who_knows',   text:'Does anyone know how you are actually doing?', tags:['hard','relationships'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_hn_kinder',      text:'Would you speak to a friend the way you spoke to yourself today?', tags:['hard','self'], requires:[], tone:'deep', allowsNegative:true },
+
+  // ── Growth and change over time · 10 ──────────────────────────────────
+  { id:'rp_gr_year_ago',    text:'What would you a year ago be surprised by?', tags:['growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_gr_pattern',     text:'Is there a pattern in your last few weeks? Good or bad.', tags:['growth','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_gr_highs_lows',  text:'Have your highs been higher and your lows been lower lately? What do you make of that?', tags:['growth','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_gr_stopped',     text:'What have you stopped doing that used to be automatic?', tags:['growth','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_gr_started',     text:'What have you started doing that you did not used to?', tags:['growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_gr_still_true',  text:'Is something you believed about yourself no longer true?', tags:['growth','self'], requires:[], tone:'deep', allowsNegative:true },
+  { id:'rp_gr_next_thing',  text:'What is the next thing you want, now that you are here?', tags:['growth'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_gr_advice',      text:'What would you tell someone else in your position?', tags:['growth','self'], requires:[], tone:'steady', allowsNegative:true },
+  { id:'rp_gr_unglamorous', text:'What unglamorous thing have you been consistent about?', tags:['growth','pride'], requires:[], tone:'up', allowsNegative:false },
+  { id:'rp_gr_enough',      text:'Where in your life is it already enough?', tags:['growth','gratitude'], requires:[], tone:'deep', allowsNegative:false },
+];
+
 const STRETCH_LIB = [
   // ── Thoracic — the quiet driver behind most neck and shoulder complaints ──
   { id:'t_ext_chair', region:'thoracic', type:'mobility', when:'any', name:'Thoracic extension over a chair',
     dose:'8-10 slow reps', reps:8, cue:'Mid-back against the chair edge, hands behind the head, breathe out as you extend. Move the upper back, not the lower — if you feel it in your lumbar, slide higher.' },
   { id:'t_rot_open', region:'thoracic', type:'mobility', when:'any', name:'Open book rotation',
     dose:'8 each side', reps:8, perSide:true, cue:'On your side, knees bent, arms stacked. Open the top arm and follow it with your eyes. Let the ribcage rotate; keep the knees together.' },
-  { id:'t_catcow', region:'thoracic', type:'mobility', when:'pre', name:'Cat-cow',
+  { id:'t_catcow', link:'https://www.youtube.com/watch?v=kqnua4rHVVA', region:'thoracic', type:'mobility', when:'pre', name:'Cat-cow',
     dose:'10 reps', reps:10, cue:'Slow, synced with breath. Segment by segment rather than one big arch.' },
 
   // ── Chest ──
-  { id:'c_doorway', region:'chest', type:'static', when:'post', name:'Doorway pec stretch',
+  { id:'c_doorway', link:'https://www.youtube.com/watch?v=B9uY01NoqBg', region:'chest', type:'static', when:'post', name:'Doorway pec stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Forearm on the frame, elbow at shoulder height, step through gently. Stop well short of a sharp pull at the front of the shoulder.', flags:['shoulder'] },
   { id:'c_floor_angel', region:'chest', type:'mobility', when:'any', name:'Floor angels',
     dose:'8-10 reps', reps:8, cue:'On your back, arms sliding overhead, keeping wrists and lower back in contact. Only go as far as contact allows — the range is the point, not the reach.' },
 
   // ── Shoulder ──
-  { id:'s_cars', region:'shoulder', type:'mobility', when:'pre', name:'Shoulder circles, small to large',
+  { id:'s_cars', link:'https://www.youtube.com/watch?v=140RTNMciH8', region:'shoulder', type:'mobility', when:'pre', name:'Shoulder circles, small to large',
     dose:'8 each direction', reps:8, perSide:true, cue:'Start plate-sized, build only as far as stays comfortable. With arthritic change, pain-free range is the useful range.', flags:['shoulder'] },
-  { id:'s_sleeper', region:'shoulder', type:'static', when:'post', name:'Cross-body stretch',
+  { id:'s_sleeper', link:'https://www.youtube.com/watch?v=aIq0fLi8iak', region:'shoulder', type:'static', when:'post', name:'Cross-body stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Arm across the chest, pull at the upper arm not the elbow. Gentler on the joint than the sleeper stretch.' },
 
   // ── Neck ──
   { id:'n_retract', region:'neck', type:'mobility', when:'any', name:'Chin tucks',
     dose:'10 × 3s hold', reps:10, hold_s:3, cue:'Slide the head back over the shoulders, making a double chin. Not a nod. Directly counters the forward-head posture screens and hands-on work produce.' },
-  { id:'n_uppertrap', region:'neck', type:'static', when:'post', name:'Upper trap stretch',
+  { id:'n_uppertrap', link:'https://www.youtube.com/watch?v=54y0JAT46vE', region:'neck', type:'static', when:'post', name:'Upper trap stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Ear toward shoulder, opposite hand tucked under the thigh to anchor. No pulling hard on the head.' },
   { id:'n_levator', region:'neck', type:'static', when:'post', name:'Levator scapulae stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Turn the head 45° away, look down toward the armpit. This is the one that helps the knot at the top of the shoulder blade.' },
 
   // ── Lower back / hip ──
-  { id:'h_hipflexor', region:'hip', type:'static', when:'post', name:'Half-kneeling hip flexor stretch',
+  { id:'h_hipflexor', link:'https://www.youtube.com/watch?v=YQmpO9VT2X4', region:'hip', type:'static', when:'post', name:'Half-kneeling hip flexor stretch',
     dose:'30-45s each side', hold_s:30, perSide:true, cue:'Squeeze the back glute FIRST, then shift forward slightly. Without the glute the pelvis just tips and you stretch the lower back instead.' },
   { id:'h_9090', region:'hip', type:'mobility', when:'any', name:'90/90 hip switches',
     dose:'8 each side', reps:8, perSide:true, cue:'Sit with both knees at 90°, rotate side to side. Sit tall — the spine shouldn\'t do the work.' },
-  { id:'h_glutebridge', region:'hip', type:'strength', when:'any', name:'Glute bridge',
+  { id:'h_glutebridge', link:'https://www.youtube.com/watch?v=OUgsJ8-Vi0E', region:'hip', type:'strength', when:'any', name:'Glute bridge',
     dose:'15-20 reps', reps:15, cue:'Ribs down, squeeze at the top. Strength, not a stretch — and the safest posterior-chain option when the back is unhappy.' },
-  { id:'lb_birddog', region:'lowback', type:'strength', when:'any', name:'Bird dog',
+  { id:'lb_birddog', link:'https://www.youtube.com/watch?v=wiFNA3sqjCA', region:'lowback', type:'strength', when:'any', name:'Bird dog',
     dose:'8-12 each side', reps:8, perSide:true, cue:'Opposite arm and leg, slow, hips level. Anti-rotation. One of the few things that is good FOR a cranky lower back rather than a risk to it.' },
-  { id:'lb_deadbug', region:'lowback', type:'strength', when:'any', name:'Dead bug',
+  { id:'lb_deadbug', link:'https://www.youtube.com/watch?v=I5xbsA71v1A', region:'lowback', type:'strength', when:'any', name:'Dead bug',
     dose:'8-12 each side', reps:8, perSide:true, cue:'Lower back stays flat on the floor. Stop the moment it lifts.' },
-  { id:'lb_childs', region:'lowback', type:'static', when:'post', name:'Child\'s pose',
+  { id:'lb_childs', link:'https://www.youtube.com/watch?v=2MJGg-dUKh0', region:'lowback', type:'static', when:'post', name:'Child\'s pose',
     dose:'45-60s', hold_s:45, cue:'Knees wide, sit back toward the heels, walk the hands forward. Breathe into the back of the ribs.' },
 
   // ── Hamstring ──
-  { id:'ham_supine', region:'hamstring', type:'static', when:'post', name:'Supine hamstring stretch',
+  { id:'ham_supine', link:'https://www.youtube.com/watch?v=Il1L75v6gq0', region:'hamstring', type:'static', when:'post', name:'Supine hamstring stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'On your back with a strap or towel, other leg bent with the foot down. Lying keeps the lower back out of it, which standing toe-touches do not.' },
   { id:'ham_hinge', region:'hamstring', type:'mobility', when:'pre', name:'Hip hinge pattern',
     dose:'10 reps', reps:10, cue:'Hands on the hip creases, push the hips back with a long spine. This is the movement that protects the back when leaning over a table all day.' },
@@ -12294,7 +12755,7 @@ const STRETCH_LIB = [
     dose:'10 each side', reps:10, perSide:true, cue:'Knee travels over the toes, heel stays down. Restores the ankle range that standing all day quietly removes.' },
 
   // ── Wrist / hand — the massage-therapist career-enders ──
-  { id:'w_flexor', region:'wrist', type:'static', when:'post', name:'Forearm flexor stretch',
+  { id:'w_flexor', link:'https://www.youtube.com/watch?v=QiMiia4F7Xg', region:'wrist', type:'static', when:'post', name:'Forearm flexor stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gets loaded by every hour of hands-on work.' },
   { id:'w_extensor', region:'wrist', type:'static', when:'post', name:'Forearm extensor stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm down, gently press the back of the hand toward you.' },
@@ -12310,9 +12771,9 @@ const STRETCH_LIB = [
   // ── Added for healthcare / lifting work (2026-09-07) ──
   { id:'lb_sideplank', region:'lowback', type:'strength', when:'any', name:'Side plank',
     dose:'20-45s each side', hold_s:20, perSide:true, cue:'Stack the hips, don\'t let them sag. Trains the lateral core that resists being pulled sideways — which is what happens every time you take a patient\'s weight on one side.' },
-  { id:'lb_carry', region:'lowback', type:'strength', when:'any', name:'Suitcase carry',
+  { id:'lb_carry', link:'https://www.youtube.com/watch?v=Xz_3oV2cIQo', region:'lowback', type:'strength', when:'any', name:'Suitcase carry',
     dose:'30-40m each side', dist_m:30, perSide:true, cue:'One heavy weight, walk tall, resist the lean. The closest thing in a gym to holding someone up with one arm, and it builds the exact endurance that protects the back.' },
-  { id:'cf_calfraise', region:'calf', type:'strength', when:'any', name:'Calf raises',
+  { id:'cf_calfraise', link:'https://www.youtube.com/watch?v=-M4-G8p8fmc', region:'calf', type:'strength', when:'any', name:'Calf raises',
     dose:'2 × 15-20', sets:2, reps:15, cue:'Off a step, full range, slow down. Standing tolerance is trainable — calves that fatigue at hour eight are why the feet and back start hurting.' },
   { id:'cf_plantar', region:'calf', type:'static', when:'post', name:'Plantar fascia release',
     dose:'60s each foot', hold_s:60, perSide:true, cue:'Roll the arch over a ball, firm but not sharp. Best done first thing in the morning and at the end of a long shift.' },
@@ -12324,7 +12785,7 @@ const STRETCH_LIB = [
     dose:'2-3 × 12-15', sets:2, reps:12, cue:'Elbows to the ribs, shoulder blades back and down. Hold the end position for a beat.' },
   { id:'sc_ext_rot', region:'shoulder', type:'strength', when:'any', name:'Band external rotation',
     dose:'2 × 15 each side', sets:2, reps:15, perSide:true, cue:'Elbow tucked to the side, rotate the forearm out. Light — this is rotator cuff work, not a lift.', flags:['shoulder'] },
-  { id:'sc_facepull', region:'shoulder', type:'strength', when:'any', name:'Face pull',
+  { id:'sc_facepull', link:'https://www.youtube.com/watch?v=rep-qVOkqgk', region:'shoulder', type:'strength', when:'any', name:'Face pull',
     dose:'2-3 × 15', sets:2, reps:15, cue:'Pull to the forehead, elbows high, rotate out at the end. Best single movement for shoulder health.' },
 ];
 
@@ -12990,6 +13451,9 @@ function _stCard(s) {
     <div style="font-size:12px;color:var(--text-dim);margin-top:3px">${s.dose}</div>
     <div style="font-size:12px;color:var(--text-muted);line-height:1.5;margin-top:5px">${s.cue}</div>
     ${flagNote}
+    ${s.link ? `<a href="${s.link}" target="_blank" rel="noopener noreferrer"
+      onclick="event.stopPropagation()" title="Watch how it's done"
+      style="display:inline-flex;align-items:center;gap:5px;margin-top:8px;margin-right:6px;padding:9px 13px;border-radius:7px;border:1px solid var(--red-border, var(--red));background:var(--red-bg);color:var(--red);font-size:12.5px;font-weight:700;text-decoration:none;font-family:inherit;min-height:40px;box-sizing:border-box">▶ Watch</a>` : ''}
     <button onclick="stretchDone('${s.id}')" id="stdone-${s.id}"
       style="margin-top:8px;padding:9px 16px;border-radius:7px;border:1px solid ${doneBd};background:transparent;color:${doneCol};font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;min-height:40px">${doneLabel}</button>${timerBtn}
   </div>`;
@@ -13248,7 +13712,11 @@ function _epLoadLocal() {
 let _epSyncError = null;
 function _epFlagSyncError(what, err) {
   _epSyncError = what + ': ' + (err && err.message ? err.message : String(err));
-  console.warn('episode sync failed —', _epSyncError);
+  // The in-screen banner stays — it has the detail. This also raises the header
+  // pill, because a failure you can only see on the screen that failed is a
+  // failure you will not see.
+  if (typeof syncNote === 'function') syncNote('Symptoms', err);
+  else console.warn('episode sync failed —', _epSyncError);
 }
 
 async function epSyncEpisode(ep) {
@@ -13454,6 +13922,7 @@ function _epSubmit() {
     person: _epDraft.person,
   });
   // Land on the episode so he immediately sees the thing he's building.
+  toast(existing ? 'Added to the ongoing episode' : 'Symptom logged');
   _epSetScreen('detail', r.episode.client_id);
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   return existing;
@@ -13806,7 +14275,7 @@ function logActivity(o) {
   if (sbReady && !unchanged) {
     const { created_at, ...payload } = row;
     sb.from('activity_log').upsert([payload], { onConflict: 'user_id,client_id' })
-      .then(r => { if (r && r.error) console.warn('activity sync failed — kept locally', r.error); });
+      .then(r => { if (r && r.error) syncNote('Exercise log', r.error); });
   }
   return row;
 }
@@ -15637,7 +16106,7 @@ async function _syncBodyEntryToSupabase(entry) {
       event_time_local: entry.event_time_local || null,  // task #26 — HH:MM time-of-day
       created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('body_log upsert failed:', error);
+    if (error) syncNote('Symptom log', error);
   } catch (e) { console.warn('body_log upsert threw:', e); }
 }
 
@@ -15645,7 +16114,7 @@ async function _syncDeleteBodyEntry(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('body_log').delete().eq('client_id', clientId);
-    if (error) console.warn('body_log delete failed:', error);
+    if (error) syncNote('Symptom log', error);
   } catch (e) { console.warn('body_log delete threw:', e); }
 }
 
@@ -15909,7 +16378,7 @@ async function _syncAppointmentToSupabase(entry) {
       notes: entry.notes,
       created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('body_appointments upsert failed:', error);
+    if (error) syncNote('Appointments', error);
   } catch (e) { console.warn('body_appointments upsert threw:', e); }
 }
 
@@ -15917,7 +16386,7 @@ async function _syncDeleteAppointment(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('body_appointments').delete().eq('client_id', clientId);
-    if (error) console.warn('body_appointments delete failed:', error);
+    if (error) syncNote('Appointments', error);
   } catch (e) { console.warn('body_appointments delete threw:', e); }
 }
 
@@ -16056,7 +16525,7 @@ async function _syncProviderToSupabase(entry) {
       phone: entry.phone, email: entry.email, website: entry.website,
       notes: entry.notes, active: entry.active, created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' }).select('id, client_id').maybeSingle();
-    if (error) { console.warn('providers upsert failed:', error); return; }
+    if (error) { syncNote('Providers', error); return; }
     // body_appointments.provider_id is a uuid FK -> providers.id, but every local
     // id in this app is a client string. Without carrying the uuid back, the FK
     // could never be written and the link would stay null forever — the bug being
@@ -16083,7 +16552,7 @@ async function _syncDeleteProvider(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('providers').delete().eq('client_id', clientId);
-    if (error) console.warn('providers delete failed:', error);
+    if (error) syncNote('Providers', error);
   } catch (e) { console.warn('providers delete threw:', e); }
 }
 
@@ -16509,7 +16978,7 @@ async function _syncMedicationToSupabase(entry) {
       weekly_days: entry.weekly_days, start_date: entry.start_date, end_date: entry.end_date,
       notes: entry.notes, active: entry.active, color: entry.color, created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('medications upsert failed:', error);
+    if (error) syncNote('Medications', error);
   } catch (e) { console.warn('medications upsert threw:', e); }
 }
 
@@ -16517,7 +16986,7 @@ async function _syncDeleteMedication(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('medications').delete().eq('client_id', clientId);
-    if (error) console.warn('medications delete failed:', error);
+    if (error) syncNote('Medications', error);
   } catch (e) { console.warn('medications delete threw:', e); }
 }
 
@@ -16537,7 +17006,7 @@ async function _syncDoseToSupabase(entry) {
       taken_at: entry.taken_at, dose_override: entry.dose_override, notes: entry.notes,
       created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('medication_doses upsert failed:', error);
+    if (error) syncNote('Medication doses', error);
   } catch (e) { console.warn('medication_doses upsert threw:', e); }
 }
 
@@ -16545,7 +17014,7 @@ async function _syncDeleteDose(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('medication_doses').delete().eq('client_id', clientId);
-    if (error) console.warn('medication_doses delete failed:', error);
+    if (error) syncNote('Medication doses', error);
   } catch (e) { console.warn('medication_doses delete threw:', e); }
 }
 
@@ -16769,7 +17238,7 @@ async function _syncCareCadenceToSupabase(entry) {
       notes: entry.notes,
       created_at: entry.created_at
     }, { onConflict: 'user_id,client_id' });
-    if (error) console.warn('care_cadence upsert failed:', error);
+    if (error) syncNote('Care schedule', error);
   } catch (e) { console.warn('care_cadence upsert threw:', e); }
 }
 
@@ -16777,7 +17246,7 @@ async function _syncDeleteCareCadence(clientId) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     const { error } = await sb.from('care_cadence').delete().eq('client_id', clientId);
-    if (error) console.warn('care_cadence delete failed:', error);
+    if (error) syncNote('Care schedule', error);
   } catch (e) { console.warn('care_cadence delete threw:', e); }
 }
 
@@ -18391,7 +18860,9 @@ const CHECKIN_QUESTIONS = [
 // stays as the offline cache — read local first so nothing blocks on the
 // network, write both.
 // ════════════════════════════════════════════════════════════════════════════
-const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done', 'evening_prompt_last_done'];
+const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done',
+                             'evening_prompt_last_done', 'view_hidden',
+                             'reflect_mode'];
 
 async function pullSyncedSettings() {
   if (typeof sbReady === 'undefined' || !sbReady) return false;
@@ -18416,6 +18887,7 @@ async function pullSyncedSettings() {
       if (local && local !== '{}') pushSyncedSetting('checkin_prefs', local);
     }
     _checkinPrefs = null;            // drop the memo so the next read sees the pull
+    _viewHidden = null;
     _pruneLegacyPromptFlags();
     return true;
   } catch (e) { console.warn('synced settings pull threw:', e); return false; }
@@ -18472,6 +18944,62 @@ function setCheckinOn(id, on) {
   pushSyncedSetting('checkin_prefs', JSON.stringify(p));
   renderCheckinPrefs();
 }
+// Only modules the user actually HAS are listed. Showing a greyed-out row for
+// something they were never granted advertises the existence of other people's
+// features — and for `custody` that is the leak wearing a disguise.
+function renderReflectPrefs() {
+  const host = document.getElementById('reflect-prefs-body');
+  if (!host) return;
+  if (typeof canSee === 'function' && !canSee('reflect')) {
+    host.innerHTML = '<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5">Turn on the Reflect module above to use this.</div>';
+    return;
+  }
+  const cur = reflectMode();
+  host.innerHTML =
+    '<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">' +
+    'A question to think about — to be ignored, but occasionally typed in. ' +
+    'No streak, no count, no nag for a day you skipped.</div>' +
+    REFLECT_MODES.map(m => {
+      const on = cur === m.id;
+      return `<div onclick="setReflectMode('${m.id}')"
+        style="display:flex;align-items:flex-start;gap:9px;padding:9px 6px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
+        <div style="width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:2px;border:1.5px solid ${on ? 'var(--purple)' : 'var(--card-border)'};background:${on ? 'var(--purple)' : 'transparent'}"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11.5px;font-weight:600;color:${on ? 'var(--text)' : 'var(--text-muted)'}">${m.label}</div>
+          <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${m.desc}</div>
+        </div>
+      </div>`;
+    }).join('') +
+    '<div style="font-size:9.5px;color:var(--text-muted);padding-top:8px;line-height:1.5">' +
+    REFLECT_PROMPTS.length + ' prompts. A question you answer is spent — you get a full ' +
+    'cycle before any repeat, and a rough morning only gets the gentle ones.<br><br>' +
+    '<b style="color:var(--text-dim)">Quotes are not here yet.</b> The design pairs these with ' +
+    'a quote most nights so the slot gives as often as it asks. That corpus needs ' +
+    'verified public-domain sources, so it is its own careful job.</div>';
+}
+
+function renderViewPrefs() {
+  const host = document.getElementById('view-prefs-body');
+  if (!host) return;
+  const granted = APP_MODULES.filter(m => m.id !== 'admin' && isGranted(m.id));
+  if (!granted.length) { host.innerHTML = '<div style="font-size:10.5px;color:var(--text-muted)">Nothing to configure yet.</div>'; return; }
+  const hiddenCount = granted.filter(m => isHiddenByChoice(m.id)).length;
+  host.innerHTML = granted.map(m => {
+    const on = !isHiddenByChoice(m.id);
+    return `<div onclick="setModuleVisible('${m.id}',${!on})"
+      style="display:flex;align-items:flex-start;gap:9px;padding:9px 6px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
+      <div style="width:16px;height:16px;border-radius:4px;flex-shrink:0;margin-top:2px;border:1.5px solid ${on ? 'var(--green)' : 'var(--card-border)'};background:${on ? 'var(--green-bg)' : 'transparent'};color:var(--green);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">${on ? '\u2713' : ''}</div>
+      <span style="font-size:14px;flex-shrink:0">${m.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11.5px;font-weight:600;color:${on ? 'var(--text)' : 'var(--text-muted)'}">${m.label}</div>
+        <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${m.desc}</div>
+      </div>
+    </div>`;
+  }).join('') + (hiddenCount
+    ? `<div style="font-size:9.5px;color:var(--text-muted);padding-top:8px;line-height:1.5">${hiddenCount} hidden. Turning one back on restores it exactly as it was \u2014 hiding never deletes anything.</div>`
+    : '');
+}
+
 function renderCheckinPrefs() {
   const host = document.getElementById('checkin-prefs-body');
   if (!host) return;
@@ -22283,6 +22811,89 @@ async function _refreshDataInner(btn) {
   if (btn) { setTimeout(() => btn.classList.remove('spinning'), 600); }
 }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// SAVING IS VISIBLE (2026-09-21)
+// ────────────────────────────────────────────────────────────────────────────
+// Craig, 2026-08-19: "When save a doctors visit, should see 'you have saved it'
+// instead of intel dissappearing."
+//
+// He filed that as a UX annoyance. It is actually this app's central defect.
+// Counted today: 99 console.warn swallows, 75 of them sync failures, and SIX
+// save paths with ZERO confirmation between them. Every disaster this week
+// failed in exactly that shape and looked fine on screen:
+//
+//   · 176 medication doses written with a null parent  — console.warn
+//   · Save on "Report a symptom" dead for weeks         — silent
+//   · the dose counter that never moved                 — silent
+//
+// Two primitives:
+//   toast(msg)  — "it saved", the thing he actually asked for
+//   syncNote()  — "it saved HERE but not on the server", which is the one that
+//                 matters, because that state has been invisible and has
+//                 already cost real data.
+// ════════════════════════════════════════════════════════════════════════════
+let _toastTimer = null;
+function toast(msg, kind, ms) {
+  try {
+    let el = document.getElementById('app-toast');
+    if (!el) { el = document.createElement('div'); el.id = 'app-toast'; document.body.appendChild(el); }
+    el.className = 'app-toast app-toast-' + (kind || 'ok');
+    el.textContent = msg;
+    el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.remove('show'), ms || 2200);
+  } catch (e) { /* a confirmation must never break the thing it confirms */ }
+}
+
+// Anything that failed to reach the server, kept on this device.
+//
+// The old shape was `catch (e) { console.warn('x failed', e); }`, seventy-five
+// times. A console line is not a user interface. Failures collect here and the
+// header carries a count until they clear, so "saved on this device only" is a
+// state you can SEE rather than one you discover months later as 176 orphaned
+// rows.
+const SYNC_TROUBLE = [];
+function syncNote(label, err) {
+  const msg = (err && err.message) ? err.message : (typeof err === 'string' ? err : '');
+  const hit = SYNC_TROUBLE.find(t => t.label === label);
+  if (hit) { hit.count++; hit.msg = msg; hit.at = Date.now(); }
+  else SYNC_TROUBLE.push({ label: label, msg: msg, count: 1, at: Date.now() });
+  console.warn('sync trouble — ' + label + (msg ? ': ' + msg : ''));
+  try { renderSyncPill(); } catch (e) {}
+}
+function syncClear(label) {
+  const i = SYNC_TROUBLE.findIndex(t => t.label === label);
+  if (i >= 0) SYNC_TROUBLE.splice(i, 1);
+  try { renderSyncPill(); } catch (e) {}
+}
+// Wrap any Supabase promise: records a failure, clears the flag on success.
+function syncGuard(label, p) {
+  return Promise.resolve(p).then(r => {
+    if (r && r.error) syncNote(label, r.error); else syncClear(label);
+    return r;
+  }).catch(e => { syncNote(label, e); return { error: e }; });
+}
+
+function renderSyncPill() {
+  const host = document.getElementById('sync-pill');
+  if (!host) return;
+  if (!SYNC_TROUBLE.length) { host.style.display = 'none'; host.innerHTML = ''; return; }
+  const n = SYNC_TROUBLE.reduce((a, t) => a + t.count, 0);
+  host.style.display = '';
+  host.innerHTML = '<span>⚠</span><span>' + n + ' not synced</span>';
+  host.title = SYNC_TROUBLE.map(t => t.label + (t.count > 1 ? ' ×' + t.count : '') + (t.msg ? ' — ' + t.msg : '')).join('\n');
+  host.onclick = showSyncTrouble;
+}
+
+function showSyncTrouble() {
+  if (!SYNC_TROUBLE.length) { toast('Everything is synced'); return; }
+  const lines = SYNC_TROUBLE.map(t =>
+    '• ' + t.label + (t.count > 1 ? ' (×' + t.count + ')' : '') + (t.msg ? '\n   ' + t.msg : ''));
+  alert('Saved on this device, not yet on the server:\n\n' + lines.join('\n\n') +
+        '\n\nNothing is lost — these retry automatically on the next refresh.');
+}
+
 // ── Init ──
 document.addEventListener('DOMContentLoaded', async () => {
   loadTheme();
@@ -22298,6 +22909,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await startDashboard();
   }
   // If not logged in, login screen stays visible — doLogin() triggers startDashboard()
+
+  // Paint the sync pill once at startup so a failure carried over from a
+  // previous session is visible immediately, not only after the next one.
+  try { renderSyncPill(); } catch (e) {}
 
   // Auto-refresh every 5 minutes
   setInterval(() => {
