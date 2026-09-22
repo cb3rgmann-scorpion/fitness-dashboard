@@ -3734,7 +3734,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.08';
+const APP_VERSION = '2026.09.21.09';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -16730,7 +16730,50 @@ function _getMedDoses() {
 }
 function _saveMedDoses(data) { localStorage.setItem('medication_doses', JSON.stringify(data)); }
 
+// Same medication, same strength, twice over is never intentional. Returns the
+// existing id so a caller that expects one gets one, rather than half-creating.
+function _findMedByNameDose(name, dose) {
+  const n = String(name || '').trim().toLowerCase();
+  const d = String(dose || '').trim().toLowerCase();
+  if (!n) return null;
+  return _getMedications().entries.find(m =>
+    String(m.name || '').trim().toLowerCase() === n &&
+    String(m.dose || '').trim().toLowerCase() === d) || null;
+}
+
+// Collapse duplicates already sitting in this device's store, repointing their
+// doses onto the keeper rather than orphaning them. Idempotent, cheap, and run
+// on every Body open for the same reason the supplement migration is: a latching
+// flag that fires once against a clean store never repairs the one that breaks
+// later.
+function dedupeMedications() {
+  const data = _getMedications();
+  const keyOf = m => String(m.name || '').trim().toLowerCase() + '|' + String(m.dose || '').trim().toLowerCase();
+  const keeper = {}, remap = {};
+  const kept = [];
+  // Oldest wins: it carries the migrated history.
+  data.entries.slice().sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+    .forEach(m => {
+      const k = keyOf(m);
+      if (!k.replace('|', '')) { kept.push(m); return; }
+      if (keeper[k]) { remap[m.id] = keeper[k]; return; }
+      keeper[k] = m.id; kept.push(m);
+    });
+  const dropped = Object.keys(remap).length;
+  if (!dropped) return 0;
+  data.entries = kept;
+  _saveMedications(data);
+  const doses = _getMedDoses();
+  let moved = 0;
+  doses.entries.forEach(d => { if (remap[d.medication_id]) { d.medication_id = remap[d.medication_id]; moved++; } });
+  if (moved) _saveMedDoses(doses);
+  console.log('Merged ' + dropped + ' duplicate medication(s); moved ' + moved + ' dose(s) onto the keeper.');
+  return dropped;
+}
+
 function addMedication(payload) {
+  const dup = _findMedByNameDose(payload && payload.name, payload && payload.dose);
+  if (dup) return dup.id;
   const data = _getMedications();
   const id = Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const entry = {
@@ -19707,6 +19750,7 @@ function _pruneOrphanedSupplementDoses() {
 }
 
 async function _migrateSuppsToMedications() {
+  dedupeMedications();
   _pruneOrphanedSupplementDoses();
   if (typeof _getMedications !== 'function' || typeof addMedication !== 'function') return 0;
   if (typeof _getMedDoses !== 'function' || typeof addMedDose !== 'function') return 0;
