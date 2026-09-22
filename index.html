@@ -3734,7 +3734,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.09';
+const APP_VERSION = '2026.09.21.10';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -17075,6 +17075,10 @@ async function _refreshMedicationsFromSupabase() {
       created_at: r.created_at
     }));
     _saveMedications({ entries: _mergeByClientId(_getMedications().entries, entries) });
+    // The merge deliberately keeps local rows the server has not seen — which is
+    // right, and is also exactly how a duplicate survives a pull. Collapse them
+    // again on the way out so the merge cannot reintroduce what was just fixed.
+    if (typeof dedupeMedications === 'function') dedupeMedications();
   } catch (e) { console.warn('medications refresh threw:', e); }
 }
 
@@ -22838,6 +22842,11 @@ async function _refreshDataInner(btn) {
   const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   await loadTrackingData(ds(start), ds(end));
+  // Collapse duplicate medications before anything renders them. Cheap (a pass
+  // over a handful of rows), idempotent, and on the STARTUP path rather than
+  // behind the Body popup — the chiclets on the meals card are where duplicates
+  // actually show.
+  try { if (typeof dedupeMedications === 'function') dedupeMedications(); } catch (e) {}
   // Runs on EVERY load, deliberately — not behind a one-shot flag. A flag that
   // fires once against an empty list and never retries is what ate the Body
   // module's data. Every write here is a deterministic upsert, so repeating it
