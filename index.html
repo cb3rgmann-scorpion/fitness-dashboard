@@ -2078,6 +2078,32 @@
   .med-chiclets-row {
     display: flex; flex-direction: column; gap: 4px;
   }
+  /* Marks an element whose long-press (or right-click) does something.
+     Wherever this appears, holding opens more — that is the whole contract.
+     Add the class; do not hand-draw the mark somewhere else. */
+  .has-more { position: relative; }
+  .has-more::after {
+    content: ''; position: absolute; right: 0; bottom: 0;
+    width: 0; height: 0; pointer-events: none;
+    /* Excel's comment dog-ear is the reference. Two attempts got this wrong:
+       5px at 55% opacity was invisible on a phone, and tying it to the row's own
+       colour made it VANISH on the orange "needs attention" rows — the wedge
+       disappearing exactly when the row matters most.
+       Excel uses one colour for every comment regardless of cell content, and
+       that is the reason it works: one mark, one meaning, legible everywhere.
+       Cyan is this app's interactive colour, so the mark says "this is a control"
+       in the same voice as every other tappable thing. */
+    border-left: 9px solid transparent;
+    border-bottom: 9px solid var(--cyan);
+    opacity: .9;
+    border-bottom-right-radius: 5px;
+  }
+  .has-more:hover::after, .has-more:active::after { opacity: 1; }
+  /* While the press is being held, the mark brightens — feedback that the
+     gesture registered, before the sheet appears. */
+  .has-more.pressing::after { opacity: 1; border-bottom-color: var(--text); }
+  .has-more.pressing { transform: scale(0.97); }
+
   .med-chiclet {
     display: flex; align-items: center; gap: 6px;
     padding: 7px 10px;
@@ -3789,7 +3815,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.11';
+const APP_VERSION = '2026.09.21.12';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -9430,7 +9456,7 @@ function buildTodaysMedChiclets(dateStr) {
     })();
 
     const colorVar = (typeof _colorVar === 'function') ? _colorVar(m.color) : 'var(--cyan)';
-    const classes = ['med-chiclet'];
+    const classes = ['med-chiclet', 'has-more'];
     if (attentionRequired) classes.push('med-chiclet-attention');
     if (isComplete) classes.push('med-chiclet-done');
 
@@ -9441,7 +9467,9 @@ function buildTodaysMedChiclets(dateStr) {
       style="--med-color:${colorVar}"
       onclick="quickLogMedDose('${m.id}')"
       oncontextmenu="event.preventDefault();openMedSheet('${m.id}');return false"
-      ontouchstart="_medPressStart('${m.id}')" ontouchend="_medPressEnd()"
+      ontouchstart="_medPressStart('${m.id}', this)" ontouchend="_medPressEnd()"
+      onmousedown="if(event.button===0)_medPressStart('${m.id}', this)"
+      onmouseup="_medPressEnd()" onmouseleave="_medPressEnd()"
       ontouchmove="_medPressEnd()" ontouchcancel="_medPressEnd()"
       title="${attentionReason ? attentionReason + ' · ' : ''}Tap to log a dose. Hold for options.">
       <span class="med-chiclet-icon">💊</span>
@@ -9598,8 +9626,11 @@ function medSaveTiming(medId, val) { medSaveField(medId, 'timing', val); }
 // so a scroll that begins on a chiclet never opens the sheet.
 let _medPressTimer = null;
 let _medPressFired = false;
-function _medPressStart(medId) {
+let _medPressEl = null;
+function _medPressStart(medId, el) {
   _medPressFired = false;
+  _medPressEl = (el && el.classList) ? el : null;
+  if (_medPressEl) _medPressEl.classList.add('pressing');
   if (_medPressTimer) clearTimeout(_medPressTimer);
   _medPressTimer = setTimeout(() => {
     _medPressFired = true;
@@ -9609,6 +9640,7 @@ function _medPressStart(medId) {
 }
 function _medPressEnd() {
   if (_medPressTimer) { clearTimeout(_medPressTimer); _medPressTimer = null; }
+  if (_medPressEl) { _medPressEl.classList.remove('pressing'); _medPressEl = null; }
 }
 
 function quickLogMedDose(medId) {
