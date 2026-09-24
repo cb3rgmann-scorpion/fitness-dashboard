@@ -3815,7 +3815,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.21.12';
+const APP_VERSION = '2026.09.23.01';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -5435,8 +5435,13 @@ async function migrateLocalBwToSupabase() {
   say('<span style="color:var(--text-muted)">Scanning this device...</span>');
   let res;
   try {
+    _actBatch = _actBatch || [];
     res = migrateLegacyExerciseData();
+    const rec = recoverExSetAggregates();
+    res = { days: res.days + rec.days, rows: res.rows + rec.rows };
+    _flushActBatch();
   } catch (e) {
+    _flushActBatch();
     console.warn('migration failed', e);
     say('<span style="color:var(--red)">Migration failed — see console.</span>');
     return;
@@ -14062,23 +14067,35 @@ function epOpenEpisodes() {
 
 // The one call the entry screen makes. Joins an open episode if the condition
 // matches, otherwise starts one — so the user never manages episodes by hand.
-function epLog({ condition, category, body_part, side, severity, symptoms, treatment, note, person }) {
+function epLog({ condition, category, body_part, side, severity, symptoms, treatment, note, person, when, at }) {
   const now = new Date();
   const today = ds(now);
+  // `when` is the day this actually happened, which is not always the day it
+  // gets typed in. Clamped to today: a symptom cannot start in the future, and
+  // a fat-fingered year would otherwise sit at the top of the timeline forever.
+  const day = (when && /^\d{4}-\d{2}-\d{2}$/.test(when) && when <= today) ? when : today;
   let ep = epOpenFor(condition, person);
   if (!ep) {
     ep = {
       client_id: _epNewId('ep'), person: person || 'me', condition: (condition || '').trim(),
       category: category || 'other', body_part: body_part || '', side: side || '',
-      started_on: today, ended_on: null, status: 'active', diagnosed: false,
+      started_on: day, ended_on: null, status: 'active', diagnosed: false,
       treatment: '', notes: '',
     };
     EPISODES.push(ep);
     epSyncEpisode(ep);
+  } else if (day < ep.started_on) {
+    // Backdating an entry onto an existing episode moves the start with it —
+    // otherwise "day 3" would be wrong the moment you remembered it began
+    // earlier, and day-count is the number a clinician actually reads.
+    ep.started_on = day;
+    epSyncEpisode(ep);
   }
   const ev = {
-    client_id: _epNewId('ev'), episode_id: ep.client_id, event_date: today,
-    event_time: String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+    client_id: _epNewId('ev'), episode_id: ep.client_id, event_date: day,
+    event_time: at || (day === today
+      ? String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+      : ''),
     severity: severity || null, symptoms: symptoms || '', treatment: treatment || '', note: note || '',
   };
   EP_EVENTS.push(ev);
@@ -14106,6 +14123,26 @@ function epUpdate(clientId, fields) {
   Object.assign(ep, fields);
   _epSave(); epSyncEpisode(ep);
 }
+// Correct an entry that was logged on the wrong day, or at the wrong severity.
+// Moves the episode start back if the correction predates it, same rule as above.
+function epUpdateEvent(clientId, fields) {
+  const ev = EP_EVENTS.find(e => e.client_id === clientId);
+  if (!ev) return;
+  const today = ds(new Date());
+  if (fields.event_date && (!/^\d{4}-\d{2}-\d{2}$/.test(fields.event_date) || fields.event_date > today)) {
+    delete fields.event_date;
+  }
+  Object.assign(ev, fields);
+  const ep = EPISODES.find(e => e.client_id === ev.episode_id);
+  if (ep && ev.event_date && ev.event_date < ep.started_on) {
+    ep.started_on = ev.event_date;
+    epSyncEpisode(ep);
+  }
+  _epSave();
+  if (typeof epSyncEvent === 'function') epSyncEvent(ev);
+  if (typeof toast === 'function') toast('Updated');
+}
+
 function epDeleteEvent(clientId) {
   EP_EVENTS = EP_EVENTS.filter(e => e.client_id !== clientId);
   _epSave();
@@ -14123,7 +14160,7 @@ let _epDetailId = null;
 function openSymptomEntry(prefill) {
   _epLoadLocal();
   _epScreen = 'entry';
-  _epDraft = { condition:'', category:'', body_part:'', side:'', severity:0, person:'me', symptoms:'', treatment:'' };
+  _epDraft = { condition:'', category:'', body_part:'', side:'', severity:0, person:'me', symptoms:'', treatment:'', when: ds(new Date()) };
   if (prefill) Object.assign(_epDraft, prefill);
   const bd = document.getElementById('episode-backdrop');
   if (bd) bd.classList.add('open');
@@ -14146,6 +14183,8 @@ function closeSymptomEntry() {
   }
 }
 function _epSetScreen(s, id) { _epScreen = s; _epDetailId = id || null; renderEpisodeScreen(); }
+function _epPickWhen(v) { _epDraft.when = v; renderEpisodeScreen(); }
+
 function _epPick(field, val) {
   _epDraft[field] = (_epDraft[field] === val) ? '' : val;
   renderEpisodeScreen();
@@ -14175,7 +14214,7 @@ function _epSubmit() {
     condition: cond, category: _epDraft.category || 'other',
     body_part: _epDraft.body_part, side: _epDraft.side,
     severity: _epDraft.severity || null, symptoms: _epDraft.symptoms,
-    person: _epDraft.person,
+    person: _epDraft.person, when: _epDraft.when,
   });
   // Land on the episode so he immediately sees the thing he's building.
   toast(existing ? 'Added to the ongoing episode' : 'Symptom logged');
@@ -14265,6 +14304,26 @@ function renderEpisodeScreen() {
       }).join('')}
     </div>
 
+    <div style="margin-bottom:14px">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:5px">When did it start?</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center">
+        ${[0,1,2,3].map(n => {
+          const d = new Date(); d.setDate(d.getDate() - n);
+          const v = ds(d);
+          const lbl = n === 0 ? 'Today' : n === 1 ? 'Yesterday' : shortDay(d);
+          const on = (_epDraft.when || ds(new Date())) === v;
+          return `<button onclick="_epPickWhen('${v}')"
+            style="padding:9px 13px;border-radius:15px;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;min-height:40px;
+                   border:1px solid ${on ? 'var(--cyan)' : 'var(--card-border)'};
+                   background:${on ? 'var(--cyan-bg)' : 'var(--input-bg)'};
+                   color:${on ? 'var(--cyan)' : 'var(--text-muted)'}">${lbl}</button>`;
+        }).join('')}
+        <input type="date" id="ep-when" value="${_epDraft.when || ds(new Date())}"
+          max="${ds(new Date())}" onchange="_epPickWhen(this.value)"
+          style="padding:8px;border-radius:8px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;font-family:inherit;min-height:40px">
+      </div>
+    </div>
+
     <details ${discAttr('ep-add-detail')} style="margin-bottom:16px">
       <summary style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:6px 0">Add detail (optional)</summary>
       <div style="padding-top:8px">
@@ -14319,6 +14378,30 @@ function _epRenderList(body, title) {
 }
 
 // ── Episode detail: the timeline ──────────────────────────────
+let _epEditEventId = null;
+let _epEditSevVal = null;
+function _epEditEvent(id) {
+  const ev = EP_EVENTS.find(e => e.client_id === id);
+  _epEditEventId = id;
+  _epEditSevVal = ev ? ev.severity : null;
+  renderEpisodeScreen();
+}
+function _epCancelEditEvent() { _epEditEventId = null; _epEditSevVal = null; renderEpisodeScreen(); }
+function _epEditSev(v) { _epEditSevVal = (_epEditSevVal === v) ? null : v; renderEpisodeScreen(); }
+function _epSaveEditEvent(id) {
+  const d = document.getElementById('epe-date');
+  const t = document.getElementById('epe-time');
+  const n = document.getElementById('epe-note');
+  epUpdateEvent(id, {
+    event_date: d ? d.value : undefined,
+    event_time: t ? t.value : undefined,
+    severity: _epEditSevVal,
+    note: n ? n.value : undefined,
+    symptoms: '',
+  });
+  _epCancelEditEvent();
+}
+
 function _epRenderDetail(body, title) {
   const e = EPISODES.find(x => x.client_id === _epDetailId);
   if (!e) { return _epSetScreen('list'); }
@@ -14326,13 +14409,42 @@ function _epRenderDetail(body, title) {
   const evs = epEventsFor(e.client_id);
   const days = Math.max(1, Math.round((new Date(e.ended_on || ds(new Date())) - new Date(e.started_on)) / 86400000) + 1);
 
+  // Tapping a row opens it for editing in place. No new gesture and no tiny
+  // pencil glyph — the row IS the affordance, which also keeps the touch target
+  // the size of the row rather than the size of an icon.
   const timeline = evs.map(ev => {
     const sev = ev.severity ? EP_SEVERITY.find(s => s.v === ev.severity) : null;
-    return `<div style="display:flex;gap:9px;padding:10px 4px;border-bottom:1px solid var(--divider)">
+    if (_epEditEventId === ev.client_id) {
+      return `<div style="padding:11px 6px;border-bottom:1px solid var(--divider);background:var(--input-bg);border-radius:8px;margin-bottom:4px">
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <input type="date" id="epe-date" value="${ev.event_date}" max="${ds(new Date())}"
+            style="flex:2;padding:9px;border-radius:7px;border:1px solid var(--input-border);background:var(--card-bg);color:var(--text);font-size:14px;font-family:inherit">
+          <input type="time" id="epe-time" value="${ev.event_time || ''}"
+            style="flex:1;padding:9px;border-radius:7px;border:1px solid var(--input-border);background:var(--card-bg);color:var(--text);font-size:14px;font-family:inherit">
+        </div>
+        <div style="display:flex;gap:5px;margin-bottom:8px">
+          ${EP_SEVERITY.map(sv => `<button onclick="_epEditSev(${sv.v})"
+            style="flex:1;padding:9px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:700;min-height:40px;
+                   border:1px solid ${_epEditSevVal === sv.v ? sv.color : 'var(--card-border)'};
+                   background:${_epEditSevVal === sv.v ? 'var(--input-bg)' : 'transparent'};
+                   color:${_epEditSevVal === sv.v ? sv.color : 'var(--text-muted)'}">${sv.label}</button>`).join('')}
+        </div>
+        <input type="text" id="epe-note" value="${escapeHtml([ev.symptoms, ev.note].filter(Boolean).join(' · '))}"
+          placeholder="What it felt like…"
+          style="width:100%;box-sizing:border-box;padding:10px;border-radius:7px;border:1px solid var(--input-border);background:var(--card-bg);color:var(--text);font-size:15px;font-family:inherit;margin-bottom:8px">
+        <div style="display:flex;gap:6px">
+          <button onclick="_epCancelEditEvent()" style="flex:1;padding:10px;border-radius:7px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="_epSaveEditEvent('${ev.client_id}')" style="flex:1;padding:10px;border-radius:7px;border:1px solid var(--green);background:var(--green-bg);color:var(--green);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Save</button>
+          <button onclick="epDeleteEvent('${ev.client_id}');_epCancelEditEvent()" style="padding:10px 12px;border-radius:7px;border:1px solid var(--card-border);background:transparent;color:var(--red);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>
+        </div>
+      </div>`;
+    }
+    return `<div onclick="_epEditEvent('${ev.client_id}')"
+      style="display:flex;gap:9px;padding:10px 4px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px;align-items:center">
       <div style="min-width:74px;font-size:11.5px;color:var(--text-muted)">${ev.event_date.slice(5)}${ev.event_time ? ' ' + ev.event_time : ''}</div>
       ${sev ? `<span style="font-size:11px;font-weight:700;color:${sev.color};min-width:58px">${sev.label}</span>` : '<span style="min-width:58px"></span>'}
       <div style="flex:1;min-width:0;font-size:12.5px;color:var(--text);line-height:1.5">${[ev.symptoms, ev.treatment, ev.note].filter(Boolean).join(' · ') || '—'}</div>
-      <button onclick="epDeleteEvent('${ev.client_id}');renderEpisodeScreen()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:15px;padding:0 3px">×</button>
+      <span style="color:var(--text-muted);font-size:13px">›</span>
     </div>`;
   }).join('');
 
@@ -14341,8 +14453,17 @@ function _epRenderDetail(body, title) {
 
     <div style="padding:11px;border-radius:9px;background:var(--input-bg);border:1px solid var(--card-border);margin-bottom:12px">
       <div style="font-size:12.5px;color:var(--text);line-height:1.6">
-        Started <b>${e.started_on}</b> · day ${days}${e.ended_on ? ` · ended ${e.ended_on}` : ''}<br>
-        ${e.body_part ? e.body_part : 'No location'}${e.side ? ` (${e.side})` : ''} · ${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}
+        Started <input type="date" value="${e.started_on}" max="${ds(new Date())}"
+          onchange="epUpdate('${e.client_id}',{started_on:this.value});toast('Updated');renderEpisodeScreen()"
+          style="padding:4px 6px;border-radius:5px;border:1px solid var(--input-border);background:var(--card-bg);color:var(--text);font-size:12px;font-family:inherit"> · day ${days}${e.ended_on ? ` · ended ${e.ended_on}` : ''}<br>
+        <input type="text" value="${escapeHtml(e.body_part || '')}" placeholder="No location"
+          onchange="epUpdate('${e.client_id}',{body_part:this.value});toast('Updated');renderEpisodeScreen()"
+          style="padding:4px 6px;width:110px;border-radius:5px;border:1px solid var(--input-border);background:var(--card-bg);color:var(--text);font-size:12px;font-family:inherit">
+        ${['','left','right','both'].map(sd => `<span onclick="epUpdate('${e.client_id}',{side:'${sd}'});renderEpisodeScreen()"
+          style="cursor:pointer;font-size:10.5px;padding:2px 6px;border-radius:9px;margin-left:2px;
+                 border:1px solid ${(e.side||'') === sd ? 'var(--cyan)' : 'var(--card-border)'};
+                 color:${(e.side||'') === sd ? 'var(--cyan)' : 'var(--text-muted)'}">${sd === '' ? 'n/a' : sd}</span>`).join('')}
+        · ${evs.length} entr${evs.length === 1 ? 'y' : 'ies'}
       </div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:6px">
         ${e.diagnosed ? '✓ Confirmed by a clinician' : 'Self-reported — not a diagnosis'}
@@ -14490,6 +14611,13 @@ function _actSameRow(a, b) {
   return true;
 }
 
+// Non-null while a bulk pass is running: logActivity queues here instead of
+// writing. Deterministic client_ids make every row in the queue unique, so one
+// statement can carry the lot. Declared BEFORE its only reader — a `let` below
+// the function that reads it is a temporal-dead-zone throw waiting for the first
+// call that happens during script evaluation.
+let _actBatch = null;
+
 function logActivity(o) {
   const dateStr = o.date || ds(new Date());
   const rows = getActivity(dateStr);
@@ -14530,10 +14658,25 @@ function logActivity(o) {
   // did not need is disk IO budget it does not get back.
   if (sbReady && !unchanged) {
     const { created_at, ...payload } = row;
-    sb.from('activity_log').upsert([payload], { onConflict: 'user_id,client_id' })
+    // A sweep collects instead of firing. One upsert per row is how a free-tier
+    // instance spends its disk IO burst budget — which took this app offline on
+    // 2026-09-21 and does not refill on restart.
+    if (_actBatch) _actBatch.push(payload);
+    else sb.from('activity_log').upsert([payload], { onConflict: 'user_id,client_id' })
       .then(r => { if (r && r.error) syncNote('Exercise log', r.error); });
   }
   return row;
+}
+
+function _flushActBatch() {
+  const batch = _actBatch || [];
+  _actBatch = null;
+  if (!batch.length || !sbReady) return batch.length;
+  for (let i = 0; i < batch.length; i += 100) {
+    sb.from('activity_log').upsert(batch.slice(i, i + 100), { onConflict: 'user_id,client_id' })
+      .then(r => { if (r && r.error) syncNote('Exercise log', r.error); });
+  }
+  return batch.length;
 }
 
 function removeActivity(dateStr, clientId) {
@@ -14670,6 +14813,76 @@ const EX_TRACKS = {
 
 const UNIT_TO_M = { m: 1, km: 1000, mi: 1609.344 };
 
+// ── What a ROUTINE movement tracks (2026-09-23) ─────────────────────────
+// Craig: "I did some situps … only a place to put how many reps. not the uniform
+// exercise logger I want. I thought we went to unified '1 system to log'?"
+//
+// The bodyweight routines have declared `trackReps: true` per exercise all
+// along, and nothing downstream ever read it. exSetKey() slugs the name to
+// gymex_<slug>, which is in neither EX_TRACKS nor EX_LIB, so every bodyweight
+// movement fell through to the weight×reps default — the unified screen would
+// have asked him what he loaded the sit-up with.
+//
+// Derived from ROUTINES rather than hand-listed, for the same reason stretches
+// resolve from STRETCH_LIB: a second hand-maintained table is exactly how two
+// copies of "what this movement tracks" drift apart.
+//
+// A prescription written in seconds is measured in seconds. "Plank 3×30s" tracks
+// duration; logging it as three reps records nothing about the only variable
+// that progresses, which is the defect stretchDone() had until 2026-09-20.
+let _ROUTINE_TRACKS = null;
+const _BW_MUSCLE = {
+  bw_chest: 'chest', bw_back: 'back', bw_shoulders: 'shoulders',
+  bw_triceps: 'triceps', bw_biceps: 'biceps', bw_core: 'core',
+  bw_quads: 'quads', bw_hams_glutes: 'glutes', bw_calves: 'calves',
+};
+
+// parseTimerSeconds() is deliberately NOT reused here. It answers a different
+// question — "can one countdown run this?" — and returns 0 for "3×30s" because
+// that is three separate holds, not one timer. Asking it whether a movement is
+// measured in time gives the wrong answer for every prescription that has a set
+// count in front of it, which is all of them.
+const _HOLD_RE = /\d\s*(?:s|sec|secs|second|seconds|min|mins|minute|minutes)\b/i;
+function _isHoldPrescription(setsStr) {
+  const t = String(setsStr || '');
+  if (!t) return false;
+  if (/\breps?\b/i.test(t)) return false;   // "10 reps" is a count, not a clock
+  return _HOLD_RE.test(t);
+}
+
+function _buildRoutineTracks() {
+  const out = {};
+  if (typeof ROUTINES === 'undefined') return out;
+  Object.keys(ROUTINES).forEach(function (rk) {
+    const r = ROUTINES[rk] || {};
+    // Scope: bodyweight routines, plus anything that declares trackReps. Gym and
+    // kettlebell keep their existing resolution — they are loaded movements and
+    // EX_LIB already describes them.
+    const isBw = rk.indexOf('bodyweight') === 0;
+    (r.exercises || []).forEach(function (ex) {
+      if (!ex || ex._divider || !ex.name) return;
+      if (!isBw && ex.trackReps !== true) return;
+      if (ex._warmupCardio || ex._cooldown) return;
+      const key = exSlug(ex.name);
+      if (out[key]) return;
+      out[key] = {
+        tracks: _isHoldPrescription(ex.sets) ? ['duration'] : ['reps'],
+        kind: 'strength',
+        muscle: _BW_MUSCLE[ex.muscleGroup] || '',
+      };
+    });
+  });
+  return out;
+}
+
+function _routineTracks(exKey) {
+  if (!exKey) return null;
+  if (_ROUTINE_TRACKS === null) {
+    try { _ROUTINE_TRACKS = _buildRoutineTracks(); } catch (e) { _ROUTINE_TRACKS = {}; }
+  }
+  return _ROUTINE_TRACKS[exKey] || null;
+}
+
 // The resolver every caller goes through. Never read EX_TRACKS directly — an
 // unknown key has to fall back to the default rather than render a modal with no
 // inputs at all, which is how a movement silently becomes unloggable.
@@ -14684,6 +14897,13 @@ function exTracksFor(exKey, exName) {
   if (typeof stretchTracksFor === 'function' && /^st_/.test(exKey || '')) {
     const st = stretchTracksFor(exKey);
     if (st) return st;
+  }
+  const rt = (typeof _routineTracks === 'function') ? _routineTracks(exKey) : null;
+  if (rt) return rt;
+  // GYM_CARDIO and EX_TRACKS are two lists that can drift. A cardio machine that
+  // exists in one and not the other must not silently become a barbell lift.
+  if (/^gymcardio_/.test(exKey || '')) {
+    return { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'm' };
   }
   if (typeof EX_LIB !== 'undefined' && exName) {
     const e = EX_LIB.find(x => x.name === exName);
@@ -14749,8 +14969,19 @@ function _trackToStorage(exKey, exName, entry) {
 // distance or duration.
 function _trackEntryIsReal(exKey, exName, entry) {
   if (!entry) return false;
-  const list = exTrackList(exKey, exName);
-  if (list.indexOf('reps') !== -1) return (Number(entry.r) || 0) > 0;
+  // `tracks` decides what the modal ASKS FOR. It must not decide what counts as
+  // performed — the same rule _trackToStorage's keep() already follows, and the
+  // same discard bug this whole refactor exists to kill.
+  //
+  // 2026-09-23: a plank is duration-tracked in the bodyweight routines and is
+  // still rendered as weight×reps on the gym card. Under the old rule, reps
+  // typed there matched no branch and the set vanished. A number a human typed
+  // is ground truth regardless of what the library expected.
+  //
+  // The reps-with-weight guard survives: addExSetRow pre-fills the next row's
+  // weight from the previous set, so "has a weight" alone would log every
+  // half-typed row as a completed 130×0.
+  if ((Number(entry.r) || 0) > 0) return true;
   return (Number(entry.d) || 0) > 0 || (Number(entry.t) || 0) > 0;
 }
 
@@ -14767,6 +14998,15 @@ function fmtSegment(exKey, exName, e) {
   }
   if (list.indexOf('distance') !== -1 && (Number(e.d) || 0) > 0) bits.push((Number(e.d) || 0) + (unit || ''));
   if (list.indexOf('duration') !== -1 && (Number(e.t) || 0) > 0) bits.push(fmtDurationS(e.t));
+  // Nothing matched but the entry holds a value — say what it holds. An empty
+  // string here is a logged set that renders as a blank line, which reads as
+  // "nothing saved" and is how a working write path gets reported as broken.
+  if (!bits.length) {
+    const r = Number(e.r) || 0, w = Number(e.w) || 0, t = Number(e.t) || 0, dd = Number(e.d) || 0;
+    if (r > 0) bits.push(w > 0 ? (w + '×' + r) : (r + ' reps'));
+    if (t > 0) bits.push(fmtDurationS(t));
+    if (dd > 0) bits.push(dd + (unit || ''));
+  }
   return bits.join(' · ');
 }
 
@@ -14911,6 +15151,90 @@ function _legacyExLabel(woId, exKey) {
   const w = (typeof OTHER_WORKOUTS !== 'undefined') ? OTHER_WORKOUTS.find(x => x.id === woId) : null;
   const e = w && w.exercises ? w.exercises.find(x => x.key === exKey) : null;
   return e ? e.label : exKey;
+}
+
+// ── The offline buffer had no reconciler (2026-09-23) ──────────────────
+// exsets_ is documented three screens up as "the offline buffer (gym basements
+// have no signal); activity_log is the source of truth" — and nothing ever
+// walked the buffer. A value reached activity_log only if you happened to type
+// it on a path whose mirror worked, which for bodyweight reps and gym machines
+// was never. Every rep Craig has typed into one of those boxes is sitting in
+// exsets_ on his phone, invisible to every reader in the app.
+//
+// Fixing the writer does not recover what the broken writer already lost. That
+// is what this is for.
+//
+// Runs on every load, never behind a one-shot flag, for the reason stated above
+// migrateLegacyExerciseData. It is free after the first pass: the expansion is a
+// no-op once entries exist, and logActivity's dirty check suppresses the upsert
+// when nothing differs.
+//
+// Only keys with a known family are swept. exNameForKey will now de-slug
+// anything rather than return '' — silence is the worse failure — but that means
+// a stale positional key like `gym_upper_3` would otherwise be resurrected as a
+// movement called "Gym upper 3".
+const _RECOVERABLE_KEY = /^(gymex|gymmachine|gymcardio|bw|kb|wo|st)_/;
+
+function recoverExSetAggregates() {
+  if (typeof logActivity !== 'function') return { days: 0, rows: 0 };
+  const days = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('exsets_') === 0 && /^\d{4}-\d{2}-\d{2}$/.test(k.slice(7))) days.push(k.slice(7));
+    }
+  } catch (e) { return { days: 0, rows: 0 }; }
+
+  let rows = 0, dayCount = 0;
+  const owns = (_actBatch === null);
+  if (owns) _actBatch = [];
+  try {
+    days.forEach(function (dateStr) {
+      let all;
+      try { all = JSON.parse(localStorage.getItem('exsets_' + dateStr) || '{}'); } catch (e) { return; }
+      if (!all || typeof all !== 'object') return;
+      // This is a GAP-FILLER, not a re-sync. A movement that already has rows in
+      // activity_log is left alone: re-syncing every set on every load would mean
+      // thousands of localStorage read-modify-writes per refresh on a phone with
+      // a year of history, for rows that are already correct.
+      const have = {};
+      getActivity(dateStr).forEach(function (r) { have[r.exercise_key] = true; });
+      let n = 0, dirty = false;
+      Object.keys(all).forEach(function (exKey) {
+        if (!_RECOVERABLE_KEY.test(exKey) || have[exKey]) return;
+        const d = all[exKey] || {};
+        const name = exNameForKey(exKey, d);
+        const list = exTrackList(exKey, name);
+        const isAgg = list.indexOf('distance') !== -1 || list.indexOf('duration') !== -1;
+        if (Array.isArray(d.entries) && d.entries.length) {
+          syncExSetsToActivity(dateStr, exKey, name); n++; return;
+        }
+        if (isAgg) {
+          if ((Number(d.time) || 0) > 0 || (Number(d.dist) || 0) > 0) {
+            syncCardioAggToActivity(dateStr, exKey); n++;
+          }
+          return;
+        }
+        const reps = Number(d.reps) || 0;
+        if (!reps) return;
+        // The stranded aggregate becomes the segments every reader expects.
+        const weight = Number(d.weight) || 0;
+        const nSets = Math.max(1, Number(d.sets) || 1);
+        d.entries = [];
+        for (let i = 0; i < nSets; i++) d.entries.push({ w: weight, r: reps, flag: '' });
+        if (!d.name && name) d.name = name;
+        all[exKey] = d;
+        try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+        dirty = true;
+        syncExSetsToActivity(dateStr, exKey, name); n++;
+      });
+      if (n || dirty) { rows += n; dayCount++; }
+    });
+  } catch (e) {
+    console.warn('exsets recovery failed', e);
+  }
+  if (owns) _flushActBatch();
+  return { days: dayCount, rows: rows };
 }
 
 // Sweep every wlog_ day present on this device. Called once per load; cheap
@@ -20372,11 +20696,37 @@ function ratingEmoji(val) { return val === 1 ? '😊' : val === 0 ? '😐' : val
 function getExSets(dateStr) {
   try { return JSON.parse(localStorage.getItem('exsets_' + dateStr)) || {}; } catch(e) { return {}; }
 }
+// Mirror by what the movement TRACKS, never by how its key is spelled.
+//
+// 2026-09-23. This used to hand every write to syncCardioAggToActivity, which
+// opened with a prefix test: /^gymcardio_|^gymmachine_/. Two failures fell out
+// of that one line:
+//
+//   * A bodyweight movement's key is gymex_<slug>. It failed the test, so the
+//     mirror returned on its first line and the reps stopped at localStorage.
+//     Craig logged sit-ups on 2026-09-23; activity_log's newest row was
+//     2026-09-13. Eleven days of a write path that looked like it worked.
+//   * gymmachine_ PASSED the test and was dropped anyway, because that mirror
+//     only knows how to write distance and duration. Every machine logged in the
+//     gym popup wrote nothing — and an empty aggregate made it DELETE an
+//     existing row on the way past.
+//
+// A prefix test is an undeclared second copy of the tracks model. There is one
+// model (EX_TRACKS / _routineTracks / STRETCH_LIB); ask it instead of guessing
+// from the spelling of a key.
 function setExSet(dateStr, exKey, field, val) {
-  const sets = getExSets(dateStr);
-  if (!sets[exKey]) sets[exKey] = {};
-  sets[exKey][field] = val;
-  localStorage.setItem('exsets_' + dateStr, JSON.stringify(sets));
+  const all = getExSets(dateStr);
+  const list = exTrackList(exKey, (all[exKey] || {}).name || '');
+  const isAgg = list.indexOf('distance') !== -1 || list.indexOf('duration') !== -1;
+  // Set-based movement: the flat box is an aggregate that has to expand into
+  // real segments before anything can read it. quickSetAgg owns that, including
+  // the refusal to flatten sets that already vary.
+  if (!isAgg && (field === 'weight' || field === 'reps' || field === 'sets')) {
+    return quickSetAgg(dateStr, exKey, field, val);
+  }
+  if (!all[exKey]) all[exKey] = {};
+  all[exKey][field] = val;
+  localStorage.setItem('exsets_' + dateStr, JSON.stringify(all));
   syncCardioAggToActivity(dateStr, exKey);
 }
 
@@ -20526,6 +20876,20 @@ function _aggReadonlyRow(dateStr, exKey, exName) {
 function _aggSetSummary(dateStr, exKey) {
   const entries = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
   if (entries.length < 2) return '';
+  const _nm = (typeof exNameForKey === 'function') ? exNameForKey(exKey, getExSets(dateStr)[exKey]) : '';
+  const _list = exTrackList(exKey, _nm);
+  // A held position has no rep count. Summing reps for three planks produced 0,
+  // the zero guard below then hid the line entirely, and three logged holds
+  // looked exactly like nothing logged at all.
+  if (_list.indexOf('reps') === -1) {
+    const secs = entries.reduce((a, e) => a + (Number(e.t) || 0), 0);
+    if (secs) {
+      const segs = entries.filter(e => (Number(e.t) || 0) > 0).map(e => fmtSegment(exKey, _nm, e));
+      return `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${segs.join(' · ')} <b style="color:var(--text-dim)">= ${fmtDurationS(secs)}</b></div>`;
+    }
+    // No clock reading, but reps may still be there — the same movement is
+    // rendered as weight×reps on the gym card. Fall through and count them.
+  }
   const total = entries.reduce((a, e) => a + (Number(e.r) || 0), 0);
   // Clearing reps to 0 un-logs the exercise, but the legacy aggregate keeps the
   // weight and set count, so getExSetEntries still synthesizes N sets from it.
@@ -20534,6 +20898,45 @@ function _aggSetSummary(dateStr, exKey) {
   if (total === 0) return '';
   const parts = entries.map(e => (e.w ? e.w + '×' + e.r : String(e.r)));
   return `<div style="font-size:9.5px;color:var(--text-muted);margin-top:2px">${parts.join(' · ')} <b style="color:var(--text-dim)">= ${total} reps</b></div>`;
+}
+
+// ── The bodyweight row, in ONE place (2026-09-23) ──────────────────────
+// This markup existed twice — openRoutinePopup and openRoutinePopupWithData —
+// and both copies wrote through setExSet with no route to the per-set screen.
+// Two copies of a row is how one of them gets fixed and the other does not, so
+// the duplicate is deleted rather than patched alongside.
+function bwTrackRow(dateStr, exKey, exName) {
+  const list = exTrackList(exKey, exName);
+  const safe = String(exName || '').replace(/'/g, "\\'");
+  const summary = _aggSetSummary(dateStr, exKey);
+  if (list.indexOf('reps') === -1) {
+    // A hold is logged in seconds on the per-set screen. A flat "reps" box
+    // cannot express one, so it is not offered — an input that cannot record
+    // what you did is worse than no input.
+    return '<div style="margin-top:3px" onclick="event.stopPropagation()">'
+      + `<span class="wlog-ro-row" onclick="event.stopPropagation();openExercise('${exKey}','${safe}')" title="Log how long you held it">`
+      + '<span class="wlog-ro">log hold</span><span class="wlog-ro-go">›</span></span></div>' + summary;
+  }
+  const ro = _aggReadonlyRow(dateStr, exKey, exName);
+  if (ro) return '<div style="margin-top:3px" onclick="event.stopPropagation()">' + ro + '</div>' + summary;
+  const setData = getExSets(dateStr)[exKey] || {};
+  return `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
+      <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
+      <span class="wlog-unit">reps</span>
+      <span class="wlog-unit">×</span>
+      <input class="wlog-input" type="number" placeholder="sets" min="0" max="20" style="width:40px" value="${setData.sets || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">
+      <span class="wlog-unit">sets</span>
+    </div>` + summary;
+}
+
+// The exercise name doubles as the way into the per-set screen, exactly as it
+// does on the gym card. Craig, 2026-09-20: "every push button opens the same
+// modal." One way in, or there are two systems again.
+function exNameCell(ex, exKey, linkable) {
+  const setsTag = ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : '';
+  if (!linkable) return '<div class="ex-name">' + ex.name + setsTag + '</div>';
+  const safe = String(ex.name || '').replace(/'/g, "\\'");
+  return `<div class="ex-name" onclick="event.stopPropagation();openExercise('${exKey}','${safe}')" style="cursor:pointer" title="Tap to log set by set">${ex.name}${setsTag} <span style="color:var(--cyan);font-weight:700">›</span></div>`;
 }
 
 // The inline writers (setExSetEntry, addExSetRow…) only ever receive a key, so
@@ -20552,11 +20955,43 @@ function exNameForKey(exKey, data) {
     const hit = EX_LIB.find(e => exSlug(e.name) === exKey);
     if (hit) return hit.name;
   }
-  if (/^gymex_/.test(exKey || '')) {
-    const words = exKey.replace(/^gymex_/, '').replace(/_/g, ' ').trim();
-    return words ? words.charAt(0).toUpperCase() + words.slice(1) : '';
+  // Every key family has to yield a label, because syncExSetsToActivity bails
+  // out on an empty name. That early return is a silent gate: it turns a logged
+  // set into nothing at all, with no error anywhere.
+  //
+  // Found 2026-09-23 — gymmachine_chest_press resolved to '' here, so even once
+  // the mirror below was fixed, every gym machine would still have written
+  // nowhere. A de-slug is a worse label than the real one and a far better
+  // outcome than silence.
+  const _byId = (list, id) => {
+    if (typeof list === 'undefined' || !list) return '';
+    const hit = list.find(x => x && x.id === id);
+    return hit ? (hit.label || '') : '';
+  };
+  const _m = String(exKey || '').match(/^(gymmachine|gymcardio|gymex|bw|kb|wo)_(.+)$/);
+  if (_m) {
+    const id = _m[2];
+    if (_m[1] === 'gymmachine') {
+      const l = _byId(typeof GYM_MACHINES !== 'undefined' ? GYM_MACHINES : null, id);
+      if (l) return l;
+    }
+    if (_m[1] === 'gymcardio') {
+      const l = _byId(typeof GYM_CARDIO !== 'undefined' ? GYM_CARDIO : null, id);
+      if (l) return l;
+    }
+    if ((_m[1] === 'bw' || _m[1] === 'kb') && typeof _legacyExLabel === 'function') {
+      const l = _legacyExLabel(_m[1] === 'bw' ? 'bodyweight' : 'kettlebell', id);
+      if (l && l !== id) return l;
+    }
+    if (_m[1] === 'wo' && typeof _legacyWoLabel === 'function') {
+      const l = _legacyWoLabel(id);
+      if (l && l !== id) return l;
+    }
+    const words = id.replace(/_/g, ' ').trim();
+    if (words) return words.charAt(0).toUpperCase() + words.slice(1);
   }
-  return '';
+  const bare = String(exKey || '').replace(/_/g, ' ').trim();
+  return bare ? bare.charAt(0).toUpperCase() + bare.slice(1) : '';
 }
 
 // The session logger writes the aggregate AND logs the activity row itself.
@@ -20608,8 +21043,12 @@ function syncExSetsToActivity(dateStr, exKey, exName) {
 // entries[]). Same bug, same fix — these never left the device either.
 function syncCardioAggToActivity(dateStr, exKey) {
   if (typeof logActivity !== 'function') return;
-  if (!/^gymcardio_|^gymmachine_/.test(exKey || '')) return;
   const data = getExSets(dateStr)[exKey] || {};
+  // Guarded by what the movement tracks, not by its key prefix. The prefix test
+  // this replaces let gymmachine_ in (weight×reps, which this mirror cannot
+  // write) and shut gymex_ out (bodyweight reps, which had nowhere else to go).
+  const _list = exTrackList(exKey, data.name || '');
+  if (_list.indexOf('distance') === -1 && _list.indexOf('duration') === -1) return;
   // Apple Health already owns its own record of these; mirroring them here
   // would double-count the same session.
   if (data.source === 'apple_health') return;
@@ -21583,14 +22022,11 @@ function openRoutinePopup(routineKey, dateStr) {
           ${timerHtml}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
-            <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
+            ${exNameCell(ex, exKey, !!(showGymTrack || showBwTrack))}
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
             ${showGymTrack ? buildExSetStack(dateStr, exKey) + prevDataLabel(getPrevExData(dateStr, exKey)) : ''}
-            ${showBwTrack && !showGymTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
-              <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
-              <span class="wlog-unit">reps</span>
-            </div>` : ''}
+            ${showBwTrack && !showGymTrack ? bwTrackRow(dateStr, exKey, ex.name) : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:3px;margin-left:auto;flex-shrink:0;align-items:flex-end" onclick="event.stopPropagation()">
             ${isLiftRoutine && ex.muscleGroup && EXERCISE_BANK[ex.muscleGroup] ? `<span class="gym-swap-btn" onclick="event.stopPropagation();openExSwap('${dateStr}','${routineKey}',${i},'${ex.muscleGroup}')" title="Swap exercise">↻</span>` : ''}
@@ -21640,13 +22076,10 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
           ${timerHtml2}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
-            <div class="ex-name">${ex.name}${ex.sets ? ' <span style="color:var(--text-dim);font-weight:400;font-size:11px">' + ex.sets + '</span>' : ''}</div>
+            ${exNameCell(ex, exKey, !!showBwTrack)}
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
-            ${showBwTrack ? `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
-              <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="setExSet('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
-              <span class="wlog-unit">reps</span>
-            </div>` : ''}
+            ${showBwTrack ? bwTrackRow(dateStr, exKey, ex.name) : ''}
           </div>
           <div style="display:flex;gap:2px;margin-left:auto;flex-shrink:0" onclick="event.stopPropagation()">
             <span class="rating-btn ${rating === -1 ? 'active' : ''}" onclick="toggleRating('${dateStr}','${rKey}',-1,'${routineKey}')">😞</span>
@@ -23174,7 +23607,13 @@ async function _refreshDataInner(btn) {
   // fires once against an empty list and never retries is what ate the Body
   // module's data. Every write here is a deterministic upsert, so repeating it
   // costs a pass over localStorage and changes nothing.
-  try { migrateLegacyExerciseData(); } catch (e) { console.warn('legacy migration skipped', e); }
+  // Both sweeps share one batch so the whole recovery costs a handful of
+  // statements rather than one per row.
+  try {
+    _actBatch = _actBatch || [];
+    try { migrateLegacyExerciseData(); } catch (e) { console.warn('legacy migration skipped', e); }
+    try { recoverExSetAggregates(); } catch (e) { console.warn('exsets recovery skipped', e); }
+  } finally { _flushActBatch(); }
   // A stretch session survives a reload the same way the gym clock does.
   try { _stSessLoad(); } catch (e) {}
   // Record what's cached so the stats view knows when it must widen the range.
