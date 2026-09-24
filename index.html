@@ -862,6 +862,13 @@
     background: var(--input-bg); border: 1px solid var(--input-border);
     border-radius: 4px; padding: 2px 6px; white-space: nowrap;
   }
+  /* Nothing logged yet. Reads as a prompt rather than a value, so an empty row
+     is not mistaken for a zero. */
+  .wlog-ro-empty {
+    font-size: 10px; font-weight: 700; color: var(--cyan);
+    background: var(--cyan-bg); border: 1px dashed var(--cyan-border, var(--cyan));
+    border-radius: 4px; padding: 2px 6px; white-space: nowrap;
+  }
   .wlog-ro-go { font-size: 10px; font-weight: 700; color: var(--cyan); }
   .wlog-row.done .wlog-label { color: var(--green); }
   .wlog-types { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
@@ -3815,7 +3822,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.23.01';
+const APP_VERSION = '2026.09.24.01';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -20851,24 +20858,56 @@ function _isVariedEntries(entries) {
 // The × separators are dropped deliberately. "50 reps × 4 sets" reads as 200.
 // Each figure gets its own unit label instead, so the row states three facts
 // rather than implying an arithmetic relationship between them.
+// ONE summary row for a movement, in every state it can be in: not yet logged,
+// logged as reps, logged as holds. Tapping it anywhere opens the per-set screen.
+//
+// Written as one function on purpose. The gym card's varied-sets row and the
+// bodyweight card's row were about to become two near-identical blocks of chip
+// markup, which is precisely the shape that produced the 2026-09-23 bug — two
+// copies of a row, one of them fixed.
+//
+// The figures are TOTALS across sets, never the first set's values, and there is
+// no × between them: "50 reps × 4 sets" reads as 200. Each chip states one fact.
+function exChipRow(dateStr, exKey, exName, emptyLabel) {
+  const list = exTrackList(exKey, exName);
+  const all = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+  // Only sets that were actually performed count. getExSetEntries synthesises
+  // rows from the legacy aggregate, so a cleared exercise still yields entries
+  // full of zeroes — counting those would report a session that never happened.
+  const real = all.filter(e => _trackEntryIsReal(exKey, exName, e));
+  const chip = v => `<span class="wlog-ro">${v}</span>`;
+  const safeName = String(exName || '').replace(/'/g, "\\'");
+  let inner, title;
+  if (!real.length) {
+    inner = `<span class="wlog-ro-empty">${emptyLabel || 'log'}</span>`;
+    title = 'Tap to log set by set';
+  } else if (list.indexOf('reps') === -1) {
+    const secs = real.reduce((a, e) => a + (Number(e.t) || 0), 0);
+    inner = chip(fmtDurationS(secs)) + chip(real.length + (real.length === 1 ? ' hold' : ' holds'));
+    title = 'Logged — tap to edit';
+  } else {
+    const totalReps = real.reduce((a, e) => a + (Number(e.r) || 0), 0);
+    const weights = real.map(e => Number(e.w) || 0).filter(w => w > 0);
+    let wTxt = '';
+    if (weights.length) {
+      const lo = Math.min.apply(null, weights), hi = Math.max.apply(null, weights);
+      wTxt = (lo === hi ? String(lo) : lo + '–' + hi) + ' lb';
+    }
+    inner = (wTxt ? chip(wTxt) : '') + chip(totalReps + ' reps')
+          + chip(real.length + (real.length === 1 ? ' set' : ' sets'));
+    title = 'Logged set by set — tap to edit';
+  }
+  return `<span class="wlog-ro-row" onclick="event.stopPropagation();openExercise('${exKey}','${safeName}')"`
+    + ` title="${title}">` + inner + `<span class="wlog-ro-go">›</span></span>`;
+}
+
+// The gym card's case: the flat boxes stay editable while the sets are uniform,
+// and are replaced by the chip row once they vary and the boxes can no longer
+// represent what is logged.
 function _aggReadonlyRow(dateStr, exKey, exName) {
   const entries = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
   if (!_isVariedEntries(entries)) return '';
-  const totalReps = entries.reduce((a, e) => a + (Number(e.r) || 0), 0);
-  const weights = entries.map(e => Number(e.w) || 0).filter(w => w > 0);
-  let wTxt = '';
-  if (weights.length) {
-    const lo = Math.min.apply(null, weights), hi = Math.max.apply(null, weights);
-    wTxt = (lo === hi ? String(lo) : lo + '–' + hi) + ' lb';
-  }
-  const chip = v => `<span class="wlog-ro">${v}</span>`;
-  const safeName = String(exName || '').replace(/'/g, "\\'");
-  return `<span class="wlog-ro-row" onclick="event.stopPropagation();openExercise('${exKey}','${safeName}')"
-    title="Logged set by set — tap to edit">`
-    + (wTxt ? chip(wTxt) : '')
-    + chip(totalReps + ' reps')
-    + chip(entries.length + ' sets')
-    + `<span class="wlog-ro-go">›</span></span>`;
+  return exChipRow(dateStr, exKey, exName, 'log');
 }
 
 // Shows what's actually logged, so varied sets entered on the per-set screen
@@ -20905,28 +20944,30 @@ function _aggSetSummary(dateStr, exKey) {
 // and both copies wrote through setExSet with no route to the per-set screen.
 // Two copies of a row is how one of them gets fixed and the other does not, so
 // the duplicate is deleted rather than patched alongside.
+// Craig, 2026-09-23: "when I'm in the 'bodyweight workout' screen, the reps and
+// sets should not be editable. clicking on them should bring the 'log a set'
+// screen."
+//
+// So there are no inputs here at all. The row states what is logged and is a tap
+// target for the per-set screen — nothing else. That costs the "3×15, done"
+// shortcut on this card, which is a real cost and his call to make: two ways to
+// enter the same number is what produced two record shapes for one movement, and
+// a flat box cannot express the varied sets he actually does.
+//
+// The flat boxes survive on the GYM card, where they are still the fast path for
+// a uniform working set, and are swapped for this same chip row the moment the
+// sets vary.
 function bwTrackRow(dateStr, exKey, exName) {
   const list = exTrackList(exKey, exName);
-  const safe = String(exName || '').replace(/'/g, "\\'");
-  const summary = _aggSetSummary(dateStr, exKey);
-  if (list.indexOf('reps') === -1) {
-    // A hold is logged in seconds on the per-set screen. A flat "reps" box
-    // cannot express one, so it is not offered — an input that cannot record
-    // what you did is worse than no input.
-    return '<div style="margin-top:3px" onclick="event.stopPropagation()">'
-      + `<span class="wlog-ro-row" onclick="event.stopPropagation();openExercise('${exKey}','${safe}')" title="Log how long you held it">`
-      + '<span class="wlog-ro">log hold</span><span class="wlog-ro-go">›</span></span></div>' + summary;
-  }
-  const ro = _aggReadonlyRow(dateStr, exKey, exName);
-  if (ro) return '<div style="margin-top:3px" onclick="event.stopPropagation()">' + ro + '</div>' + summary;
-  const setData = getExSets(dateStr)[exKey] || {};
-  return `<div style="display:flex;gap:4px;margin-top:3px;align-items:center" onclick="event.stopPropagation()">
-      <input class="wlog-input" type="number" placeholder="reps" min="0" max="500" style="width:44px" value="${setData.reps || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','reps',parseFloat(this.value)||0)">
-      <span class="wlog-unit">reps</span>
-      <span class="wlog-unit">×</span>
-      <input class="wlog-input" type="number" placeholder="sets" min="0" max="20" style="width:40px" value="${setData.sets || ''}" onchange="quickSetAgg('${dateStr}','${exKey}','sets',parseFloat(this.value)||0)">
-      <span class="wlog-unit">sets</span>
-    </div>` + summary;
+  const holds = list.indexOf('reps') === -1;
+  const entries = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+  // The per-set breakdown only earns its line once the sets differ. Under a chip
+  // reading "45 reps · 3 sets", a second line saying "15 · 15 · 15 = 45 reps" is
+  // the same fact twice.
+  const summary = _isVariedEntries(entries) ? _aggSetSummary(dateStr, exKey) : '';
+  return '<div style="margin-top:3px" onclick="event.stopPropagation()">'
+    + exChipRow(dateStr, exKey, exName, holds ? 'log hold' : 'log reps')
+    + '</div>' + summary;
 }
 
 // The exercise name doubles as the way into the per-set screen, exactly as it
