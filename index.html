@@ -3822,7 +3822,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.24.01';
+const APP_VERSION = '2026.09.24.02';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -14654,6 +14654,18 @@ function logActivity(o) {
     created_at: new Date().toISOString(),
   };
   const existing = rows.findIndex(r => r.client_id === row.client_id);
+  // WHEN the effort happened. Craig, 2026-09-24: "should log the time of the
+  // entry." The column has existed since the table was created and nothing ever
+  // wrote to it.
+  //
+  // Set once, on the row's first write, and carried forward on every later
+  // upsert. A re-log is not a re-performance: a rest measurement landing on the
+  // previous set, a recovery sweep, an edit to the reps — none of those happened
+  // at the time of the edit, and restamping them would quietly rewrite the
+  // session's timeline. Kept out of _ACT_COMPARED for the reason created_at is:
+  // a field that changes on every call makes the dirty check useless, and an
+  // upsert this instance did not need is disk IO budget it does not get back.
+  row.started_at = o.started_at || (existing >= 0 ? rows[existing].started_at : null) || row.created_at;
   // Compare BEFORE merging — afterwards the old values are gone.
   const unchanged = existing >= 0 && _actSameRow(rows[existing], row);
   if (existing >= 0) rows[existing] = Object.assign({}, rows[existing], row);
@@ -14946,6 +14958,20 @@ function fmtDurationS(sec) {
            : m + ':' + String(r).padStart(2, '0');
 }
 
+// Wall-clock time of day, in the reader's own timezone. Deliberately NOT
+// toISOString().slice() — that is the UTC clock, which is how evening doses
+// vanished from the medication sheet until 2026-09-21.
+function _fmtClock(iso) {
+  if (!iso) return '';
+  const t = new Date(iso);
+  if (isNaN(t.getTime())) return '';
+  let h = t.getHours();
+  const m = String(t.getMinutes()).padStart(2, '0');
+  const ap = h < 12 ? 'am' : 'pm';
+  h = h % 12; if (!h) h = 12;
+  return h + ':' + m + ap;
+}
+
 // Entry (what the user typed, in their unit) → activity_log row fields (SI).
 function _trackToStorage(exKey, exName, entry) {
   const meta = exTracksFor(exKey, exName);
@@ -15200,22 +15226,32 @@ function recoverExSetAggregates() {
       let all;
       try { all = JSON.parse(localStorage.getItem('exsets_' + dateStr) || '{}'); } catch (e) { return; }
       if (!all || typeof all !== 'object') return;
-      // This is a GAP-FILLER, not a re-sync. A movement that already has rows in
-      // activity_log is left alone: re-syncing every set on every load would mean
-      // thousands of localStorage read-modify-writes per refresh on a phone with
-      // a year of history, for rows that are already correct.
+      // This is a GAP-FILLER, not a re-sync. A movement whose logged set COUNT
+      // already matches is left alone: re-syncing every set on every load would
+      // mean thousands of localStorage read-modify-writes per refresh on a phone
+      // with a year of history, for rows that are already correct.
+      //
+      // Counted per set, not per exercise. The original "does this movement have
+      // any rows at all" test skipped Craig's sit-ups on 2026-09-24 — four of the
+      // five sets were logged, so the exercise looked present and the missing
+      // set_index 0 was never filled in.
       const have = {};
-      getActivity(dateStr).forEach(function (r) { have[r.exercise_key] = true; });
+      getActivity(dateStr).forEach(function (r) {
+        have[r.exercise_key] = (have[r.exercise_key] || 0) + 1;
+      });
       let n = 0, dirty = false;
       Object.keys(all).forEach(function (exKey) {
-        if (!_RECOVERABLE_KEY.test(exKey) || have[exKey]) return;
+        if (!_RECOVERABLE_KEY.test(exKey)) return;
         const d = all[exKey] || {};
         const name = exNameForKey(exKey, d);
         const list = exTrackList(exKey, name);
         const isAgg = list.indexOf('distance') !== -1 || list.indexOf('duration') !== -1;
         if (Array.isArray(d.entries) && d.entries.length) {
+          const performed = d.entries.filter(e => _trackEntryIsReal(exKey, name, e)).length;
+          if ((have[exKey] || 0) === performed) return;   // already in sync
           syncExSetsToActivity(dateStr, exKey, name); n++; return;
         }
+        if (have[exKey]) return;
         if (isAgg) {
           if ((Number(d.time) || 0) > 0 || (Number(d.dist) || 0) > 0) {
             syncCardioAggToActivity(dateStr, exKey); n++;
@@ -15272,8 +15308,52 @@ function addSessionSet(exKey, exName, weight, reps, flag) {
 // The ONE write path for a logged effort, whatever kind it is. A bench set, a
 // set of sit-ups, a plank and a 1 km interval all arrive here and all land in
 // activity_log. Nothing writes workout_log any more.
+// getExSetEntries SYNTHESISES entries from the legacy aggregate when none are
+// stored. That synthesis is read-only: it is never written back and it never
+// reaches activity_log. So a movement holding {reps:10} with no entries[] shows
+// one set on the per-set screen, the next set logged becomes set_index 1, and
+// set_index 0 never exists in the log at all.
+//
+// Found 2026-09-24 in Craig's own data. exsets_ said 65 reps across 5 sets; the
+// database held 4 rows totalling 55; the missing row was index 0. The screen and
+// the source of truth disagreed by exactly one phantom set.
+//
+// So the synthesised rows are made real before anything appends to them.
+function _materializeEntries(dateStr, exKey, exName) {
+  const all = (typeof getExSets === 'function') ? getExSets(dateStr) : {};
+  const data = all[exKey];
+  if (!data || Array.isArray(data.entries)) return false;
+  const synth = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey) : [];
+  if (!synth.length) return false;
+  data.entries = synth.map(e => ({ w: e.w || 0, r: e.r || 0, d: e.d || 0, t: e.t || 0, flag: e.flag || '' }));
+  if (!data.name && exName) data.name = exName;
+  try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+  if (typeof syncExSetsToActivity === 'function') syncExSetsToActivity(dateStr, exKey, exName);
+  return true;
+}
+
+// Anything logged on the per-set screen has to reach the card behind it.
+//
+// Craig, 2026-09-24: "I have logged 5 sets of situps (3 in a row) but the card
+// only says 20 reps / 2 sets. (then I open it, and shows the 65 situps)."
+//
+// The screen re-rendered itself and nothing else did, so the chip underneath
+// kept reporting the count from whenever the popup was last built. Two views of
+// one number, one of them frozen.
+function _refreshBehindSession() {
+  const dateStr = ds(new Date());
+  scheduleRender(function () {
+    try { if (typeof renderDaily === 'function') renderDaily(); } catch (e) {}
+    try {
+      const bd = document.getElementById('popup-backdrop');
+      if (bd && bd.classList.contains('open') && _lastPopupKey) openRoutinePopup(_lastPopupKey, dateStr);
+    } catch (e) {}
+  });
+}
+
 function addSessionSegment(exKey, exName, entry) {
   const dateStr = ds(new Date());
+  _materializeEntries(dateStr, exKey, exName);
   const entries = getSessionSets(exKey).slice();
   const idx = entries.length;
   const e = { w: Number(entry.w) || 0, r: Number(entry.r) || 0,
@@ -15308,6 +15388,7 @@ function addSessionSegment(exKey, exName, entry) {
   }
   if (SESSION && SESSION.done.indexOf(exKey) === -1) { SESSION.done.push(exKey); _sessSave(); }
   renderExerciseScreen();
+  _refreshBehindSession();
 }
 function removeSessionSet(exKey, idx) {
   const dateStr = ds(new Date());
@@ -15331,6 +15412,7 @@ function removeSessionSet(exKey, idx) {
     }, _trackToStorage(exKey, _sessExName, e)));
   });
   renderExerciseScreen();
+  _refreshBehindSession();
 }
 
 // Hint only — never gates anything.
@@ -15499,10 +15581,12 @@ function openSessionScreen() {
   renderSessionScreen();
 }
 function closeSessionScreen() {
+  _holdStop();            // a clock left running would keep writing into a dead field
   const bd = document.getElementById('session-backdrop');
   if (bd) bd.classList.remove('open');
   _sessEx = null;
   _sessReturnTo = null;   // stale return target would hijack the next open
+  _refreshBehindSession();
 }
 function _sessTogglePlan(mid) {
   const i = _sessPlanDraft.indexOf(mid);
@@ -15685,6 +15769,8 @@ function openExercise(key, name) {
   renderExerciseScreen();
 }
 function backToPlan() {
+  _holdStop();
+  _refreshBehindSession();
   if (_sessReturnTo === 'picker') {
     _sessReturnTo = null;
     _sessEx = null;
@@ -15716,20 +15802,28 @@ function renderExerciseScreen() {
   // asked for them explicitly ("running - how much, sets, time"), so the only
   // thing that changes is the word.
   const segWord = _trackList.indexOf('reps') !== -1 ? 'Set' : 'Leg';
-  const rows = sets.map((s, i) => `
+  // Read the day's rows ONCE. This used to call getActivity() inside the map, so
+  // a ten-set exercise parsed the day's log out of localStorage ten times.
+  const _actToday = (typeof getActivity === 'function') ? getActivity(ds(new Date())) : [];
+  const rows = sets.map(function (s, i) {
+    const a = _actToday.find(x => x.exercise_key === _sessEx && x.set_index === i) || {};
+    const clock = _fmtClock(a.started_at);
+    const r = a.rest_s;
+    const restTxt = r
+      ? '<span style="font-size:9px;color:var(--text-muted)" title="Rest taken after this set">⏱ '
+        + (r >= 60 ? Math.floor(r / 60) + ':' + String(r % 60).padStart(2, '0') : r + 's') + '</span>'
+      : '';
+    return `
     <div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--divider)">
       <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:34px">${segWord} ${i + 1}</span>
       <span style="font-size:9px;color:var(--text-muted);min-width:26px" title="Normalised strength score">${(_trackList.indexOf('weight') !== -1 ? strengthScore(s.w, s.r, ex) : '') || ''}</span>
       <span style="font-size:15px;font-weight:700;color:var(--text);flex:1">${fmtSegment(_sessEx, _sessExName, s)}</span>
-      ${(function () {
-        const r = (getActivity(ds(new Date())).find(a => a.exercise_key === _sessEx && a.set_index === i) || {}).rest_s;
-        if (!r) return '';
-        const m = Math.floor(r / 60), sec = r % 60;
-        return `<span style="font-size:9px;color:var(--text-muted)" title="Rest taken after this set">⏱ ${m ? m + ':' + String(sec).padStart(2, '0') : r + 's'}</span>`;
-      })()}
+      ${clock ? `<span style="font-size:9px;color:var(--text-muted)" title="When this set was logged">${clock}</span>` : ''}
+      ${restTxt}
       ${s.flag ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${s.flag}</span>` : ''}
       <button onclick="removeSessionSet('${_sessEx}',${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 3px">×</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   body.innerHTML = `
     <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
@@ -15791,6 +15885,8 @@ function renderExerciseScreen() {
           }).join('');
         })()}
       </div>
+      ${_trackList.indexOf('duration') !== -1 ? `<button id="sess-hold-btn" onclick="_holdToggle()"
+        style="width:100%;margin-bottom:9px;padding:12px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">▶ Start the clock</button>` : ''}
       <div style="display:flex;gap:4px;margin-bottom:9px">
         ${FLAGS.map(([v, l, c]) => `<button onclick="window._sessFlag='${v}';renderExerciseScreen()"
           style="flex:1;padding:6px 2px;border-radius:6px;border:1px solid ${(window._sessFlag || '') === v ? c : 'var(--card-border)'};background:${(window._sessFlag || '') === v ? 'var(--input-bg)' : 'transparent'};color:${(window._sessFlag || '') === v ? c : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`).join('')}
@@ -15847,6 +15943,7 @@ function renderDayReview() {
       ${set.map((r, i) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0 4px 20px;border-bottom:1px solid var(--divider)">
         <span style="font-size:9.5px;color:var(--text-muted);min-width:30px">${i + 1}</span>
         <span style="font-size:12px;color:var(--text);flex:1">${detail(r)}</span>
+        ${_fmtClock(r.started_at) ? `<span style="font-size:9.5px;color:var(--text-muted)">${_fmtClock(r.started_at)}</span>` : ''}
         ${r.flag ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${r.flag}</span>` : ''}
         <button onclick="removeActivity('${dateStr}','${r.client_id}');renderDayReview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 3px">×</button>
       </div>`).join('')}
@@ -15864,7 +15961,54 @@ function renderDayReview() {
     </div>`;
 }
 
+// A hold is timed, not estimated.
+//
+// Craig, 2026-09-24: "for plank (which is a hold exercise) is there a timer?"
+// There was one on the routine row for some movements, and none here — the
+// per-set screen asked him to type m:ss for something he was in no position to
+// measure while doing it.
+//
+// It counts UP, not down from the prescription. A countdown records what was
+// ASKED FOR, which is the exact defect stretchDone() carried until 2026-09-20:
+// the log said "30s each side" whether or not you lasted 30 seconds. You stop
+// when you drop, and what gets logged is what you did.
+let _holdTimer = null;
+
+function _holdStop() {
+  if (_holdTimer) { clearInterval(_holdTimer.iv); _holdTimer = null; }
+}
+
+function _holdToggle() {
+  const fld = document.getElementById('sess-t');
+  if (!fld) return;
+  const list = exTrackList(_sessEx, _sessExName);
+  // Stopping logs the set only for a pure hold. A walk tracks distance too, so
+  // stopping the clock there fills the time and leaves the rest to the person.
+  const isHold = list.length === 1 && list[0] === 'duration';
+  if (_holdTimer) {
+    const secs = Math.max(1, Math.round((Date.now() - _holdTimer.t0) / 1000));
+    _holdStop();
+    fld.value = fmtDurationS(secs) || '0:01';
+    if (navigator.vibrate) navigator.vibrate(120);
+    if (isHold) _sessAddSet();
+    else renderExerciseScreen();
+    return;
+  }
+  _holdTimer = { t0: Date.now(), iv: null };
+  const paint = function () {
+    const f = document.getElementById('sess-t');
+    const b = document.getElementById('sess-hold-btn');
+    if (!f || !_holdTimer) { _holdStop(); return; }
+    const txt = fmtDurationS(Math.round((Date.now() - _holdTimer.t0) / 1000)) || '0:00';
+    f.value = txt;
+    if (b) b.textContent = '⏹ Stop — ' + txt;
+  };
+  _holdTimer.iv = setInterval(paint, 250);
+  paint();
+}
+
 function _sessAddSet() {
+  _holdStop();
   const list = exTrackList(_sessEx, _sessExName);
   const val = id => (document.getElementById('sess-' + id) || {}).value;
   const entry = { w: 0, r: 0, d: 0, t: 0, flag: window._sessFlag || '' };
@@ -22037,6 +22181,12 @@ function openRoutinePopup(routineKey, dateStr) {
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
+  // The day's log, read ONCE. Craig, 2026-09-24: "when I log 3 sets, the check
+  // box on the main 'pick an exercise' should be checked." It was a separate
+  // manual flag that knew nothing about the log.
+  const _actCount = {};
+  (typeof getActivity === 'function' ? getActivity(dateStr) : [])
+    .forEach(function (r) { _actCount[r.exercise_key] = (_actCount[r.exercise_key] || 0) + 1; });
   document.getElementById('popup-body').innerHTML =
     (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
     '<div class="exercise-list">' +
@@ -22045,10 +22195,11 @@ function openRoutinePopup(routineKey, dateStr) {
         return `<div style="margin:12px 0 6px;padding:8px 0 4px;border-top:2px solid var(--purple-border);font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px">${ex.name}</div>`;
       }
       const key = prefix + i;
-      const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
       const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      // Ticked manually, OR logged. Logging a set IS doing the exercise.
+      const done = (checked[key] || (_actCount[exKey] || 0) > 0) ? 'done' : '';
       const setData = getExSets(dateStr)[exKey] || {};
       // Show reps/weight inputs based on routine type
       const _exNameLower = (ex.name || '').toLowerCase();
@@ -22061,8 +22212,8 @@ function openRoutinePopup(routineKey, dateStr) {
       return `
         <div class="exercise-item ${done}">
           ${timerHtml}
-          <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
-          <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
+          <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">${done ? '✓' : ''}</div>
+          <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">
             ${exNameCell(ex, exKey, !!(showGymTrack || showBwTrack))}
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
@@ -22097,6 +22248,9 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
+  const _actCount = {};
+  (typeof getActivity === 'function' ? getActivity(dateStr) : [])
+    .forEach(function (r) { _actCount[r.exercise_key] = (_actCount[r.exercise_key] || 0) + 1; });
   document.getElementById('popup-body').innerHTML =
     '<div class="exercise-list">' +
     routine.exercises.map((ex, i) => {
@@ -22104,10 +22258,10 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
         return `<div style="margin:12px 0 6px;padding:8px 0 4px;border-top:2px solid var(--purple-border);font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px">${ex.name}</div>`;
       }
       const key = prefix + i;
-      const done = checked[key] ? 'done' : '';
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
       const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const done = (checked[key] || (_actCount[exKey] || 0) > 0) ? 'done' : '';
       const setData = getExSets(dateStr)[exKey] || {};
       const showBwTrack = ex.trackReps;
       const timerSecs2 = parseTimerSeconds(ex.sets);
@@ -22115,8 +22269,8 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       return `
         <div class="exercise-item ${done}">
           ${timerHtml2}
-          <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">${done ? '✓' : ''}</div>
-          <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}')">
+          <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">${done ? '✓' : ''}</div>
+          <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">
             ${exNameCell(ex, exKey, !!showBwTrack)}
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
@@ -22216,8 +22370,23 @@ function closePopup() {
   document.getElementById('popup-backdrop').classList.remove('open');
 }
 
-function toggleExercise(el, dateStr, key) {
+function toggleExercise(el, dateStr, key, exKey) {
+  // A tick and a set of logged sets are two claims about the same thing, and
+  // only one of them has evidence behind it. If sets exist, the movement was
+  // performed — un-ticking it would leave the card saying "not done" over four
+  // logged sets. Clearing the sets is how you clear the tick.
+  const logged = (exKey && typeof getActivity === 'function')
+    ? getActivity(dateStr).filter(r => r.exercise_key === exKey).length : 0;
   const isDone = el.classList.toggle('done');
+  if (!isDone && logged > 0) {
+    el.classList.add('done');
+    const cb = el.querySelector('.check-box');
+    if (cb) cb.textContent = '✓';
+    if (typeof toast === 'function') {
+      toast(logged + ' set' + (logged === 1 ? '' : 's') + ' logged — delete them on the exercise screen to clear this.', 'warn');
+    }
+    return;
+  }
   el.querySelector('.check-box').textContent = isDone ? '✓' : '';
   setChecked(dateStr, key, isDone);
   // Auto-check morning/stretch task when >50% of exercises are done
