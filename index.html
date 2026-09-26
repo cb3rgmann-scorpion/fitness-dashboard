@@ -1023,12 +1023,13 @@
   .sp-why { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
   .sp-why-dim { color: var(--text-muted); font-style: italic; }
   .sp-go { font-size: 15px; color: var(--cyan); flex-shrink: 0; }
-  .sp-skip {
-    display: flex; gap: 6px; padding: 7px 6px; margin-top: 6px; border-radius: 6px;
-    background: var(--orange-bg); border: 1px solid var(--orange-border, var(--orange));
-    font-size: 10px; color: var(--orange); line-height: 1.45;
+  /* Was an amber warning box with a ⚠. It is now a dim footnote, because what
+     the plan swapped is a footnote and not a hazard. See the comment on
+     skipHtml for why this changed. */
+  .sp-swap {
+    padding: 6px 2px 0; font-size: 10px; color: var(--text-muted); line-height: 1.5;
   }
-  .sp-skip-i { flex-shrink: 0; }
+  .sp-swap b { color: var(--text-dim); font-weight: 700; }
   .sp-extra-label {
     font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
     color: var(--text-muted); padding: 9px 2px 2px;
@@ -1055,6 +1056,20 @@
     display: flex; gap: 5px; margin-top: 5px; padding: 5px 7px; border-radius: 5px;
     background: var(--red-bg, var(--orange-bg)); border: 1px solid var(--red, #e5484d);
     font-size: 9.5px; color: var(--red, #e5484d); line-height: 1.45;
+  }
+  /* Video affordance. 44px tall because it is a tap target on a phone, and it
+     sits next to the log button rather than replacing it — wanting to see how
+     a movement goes is not the same intent as wanting to log one. */
+  .ex-vid-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 8px 11px; min-height: 34px; border-radius: 5px; text-decoration: none;
+    border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg);
+    color: var(--cyan); font-size: 11px; font-weight: 700; cursor: pointer;
+  }
+  .ex-vid-inline {
+    display: inline-flex; align-items: center; gap: 4px; min-height: 40px;
+    padding: 6px 2px; font-size: 11.5px; font-weight: 700; color: var(--cyan);
+    text-decoration: none;
   }
   .mp-headnote {
     font-size: 9px; color: var(--text-muted); line-height: 1.5; padding: 6px 8px;
@@ -4055,7 +4070,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.26.05';
+const APP_VERSION = '2026.09.26.07';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11316,6 +11331,47 @@ const ROUTINES = {
       { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + lat stretch + thoracic rotation", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
+  // ── BALL RELEASE (2026-09-26) ──
+  // Craig: "add a task for tennis ball / squash ball massages / stretches as well."
+  //
+  // WHAT THIS ACTUALLY DOES, stated up front because the alternative is him
+  // believing he is fixing something structural. Rolling a ball on a muscle does
+  // not break up adhesions, lengthen fascia or release knots — the tissue is not
+  // changed by it. What it reliably does is produce a short-term increase in
+  // range of motion and a drop in perceived soreness, and the mechanism is
+  // neurological, not mechanical. That makes it a genuinely useful thing to do
+  // BEFORE the movement you care about, and close to useless as a treatment on
+  // its own. So this routine is framed as a warm-up, not as therapy.
+  //
+  // BALL CHOICE. Tennis is the softest and the place to start. Squash is firmer
+  // and the right one for the glutes once a tennis ball stops registering. A
+  // lacrosse ball is firmer still; nothing here needs one.
+  //
+  // THE FOREARM ENTRY IS THE CAREFUL ONE. The trigger-finger routine in this
+  // same file says outright not to squeeze a stress ball, because repetitive
+  // forceful gripping is what aggravates the A1 pulley. Rolling the forearm is
+  // a different loading of different tissue and is fine; pressing into the palm
+  // or the base of the finger is the same mistake wearing a different hat. The
+  // entry says so, and says where to stop.
+  //
+  // WHAT IS DELIBERATELY ABSENT: the front of the neck, the back of the knee,
+  // the armpit, the lower back over the kidneys, and anywhere with an open
+  // episode. Those are nerve, vessel and organ, and no range-of-motion gain is
+  // worth finding out why people say not to.
+  ball_release: {
+    title: "Ball Release — Tennis / Squash Ball (~8 min)",
+    exercises: [
+      { name: "── Slow. 30–60s a spot, and never past two minutes anywhere. ──", sets: "", detail: "Find a tender spot, rest on it, and breathe until it eases. If it does not ease in a minute, it is not going to today — move on. Sharp, electric or radiating pain is a stop, not a target.", _divider: true },
+      { name: "Foot arch", sets: "45s each foot", link: "https://www.youtube.com/watch?v=7Ci9IjHz-lo", detail: "Seated, tennis ball under the arch, roll heel to the ball of the foot. Stand up on it only once seated is easy. Relevant to the ankle history — a stiff foot changes how the ankle loads.", muscleGroup: "release", trackReps: true },
+      { name: "Calf", sets: "45s each leg", link: "", detail: "Sit on the floor, ball under the calf, other leg stacked on top for pressure. Work the meat of the muscle. Stay well clear of the back of the knee.", muscleGroup: "release", trackReps: true },
+      { name: "Glute / piriformis", sets: "60s each side", link: "https://www.youtube.com/watch?v=uOQHqxJBxKA", detail: "Sit on the ball, that ankle crossed over the opposite knee, lean into the side you are working. The one most likely to be genuinely tender after a desk day. Squash ball once a tennis ball stops registering.", muscleGroup: "release", trackReps: true },
+      { name: "Upper back / between the shoulder blades", sets: "60s", link: "", detail: "Ball between your back and a wall, lean in, move in small circles. Stay beside the spine, never on it. This is the one that buys you overhead range.", muscleGroup: "release", trackReps: true },
+      { name: "Chest / front of shoulder", sets: "45s each side", link: "", detail: "Ball against a wall or doorframe, just inside the shoulder, angled toward the armpit but not in it. With shoulder OA this often does more for the top of the arc than stretching does.", muscleGroup: "release", trackReps: true },
+      { name: "Lat / side of the ribs", sets: "45s each side", link: "", detail: "Lie on your side, ball under the armpit's back edge, arm overhead. Small movements. Back off if the arm tingles — that is nerve, not muscle.", muscleGroup: "release", trackReps: true },
+      { name: "Forearm flexors", sets: "45s each arm", link: "", detail: "Forearm on a table, ball on the UNDERSIDE, roll from below the elbow to about two inches short of the wrist. Do NOT press into the palm or the base of a finger — that is the pulley, and it is the thing already being treated. Stop the moment the middle finger catches more than usual.", muscleGroup: "release", trackReps: true },
+      { name: "── This is a warm-up, not a treatment. ──", sets: "", detail: "The range you gain lasts minutes to about an hour, so it is worth most immediately before you train, stretch or sit down to work — and worth little on its own. If a spot is tender in the same place every single week, that is a pattern to mention to a physio rather than to roll harder.", _divider: true },
+    ]
+  },
   stretch_quick: {
     title: "Quick Stretch — ~10 Minutes",
     exercises: [
@@ -12253,6 +12309,22 @@ const EX_LIB = [
   { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.', id:'bw_hollow_hold', pattern:'core', technique:3, watch:'The lower back lifting off the floor is the set ending, not a rep to push through. Bend the knees and keep the back down.' },
 
   // ── BANDS (2026-09-26) ──
+  //
+  // VIDEOS. Craig: "I know nothing about it, (but think I have a band here) so
+  // would need to see some videos." Every `link` below was confirmed live
+  // through YouTube's own oembed endpoint, not copied out of a search result —
+  // a fabricated video id that 404s inside the app is the same failure class as
+  // a fabricated quotation, and this file already has a rule about that.
+  //
+  // The first attempt used The Prehab Guys' exercise library, which looked
+  // right: physiotherapist-run, short clips, and every page fetched cleanly
+  // with full written instructions. Opening one in a browser showed the player
+  // is not served to a logged-out visitor — you get the text, a thumbnail, and
+  // a mailing-list form. The page answered; the video was not there. Assert on
+  // output, not on source.
+  //
+  // `linkBy` names the channel so the source is visible before he taps, and so
+  // a channel that turns out to be junk can be found and replaced in one grep.
   // Craig: "What about band work? do we have exercises for that? I know nothing
   // about it, (but think I have a band here)".
   //
@@ -12270,14 +12342,14 @@ const EX_LIB = [
   // No band squats, no band deadlifts, no band curls: a band that is easy at
   // the bottom of a squat and hardest at the top loads the range that was never
   // the hard part. That is a worse squat, not a portable one.
-  { m:'back', name:'Band row', equip:'band', reps:'12-15', rest:90, cue:'Anchor it at chest height \u2014 a door hinge or a post. Pull the elbows past the ribs and stop; the last inch is the shoulder blade, not the arm. Sit back slightly so your bodyweight anchors you.', id:'band_row', pattern:'pull', role:'foundation', technique:2 },
-  { m:'reardelts', name:'Band pull-apart', equip:'band', reps:'15-20', rest:60, cue:'Arms straight out in front, pull the band apart until it touches the chest. The single highest-value thing you can do for a desk-shaped upper back, and it is nearly impossible to do badly.', id:'band_pull_apart', pattern:'pull', role:'targeted', technique:1 },
-  { m:'reardelts', name:'Band face pull', equip:'band', reps:'12-15', rest:60, cue:'Anchored at forehead height. Pull toward the eyes, elbows high and wide, finish with the knuckles by the temples. Rear delts and the external rotators in one.', id:'band_face_pull', pattern:'pull', role:'targeted', technique:2 },
-  { m:'shoulders', name:'Band external rotation', equip:'band', reps:'12-15 each arm', rest:60, cue:'Elbow pinned to your side at 90\u00b0, rotate the forearm outward only. Rotator-cuff work, not a strength lift \u2014 the right band is one that feels almost too easy.', id:'band_ext_rot', pattern:'pull', role:'targeted', technique:2 },
-  { m:'chest', name:'Band chest press', equip:'band', reps:'12-20', rest:90, cue:'Band behind the back at armpit height, press forward. Nothing loads the wrist and nothing goes through the shoulder at end range \u2014 the press to use on a day the wrist is talking.', id:'band_chest_press', pattern:'push', technique:2 },
-  { m:'shoulders', name:'Band overhead press', equip:'band', reps:'10-15', rest:90, cue:'Stand on the band, press overhead. Lighter at the bottom than a dumbbell, which is the half an arthritic shoulder dislikes least.', flags:['overhead'], id:'band_ohp', pattern:'push', technique:3, watch:'Band tension is highest at lockout, which is exactly where an OA shoulder is most compressed. Stop at the point the arc pinches and treat that as the top of the rep, not as a rep you failed.' },
-  { m:'core', name:'Band Pallof press', equip:'band', reps:'8-12 each side', rest:60, cue:'Anchored at chest height, stand side-on, hold the band at the sternum and press it straight out. The band tries to twist you; your job is that nothing moves. Anti-rotation with no spinal load at all.', id:'band_pallof', pattern:'core', role:'targeted', technique:2 },
-  { m:'hamstrings', name:'Band good morning', equip:'band', reps:'12-15', rest:90, cue:'Band under the feet and over the back of the neck. Push the hips backwards, soft knees, chest stays proud. Teaches the hinge with almost no load on the spine, which is the pattern every kettlebell movement is built on.', id:'band_good_morning', pattern:'hinge', technique:2, teaches:'kb_rdl' },
+  { m:'back', name:'Band row', equip:'band', reps:'12-15', rest:90, cue:'Anchor it at chest height \u2014 a door hinge or a post. Pull the elbows past the ribs and stop; the last inch is the shoulder blade, not the arm. Sit back slightly so your bodyweight anchors you.', id:'band_row', pattern:'pull', role:'foundation', technique:2, link:'https://www.youtube.com/watch?v=Sh1b79KBlBs', linkBy:'Peak Physical Therapy' },
+  { m:'reardelts', name:'Band pull-apart', equip:'band', reps:'15-20', rest:60, cue:'Arms straight out in front, pull the band apart until it touches the chest. The single highest-value thing you can do for a desk-shaped upper back, and it is nearly impossible to do badly.', id:'band_pull_apart', pattern:'pull', role:'targeted', technique:1, link:'https://www.youtube.com/watch?v=bYsgk9SrJ48', linkBy:'Hinge Health' },
+  { m:'reardelts', name:'Band face pull', equip:'band', reps:'12-15', rest:60, cue:'Anchored at forehead height. Pull toward the eyes, elbows high and wide, finish with the knuckles by the temples. Rear delts and the external rotators in one.', id:'band_face_pull', pattern:'pull', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=FWALf08dLV4', linkBy:'Sports Rehab Expert' },
+  { m:'shoulders', name:'Band external rotation', equip:'band', reps:'12-15 each arm', rest:60, cue:'Elbow pinned to your side at 90\u00b0, rotate the forearm outward only. Rotator-cuff work, not a strength lift \u2014 the right band is one that feels almost too easy.', id:'band_ext_rot', pattern:'pull', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=dS9ORQCnWsE', linkBy:'Gear Up Physical Therapy' },
+  { m:'chest', name:'Band chest press', equip:'band', reps:'12-20', rest:90, cue:'Band behind the back at armpit height, press forward. Nothing loads the wrist and nothing goes through the shoulder at end range \u2014 the press to use on a day the wrist is talking.', id:'band_chest_press', pattern:'push', technique:2, link:'https://www.youtube.com/watch?v=CWAmrRVYgNA', linkBy:'Baylor Scott & White Health' },
+  { m:'shoulders', name:'Band overhead press', equip:'band', reps:'10-15', rest:90, cue:'Stand on the band, press overhead. Lighter at the bottom than a dumbbell, which is the half an arthritic shoulder dislikes least.', flags:['overhead'], id:'band_ohp', pattern:'push', technique:3, watch:'Band tension is highest at lockout, which is exactly where an OA shoulder is most compressed. Stop at the point the arc pinches and treat that as the top of the rep, not as a rep you failed.', link:'https://www.youtube.com/watch?v=Zli1UXH9ZeE', linkBy:'FitnessBlender' },
+  { m:'core', name:'Band Pallof press', equip:'band', reps:'8-12 each side', rest:60, cue:'Anchored at chest height, stand side-on, hold the band at the sternum and press it straight out. The band tries to twist you; your job is that nothing moves. Anti-rotation with no spinal load at all.', id:'band_pallof', pattern:'core', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=n8ZZG9gElhs', linkBy:'Hinge Health' },
+  { m:'hamstrings', name:'Band good morning', equip:'band', reps:'12-15', rest:90, cue:'Band under the feet and over the back of the neck. Push the hips backwards, soft knees, chest stays proud. Teaches the hinge with almost no load on the spine, which is the pattern every kettlebell movement is built on.', id:'band_good_morning', pattern:'hinge', technique:2, teaches:'kb_rdl', link:'https://www.youtube.com/watch?v=4jAkYYZfxtk', linkBy:'DHolt Strength' },
 ];
 
 const EX_FLAG_NOTES = {
@@ -12359,6 +12431,22 @@ function mpickToggleAll() { _mpickShowAll = !_mpickShowAll; renderMusclePicker()
 // Progression edges, both directions, from one stored field. `teaches` is
 // written once on the easier movement; the harder movement's "learn X first"
 // line is derived from it, so the two can never contradict each other.
+// A link to a demonstration, where there is one. `rel="noopener"` because the
+// app hands out third-party links and must not hand out a window handle with
+// them. Returns nothing at all for a movement with no link, so the affordance
+// never appears as a dead control — an empty button that does nothing is worse
+// than no button, and this file has made that mistake before.
+function exVideoBtn(e, style) {
+  if (!e || !e.link) return '';
+  const by = e.linkBy ? ` · ${escapeHtml(e.linkBy)}` : '';
+  if (style === 'inline') {
+    return `<a href="${e.link}" target="_blank" rel="noopener noreferrer" class="ex-vid-inline"
+      onclick="event.stopPropagation()">▶ Watch how${by}</a>`;
+  }
+  return `<a href="${e.link}" target="_blank" rel="noopener noreferrer" class="ex-vid-btn"
+    onclick="event.stopPropagation()" title="Opens ${escapeHtml(e.linkBy || 'a video')} in a new tab">▶ Watch</a>`;
+}
+
 function _mpickTeachLines(e) {
   let out = '';
   if (e.teaches && typeof exById === 'function') {
@@ -12463,6 +12551,7 @@ function renderMusclePicker() {
       <div style="display:flex;gap:5px;margin-top:7px">
         <button onclick="event.stopPropagation();${_go}"
           style="flex:1;padding:8px;border-radius:5px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">✓ Log this exercise</button>
+        ${exVideoBtn(e)}
         <button onclick="event.stopPropagation();startRestTimer(${e.rest},'${e.name.replace(/'/g, "\\'")}')"
           style="padding:8px 11px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit" title="Rest timer only">⏱</button>
       </div>
@@ -14026,7 +14115,17 @@ function episodeExRules() {
   return { flags: flags, names: names, muscles: muscles };
 }
 
-// Returns { blocked:Set(names), cautions:[{name, note}] } for the gym library.
+// A two-or-three word version of each caution, for surfaces where the full
+// note would be shouting. The long note is what you need standing in front of
+// the bar; "your grip" is what you need on a card you are reading with coffee.
+const EX_CAUTION_SHORT = {
+  grip:     'your grip',
+  overhead: 'your shoulder',
+  shoulder: 'your shoulder',
+  spine:    'your back',
+};
+
+// Returns { blocked:Set(names), cautions:[{name, note, why}] } for the gym library.
 function exContraindications() {
   const blockedFlags = new Set(); const cautionFlags = {}; const blockedMuscles = new Set();
   getUserConditions().forEach(c => {
@@ -14047,10 +14146,13 @@ function exContraindications() {
     const flags = e.flags || [];
     if (blockedMuscles.has(e.m) || flags.some(f => blockedFlags.has(f))) { blocked.add(e.name); return; }
     const hit = flags.find(f => cautionFlags[f]);
-    if (hit) { cautions.push({ name: e.name, note: cautionFlags[hit] }); return; }
-    if (epr.muscles[e.m]) { cautions.push({ name: e.name, note: epr.muscles[e.m] }); return; }
+    if (hit) { cautions.push({ name: e.name, note: cautionFlags[hit], why: EX_CAUTION_SHORT[hit] || '' }); return; }
+    // An episode's short reason is the episode itself, in his own words.
+    const epWhy = (typeof activeEpisodes === 'function' && activeEpisodes().length)
+      ? String(activeEpisodes()[0].condition || '').toLowerCase() : '';
+    if (epr.muscles[e.m]) { cautions.push({ name: e.name, note: epr.muscles[e.m], why: epWhy }); return; }
     const byName = epr.names.find(n => n.re.test(e.name));
-    if (byName) cautions.push({ name: e.name, note: byName.note });
+    if (byName) cautions.push({ name: e.name, note: byName.note, why: epWhy });
   });
   return { blocked, cautions };
 }
@@ -14059,6 +14161,12 @@ function exContraindications() {
 // — every bodyweight routine exercise — are in ROUTINES and not in EX_LIB, so a
 // lookup that only consults the library cannot warn him off a push-up, which is
 // the exact movement his open wrist episode argues against.
+// The short form, for the session card. Never the long note — see exCautionFor.
+function exCautionShortFor(name) {
+  if (!name) return '';
+  const c = exContraindications().cautions.find(x => x.name === name);
+  return (c && c.why) || '';
+}
 function exCautionFor(name) {
   if (!name) return null;
   const c = exContraindications().cautions.find(x => x.name === name);
@@ -16487,7 +16595,8 @@ function buildSessionPlan(dateStr) {
       const note = (typeof exCautionFor === 'function') ? exCautionFor(preferred[i].name) : null;
       if (!note) { chosenEx = preferred[i]; break; }
       if (!out.skip.some(function (s) { return s.ex.name === preferred[i].name; })) {
-        out.skip.push({ ex: preferred[i], note: note, instead: null });
+        out.skip.push({ ex: preferred[i], note: note, instead: null,
+                        why: (typeof exCautionShortFor === 'function') ? exCautionShortFor(preferred[i].name) : '' });
       }
     }
     if (!chosenEx) {
@@ -16587,7 +16696,7 @@ function buildSessionPlan(dateStr) {
 //      shorter card, and he should see that happen.
 //   2. It is the first thing on the card, which is the only position where a
 //      recommendation gets read before he has already decided what to do.
-//   3. It replaces nothing. "Start a session" and "Just browse exercises" both
+//   3. It replaces nothing. "Start a session" and "Find an exercise" both
 //      still work, and a plan you can ignore without a detour is a plan people
 //      keep reading.
 //
@@ -16618,10 +16727,50 @@ function sessionPlanHtml(dateStr) {
     return `<div class="sp-wrap"><div class="sp-head">Today's plan</div>
       <div class="sp-empty">Everything this would suggest is already logged today.</div></div>`;
   }
-  const skipHtml = plan.skip.map(function (sk) {
-    const alt = sk.instead ? ` <b>${escapeHtml(sk.instead.name)}</b> instead.` : '';
-    return `<div class="sp-skip"><span class="sp-skip-i">⚠</span><span>Skip <b>${escapeHtml(sk.ex.name)}</b> — ${escapeHtml(sk.note)}${alt}</span></div>`;
-  }).join('');
+  // ── How the card talks about what it left out ────────────────────────
+  // Craig, 2026-09-26: "I open the app and it tells me all the things I
+  // shouldn't do. This isn't how I wish to feel."
+  //
+  // He was right and this block was the reason. With a trigger finger ticked in
+  // Settings the grip caution fires on push-ups, the floor press AND the
+  // inverted row — three different patterns — so the card printed three amber
+  // warning boxes, each carrying the same 180-character note, directly under
+  // the three things it was asking him to do. Opening the app meant reading the
+  // same prohibition three times before reaching anything to actually do.
+  //
+  // THE RULE, now: the card leads with what to do. What it left out is a
+  // CONSEQUENCE of that — said once, quietly, as a substitution rather than a
+  // prohibition. "Band row instead of the inverted row, for your grip" carries
+  // the same information as "SKIP INVERTED ROW" and is a different experience.
+  //
+  // The full note has not gone anywhere. It renders on the exercise screen,
+  // which is where he is standing when it becomes actionable. A warning on the
+  // front page is a mood; a warning at the point of contact is advice.
+  const skipHtml = (function () {
+    if (!plan.skip.length) return '';
+    // One line per REASON, not per movement. Three movements sharing one grip
+    // caution is one sentence.
+    const byWhy = {};
+    plan.skip.forEach(function (sk) {
+      const w = sk.why || '';
+      (byWhy[w] = byWhy[w] || []).push(sk);
+    });
+    return Object.keys(byWhy).map(function (w) {
+      // Named by the REPLACEMENT, not by what was displaced, and deduplicated.
+      // The first version read "Band chest press instead of push-up, Band chest
+      // press instead of kettlebell floor press and Band row instead of
+      // inverted row" — accurate, and a substitution ledger nobody wants on the
+      // front page. What is NOT in the plan is not information he needs here;
+      // the movements are still in the library and still say why when opened.
+      // It names the REASON and nothing else. Two earlier versions named the
+      // movements: first "Skip X — <180 characters>" three times over, then
+      // "A instead of B, C instead of D". Even deduplicated, the replacements
+      // ARE the first three lines of the card, so naming them again is the card
+      // repeating itself. One dim line saying the plan noticed is the whole job.
+      if (!byWhy[w].some(function (sk) { return !!sk.instead; })) return '';
+      return `<div class="sp-swap">Picked around ${w ? escapeHtml(w) : 'what you have open'} today.</div>`;
+    }).join('');
+  })();
   const extraHtml = plan.extra ? `<div class="sp-extra-label">5 more minutes?</div>` +
     _spRow(plan.extra.ex, plan.extra.reason, 'log') : '';
   return `<div class="sp-wrap">
@@ -17579,7 +17728,8 @@ function renderExerciseScreen() {
       const w = (typeof exCautionFor === 'function') ? exCautionFor(_sessExName) : null;
       return w ? `<div style="font-size:11px;color:var(--orange);line-height:1.5;margin-bottom:8px;padding:9px 11px;border-radius:7px;background:var(--orange-bg);border:1px solid var(--orange-border, var(--orange))">⚠ ${w}</div>` : '';
     })()}
-    ${ex.cue ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:var(--input-bg)">${ex.cue}</div>` : ''}
+    ${ex.cue ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${ex.link ? '4' : '10'}px;padding:8px 10px;border-radius:6px;background:var(--input-bg)">${ex.cue}</div>` : ''}
+    ${ex.link ? `<div style="margin-bottom:10px">${exVideoBtn(ex, 'inline')}</div>` : ''}
     ${rows}
     ${(function () {
       const g = (typeof setGuidance === 'function') ? setGuidance(ex.m, sets.length) : null;
@@ -18479,6 +18629,9 @@ const EXERCISE_BANK = {
 // STRETCH TIERS — expandable alternatives
 // ──────────────────────────────────────────────
 const STRETCH_TIERS = [
+  // Ball work sits first because it is the one that is worth most BEFORE the
+  // others — the range it buys lasts about an hour, so doing it last wastes it.
+  { id: 'ball', icon: '🎾', label: 'Ball Release', time: '~8 min', routineKey: 'ball_release' },
   { id: 'quick', icon: '⚡', label: 'Quick Stretch', time: '~10 min', routineKey: 'stretch_quick' },
   { id: 'standard', icon: '🧘', label: 'Standard', time: '~20 min', routineKey: null }, // uses A/B/C rotation
   { id: 'yoga_stretch', icon: '🧘‍♂️', label: 'Yoga Flow', time: '20-30 min', routineKey: 'yoga' },
@@ -21519,7 +21672,7 @@ function buildActivityDecisionTree(dateStr) {
       ${(typeof sessionPlanHtml === 'function') ? sessionPlanHtml(dateStr) : ''}
       <div id="gym-clock-host"></div>
       <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
-      <button onclick="openMusclePicker()" style="width:100%;margin-top:5px;padding:7px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">Just browse exercises</button>
+      <button onclick="openMusclePicker()" style="width:100%;margin-top:6px;padding:12px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">\ud83d\udd0d Find an exercise</button>
     </div>
   `;
 }
