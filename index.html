@@ -4055,7 +4055,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.26.04';
+const APP_VERSION = '2026.09.26.05';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -13147,45 +13147,145 @@ function reflectSave(id, dateStr) {
 // files. They are almost certainly genuine. They are not here, because
 // "almost certainly" is the standard that produces misattribution.
 const REFLECT_QUOTES = [
-  { id:"q_ma_01", text:"Death hangs over thee: whilst yet thou livest, whilst thou mayest, be good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
-  { id:"q_ma_02", text:"Meddle not with many things, if thou wilt live cheerfully.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V" },
-  { id:"q_ma_03", text:"At what time soever thou wilt, it is in thy power to retire into thyself, and to be at rest, and free from all businesses.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
-  { id:"q_ma_04", text:"Spend not the remnant of thy days in thoughts and fancies concerning other men, when it is not in relation to some common good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
-  { id:"q_ma_05", text:"Whatsoever any man either doth or saith, thou must be good; doth any man offend? It is against himself that he doth offend: why should it trouble thee?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
-  { id:"q_ma_06", text:"Not to look about upon the evil conditions of others, but to run on straight in the line, without any loose and extravagant agitation.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
-  { id:"q_ma_07", text:"Every man’s happiness depends from himself, but behold thy life is almost at an end, whiles affording thyself no respect, thou dost make thy happiness to consist in the souls, and conceits of other men.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II" },
-  { id:"q_ma_08", text:"Begin the morning by saying unto thyself, I shall this day have to do with an idle curious man, with an unthankful man, a railer.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VII" },
-  { id:"q_ma_09", text:"Let nothing be done rashly, and at random, but all things according to the most exact and perfect rules of art.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
-  { id:"q_ma_10", text:"Never esteem of anything as profitable, which shall ever constrain thee either to break thy faith, or to lose thy modesty; to hate any man.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VIII" },
-  { id:"q_ma_11", text:"Casting therefore all other things aside, keep thyself to these few, and remember withal that no man properly can be said to live more than that which is now present.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XI" },
-  { id:"q_ma_12", text:"At every action a man must privately by way of admonition suggest unto himself, What? may not this that now I go about, be of the number of unnecessary actions?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V" },
-  { id:"q_ma_13", text:"Let it be thy earnest and incessant care as a Roman and a man to perform whatsoever it is that thou art about, with true and unfeigned gravity, natural affection, freedom and justice.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II" },
-  { id:"q_ma_14", text:"Thou must hasten therefore; not only because thou art every day nearer unto death than other, but also because that intellective faculty in thee doth daily waste and decay.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
-  { id:"q_ma_15", text:"What is it that will adhere and follow? Only one thing, philosophy.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XII" },
-  { id:"q_ep_01", text:"Men are disturbed not by things, but by the views which they take of things.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V" },
-  { id:"q_ep_02", text:"Demand not that events should happen as you wish; but wish them to happen as they do happen.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · VIII" },
-  { id:"q_ep_03", text:"There are things which are within our power, and there are things which are beyond our power.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
-  { id:"q_ep_04", text:"Within our power are opinion, aim, desire, aversion, and, in one word, whatever affairs are our own.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
-  { id:"q_ep_05", text:"But if you take for your own only that which is your own and view what belongs to others just as it really is, then no one will ever compel you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
-  { id:"q_ep_06", text:"When, therefore, we are hindered or disturbed, or grieved, let us never impute it to others, but to ourselves.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V" },
-  { id:"q_ep_07", text:"Sickness is an impediment to the body, but not to the will unless itself pleases.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · IX" },
-  { id:"q_ep_08", text:"A man’s master is he who is able to confer or remove whatever that man seeks or shuns.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XIV" },
-  { id:"q_ep_09", text:"Remember that you are an actor in a drama of such sort as the Author chooses.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XVII" },
-  { id:"q_ep_10", text:"When, therefore, anyone provokes you, be assured that it is your own opinion which provokes you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XX" },
-  { id:"q_ep_11", text:"Be content, then, in everything, with being a philosopher; and if you wish to seem so likewise to anyone, appear so to yourself.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XXIII" },
-  { id:"q_ep_12", text:"Never proclaim yourself a philosopher, nor make much talk among the ignorant about your principles, but show them by actions.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XLVI" },
-  { id:"q_ep_13", text:"This instant, then, think yourself worthy of living as a man grown up and a proficient.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · L" },
-  { id:"q_th_01", text:"The mass of men lead lives of quiet desperation.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_02", text:"It is never too late to give up our prejudices.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_03", text:"What a man thinks of himself, that it is which determines, or rather indicates, his fate.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_04", text:"Most of the luxuries, and many of the so called comforts of life, are not only not indispensable, but positive hindrances to the elevation of mankind.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_05", text:"To be a philosopher is not merely to have subtle thoughts, nor even to found a school, but so to love wisdom as to live according to its dictates.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_06", text:"Beware of all enterprises that require new clothes, and not rather a new wearer of clothes.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_07", text:"I would rather sit on a pumpkin and have it all to myself than be crowded on a velvet cushion.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_08", text:"Men have become the tools of their tools.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_09", text:"It is desirable that a man be clad so simply that he can lay his hands on himself in the dark.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_th_10", text:"The student who secures his coveted leisure and retirement by systematically shirking any labor necessary to man obtains but an ignoble and unprofitable leisure.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
-  { id:"q_wy_01", text:"Tread softly because you tread on my dreams.", who:"W. B. Yeats", src:"The Wind Among the Reeds, 1899 · Aedh Wishes for the Cloths of Heaven" },
+  { id:"q_ma_01", text:"Death hangs over thee: whilst yet thou livest, whilst thou mayest, be good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV", fam:"stoic" },
+  { id:"q_ma_02", text:"Meddle not with many things, if thou wilt live cheerfully.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V", fam:"stoic" },
+  { id:"q_ma_03", text:"At what time soever thou wilt, it is in thy power to retire into thyself, and to be at rest, and free from all businesses.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV", fam:"stoic" },
+  { id:"q_ma_04", text:"Spend not the remnant of thy days in thoughts and fancies concerning other men, when it is not in relation to some common good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III", fam:"stoic" },
+  { id:"q_ma_05", text:"Whatsoever any man either doth or saith, thou must be good; doth any man offend? It is against himself that he doth offend: why should it trouble thee?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III", fam:"stoic" },
+  { id:"q_ma_06", text:"Not to look about upon the evil conditions of others, but to run on straight in the line, without any loose and extravagant agitation.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV", fam:"stoic" },
+  { id:"q_ma_07", text:"Every man’s happiness depends from himself, but behold thy life is almost at an end, whiles affording thyself no respect, thou dost make thy happiness to consist in the souls, and conceits of other men.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II", fam:"stoic" },
+  { id:"q_ma_08", text:"Begin the morning by saying unto thyself, I shall this day have to do with an idle curious man, with an unthankful man, a railer.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VII", fam:"stoic" },
+  { id:"q_ma_09", text:"Let nothing be done rashly, and at random, but all things according to the most exact and perfect rules of art.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV", fam:"stoic" },
+  { id:"q_ma_10", text:"Never esteem of anything as profitable, which shall ever constrain thee either to break thy faith, or to lose thy modesty; to hate any man.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VIII", fam:"stoic" },
+  { id:"q_ma_11", text:"Casting therefore all other things aside, keep thyself to these few, and remember withal that no man properly can be said to live more than that which is now present.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XI", fam:"stoic" },
+  { id:"q_ma_12", text:"At every action a man must privately by way of admonition suggest unto himself, What? may not this that now I go about, be of the number of unnecessary actions?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V", fam:"stoic" },
+  { id:"q_ma_13", text:"Let it be thy earnest and incessant care as a Roman and a man to perform whatsoever it is that thou art about, with true and unfeigned gravity, natural affection, freedom and justice.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II", fam:"stoic" },
+  { id:"q_ma_14", text:"Thou must hasten therefore; not only because thou art every day nearer unto death than other, but also because that intellective faculty in thee doth daily waste and decay.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III", fam:"stoic" },
+  { id:"q_ma_15", text:"What is it that will adhere and follow? Only one thing, philosophy.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XII", fam:"stoic" },
+  { id:"q_ep_01", text:"Men are disturbed not by things, but by the views which they take of things.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V", fam:"stoic" },
+  { id:"q_ep_02", text:"Demand not that events should happen as you wish; but wish them to happen as they do happen.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · VIII", fam:"stoic" },
+  { id:"q_ep_03", text:"There are things which are within our power, and there are things which are beyond our power.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I", fam:"stoic" },
+  { id:"q_ep_04", text:"Within our power are opinion, aim, desire, aversion, and, in one word, whatever affairs are our own.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I", fam:"stoic" },
+  { id:"q_ep_05", text:"But if you take for your own only that which is your own and view what belongs to others just as it really is, then no one will ever compel you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I", fam:"stoic" },
+  { id:"q_ep_06", text:"When, therefore, we are hindered or disturbed, or grieved, let us never impute it to others, but to ourselves.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V", fam:"stoic" },
+  { id:"q_ep_07", text:"Sickness is an impediment to the body, but not to the will unless itself pleases.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · IX", fam:"stoic" },
+  { id:"q_ep_08", text:"A man’s master is he who is able to confer or remove whatever that man seeks or shuns.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XIV", fam:"stoic" },
+  { id:"q_ep_09", text:"Remember that you are an actor in a drama of such sort as the Author chooses.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XVII", fam:"stoic" },
+  { id:"q_ep_10", text:"When, therefore, anyone provokes you, be assured that it is your own opinion which provokes you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XX", fam:"stoic" },
+  { id:"q_ep_11", text:"Be content, then, in everything, with being a philosopher; and if you wish to seem so likewise to anyone, appear so to yourself.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XXIII", fam:"stoic" },
+  { id:"q_ep_12", text:"Never proclaim yourself a philosopher, nor make much talk among the ignorant about your principles, but show them by actions.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XLVI", fam:"stoic" },
+  { id:"q_ep_13", text:"This instant, then, think yourself worthy of living as a man grown up and a proficient.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · L", fam:"stoic" },
+  { id:"q_th_01", text:"The mass of men lead lives of quiet desperation.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_02", text:"It is never too late to give up our prejudices.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_03", text:"What a man thinks of himself, that it is which determines, or rather indicates, his fate.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_04", text:"Most of the luxuries, and many of the so called comforts of life, are not only not indispensable, but positive hindrances to the elevation of mankind.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_05", text:"To be a philosopher is not merely to have subtle thoughts, nor even to found a school, but so to love wisdom as to live according to its dictates.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_06", text:"Beware of all enterprises that require new clothes, and not rather a new wearer of clothes.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_07", text:"I would rather sit on a pumpkin and have it all to myself than be crowded on a velvet cushion.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_08", text:"Men have become the tools of their tools.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_09", text:"It is desirable that a man be clad so simply that he can lay his hands on himself in the dark.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_10", text:"The student who secures his coveted leisure and retirement by systematically shirking any labor necessary to man obtains but an ignoble and unprofitable leisure.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_wy_01", text:"Tread softly because you tread on my dreams.", who:"W. B. Yeats", src:"The Wind Among the Reeds, 1899 · Aedh Wishes for the Cloths of Heaven", fam:"verse" },
+
+  // ── Added 2026-09-26. Craig: "I want to see more inspirational quotes." ──
+  //
+  // Same standard as above: every line pulled out of a fetched public-domain
+  // text, with translator and section so it can be checked in ten seconds.
+  //
+  // MARCUS IN GEORGE LONG (1862) rather than Casaubon, which the note above
+  // flagged as a later job. Long is a century newer and reads like English.
+  // Both are public domain; the Hays and Hard renderings everyone quotes are
+  // not, and never will be for this file's purposes.
+  //
+  // THREE LINES WERE DELIBERATELY DROPPED from Meditations V.1 — the famous
+  // "at dawn, when you have trouble getting out of bed" passage, including
+  // "have I been made for this, to lie in the bed-clothes and keep myself
+  // warm?". They are genuine, they are the most-quoted thing Marcus wrote, and
+  // they are wrong for THIS app. Its stated position is that a missed log is
+  // cognitive load and not laziness. A corpus that scolds a sleep-restricted man
+  // in a calorie deficit for resting contradicts the thing it is printed inside.
+  //
+  // NO SCRIPTURE, at Craig's request — and nothing was removed to honour that,
+  // because there never was any. The family toggle below exists so the register
+  // is his choice rather than ours.
+  { id:"q_ml_01", text:"The best way of avenging thyself is not to become like the wrong doer.", who:"Marcus Aurelius", src:"Meditations, tr. George Long 1862 · Book VI.6", fam:"stoic" },
+  { id:"q_ml_02", text:"Adapt thyself to the things with which thy lot has been cast: and the men among whom thy lot has been cast, love them, but do it truly, sincerely.", who:"Marcus Aurelius", src:"Meditations, tr. George Long 1862 · Book VI.39", fam:"stoic" },
+  { id:"q_ml_03", text:"It is in our power to have no opinion about a thing, and not to be disturbed in our soul; for things themselves have no natural power to form our judgements.", who:"Marcus Aurelius", src:"Meditations, tr. George Long 1862 · Book VI.52", fam:"stoic" },
+  { id:"q_ml_04", text:"Attend to the matter which is before thee, whether it is an opinion or an act or a word.", who:"Marcus Aurelius", src:"Meditations, tr. George Long 1862 · Book VIII.22", fam:"stoic" },
+  { id:"q_ml_05", text:"It is satisfaction to a man to do the proper works of a man.", who:"Marcus Aurelius", src:"Meditations, tr. George Long 1862 · Book VIII.26", fam:"stoic" },
+  { id:"q_ep_14", text:"If you would improve, be content to be thought foolish and dull with regard to externals.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XIII", fam:"stoic" },
+  { id:"q_ep_15", text:"In every affair consider what precedes and what follows, and then undertake it.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XXIX", fam:"stoic" },
+  { id:"q_ep_16", text:"The condition and characteristic of a philosopher is that he looks to himself for all help or harm.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XLVIII", fam:"stoic" },
+  { id:"q_em_01", text:"Trust thyself: every heart vibrates to that iron string.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_02", text:"Whoso would be a man, must be a nonconformist.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_03", text:"Nothing is at last sacred but the integrity of your own mind.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_04", text:"Do your work, and I shall know you.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_05", text:"A man is relieved and gay when he has put his heart into his work and done his best.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_06", text:"The force of character is cumulative.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_em_07", text:"What I must do is all that concerns me, not what the people think.", who:"Ralph Waldo Emerson", src:"Essays: First Series, 1841 · Self-Reliance", fam:"plain" },
+  { id:"q_th_11", text:"No way of thinking or doing, however ancient, can be trusted without proof.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_12", text:"The life which men praise and regard as successful is but one kind.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_13", text:"Public opinion is a weak tyrant compared with our own private opinion.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_th_14", text:"I should not talk so much about myself if there were anybody else whom I knew as well.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy", fam:"plain" },
+  { id:"q_lz_01", text:"He who knows other men is discerning; he who knows himself is intelligent.", who:"Lao Tzu", src:"Tao Te Ching, tr. James Legge 1891 · Chapter 33", fam:"eastern" },
+  { id:"q_lz_02", text:"The journey of a thousand li commenced with a single step.", who:"Lao Tzu", src:"Tao Te Ching, tr. James Legge 1891 · Chapter 64", fam:"eastern" },
+  { id:"q_st_01", text:"If you know the enemy and know yourself, you need not fear the result of a hundred battles.", who:"Sun Tzu", src:"The Art of War, tr. Lionel Giles 1910 · III.18", fam:"eastern" },
+  { id:"q_st_02", text:"Therefore, just as water retains no constant shape, so in warfare there are no constant conditions.", who:"Sun Tzu", src:"The Art of War, tr. Lionel Giles 1910 · VI.32", fam:"eastern" },
+
+
+  // ── DAD WISDOM (2026-09-26) ──
+  // Craig: "there is a show called 'modern family' and there is a book of phil;
+  // where he has non-sense dad quotes. I like this." And: "can't be serious all
+  // the time!"
+  //
+  // These are NOT Phil Dunphy's lines. Phil's-osophy is written by the show's
+  // writers and was published as a book — it is in copyright, and lifting it
+  // into a file that ships to every user of this app is not a thing to do for a
+  // joke. So these are written for this app, in that register: opens like real
+  // advice, keeps its grammar, and collapses entirely on inspection. Same joke,
+  // our words.
+  //
+  // `src` says so on every one of them, for the same reason the Stoic lines
+  // carry a translator: a corpus where you cannot tell the verified from the
+  // invented is a corpus where nothing is verified. If it says Marcus Aurelius
+  // it can be checked; if nobody said it, it says nobody said it.
+  //
+  // A few of them are accidentally decent advice. That is the register working,
+  // not a mistake.
+  { id:"q_dad_01", text:"If you cannot fix it with a hammer, you have an electrical problem.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_02", text:"A goal without a plan is a wish. A plan without a goal is a Saturday.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_03", text:"Never put off until tomorrow what you can put off until Thursday, when you will have more information.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_04", text:"Measure twice, cut once. Measure once, cut twice, drive to the store.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_05", text:"Confidence is just being wrong at a normal volume.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_06", text:"You cannot pour from an empty cup. You also cannot pour from a full cup if you never tip it. Tip the cup.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_07", text:"Winners never quit and quitters never win, but people who never quit and never win are just stubborn, and nobody put that on a poster.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_08", text:"If at first you do not succeed, that is the most common outcome, statistically.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_09", text:"Be yourself. Everyone else is taken, and frankly some of them are doing a better job of it.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_10", text:"There is no I in team, but there is a me if you rearrange it, and that is how most teams actually work.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_11", text:"Success is ten percent inspiration and ninety percent perspiration, which is why you shower at the end.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_12", text:"Never go to bed angry. Stay up arguing until you are tired, then go to bed regular.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_13", text:"The best time to plant a tree was twenty years ago. The second best time is also twenty years ago. That is just how trees work.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_14", text:"Trust your gut. Your gut has never read a book, but it has never been wrong out loud either.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_15", text:"Nothing worth having comes easy, except a library card.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_16", text:"A journey of a thousand miles begins with a single step and continues with roughly two million more, and nobody mentions that part.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_17", text:"If you want something done right, do it yourself. If you want it done at all, ask someone else.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_18", text:"Live every day like it is your last, but keep booking the dentist, because statistically it is not.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_19", text:"Hard work beats talent when talent does not work hard. Talent that works hard beats everyone, so the real lesson is to have talent.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_20", text:"You can lead a horse to water, which is already impressive. Most people cannot get a horse to go anywhere.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_21", text:"Do not judge a man until you have walked a mile in his shoes. By then he is a mile away and barefoot and you have his shoes, so you have won.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_22", text:"Rome was not built in a day, but somebody laid bricks every single hour, and nobody knows what you did last hour.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_23", text:"Anything worth doing is worth doing badly at first. That is not a saying. That is just how it goes.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_24", text:"Give a man a fish and he eats for a day. Teach a man to fish and he buys a boat, then a truck for the boat, then a bigger garage, and now he is underwater in a different way.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_25", text:"When one door closes another opens. If every door is closing, you are in a hallway, and the question is why.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_26", text:"Practice makes perfect. Nothing is perfect, so practice makes slightly better, which is still the best deal on offer.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_27", text:"Take it one day at a time. There is no other setting.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_28", text:"Two wrongs do not make a right, but three lefts do, and that is the kind of thing worth knowing.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_29", text:"The grass is always greener on the other side because you are not the one mowing it.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_30", text:"Do not count your chickens before they hatch. Do count them afterwards. That is just inventory.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_31", text:"An apple a day keeps the doctor away, but so does not making the appointment, and only one of those is a plan.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_32", text:"Slow and steady wins the race, as long as the race is very long and the other guy naps.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_33", text:"It is not the size of the dog in the fight, it is whether the dog understands that it is in a fight.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
+  { id:"q_dad_34", text:"Everything happens for a reason. Sometimes the reason is that you did not set an alarm.", who:"Dad wisdom", src:"House-made. Nobody famous said this.", fam:"dad" },
 ];
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -13219,6 +13319,62 @@ const REFLECT_MIXES = [
   { id:'prompts', label:'Mostly prompts', desc:'A quote about twice a week. More is asked of you.', q:2 },
 ];
 const REFLECT_MIX_KEY = 'reflect_mix';
+
+// ── Which registers he gets ────────────────────────────────────────────────
+// Craig, 2026-09-26: "no jesus quotes please." Then, a second later: "well,
+// maybe thats a toggle."
+//
+// He is right, and the second message is the better feature. A corpus that
+// mixes a Roman emperor, a man who lived in a hut, and a joke about horses is
+// going to land wrong for somebody on some evening, and the fix is not for us
+// to guess the line — it is for him to draw it. So the register is a setting.
+//
+// On the specific request: there is no scripture in the corpus and none was
+// removed to comply. Nothing here quotes a religious text. The toggle exists so
+// that if a family is ever added he can switch it off without asking, and so
+// that the joke family can be switched off on a night he does not want jokes.
+//
+// All families default ON. An empty selection is allowed and means prompts
+// only, which is a coherent answer and not an error state.
+const REFLECT_FAMILIES = [
+  { id:'stoic',   label:'Stoics',              desc:'Marcus Aurelius and Epictetus. Mostly about what is and is not yours to control.' },
+  { id:'plain',   label:'Emerson and Thoreau', desc:'American, plain-spoken, suspicious of what other people think.' },
+  { id:'eastern', label:'Lao Tzu and Sun Tzu', desc:'Short. Four lines in total — you will see them often if this is the only one on.' },
+  { id:'verse',   label:'Poetry',              desc:'One line, by Yeats. The one you asked for.' },
+  { id:'dad',     label:'Dad wisdom',          desc:'Nonsense, delivered with total confidence. Written for this app — nobody famous said any of it.' },
+];
+const REFLECT_FAM_KEY = 'reflect_families';
+
+function reflectFamilies() {
+  try {
+    const raw = localStorage.getItem(REFLECT_FAM_KEY);
+    if (raw === null) return REFLECT_FAMILIES.map(f => f.id);
+    const p = JSON.parse(raw);
+    if (!Array.isArray(p)) return REFLECT_FAMILIES.map(f => f.id);
+    // Unknown ids are dropped rather than trusted — a family removed from the
+    // list above must not keep filtering after it stops existing.
+    return p.filter(id => REFLECT_FAMILIES.some(f => f.id === id));
+  } catch (e) { return REFLECT_FAMILIES.map(f => f.id); }
+}
+function toggleReflectFamily(id) {
+  if (!REFLECT_FAMILIES.some(f => f.id === id)) return;
+  const cur = reflectFamilies();
+  const i = cur.indexOf(id);
+  const next = (i >= 0) ? cur.filter(x => x !== id) : cur.concat([id]);
+  const val = JSON.stringify(next);
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(REFLECT_FAM_KEY, val);
+  else { try { localStorage.setItem(REFLECT_FAM_KEY, val); } catch (e) {} }
+  if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
+  if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+// The pool every quote surface reads. One function, so the picker, the
+// no-repeat window and the "is there a quote at all" test can never disagree
+// about which quotes exist tonight.
+function reflectQuotePool() {
+  if (typeof REFLECT_QUOTES === 'undefined') return [];
+  const on = reflectFamilies();
+  return REFLECT_QUOTES.filter(q => on.indexOf(q.fam) !== -1);
+}
 
 function reflectMix() {
   try { return localStorage.getItem(REFLECT_MIX_KEY) || 'even'; } catch (e) { return 'even'; }
@@ -13325,7 +13481,9 @@ function _reflectDayHash(day) {
 // between app loads, and offset from the item hash so the two decisions are not
 // correlated.
 function reflectWantsQuote(dateStr) {
-  if (typeof REFLECT_QUOTES === 'undefined' || !REFLECT_QUOTES.length) return false;
+  // Pool, not corpus. With every family switched off there are no quotes to
+  // give, and the slot falls back to prompts instead of rendering nothing.
+  if (typeof reflectQuotePool !== 'function' || !reflectQuotePool().length) return false;
   const day = dateStr || ds(new Date());
   const m = REFLECT_MIXES.find(x => x.id === reflectMix()) || REFLECT_MIXES[1];
   return (_reflectDayHash(day + '|mix') % 7) < m.q;
@@ -13344,18 +13502,20 @@ function reflectMarkQuoteSeen(id) {
   // Half a cycle. A quote is re-readable in a way a question is not, so the
   // no-repeat window is shorter on purpose — suppressing a full cycle over a
   // 39-line corpus would mean seeing every one before any comes round again.
-  while (seen.length > Math.floor(REFLECT_QUOTES.length / 2)) seen.shift();
+  const poolSize = (typeof reflectQuotePool === 'function') ? reflectQuotePool().length : REFLECT_QUOTES.length;
+  while (seen.length > Math.floor(Math.max(1, poolSize) / 2)) seen.shift();
   try { localStorage.setItem(REFLECT_QSEEN_KEY, JSON.stringify(seen)); } catch (e) {}
 }
 
 // One quote for this day, same rules as the prompt picker: stable within the
 // day, freshest-first, never random.
 function reflectQuotePick(dateStr) {
-  if (typeof REFLECT_QUOTES === 'undefined' || !REFLECT_QUOTES.length) return null;
+  const pool = (typeof reflectQuotePool === 'function') ? reflectQuotePool() : [];
+  if (!pool.length) return null;
   const day = dateStr || ds(new Date());
   const seen = reflectQuoteSeen();
-  const fresh = REFLECT_QUOTES.filter(q => seen.indexOf(q.id) === -1);
-  const from = fresh.length ? fresh : REFLECT_QUOTES;
+  const fresh = pool.filter(q => seen.indexOf(q.id) === -1);
+  const from = fresh.length ? fresh : pool;
   return from[_reflectDayHash(day) % from.length];
 }
 
@@ -21450,7 +21610,7 @@ const CHECKIN_QUESTIONS = [
 // ════════════════════════════════════════════════════════════════════════════
 const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done',
                              'evening_prompt_last_done', 'view_hidden',
-                             'reflect_mode', 'reflect_mix', 'bench_profile'];
+                             'reflect_mode', 'reflect_mix', 'reflect_families', 'bench_profile'];
 
 async function pullSyncedSettings() {
   if (typeof sbReady === 'undefined' || !sbReady) return false;
@@ -21574,14 +21734,44 @@ function renderReflectPrefs() {
             <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${m.desc}</div>
           </div>
         </div>`;
-      }).join('')) +
+      }).join('') +
+      // Register. Checkboxes rather than radios — these combine.
+      '<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;' +
+      'letter-spacing:1px;padding:14px 0 2px">Which quotes</div>' +
+      '<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">' +
+      'Switch off anything you do not want. All of them off means prompts only, ' +
+      'which is a fine answer.</div>' +
+      (function () {
+        const onFams = reflectFamilies();
+        const counts = {};
+        (typeof REFLECT_QUOTES !== 'undefined' ? REFLECT_QUOTES : [])
+          .forEach(q => { counts[q.fam] = (counts[q.fam] || 0) + 1; });
+        return REFLECT_FAMILIES.map(f => {
+          const on = onFams.indexOf(f.id) !== -1;
+          return `<div onclick="toggleReflectFamily('${f.id}')"
+            style="display:flex;align-items:flex-start;gap:9px;padding:9px 6px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
+            <div style="width:15px;height:15px;border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;border:1.5px solid ${on ? 'var(--purple)' : 'var(--card-border)'};background:${on ? 'var(--purple)' : 'transparent'}">${on ? '\u2713' : ''}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11.5px;font-weight:600;color:${on ? 'var(--text)' : 'var(--text-muted)'}">${f.label} <span style="font-weight:500;color:var(--text-muted)">\u00b7 ${counts[f.id] || 0}</span></div>
+              <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${f.desc}</div>
+            </div>
+          </div>`;
+        }).join('') +
+        `<div style="font-size:9.5px;color:var(--text-muted);padding:8px 2px 0;line-height:1.5">
+          ${reflectQuotePool().length} of ${(typeof REFLECT_QUOTES !== 'undefined' ? REFLECT_QUOTES.length : 0)} lines are in play.
+          Every attributed quote carries its translator and section so you can check it.
+          The dad ones say outright that nobody said them.
+        </div>`;
+      })()) +
     '<div style="font-size:9.5px;color:var(--text-muted);padding-top:8px;line-height:1.5">' +
     REFLECT_PROMPTS.length + ' prompts. A question you answer is spent — you get a full ' +
     'cycle before any repeat, and a rough morning only gets the gentle ones.<br><br>' +
-    REFLECT_QUOTES.length + ' quotes, each one pulled out of a public-domain source rather ' +
-    'than written down from memory, and each carrying where it came from. Most of what ' +
-    'circulates as Stoic quotation is paraphrased or invented; the line under every quote ' +
-    'is how you can check this lot is not.</div>';
+    REFLECT_QUOTES.filter(q => q.fam !== 'dad').length + ' attributed quotes, each one pulled out of a ' +
+    'public-domain source rather than written down from memory, and each carrying where it ' +
+    'came from. Most of what circulates as Stoic quotation is paraphrased or invented; the ' +
+    'line under every quote is how you can check these are not.<br><br>' +
+    REFLECT_QUOTES.filter(q => q.fam === 'dad').length + ' written for this app, which say so ' +
+    'underneath. Nobody said those, and they are not from anywhere.</div>';
 }
 
 function renderBenchPrefs() {
