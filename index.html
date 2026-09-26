@@ -639,15 +639,30 @@
     color: var(--text-muted); padding: 8px 0 4px; border-top: 1px solid var(--divider); margin-top: 8px;
   }
   .wo-section-divider:first-child { border-top: none; margin-top: 0; }
+  /* ── Sized for a thumb, 2026-09-26 ──
+     Craig: "on the iphone, that little log workout thing is too small."
+     It was a 10px uppercase label with 4px of padding and an 8px chevron — the
+     smallest element on the card, and the door to the entire logging section.
+     The card was drawn in a desktop browser and then used on a phone.
+     44px is Apple's stated MINIMUM touch target, which this was under and which
+     the rows below only just met. A minimum is not a target. */
   .wo-section-header {
-    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
-    color: var(--text-dim); padding: 6px 0 4px; cursor: pointer; display: flex;
-    align-items: center; justify-content: space-between; border-top: 1px solid var(--divider); margin-top: 6px;
-    user-select: none;
+    font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--text); padding: 13px 12px; cursor: pointer; display: flex;
+    align-items: center; justify-content: space-between; margin-top: 10px;
+    min-height: 52px; box-sizing: border-box; border-radius: 9px;
+    border: 1px solid var(--card-border); background: var(--input-bg);
+    user-select: none; -webkit-tap-highlight-color: transparent;
   }
+  .wo-section-header:active { background: var(--card-bg, var(--input-bg)); }
   .wo-section-header:hover { color: var(--text); }
-  .wo-section-header .chevron { transition: transform 0.2s; font-size: 8px; }
+  .wo-section-header .chevron { transition: transform 0.2s; font-size: 13px; color: var(--cyan); }
+  .wo-section-header.open { border-radius: 9px 9px 0 0; margin-bottom: 0; }
   .wo-section-header.open .chevron { transform: rotate(90deg); }
+  .wo-collapsible.open {
+    border: 1px solid var(--card-border); border-top: none;
+    border-radius: 0 0 9px 9px; padding: 8px 8px 4px; margin-bottom: 4px;
+  }
   .wo-collapsible { display: none; }
   .wo-collapsible.open { display: block; }
 
@@ -848,6 +863,203 @@
   }
   .wlog-input:focus { border-color: var(--cyan); outline: none; }
   .wlog-unit { font-size: 9px; color: var(--text-muted); min-width: 14px; }
+  .gymloc-strip { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-bottom: 7px; }
+  .gymloc-lbl { font-size: 9px; color: var(--text-muted); margin-right: 2px; }
+  .gymloc-pill {
+    font-size: 9.5px; font-weight: 700; padding: 3px 8px; border-radius: 11px; cursor: pointer;
+    border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-muted);
+  }
+  .gymloc-pill.active { border-color: var(--cyan); background: var(--cyan-bg); color: var(--cyan); }
+  .gl-row { display: flex; align-items: center; gap: 7px; padding: 7px 4px; border-bottom: 1px solid var(--divider); }
+  .gl-name { font-size: 11.5px; font-weight: 700; color: var(--text); flex: 1; min-width: 0; }
+  .gl-sub { font-size: 9px; color: var(--text-muted); }
+  .gl-machines { display: flex; gap: 3px; flex-wrap: wrap; padding: 6px 2px 10px; }
+  .gl-m {
+    font-size: 9px; padding: 3px 7px; border-radius: 4px; cursor: pointer;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-muted);
+  }
+  .gl-m.on { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 700; }
+  .var-row { margin-bottom: 9px; }
+  .var-lbl {
+    font-size: 9px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase;
+    color: var(--text-muted); padding-bottom: 5px;
+  }
+  .var-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .var-chip {
+    display: inline-flex; align-items: center; gap: 4px; min-height: 36px;
+    font-size: 11px; font-weight: 700; padding: 7px 10px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-muted);
+  }
+  .var-chip.active { border-color: var(--cyan); background: var(--cyan-bg); color: var(--cyan); }
+  .var-x { font-size: 9px; opacity: 0.7; font-weight: 600; }
+  .var-tag {
+    font-size: 9px; font-weight: 700; color: var(--cyan); background: var(--cyan-bg);
+    border-radius: 4px; padding: 2px 5px; margin-left: 6px; vertical-align: middle;
+  }
+  .bp-row { display: flex; align-items: center; gap: 7px; padding: 6px 2px; border-bottom: 1px solid var(--divider); }
+  .bp-pos { font-size: 11.5px; font-weight: 700; color: var(--text); min-width: 74px; }
+  .bp-deg {
+    width: 62px; padding: 7px; border-radius: 6px; border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text); font-size: 11px; font-family: inherit; text-align: center;
+  }
+  .bp-mult { font-size: 10.5px; font-weight: 700; color: var(--cyan); min-width: 46px; text-align: right; }
+  .circ-head {
+    border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg);
+    border-radius: 8px; padding: 9px 10px; margin-bottom: 10px;
+  }
+  .circ-rounds { display: flex; align-items: center; gap: 4px; }
+  .circ-pip {
+    width: 11px; height: 11px; border-radius: 50%;
+    border: 1.5px solid var(--cyan); background: transparent;
+  }
+  .circ-pip.on { background: var(--cyan); }
+  .circ-count { font-size: 10px; font-weight: 800; color: var(--cyan); margin-left: 5px; }
+  .circ-note { font-size: 9.5px; color: var(--text-muted); line-height: 1.45; margin: 5px 0 7px; }
+  .circ-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .circ-btn {
+    flex: 1; min-width: 96px; padding: 13px 8px; border-radius: 7px; cursor: pointer; min-height: 48px;
+    border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-dim);
+    font-size: 11px; font-weight: 700; font-family: inherit;
+  }
+  .circ-btn-go { border-color: var(--green-border); background: var(--green-bg); color: var(--green); flex: 2; }
+  .circ-btn-undo { border-color: var(--orange); color: var(--orange); }
+  .last-sess {
+    border: 1px solid var(--purple-border); background: var(--purple-bg);
+    border-radius: 8px; padding: 8px 10px; margin-bottom: 10px;
+  }
+  .last-sess-head {
+    font-size: 8.5px; font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase;
+    color: var(--purple); margin-bottom: 4px;
+  }
+  .last-sess-row { display: flex; gap: 8px; align-items: baseline; padding: 1.5px 0; }
+  .last-sess-name { font-size: 10.5px; color: var(--text); flex: 1; min-width: 0; }
+  .last-sess-sets { font-size: 10px; font-weight: 700; color: var(--text-dim); white-space: nowrap; }
+  .last-line {
+    font-size: 11px; color: var(--text-muted); padding: 4px 2px 9px; line-height: 1.5;
+  }
+  .last-line b { color: var(--text-dim); }
+  .ex-caution {
+    font-size: 9.5px; line-height: 1.45; color: var(--orange); background: var(--orange-bg);
+    border-radius: 5px; padding: 5px 7px; margin-top: 4px;
+  }
+  /* ── Log a Workout, grouped by what it trains (2026-09-24) ──
+     The old list put seven unrelated things in one flat column, each row
+     carrying a checkbox, two text inputs and a pill strip. Three interaction
+     models per row, and no answer to "what am I choosing between". */
+  .wo-group { margin-bottom: 10px; }
+  .wo-group + .wo-group { border-top: 1px solid var(--divider); padding-top: 8px; }
+  .wo-group-label {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--text-muted); padding: 2px 2px 6px;
+  }
+  .wo-row {
+    display: flex; align-items: center; gap: 11px; padding: 11px 8px;
+    border-radius: 8px; cursor: pointer; min-height: 54px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wo-row:active { background: var(--input-bg); }
+  .wo-row.done .wo-name { color: var(--green); }
+  .wo-icon { font-size: 20px; flex-shrink: 0; width: 24px; text-align: center; }
+  .wo-main { flex: 1; min-width: 0; }
+  .wo-name { font-size: 14px; font-weight: 700; color: var(--text); }
+  .wo-sum { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 2px; }
+  .wo-hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .wo-go { font-size: 17px; font-weight: 700; color: var(--cyan); flex-shrink: 0; padding-left: 2px; }
+  .wo-pills { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+  /* A subtype pill is a real control, not a caption. 2px of vertical padding
+     made it a 12px-tall target sitting next to a 54px one. */
+  .wo-pill {
+    font-size: 10.5px; padding: 6px 10px; border-radius: 5px; cursor: pointer; min-height: 32px;
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-muted);
+  }
+  .wo-pill.active { border-color: var(--cyan); background: var(--cyan-bg); color: var(--cyan); font-weight: 700; }
+  /* ── What you actually did today ──
+     Same shape the meals card has used since May: the log control, then a
+     plain list of what came out of it. Absent entirely on a day with nothing
+     logged — an empty "Today" heading is a reproach, and this card does not
+     do those. */
+  .td-block { margin-top: 12px; padding-top: 9px; border-top: 2px solid var(--purple-border); }
+  .td-label {
+    font-size: 8.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--purple); padding-bottom: 5px;
+  }
+  .td-row {
+    display: flex; align-items: baseline; gap: 7px; padding: 7px 2px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .td-time { font-size: 10px; color: var(--text-muted); min-width: 50px; flex-shrink: 0; }
+  .td-icon { font-size: 11px; flex-shrink: 0; }
+  .td-name { font-size: 12.5px; font-weight: 600; color: var(--text); flex: 1; min-width: 0; }
+  .td-detail { font-size: 11px; color: var(--text-dim); font-weight: 600; text-align: right; }
+  .td-total { font-size: 10px; color: var(--purple); font-weight: 700; padding: 7px 2px 0; }
+  .td-review {
+    font-size: 11.5px; font-weight: 700; color: var(--cyan); cursor: pointer;
+    padding: 12px 2px 4px; text-align: right; min-height: 40px;
+  }
+  /* Session plan (2026-09-26). Lives inside .adt-wrap, under the capacity
+     chips. Rows are 46px because this is read and tapped on a phone, and the
+     last round of phone sizing established that anything under ~44px gets
+     missed. */
+  .sp-wrap { margin-top: 9px; padding-top: 8px; border-top: 1px solid var(--divider); }
+  .sp-head {
+    font-size: 8.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--cyan); padding-bottom: 4px;
+  }
+  .sp-scope { font-weight: 600; letter-spacing: 0.3px; text-transform: none; color: var(--text-muted); font-size: 9px; }
+  .sp-row {
+    display: flex; align-items: center; gap: 8px; min-height: 46px;
+    padding: 6px 4px; border-bottom: 1px solid var(--divider); cursor: pointer;
+  }
+  .sp-row:active { background: var(--input-bg); }
+  .sp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: var(--text-muted); }
+  /* Technique, not difficulty. Green = hard to do badly, amber = form matters,
+     red = easy to get wrong. A red dot is not "don't", it is "read the note". */
+  .sp-dot.sp-t1 { background: var(--green); }
+  .sp-dot.sp-t2 { background: var(--orange); }
+  .sp-dot.sp-t3 { background: var(--red, #e5484d); }
+  .sp-body { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .sp-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .sp-why { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+  .sp-why-dim { color: var(--text-muted); font-style: italic; }
+  .sp-go { font-size: 15px; color: var(--cyan); flex-shrink: 0; }
+  .sp-skip {
+    display: flex; gap: 6px; padding: 7px 6px; margin-top: 6px; border-radius: 6px;
+    background: var(--orange-bg); border: 1px solid var(--orange-border, var(--orange));
+    font-size: 10px; color: var(--orange); line-height: 1.45;
+  }
+  .sp-skip-i { flex-shrink: 0; }
+  .sp-extra-label {
+    font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-muted); padding: 9px 2px 2px;
+  }
+  .sp-empty { font-size: 10.5px; color: var(--text-muted); line-height: 1.5; padding: 4px 2px 2px; }
+  .sp-foot { font-size: 9px; color: var(--text-muted); line-height: 1.5; padding-top: 7px; }
+  /* Muscle-picker role headers + guidance lines on the exercise card. */
+  .mp-role {
+    font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--cyan); padding: 8px 2px 4px;
+  }
+  .mp-role.mp-role-rest { color: var(--text-muted); }
+  .mp-guide {
+    display: flex; gap: 5px; margin-top: 5px; font-size: 9.5px;
+    color: var(--text-dim); line-height: 1.45;
+  }
+  .mp-guide b { color: var(--text); }
+  .mp-tech {
+    font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px;
+    background: var(--input-bg); border: 1px solid var(--card-border); color: var(--text-muted);
+  }
+  .mp-tech.mp-tech-3 { color: var(--red, #e5484d); border-color: var(--red, #e5484d); }
+  .mp-watch {
+    display: flex; gap: 5px; margin-top: 5px; padding: 5px 7px; border-radius: 5px;
+    background: var(--red-bg, var(--orange-bg)); border: 1px solid var(--red, #e5484d);
+    font-size: 9.5px; color: var(--red, #e5484d); line-height: 1.45;
+  }
+  .mp-headnote {
+    font-size: 9px; color: var(--text-muted); line-height: 1.5; padding: 6px 8px;
+    border-radius: 5px; background: var(--input-bg); margin-bottom: 7px;
+  }
   /* Read-only stand-in for the flat boxes once an exercise has varied sets.
      Deliberately NOT styled as inputs — a disabled-looking text field invites a
      tap and then refuses it. These read as a value with a unit, and the whole
@@ -1427,6 +1639,13 @@
   }
   .reflect-btn-ghost { border: 1px solid var(--card-border); background: transparent; color: var(--text-muted); }
   .reflect-btn-go { border: 1px solid var(--purple); background: var(--purple-bg); color: var(--purple); }
+  /* A quote GIVES; a prompt ASKS. The quote card carries no text box and no
+     call to action — only the line, who said it, and where it is from. The
+     source is deliberately visible rather than tucked away: it is what makes a
+     misattribution findable instead of permanent. */
+  .reflect-card.reflect-quote .reflect-text { font-weight: 600; font-style: italic; }
+  .reflect-who { font-size: 10.5px; font-weight: 700; color: var(--purple); margin-top: 8px; }
+  .reflect-src { font-size: 9px; color: var(--text-muted); margin-top: 1px; line-height: 1.45; }
 
   /* Dose sheet */
   .ms-head { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
@@ -3538,6 +3757,20 @@
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🪞 Reflect</div>
         <div id="reflect-prefs-body"></div>
       </div>
+      <!-- Gyms (2026-09-25). One global machine list is fine for one gym and
+           wrong the moment there are two. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">🏋️ Gyms</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Add the places you train and tick what each one actually has. The machines list in a gym session then shows only that building's equipment.</div>
+        <div id="gymloc-prefs-body"></div>
+      </div>
+      <!-- Adjustable bench (2026-09-26). Per-user, because a bench's notches are
+           a fact about one person's equipment. -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:6px">📐 Adjustable bench</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">If your bench has numbered positions, put the angle of each one here and sit-ups will offer them as difficulty settings. Measure once with your phone: the Measure app's Level tab, phone face-down on the pad. Decline (head below hips) is positive.</div>
+        <div id="bench-prefs-body"></div>
+      </div>
       <!-- Check-in question toggles (2026-08-18). Same tab as the module
            toggles now: "what the app shows me" and "what the app asks me" are
            one question to a person, even though they are two stores to us. -->
@@ -3822,7 +4055,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.24.02';
+const APP_VERSION = '2026.09.26.04';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -4354,6 +4587,14 @@ function setWorkoutLog(dateStr, woType, field, value) {
   // their content is logged per exercise, and a day-level "done" tick is a UI
   // state, not an effort.
   const entry = DB_CACHE.workouts[dateStr][woType];
+  // Typing a distance or a time IS logging the workout. Before this, entering
+  // 3 km without also ticking the row's checkbox failed the `entry.done` test
+  // below, fell into the else branch, and DELETED whatever was already logged
+  // for that movement. The measurement is the evidence; the tick is a UI state.
+  if ((field === 'time' || field === 'dist') && (Number(value) || 0) > 0 && !entry.done) {
+    entry.done = true;
+    localStorage.setItem('wlog_' + dateStr, JSON.stringify(DB_CACHE.workouts[dateStr]));
+  }
   if (MIGRATED_WO_IDS.indexOf(woType) === -1) return;
   const key = 'wo_' + woType;
   const cid = 'al-' + dateStr + '-' + key + '-0';
@@ -4495,7 +4736,11 @@ function setExReps(dateStr, woId, exKey, val) {
 function setBodyExReps(dateStr, exKey, val) { setExReps(dateStr, 'bodyweight', exKey, val); }
 
 // ── Section toggle ──
-const _openSections = new Set();
+// Log Workout starts OPEN. A section whose entire job is "begin logging" costs
+// a tap on every session to reach, and the summary of what was already done now
+// sits above it, so nothing is hidden by unfolding it. Any other section the
+// user opens is still remembered across renders as before.
+const _openSections = new Set(['other-wo']);
 function toggleWoSection(id) {
   const el = document.getElementById(id);
   const header = el.previousElementSibling;
@@ -4698,6 +4943,8 @@ async function openSettings() {
   if (typeof renderBuildInfo === 'function') renderBuildInfo();
   if (typeof renderOccupationSettings === 'function') renderOccupationSettings();
   if (typeof renderViewPrefs === 'function') renderViewPrefs();
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+  if (typeof renderBenchPrefs === 'function') renderBenchPrefs();
   if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
   if (typeof renderCheckinPrefs === 'function') renderCheckinPrefs();
   if (typeof loadTrainingPlan === 'function') loadTrainingPlan().then(() => {
@@ -4915,6 +5162,9 @@ const SETTINGS_TABS = [
   { id: 'home',     label: '🏠 Home',      match: ['qol', 'home tasks', 'daily habits', 'home / qol'] },
   { id: 'data',     label: '⌚ Data',       match: ['concept2', 'recent rows', 'apple health', 'import'] },
 ];
+// 'gyms' rides on the Home tab: it is the same question as "what equipment do I
+// have", which already lives there.
+SETTINGS_TABS[3].match.push('gyms', 'adjustable bench');
 let _settingsTab = null;
 
 function _settingsTabFor(headerText) {
@@ -7816,7 +8066,7 @@ const NO_SCHOOL = new Set([
   "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-10",
   "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-17", "2026-08-18",
   "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-24", "2026-08-25", "2026-08-26",
-  "2026-08-27", "2026-08-28", "2026-09-07", "2026-09-25", "2026-09-30", "2026-10-12",
+  "2026-08-27", "2026-08-28", "2026-09-07", "2026-09-24", "2026-09-30", "2026-10-12",
   "2026-10-23", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-27", "2026-12-21",
   "2026-12-22", "2026-12-23", "2026-12-24", "2026-12-25", "2026-12-28", "2026-12-29",
   "2026-12-30", "2026-12-31", "2027-01-01", "2027-01-29", "2027-02-11", "2027-02-12",
@@ -10973,6 +11223,54 @@ const ROUTINES = {
       { name: "Cooldown Stretch", sets: "3-5 min", link: "", detail: "Hip flexor + figure-4 + standing quad stretch", muscleGroup: "cooldown", _cooldown: true },
     ]
   },
+  // ── CIRCUITS (2026-09-25) ──
+  // Craig: "just doing situps is boring. I can situp / pushup / leg lift in
+  // sequence. Is that better for me than just situp and rest?"
+  //
+  // Honest answer, which shaped what is below: for strength or size in any one
+  // muscle, no — supersets and circuits match straight sets when total volume
+  // matches, in less time, at a small per-set cost. For ADHERENCE, which is the
+  // problem he actually named, yes, and adherence beats optimisation.
+  //
+  // But sit-up → leg lift is the same job twice: trunk flexion and hip flexors,
+  // with no break for the tissue that just worked. The point of a circuit is
+  // that each station rests the last one. So every circuit here alternates
+  // PUSH → HIP → ANTI-FLEXION CORE, which gives real recovery between stations
+  // and drops the repeated loaded lumbar flexion that sit-ups plus straight-leg
+  // raises stack up.
+  //
+  // 'Wrist-friendly' exists because on 2026-09-22 he logged left wrist pain and
+  // the first thing a circuit reaches for is a push-up.
+  circuit_core: {
+    title: "Circuit — Core & Push",
+    _circuit: true, rounds: 3, restBetweenRounds: 60,
+    exercises: [
+      { name: "Push-ups", sets: "10 reps", detail: "Fists or dumbbells if the wrist objects.", muscleGroup: "bw_chest", trackReps: true },
+      { name: "Glute Bridges", sets: "12 reps", detail: "Squeeze at the top, 2s hold.", muscleGroup: "bw_hams_glutes", trackReps: true },
+      { name: "Dead Bugs", sets: "8/side", detail: "Low back pressed down. Anti-extension, not a crunch.", muscleGroup: "bw_core", trackReps: true },
+    ]
+  },
+  circuit_full: {
+    title: "Circuit — Full Body",
+    _circuit: true, rounds: 3, restBetweenRounds: 75,
+    exercises: [
+      { name: "Bodyweight Squats", sets: "15 reps", detail: "Below parallel if the knees allow.", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Pike Push-ups", sets: "8 reps", detail: "Vertical press. Skip if the shoulder is talking.", muscleGroup: "bw_shoulders", trackReps: true },
+      { name: "Reverse Lunges (each leg)", sets: "10/leg", detail: "Step back, drive through the front heel.", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Plank", sets: "30s", detail: "Hips level. Stop at the first sag, not at the number.", muscleGroup: "bw_core", trackReps: true },
+    ]
+  },
+  circuit_wrist_friendly: {
+    title: "Circuit — No Wrist Load",
+    _circuit: true, rounds: 3, restBetweenRounds: 60,
+    exercises: [
+      { name: "Bodyweight Squats", sets: "15 reps", detail: "Nothing through the hands.", muscleGroup: "bw_quads", trackReps: true },
+      { name: "Single-Leg Glute Bridge", sets: "10/leg", detail: "One leg extended, drive through the planted heel.", muscleGroup: "bw_hams_glutes", trackReps: true },
+      { name: "Dead Bugs", sets: "8/side", detail: "Slow. The pace is the exercise.", muscleGroup: "bw_core", trackReps: true },
+      { name: "Superman Hold", sets: "15s", detail: "Posterior chain, no hands on the floor.", muscleGroup: "bw_back", trackReps: true },
+    ]
+  },
+
   // ── BODYWEIGHT SIMPLE ──
   // Lightweight rep counter — restored 2026-05-15 per Craig's request. Mirrors
   // the legacy bw_* tracking pattern from before the inline-summary refactor:
@@ -11820,6 +12118,7 @@ const MUSCLE_GROUPS = [
 const EQUIP_LABEL = {
   cable: 'Cable', db: 'Dumbbell', machine: 'Machine',
   bar: 'Barbell', bw: 'Bodyweight', kb: 'Kettlebell',
+  band: 'Band',
 };
 
 // reps = suggested range only. rest = seconds. No sets, deliberately.
@@ -11828,7 +12127,7 @@ const EX_LIB = [
   { m:'chest', name:'Chest press (machine)', equip:'machine', reps:'8-12', rest:180, cue:'Elbows ~45° from the torso, not flared to 90°. Easier on the shoulder joint.' },
   { m:'chest', name:'Dumbbell bench press', equip:'db', reps:'8-12', rest:180, cue:'Lower until the elbows are level with the torso, no deeper. Full stretch at the bottom is where shoulders get cranky.' },
   { m:'chest', name:'Cable chest fly', equip:'cable', reps:'12-15', rest:120, cue:'Slight elbow bend held throughout. Squeeze, don\'t slam.' },
-  { m:'chest', name:'Push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands slightly wider than shoulders. Elevate the hands if the wrists complain.', flags:['grip'] },
+  { m:'chest', name:'Push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands slightly wider than shoulders. Elevate the hands if the wrists complain.', flags:['grip'], id:'bw_pushup', pattern:'push', role:'foundation', technique:2 },
   { m:'chest', name:'Incline dumbbell press', equip:'db', reps:'8-12', rest:180, cue:'30-45° bench. Hits upper chest; steeper turns it into a shoulder press.' },
 
   // ── SHOULDERS ──
@@ -11842,7 +12141,7 @@ const EX_LIB = [
   { m:'triceps', name:'Overhead cable extension', equip:'cable', reps:'10-15', rest:120, cue:'Stretches the long head, which pushdowns underwork. Lean forward slightly.', flags:['overhead'] },
   { m:'triceps', name:'Tricep press (machine)', equip:'machine', reps:'10-15', rest:120, cue:'Good when you want to go heavy without stabilising.' },
   { m:'triceps', name:'Dumbbell skull crusher', equip:'db', reps:'10-12', rest:120, cue:'Lower to the forehead or just behind. Elbows stay pointed at the ceiling.' },
-  { m:'triceps', name:'Close-grip push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands under the chest. Free, works anywhere.', flags:['grip'] },
+  { m:'triceps', name:'Close-grip push-up', equip:'bw', reps:'to near-failure', rest:120, cue:'Hands under the chest. Free, works anywhere.', flags:['grip'], id:'bw_closegrip_pushup', pattern:'push', technique:2 },
 
   // ── BACK / LATS ──
   { m:'back', name:'Seated row (machine)', equip:'machine', reps:'8-12', rest:180, cue:'Chest up, pull to the navel, shoulder blades back and down.', flags:['grip'] },
@@ -11867,29 +12166,29 @@ const EX_LIB = [
   // ── QUADS ──
   { m:'quads', name:'Leg press', equip:'machine', reps:'10-15', rest:180, cue:'Don\'t let the lower back round off the pad at the bottom. Stop short of lockout.' },
   { m:'quads', name:'Leg extension', equip:'machine', reps:'12-15', rest:120, cue:'Pause at the top. Ease off if the knees complain.' },
-  { m:'quads', name:'Goblet squat', equip:'kb', reps:'10-15', rest:150, cue:'Kettlebell at the chest, elbows inside the knees at the bottom. Grip-light because it rests on the chest.' },
-  { m:'quads', name:'Bodyweight / box squat', equip:'bw', reps:'15-20', rest:90, cue:'Sit back to a bench and stand. Zero equipment, works at home.' },
+  { m:'quads', name:'Goblet squat', equip:'kb', reps:'10-15', rest:150, cue:'Kettlebell at the chest, elbows inside the knees at the bottom. Grip-light because it rests on the chest.', id:'kb_goblet_squat', pattern:'squat', role:'foundation', technique:2, teaches:'kb_front_squat' },
+  { m:'quads', name:'Bodyweight / box squat', equip:'bw', reps:'15-20', rest:90, cue:'Sit back to a bench and stand. Zero equipment, works at home.', id:'bw_squat', pattern:'squat', role:'foundation', technique:2, teaches:'kb_goblet_squat' },
   { m:'quads', name:'Smith machine squat', equip:'machine', reps:'8-12', rest:180, cue:'Fixed bar path takes the balance requirement out.', flags:['spine'] },
 
   // ── HAMSTRINGS / GLUTES ──
   { m:'hamstrings', name:'Leg curl (machine)', equip:'machine', reps:'10-15', rest:120, cue:'The main direct hamstring option. Control the return.' },
-  { m:'hamstrings', name:'Kettlebell Romanian deadlift', equip:'kb', reps:'10-12', rest:150, cue:'Push the hips back, minimal knee bend, feel the stretch behind the thigh. Stop when the back wants to round.', flags:['grip','spine'] },
+  { m:'hamstrings', name:'Kettlebell Romanian deadlift', equip:'kb', reps:'10-12', rest:150, cue:'Push the hips back, minimal knee bend, feel the stretch behind the thigh. Stop when the back wants to round.', flags:['grip','spine'], id:'kb_rdl', pattern:'hinge', technique:3, teaches:'kb_swing', watch:'The back rounds at the bottom as the hamstrings run out of length, and that is the rep where it stops being a hamstring exercise and starts being a back one. Stop where the back wants to round, not at the rep count.' },
   { m:'hamstrings', name:'Dumbbell Romanian deadlift', equip:'db', reps:'10-12', rest:150, cue:'Same as above. Weights track close to the legs.', flags:['grip','spine'] },
   { m:'glutes', name:'Hip thrust', equip:'bar', reps:'10-15', rest:150, cue:'Chin tucked, ribs down, squeeze at the top. Don\'t hyperextend the lower back.', flags:['spine'] },
   { m:'glutes', name:'Cable kickback', equip:'cable', reps:'12-15', rest:90, cue:'Small range, hold the squeeze. Keep the torso still.' },
   { m:'glutes', name:'Hip abductor (machine)', equip:'machine', reps:'15-20', rest:90, cue:'Glute medius. Boring, and genuinely useful for hip and knee stability.' },
-  { m:'glutes', name:'Kettlebell swing', equip:'kb', reps:'10-20', rest:150, cue:'Hip hinge, not a squat. Arms are rope. **Grip-heavy and ballistic — the highest-risk option here for the finger.**', flags:['grip','spine'] },
+  { m:'glutes', name:'Kettlebell swing', equip:'kb', reps:'10-20', rest:150, cue:'Hip hinge, not a squat. Arms are rope. **Grip-heavy and ballistic — the highest-risk option here for the finger.**', flags:['grip','spine'], id:'kb_swing', pattern:'hinge', technique:3, watch:'Two failures, and almost everyone makes both: squatting it instead of hinging, and lifting the bell with the arms rather than letting the hips throw it. It is also the most grip-intensive ballistic movement you own \u2014 with a trigger finger, judge it by whether catching increases, not by whether it hurts.' },
 
   // ── CALVES ──
   { m:'calves', name:'Calf raise (machine)', equip:'machine', reps:'12-20', rest:90, cue:'Full stretch at the bottom, pause at the top. Relevant to your ankle history.' },
-  { m:'calves', name:'Standing calf raise', equip:'bw', reps:'15-25', rest:60, cue:'Off a step, one leg at a time if bodyweight is easy.' },
+  { m:'calves', name:'Standing calf raise', equip:'bw', reps:'15-25', rest:60, cue:'Off a step, one leg at a time if bodyweight is easy.', id:'bw_calf_raise', pattern:'squat', technique:1 },
 
   // ── CORE ──
   { m:'core', name:'Cable woodchop', equip:'cable', reps:'12-15', rest:90, cue:'Rotate from the trunk, arms fairly straight. Controlled — this isn\'t a speed movement.' },
-  { m:'core', name:'Plank', equip:'bw', reps:'30-60s', rest:60, cue:'Ribs down, glutes on. Quality beats duration; stop when form goes.' },
-  { m:'core', name:'Dead bug', equip:'bw', reps:'8-12 each side', rest:60, cue:'Lower back stays flat on the floor. Best core option if your back is sensitive.' },
+  { m:'core', name:'Plank', equip:'bw', reps:'30-60s', rest:60, cue:'Ribs down, glutes on. Quality beats duration; stop when form goes.', id:'bw_plank', pattern:'core', technique:2 },
+  { m:'core', name:'Dead bug', equip:'bw', reps:'8-12 each side', rest:60, cue:'Lower back stays flat on the floor. Best core option if your back is sensitive.', id:'bw_deadbug', pattern:'core', role:'foundation', technique:2, teaches:'bw_plank' },
   { m:'core', name:'Ab crunch (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Loaded spinal flexion — skip it on any day the lower back is talking.', flags:['spine'] },
-  { m:'core', name:'Suitcase carry', equip:'kb', reps:'30-40m each side', rest:90, cue:'One kettlebell, walk tall, resist the lean. Very grip-intensive.', flags:['grip'] },
+  { m:'core', name:'Suitcase carry', equip:'kb', reps:'30-40m each side', rest:90, cue:'One kettlebell, walk tall, resist the lean. Very grip-intensive.', flags:['grip'], id:'kb_suitcase_carry', pattern:'carry', role:'targeted', technique:1 },
 
   // ══ FREE WEIGHT / HOME BLOCK (added 2026-08-18) ══
   // Kettlebell + bodyweight, so kid weeks aren't a training write-off.
@@ -11898,60 +12197,87 @@ const EX_LIB = [
   // signal is currently muted by the cortisone.
 
   // ── CHEST ──
-  { m:'chest', name:'Kettlebell floor press', equip:'kb', reps:'8-12', rest:150, cue:'Lying on the floor. The floor stops the elbow going too deep, which makes this the shoulder-friendliest press you own.', flags:['grip'] },
-  { m:'chest', name:'Incline push-up', equip:'bw', reps:'12-20', rest:90, cue:'Hands on a counter or stair. Easier than floor push-ups — use it to get volume in when you\'re tired.' },
-  { m:'chest', name:'Decline push-up', equip:'bw', reps:'8-15', rest:120, cue:'Feet on a chair. Shifts load toward the upper chest and shoulders.', flags:['grip'] },
+  { m:'chest', name:'Kettlebell floor press', equip:'kb', reps:'8-12', rest:150, cue:'Lying on the floor. The floor stops the elbow going too deep, which makes this the shoulder-friendliest press you own.', flags:['grip'], id:'kb_floor_press', pattern:'push', role:'foundation', technique:1 },
+  { m:'chest', name:'Incline push-up', equip:'bw', reps:'12-20', rest:90, cue:'Hands on a counter or stair. Easier than floor push-ups — use it to get volume in when you\'re tired.', id:'bw_incline_pushup', pattern:'push', technique:1 },
+  { m:'chest', name:'Decline push-up', equip:'bw', reps:'8-15', rest:120, cue:'Feet on a chair. Shifts load toward the upper chest and shoulders.', flags:['grip'], id:'bw_decline_pushup', pattern:'push', technique:2, head:'upper chest (clavicular head)' },
 
   // ── SHOULDERS ──
-  { m:'shoulders', name:'Kettlebell strict press', equip:'kb', reps:'6-10', rest:180, cue:'Bell rests on the forearm, press straight up. Stop at the point the shoulder complains — don\'t fight for lockout.', flags:['grip','overhead'] },
+  { m:'shoulders', name:'Kettlebell strict press', equip:'kb', reps:'6-10', rest:180, cue:'Bell rests on the forearm, press straight up. Stop at the point the shoulder complains — don\'t fight for lockout.', flags:['grip','overhead'], id:'kb_strict_press', pattern:'push', technique:2 },
   { m:'shoulders', name:'Kettlebell halo', equip:'kb', reps:'8-10 each way', rest:90, cue:'Circle the bell around the head, slow and close. Excellent shoulder warm-up and mobility work; go light.', flags:['grip','overhead'] },
-  { m:'shoulders', name:'Pike push-up', equip:'bw', reps:'6-12', rest:120, cue:'Hips high, head toward the floor. The bodyweight overhead press. Hard on an arthritic shoulder — skip if it pinches.', flags:['overhead','grip'] },
+  { m:'shoulders', name:'Pike push-up', equip:'bw', reps:'6-12', rest:120, cue:'Hips high, head toward the floor. The bodyweight overhead press. Hard on an arthritic shoulder — skip if it pinches.', flags:['overhead','grip'], id:'bw_pike_pushup', pattern:'push', technique:3, head:'front delt', watch:'The hips drift backwards and it turns into a downward dog, which takes the load off entirely. With shoulder OA, stop at the first pinch \u2014 there is no version of this worth a flare-up.' },
 
   // ── TRICEPS ──
-  { m:'triceps', name:'Kettlebell overhead extension', equip:'kb', reps:'10-12', rest:120, cue:'Two hands on one bell, lower behind the head. Elbows stay narrow.', flags:['grip','overhead'] },
-  { m:'triceps', name:'Bench dip', equip:'bw', reps:'8-15', rest:120, cue:'Hands on a chair behind you, feet out front. Keep the shoulders down and back — shrugging into it is what makes dips hurt.' },
-  { m:'triceps', name:'Diamond push-up', equip:'bw', reps:'6-15', rest:120, cue:'Hands together under the chest. Hardest bodyweight tricep option.', flags:['grip'] },
+  { m:'triceps', name:'Kettlebell overhead extension', equip:'kb', reps:'10-12', rest:120, cue:'Two hands on one bell, lower behind the head. Elbows stay narrow.', flags:['grip','overhead'], id:'kb_oh_ext', pattern:'push', technique:2, head:'triceps \u2014 long head (the only head that crosses the shoulder, so overhead is the position that loads it)' },
+  { m:'triceps', name:'Bench dip', equip:'bw', reps:'8-15', rest:120, cue:'Hands on a chair behind you, feet out front. Keep the shoulders down and back — shrugging into it is what makes dips hurt.', id:'bw_bench_dip', pattern:'push', technique:3, head:'triceps \u2014 long head', watch:'The shoulders creep up toward the ears as you tire, and that shrugged position is what makes dips hurt. Bring the feet closer in rather than grinding out the last reps.' },
+  { m:'triceps', name:'Diamond push-up', equip:'bw', reps:'6-15', rest:120, cue:'Hands together under the chest. Hardest bodyweight tricep option.', flags:['grip'], id:'bw_diamond_pushup', pattern:'push', technique:3, head:'triceps \u2014 all three heads', watch:'Elbows flare out sideways under fatigue, which sends the load into the wrist and shoulder instead of the triceps.' },
 
   // ── BACK / LATS ──
-  { m:'back', name:'Kettlebell bent-over row', equip:'kb', reps:'8-12', rest:150, cue:'Hinge to about 45°, pull the bell to the hip. Back stays flat throughout.', flags:['grip','spine'] },
-  { m:'back', name:'Kettlebell renegade row', equip:'kb', reps:'6-10 each side', rest:150, cue:'Push-up position on two bells, row one at a time. Very demanding on grip and core — probably park this until the finger settles.', flags:['grip','spine'] },
-  { m:'back', name:'Inverted row', equip:'bw', reps:'8-15', rest:150, cue:'Under a table or a bar, body straight, pull the chest to it. The best bodyweight horizontal pull.', flags:['grip'] },
-  { m:'lats', name:'Kettlebell pullover', equip:'kb', reps:'10-12', rest:120, cue:'Lying down, bell over the chest, lower behind the head with slight elbow bend. Stop where the shoulder is comfortable.', flags:['grip','overhead'] },
-  { m:'lats', name:'Chin-up', equip:'bw', reps:'as many as clean', rest:180, cue:'Palms toward you. Grip-heavy and the single most demanding pull you own — watch the finger closely.', flags:['grip'] },
+  { m:'back', name:'Kettlebell bent-over row', equip:'kb', reps:'8-12', rest:150, cue:'Hinge to about 45°, pull the bell to the hip. Back stays flat throughout.', flags:['grip','spine'], id:'kb_row', pattern:'pull', technique:3, watch:'Unsupported and hinged over, so the lower back holds the position for the whole set. It rounds under fatigue before the arms give out. If you cannot keep the back flat for every rep, use a chest-supported row instead \u2014 that is not a lesser version, it is the same job with the spine taken out of it.' },
+  { m:'back', name:'Kettlebell renegade row', equip:'kb', reps:'6-10 each side', rest:150, cue:'Push-up position on two bells, row one at a time. Very demanding on grip and core — probably park this until the finger settles.', flags:['grip','spine'], id:'kb_renegade_row', pattern:'pull', technique:3, watch:'The hips rotate every time you row, which turns an anti-rotation exercise into a rotation one. Widen the feet. It also parks your whole bodyweight on one gripping hand \u2014 park this one entirely until the finger has settled.' },
+  { m:'back', name:'Inverted row', equip:'bw', reps:'8-15', rest:150, cue:'Under a table or a bar, body straight, pull the chest to it. The best bodyweight horizontal pull.', flags:['grip'], id:'bw_inverted_row', pattern:'pull', role:'foundation', technique:2, teaches:'bw_chinup' },
+  { m:'lats', name:'Kettlebell pullover', equip:'kb', reps:'10-12', rest:120, cue:'Lying down, bell over the chest, lower behind the head with slight elbow bend. Stop where the shoulder is comfortable.', flags:['grip','overhead'], id:'kb_pullover', pattern:'pull', technique:2 },
+  { m:'lats', name:'Chin-up', equip:'bw', reps:'as many as clean', rest:180, cue:'Palms toward you. Grip-heavy and the single most demanding pull you own — watch the finger closely.', flags:['grip'], id:'bw_chinup', pattern:'pull', technique:3, watch:'The grip fails before the back does, and with a trigger finger that is the joint paying for it. Use a band or keep your feet on the floor rather than fighting for a last rep.' },
 
   // ── REAR DELTS ──
-  { m:'reardelts', name:'Kettlebell high pull', equip:'kb', reps:'10-12', rest:120, cue:'Hinge, pull the bell to chest height with elbows leading. Explosive but controlled.', flags:['grip'] },
-  { m:'reardelts', name:'Prone Y-T-W raise', equip:'bw', reps:'8-10 each shape', rest:60, cue:'Face down on the floor, lift the arms into a Y, then T, then W. No weight needed. Genuinely useful after a desk day.' },
+  { m:'reardelts', name:'Kettlebell high pull', equip:'kb', reps:'10-12', rest:120, cue:'Hinge, pull the bell to chest height with elbows leading. Explosive but controlled.', flags:['grip'], id:'kb_high_pull', pattern:'pull', technique:3, watch:'It is a swing with a pull bolted on, so every swing fault applies plus one: yanking with the arm before the hips have finished. If the elbow is not leading, you are doing an upright row with a moving weight.' },
+  { m:'reardelts', name:'Prone Y-T-W raise', equip:'bw', reps:'8-10 each shape', rest:60, cue:'Face down on the floor, lift the arms into a Y, then T, then W. No weight needed. Genuinely useful after a desk day.', id:'bw_ytw', pattern:'pull', role:'targeted', technique:1 },
 
   // ── BICEPS ──
-  { m:'biceps', name:'Kettlebell curl', equip:'kb', reps:'10-12', rest:120, cue:'The offset weight makes this harder than it looks. Elbows pinned.', flags:['grip'] },
+  { m:'biceps', name:'Kettlebell curl', equip:'kb', reps:'10-12', rest:120, cue:'The offset weight makes this harder than it looks. Elbows pinned.', flags:['grip'], id:'kb_curl', pattern:'pull', technique:1 },
   // "7-21" / 21s — requested 2026-08-19. One set = 21 reps in three blocks.
   { m:'biceps', name:'21s (7-7-7 barbell curl)', equip:'bar', reps:'7 + 7 + 7 = 1 set', rest:150, cue:'Seven from full extension to halfway · seven from halfway to full contraction · seven full curls. No rest between blocks. Go MUCH lighter than a normal curl — about half. It fails from accumulated fatigue, not load, and the last seven are meant to be ugly. One or two sets is plenty; this is a finisher, not the main event.', flags:['grip'] },
   { m:'biceps', name:'21s (dumbbell version)', equip:'db', reps:'7 + 7 + 7 = 1 set', rest:150, cue:'Same three blocks, one dumbbell per hand. Easier on the wrists than a straight bar, and you can drop one side if the grip goes before the biceps do.', flags:['grip'] },
 
   // ── QUADS ──
-  { m:'quads', name:'Kettlebell front squat', equip:'kb', reps:'8-12', rest:180, cue:'One or two bells racked at the chest. The rack position does the bracing for you.', flags:['grip'] },
-  { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees. Relevant given the ankle history.', flags:['grip'] },
-  { m:'quads', name:'Bulgarian split squat', equip:'bw', reps:'8-15 each leg', rest:150, cue:'Rear foot on a chair. Brutal without any weight at all. Add a kettlebell only once bodyweight is easy.' },
-  { m:'quads', name:'Step-up', equip:'bw', reps:'10-15 each leg', rest:120, cue:'Onto a sturdy chair or stair. Drive through the heel of the top foot; don\'t push off the back leg.' },
-  { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.' },
+  { m:'quads', name:'Kettlebell front squat', equip:'kb', reps:'8-12', rest:180, cue:'One or two bells racked at the chest. The rack position does the bracing for you.', flags:['grip'], id:'kb_front_squat', pattern:'squat', technique:2 },
+  { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees. Relevant given the ankle history.', flags:['grip'], id:'kb_rev_lunge', pattern:'squat', technique:2 },
+  { m:'quads', name:'Bulgarian split squat', equip:'bw', reps:'8-15 each leg', rest:150, cue:'Rear foot on a chair. Brutal without any weight at all. Add a kettlebell only once bodyweight is easy.', id:'bw_bulgarian', pattern:'squat', technique:3, watch:'The front knee caves inward and the torso pitches forward. Both are how this quietly becomes a lower-back exercise. Hold something for balance before you think about adding load.' },
+  { m:'quads', name:'Step-up', equip:'bw', reps:'10-15 each leg', rest:120, cue:'Onto a sturdy chair or stair. Drive through the heel of the top foot; don\'t push off the back leg.', id:'bw_stepup', pattern:'squat', technique:1 },
+  { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.', id:'bw_wall_sit', pattern:'squat', technique:1 },
 
   // ── HAMSTRINGS / GLUTES ──
-  { m:'hamstrings', name:'Kettlebell single-leg deadlift', equip:'kb', reps:'8-10 each leg', rest:150, cue:'Bell in the opposite hand, hinge on one leg. Balance and hamstring in one. Start with no weight.', flags:['grip'] },
-  { m:'hamstrings', name:'Nordic curl (assisted)', equip:'bw', reps:'3-6', rest:180, cue:'Anchor the feet, lower slowly, push back up with the hands. Extremely hard — go partial range and expect soreness.' },
-  { m:'glutes', name:'Glute bridge', equip:'bw', reps:'15-20', rest:60, cue:'Feet close, squeeze at the top, ribs down. The safest posterior-chain option when the back is unhappy.' },
-  { m:'glutes', name:'Single-leg glute bridge', equip:'bw', reps:'10-15 each leg', rest:90, cue:'One foot up. Exposes the side-to-side difference most people don\'t know they have.' },
-  { m:'glutes', name:'Kettlebell sumo deadlift', equip:'kb', reps:'10-15', rest:150, cue:'Wide stance, bell between the feet. Easier on the back than a conventional pull.', flags:['grip','spine'] },
+  { m:'hamstrings', name:'Kettlebell single-leg deadlift', equip:'kb', reps:'8-10 each leg', rest:150, cue:'Bell in the opposite hand, hinge on one leg. Balance and hamstring in one. Start with no weight.', flags:['grip'], id:'kb_sl_dl', pattern:'hinge', technique:3, watch:'Balance fails before the hamstring does, so the set ends in a wobble rather than in fatigue and you learn nothing. Touch a wall with the free hand and do it with no weight at all until the standing leg stops shaking.' },
+  { m:'hamstrings', name:'Nordic curl (assisted)', equip:'bw', reps:'3-6', rest:180, cue:'Anchor the feet, lower slowly, push back up with the hands. Extremely hard — go partial range and expect soreness.', id:'bw_nordic', pattern:'hinge', technique:3, head:'hamstrings \u2014 the knee-bending job, not the hip one', watch:'Almost nobody can lower this under control at first, so it becomes a controlled fall. Use a quarter of the range and your hands, and expect two days of soreness the first time regardless.' },
+  { m:'glutes', name:'Glute bridge', equip:'bw', reps:'15-20', rest:60, cue:'Feet close, squeeze at the top, ribs down. The safest posterior-chain option when the back is unhappy.', id:'bw_glute_bridge', pattern:'hinge', role:'foundation', technique:1 },
+  { m:'glutes', name:'Single-leg glute bridge', equip:'bw', reps:'10-15 each leg', rest:90, cue:'One foot up. Exposes the side-to-side difference most people don\'t know they have.', id:'bw_sl_glute_bridge', pattern:'hinge', technique:2 },
+  { m:'glutes', name:'Kettlebell sumo deadlift', equip:'kb', reps:'10-15', rest:150, cue:'Wide stance, bell between the feet. Easier on the back than a conventional pull.', flags:['grip','spine'], id:'kb_sumo_dl', pattern:'hinge', technique:2, teaches:'kb_rdl' },
 
   // ── CALVES ──
-  { m:'calves', name:'Kettlebell calf raise', equip:'kb', reps:'15-20', rest:60, cue:'Bell in one hand, off a step. Slow at the bottom.', flags:['grip'] },
+  { m:'calves', name:'Kettlebell calf raise', equip:'kb', reps:'15-20', rest:60, cue:'Bell in one hand, off a step. Slow at the bottom.', flags:['grip'], id:'kb_calf_raise', pattern:'squat', technique:1 },
 
   // ── CORE ──
-  { m:'core', name:'Kettlebell Turkish get-up', equip:'kb', reps:'3-5 each side', rest:180, cue:'Floor to standing with the bell locked overhead. Superb full-body control work — but it means holding a weight overhead for a long time. Learn it with a shoe on your fist before any load.', flags:['grip','overhead'] },
-  { m:'core', name:'Kettlebell windmill', equip:'kb', reps:'5-8 each side', rest:120, cue:'Bell overhead, hinge sideways toward the opposite foot. Go very light and stop well short of your end range.', flags:['grip','overhead','spine'] },
-  { m:'core', name:'Side plank', equip:'bw', reps:'20-45s each side', rest:60, cue:'Stack the hips, don\'t let them sag. Trains the obliques without loading the spine into flexion.' },
-  { m:'core', name:'Bird dog', equip:'bw', reps:'8-12 each side', rest:60, cue:'Opposite arm and leg, slow. Anti-rotation. One of the few core moves that\'s good FOR a cranky lower back rather than bad for it.' },
-  { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.' },
+  { m:'core', name:'Kettlebell Turkish get-up', equip:'kb', reps:'3-5 each side', rest:180, cue:'Floor to standing with the bell locked overhead. Superb full-body control work — but it means holding a weight overhead for a long time. Learn it with a shoe on your fist before any load.', flags:['grip','overhead'], id:'kb_tgu', pattern:'core', technique:3, watch:'Seven positions, five to ten minutes a side, with a weight locked overhead the entire time \u2014 that is a long time under an arthritic shoulder, and the reason this is not a beginner movement despite how often it is sold as one. Learn it with a shoe balanced on your fist. If the shoe falls, the bell would have too.' },
+  { m:'core', name:'Kettlebell windmill', equip:'kb', reps:'5-8 each side', rest:120, cue:'Bell overhead, hinge sideways toward the opposite foot. Go very light and stop well short of your end range.', flags:['grip','overhead','spine'], id:'kb_windmill', pattern:'core', technique:3, watch:'Loaded side-bending with the arm overhead, which stacks the two positions your shoulder and your back each like least. Go light enough that it feels pointless, and stop well short of your end range rather than chasing the floor.' },
+  { m:'core', name:'Side plank', equip:'bw', reps:'20-45s each side', rest:60, cue:'Stack the hips, don\'t let them sag. Trains the obliques without loading the spine into flexion.', id:'bw_side_plank', pattern:'core', role:'targeted', technique:2 },
+  { m:'core', name:'Bird dog', equip:'bw', reps:'8-12 each side', rest:60, cue:'Opposite arm and leg, slow. Anti-rotation. One of the few core moves that\'s good FOR a cranky lower back rather than bad for it.', id:'bw_bird_dog', pattern:'core', role:'targeted', technique:2 },
+  { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.', id:'bw_hollow_hold', pattern:'core', technique:3, watch:'The lower back lifting off the floor is the set ending, not a rep to push through. Bend the knees and keep the back down.' },
+
+  // ── BANDS (2026-09-26) ──
+  // Craig: "What about band work? do we have exercises for that? I know nothing
+  // about it, (but think I have a band here)".
+  //
+  // Eight movements, not thirty. Bands are good at three specific jobs and
+  // mediocre at everything else, so the list is only the three jobs:
+  //   1. PULL VOLUME with no anchor point. His log runs push-heavy and the
+  //      house has no pull-up bar; a band around a door hinge fixes that today.
+  //   2. SHOULDER WORK IN A PAIN-FREE RANGE. Resistance is lowest where the
+  //      arm is weakest (bottom) and highest where it is strongest (end range),
+  //      which is the opposite of a dumbbell and the reason bands suit an
+  //      arthritic shoulder.
+  //   3. PRESSING WITH NOTHING THROUGH THE WRIST. He logged left wrist pain on
+  //      the 22nd and the first thing a bodyweight session reaches for is a
+  //      push-up.
+  // No band squats, no band deadlifts, no band curls: a band that is easy at
+  // the bottom of a squat and hardest at the top loads the range that was never
+  // the hard part. That is a worse squat, not a portable one.
+  { m:'back', name:'Band row', equip:'band', reps:'12-15', rest:90, cue:'Anchor it at chest height \u2014 a door hinge or a post. Pull the elbows past the ribs and stop; the last inch is the shoulder blade, not the arm. Sit back slightly so your bodyweight anchors you.', id:'band_row', pattern:'pull', role:'foundation', technique:2 },
+  { m:'reardelts', name:'Band pull-apart', equip:'band', reps:'15-20', rest:60, cue:'Arms straight out in front, pull the band apart until it touches the chest. The single highest-value thing you can do for a desk-shaped upper back, and it is nearly impossible to do badly.', id:'band_pull_apart', pattern:'pull', role:'targeted', technique:1 },
+  { m:'reardelts', name:'Band face pull', equip:'band', reps:'12-15', rest:60, cue:'Anchored at forehead height. Pull toward the eyes, elbows high and wide, finish with the knuckles by the temples. Rear delts and the external rotators in one.', id:'band_face_pull', pattern:'pull', role:'targeted', technique:2 },
+  { m:'shoulders', name:'Band external rotation', equip:'band', reps:'12-15 each arm', rest:60, cue:'Elbow pinned to your side at 90\u00b0, rotate the forearm outward only. Rotator-cuff work, not a strength lift \u2014 the right band is one that feels almost too easy.', id:'band_ext_rot', pattern:'pull', role:'targeted', technique:2 },
+  { m:'chest', name:'Band chest press', equip:'band', reps:'12-20', rest:90, cue:'Band behind the back at armpit height, press forward. Nothing loads the wrist and nothing goes through the shoulder at end range \u2014 the press to use on a day the wrist is talking.', id:'band_chest_press', pattern:'push', technique:2 },
+  { m:'shoulders', name:'Band overhead press', equip:'band', reps:'10-15', rest:90, cue:'Stand on the band, press overhead. Lighter at the bottom than a dumbbell, which is the half an arthritic shoulder dislikes least.', flags:['overhead'], id:'band_ohp', pattern:'push', technique:3, watch:'Band tension is highest at lockout, which is exactly where an OA shoulder is most compressed. Stop at the point the arc pinches and treat that as the top of the rep, not as a rep you failed.' },
+  { m:'core', name:'Band Pallof press', equip:'band', reps:'8-12 each side', rest:60, cue:'Anchored at chest height, stand side-on, hold the band at the sternum and press it straight out. The band tries to twist you; your job is that nothing moves. Anti-rotation with no spinal load at all.', id:'band_pallof', pattern:'core', role:'targeted', technique:2 },
+  { m:'hamstrings', name:'Band good morning', equip:'band', reps:'12-15', rest:90, cue:'Band under the feet and over the back of the neck. Push the hips backwards, soft knees, chest stays proud. Teaches the hinge with almost no load on the spine, which is the pattern every kettlebell movement is built on.', id:'band_good_morning', pattern:'hinge', technique:2, teaches:'kb_rdl' },
 ];
 
 const EX_FLAG_NOTES = {
@@ -11968,7 +12294,7 @@ let _mpickMuscle = null, _mpickShowAll = false, _mpickWhere = 'all';
 const MPICK_WHERE = [
   { id:'all',  label:'Anywhere', equip:null },
   { id:'gym',  label:'At the gym', equip:['machine','cable','bar','db'] },
-  { id:'home', label:'At home',    equip:['kb','bw','db'] },
+  { id:'home', label:'At home',    equip:['kb','bw','db','band'] },
 ];
 function mpickSetWhere(id) {
   _mpickWhere = id;
@@ -12030,6 +12356,22 @@ function mpickToggleAll() { _mpickShowAll = !_mpickShowAll; renderMusclePicker()
 // The rest timer still starts, because the button is pressed AFTER the set, not
 // before — you log the set you just finished while the clock runs. That's the
 // real sequence at a rack.
+// Progression edges, both directions, from one stored field. `teaches` is
+// written once on the easier movement; the harder movement's "learn X first"
+// line is derived from it, so the two can never contradict each other.
+function _mpickTeachLines(e) {
+  let out = '';
+  if (e.teaches && typeof exById === 'function') {
+    const t = exById(e.teaches);
+    if (t) out += `<div class="mp-guide"><span>\u2197</span><span>Learn this before the <b>${escapeHtml(t.name)}</b>.</span></div>`;
+  }
+  if (e.id && typeof exPrereqsFor === 'function') {
+    const pre = exPrereqsFor(e.id);
+    if (pre.length) out += `<div class="mp-guide"><span>\u2199</span><span>Get comfortable with <b>${pre.map(x => escapeHtml(x.name)).join('</b> or <b>')}</b> first.</span></div>`;
+  }
+  return out;
+}
+
 function mpickDoing(exName, restSecs) {
   const key = exSlug(exName);
   _exNameCache[key] = exName;
@@ -12069,9 +12411,23 @@ function renderMusclePicker() {
   const mg = MUSCLE_GROUPS.find(x => x.id === _mpickMuscle);
   if (title) title.textContent = `${mg.icon} ${mg.label}`;
   const all = _mpickExercisesFor(_mpickMuscle);
-  const shown = _mpickShowAll ? all : all.slice(0, 4);
+  // Guidance order (2026-09-26): Start here, then Add when you need it, then
+  // everything else; within a tier the movement with least to go wrong first.
+  //
+  // The old code sliced the first four in library order, which is arbitrary —
+  // for chest that meant a machine press he can't do at home was the first
+  // thing he saw and the inverted row wasn't in the list at all. The slice now
+  // happens AFTER ranking, and never eats a tagged movement: if a muscle has
+  // five tagged entries, all five show. Untagged muscles behave exactly as
+  // before, so the gym half of the library is unaffected until it's curated.
+  const _sorted = (typeof exSortForPicker === 'function') ? exSortForPicker(all) : all;
+  const _tagged = _sorted.filter(e => e.role);
+  const _untagged = _sorted.filter(e => !e.role);
+  const shown = _mpickShowAll ? _sorted
+    : _tagged.concat(_untagged.slice(0, Math.max(0, 4 - _tagged.length)));
+  let _headExplained = false;
 
-  const cards = shown.map(e => {
+  const _cardFor = (e) => {
     const flags = (e.flags || []).map(f => {
       const n = EX_FLAG_NOTES[f];
       return n ? `<div style="display:flex;gap:5px;margin-top:5px;padding:5px 7px;border-radius:5px;background:var(--${n.tone}-bg);border:1px solid var(--${n.tone}-border, var(--${n.tone}))">
@@ -12085,12 +12441,24 @@ function renderMusclePicker() {
       <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap">
         <span style="font-size:12px;font-weight:700;color:var(--text)">${e.name}</span>
         <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--purple-bg);color:var(--purple)">${EQUIP_LABEL[e.equip] || e.equip}</span>
+        ${e.technique ? `<span class="mp-tech mp-tech-${e.technique}">${(typeof EX_TECHNIQUE_LABEL !== 'undefined' && EX_TECHNIQUE_LABEL[e.technique]) || ''}</span>` : ''}
         <span style="margin-left:auto;font-size:13px;color:var(--cyan)">›</span>
       </div>
       <div style="font-size:10px;color:var(--text-dim);margin-top:3px">
-        <b style="color:var(--text)">${e.reps}</b> reps · rest <b style="color:var(--text)">${e.rest >= 60 ? (e.rest/60) + ' min' : e.rest + 's'}</b>
+        <b style="color:var(--text)">${e.reps}</b>${(typeof _isHoldPrescription === 'function' && _isHoldPrescription(e.reps)) ? '' : ' reps'} · rest <b style="color:var(--text)">${e.rest >= 60 ? (e.rest/60) + ' min' : e.rest + 's'}</b>
       </div>
       <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:4px">${e.cue}</div>
+      ${e.watch ? `<div class="mp-watch"><span>\u26a0</span><span><b>What goes wrong:</b> ${escapeHtml(e.watch)}</span></div>` : ''}
+      ${_mpickTeachLines(e)}
+      ${(function () {
+        if (!e.head) return '';
+        // Craig asked what "short head" meant. Explained once per screen rather
+        // than on every card, and only on a screen where it actually appears.
+        const note = _headExplained ? '' :
+          `<div class="mp-headnote">Big muscles are built from separate heads — the triceps has three, the biceps two — and they attach in different places, so a movement can load one hard and the others barely at all. It is context, not a reason to pick this over something else. Train the muscle; the heads follow.</div>`;
+        _headExplained = true;
+        return `<div class="mp-guide"><span>\ud83c\udfaf</span><span><b>Emphasis:</b> ${escapeHtml(e.head)}</span></div>` + note;
+      })()}
       ${flags}
       <div style="display:flex;gap:5px;margin-top:7px">
         <button onclick="event.stopPropagation();${_go}"
@@ -12099,6 +12467,24 @@ function renderMusclePicker() {
           style="padding:8px 11px;border-radius:5px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;cursor:pointer;font-family:inherit" title="Rest timer only">⏱</button>
       </div>
     </div>`;
+  };
+
+  // Role headers are inserted where the tier changes, not printed per card.
+  let _lastRole = '\u0000';
+  const cards = shown.map(e => {
+    const r = e.role || '';
+    let hdr = '';
+    if (r !== _lastRole) {
+      _lastRole = r;
+      const lbl = (typeof EX_ROLE_LABEL !== 'undefined' && EX_ROLE_LABEL[r]) || '';
+      // Only label a tier when there is another tier to contrast it with. A
+      // lone "Everything else" heading over a list with no "Start here" above
+      // it is a heading that tells you nothing.
+      if (_tagged.length && (lbl || _tagged.length !== shown.length)) {
+        hdr = `<div class="mp-role ${r ? '' : 'mp-role-rest'}">${lbl || 'Everything else'}</div>`;
+      }
+    }
+    return hdr + _cardFor(e);
   }).join('');
 
   body.innerHTML = `
@@ -12330,6 +12716,11 @@ const EQUIP_COEF = {
   db:      1.15,   // each side stabilises independently
   kb:      1.15,   // offset load, same reason
   bw:      1.00,   // load is bodyweight; leverage varies, treated as neutral
+  // Inert on purpose. Band movements track reps only, never a load number, so
+  // e1RM is never computed for them and this coefficient never multiplies
+  // anything. It is here so a missing key can't be mistaken for an oversight.
+  // Band DIFFICULTY is handled by the variant model, not by this table.
+  band:    1.00,
 };
 
 // Only movements that genuinely have variants need grouping. Everything else is
@@ -12647,6 +13038,19 @@ function reflectCardHtml(dateStr) {
   if (mode === 'off') return '';
   const day = dateStr || ds(new Date());
   if (mode === 'nightly' && new Date().getHours() < 17) return '';
+  if (reflectWantsQuote(day)) {
+    const q = reflectQuotePick(day);
+    if (q) {
+      return `<div class="reflect-card reflect-quote" id="reflect-card">
+        <div class="reflect-text">${escapeHtml(q.text)}</div>
+        <div class="reflect-who">${escapeHtml(q.who)}</div>
+        <div class="reflect-src">${escapeHtml(q.src)}</div>
+        <div class="reflect-actions">
+          <button class="reflect-btn reflect-btn-ghost" onclick="reflectDismissQuote('${q.id}')">Next one</button>
+        </div>
+      </div>`;
+    }
+  }
   const p = reflectPick(day);
   if (!p) return '';
   const answered = reflectAnswered()[p.id];
@@ -12675,6 +13079,15 @@ function reflectOpen(id) {
 }
 // Dismissing is a first-class outcome, not a failure. It marks the prompt seen
 // so the next one differs, and records nothing anywhere else.
+// Dismissing a quote retires it for a while rather than answering it — there is
+// nothing to answer. It goes into the QUOTE seen-list only: the prompt list is a
+// separate store answering a separate question, and this week has been one long
+// lesson in what happens when two stores answer the same one.
+function reflectDismissQuote(id) {
+  reflectMarkQuoteSeen(id);
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
 function reflectDismiss(id) {
   reflectMarkSeen(id);
   _reflectOpen = null;
@@ -12706,6 +13119,75 @@ function reflectSave(id, dateStr) {
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// REFLECT — the quote corpus (2026-09-24)
+// ─────────────────────────────────────────────────────────────────────────────
+// Craig, 2026-09-24: "add what you can for quotes … it doesn’t need to be
+// awesome, it just needs to be present."
+//
+// HOW THESE WERE CHOSEN, because it is the whole difficulty of the feature:
+//
+// Every line below was pulled OUT OF the source text and carries where it came
+// from. None was written down from memory. That is not fussiness — a large
+// share of what circulates as Stoic quotation is either fabricated outright or
+// is a modern paraphrase attached to an ancient name, and a corpus assembled
+// from recall would have shipped a file of plausible-sounding fakes with no way
+// to tell which. `src` exists so any line can be checked in ten seconds.
+//
+// PUBLIC DOMAIN ONLY, and that constraint picked the translations: Casaubon
+// (1634) and Higginson (1865) rather than the modern renderings most people
+// know, because Hays, Hard and the current Penguin Seneca are all in copyright
+// and this file ships to every user of the app. The cost is the register —
+// Casaubon is 17th-century English and reads like it. Swapping Marcus for a
+// cleaner public-domain translation is a later job, not a blocker.
+//
+// WHAT IS DELIBERATELY ABSENT: Thoreau’s "different drummer" and "advance
+// confidently in the direction of his dreams" both live in Walden’s final
+// chapter, which could not be reached through a fetch that truncates long
+// files. They are almost certainly genuine. They are not here, because
+// "almost certainly" is the standard that produces misattribution.
+const REFLECT_QUOTES = [
+  { id:"q_ma_01", text:"Death hangs over thee: whilst yet thou livest, whilst thou mayest, be good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
+  { id:"q_ma_02", text:"Meddle not with many things, if thou wilt live cheerfully.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V" },
+  { id:"q_ma_03", text:"At what time soever thou wilt, it is in thy power to retire into thyself, and to be at rest, and free from all businesses.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
+  { id:"q_ma_04", text:"Spend not the remnant of thy days in thoughts and fancies concerning other men, when it is not in relation to some common good.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
+  { id:"q_ma_05", text:"Whatsoever any man either doth or saith, thou must be good; doth any man offend? It is against himself that he doth offend: why should it trouble thee?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
+  { id:"q_ma_06", text:"Not to look about upon the evil conditions of others, but to run on straight in the line, without any loose and extravagant agitation.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
+  { id:"q_ma_07", text:"Every man’s happiness depends from himself, but behold thy life is almost at an end, whiles affording thyself no respect, thou dost make thy happiness to consist in the souls, and conceits of other men.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II" },
+  { id:"q_ma_08", text:"Begin the morning by saying unto thyself, I shall this day have to do with an idle curious man, with an unthankful man, a railer.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VII" },
+  { id:"q_ma_09", text:"Let nothing be done rashly, and at random, but all things according to the most exact and perfect rules of art.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book IV" },
+  { id:"q_ma_10", text:"Never esteem of anything as profitable, which shall ever constrain thee either to break thy faith, or to lose thy modesty; to hate any man.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book VIII" },
+  { id:"q_ma_11", text:"Casting therefore all other things aside, keep thyself to these few, and remember withal that no man properly can be said to live more than that which is now present.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XI" },
+  { id:"q_ma_12", text:"At every action a man must privately by way of admonition suggest unto himself, What? may not this that now I go about, be of the number of unnecessary actions?", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book V" },
+  { id:"q_ma_13", text:"Let it be thy earnest and incessant care as a Roman and a man to perform whatsoever it is that thou art about, with true and unfeigned gravity, natural affection, freedom and justice.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book II" },
+  { id:"q_ma_14", text:"Thou must hasten therefore; not only because thou art every day nearer unto death than other, but also because that intellective faculty in thee doth daily waste and decay.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book III" },
+  { id:"q_ma_15", text:"What is it that will adhere and follow? Only one thing, philosophy.", who:"Marcus Aurelius", src:"Meditations, tr. Meric Casaubon 1634 · Book XII" },
+  { id:"q_ep_01", text:"Men are disturbed not by things, but by the views which they take of things.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V" },
+  { id:"q_ep_02", text:"Demand not that events should happen as you wish; but wish them to happen as they do happen.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · VIII" },
+  { id:"q_ep_03", text:"There are things which are within our power, and there are things which are beyond our power.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
+  { id:"q_ep_04", text:"Within our power are opinion, aim, desire, aversion, and, in one word, whatever affairs are our own.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
+  { id:"q_ep_05", text:"But if you take for your own only that which is your own and view what belongs to others just as it really is, then no one will ever compel you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · I" },
+  { id:"q_ep_06", text:"When, therefore, we are hindered or disturbed, or grieved, let us never impute it to others, but to ourselves.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · V" },
+  { id:"q_ep_07", text:"Sickness is an impediment to the body, but not to the will unless itself pleases.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · IX" },
+  { id:"q_ep_08", text:"A man’s master is he who is able to confer or remove whatever that man seeks or shuns.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XIV" },
+  { id:"q_ep_09", text:"Remember that you are an actor in a drama of such sort as the Author chooses.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XVII" },
+  { id:"q_ep_10", text:"When, therefore, anyone provokes you, be assured that it is your own opinion which provokes you.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XX" },
+  { id:"q_ep_11", text:"Be content, then, in everything, with being a philosopher; and if you wish to seem so likewise to anyone, appear so to yourself.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XXIII" },
+  { id:"q_ep_12", text:"Never proclaim yourself a philosopher, nor make much talk among the ignorant about your principles, but show them by actions.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · XLVI" },
+  { id:"q_ep_13", text:"This instant, then, think yourself worthy of living as a man grown up and a proficient.", who:"Epictetus", src:"Enchiridion, tr. T. W. Higginson 1865 · L" },
+  { id:"q_th_01", text:"The mass of men lead lives of quiet desperation.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_02", text:"It is never too late to give up our prejudices.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_03", text:"What a man thinks of himself, that it is which determines, or rather indicates, his fate.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_04", text:"Most of the luxuries, and many of the so called comforts of life, are not only not indispensable, but positive hindrances to the elevation of mankind.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_05", text:"To be a philosopher is not merely to have subtle thoughts, nor even to found a school, but so to love wisdom as to live according to its dictates.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_06", text:"Beware of all enterprises that require new clothes, and not rather a new wearer of clothes.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_07", text:"I would rather sit on a pumpkin and have it all to myself than be crowded on a velvet cushion.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_08", text:"Men have become the tools of their tools.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_09", text:"It is desirable that a man be clad so simply that he can lay his hands on himself in the dark.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_th_10", text:"The student who secures his coveted leisure and retirement by systematically shirking any labor necessary to man obtains but an ignoble and unprofitable leisure.", who:"Henry David Thoreau", src:"Walden, 1854 · Economy" },
+  { id:"q_wy_01", text:"Tread softly because you tread on my dreams.", who:"W. B. Yeats", src:"The Wind Among the Reeds, 1899 · Aedh Wishes for the Cloths of Heaven" },
+];
+
 // ════════════════════════════════════════════════════════════════════════════
 // REFLECT — the picker and the setting (2026-09-22)
 // ────────────────────────────────────────────────────────────────────────────
@@ -12724,6 +13206,31 @@ const REFLECT_MODES = [
   { id:'nightly', label:'Evenings',       desc:'One, with the wind-down. The slot it was designed for.' },
   { id:'load',    label:'Every app load', desc:'Ambient. You will see the same one several times a day.' },
 ];
+// How often the slot gives rather than asks.
+//
+// The spec settled on quote-most-nights with a prompt ~2x/week, on Craig's own
+// reasoning: "a prompt asks something of you, a quote gives you something", and
+// prompts-only makes the slot a permanent small demand. Then he ran prompts-only
+// for three days and said he liked them. Both are real signals, so the ratio is
+// his to set rather than ours to guess, and the default sits between them.
+const REFLECT_MIXES = [
+  { id:'quotes',  label:'Mostly quotes',  desc:'A prompt about twice a week. The original design.', q:5 },
+  { id:'even',    label:'Half and half',  desc:'Roughly alternating.', q:4 },
+  { id:'prompts', label:'Mostly prompts', desc:'A quote about twice a week. More is asked of you.', q:2 },
+];
+const REFLECT_MIX_KEY = 'reflect_mix';
+
+function reflectMix() {
+  try { return localStorage.getItem(REFLECT_MIX_KEY) || 'even'; } catch (e) { return 'even'; }
+}
+function setReflectMix(mix) {
+  if (!REFLECT_MIXES.some(m => m.id === mix)) return;
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(REFLECT_MIX_KEY, mix);
+  else { try { localStorage.setItem(REFLECT_MIX_KEY, mix); } catch (e) {} }
+  if (typeof renderReflectPrefs === 'function') renderReflectPrefs();
+  if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+}
+
 const REFLECT_MODE_KEY = 'reflect_mode';
 const REFLECT_SEEN_KEY = 'reflect_seen';     // local on purpose — see below
 
@@ -12805,6 +13312,53 @@ function reflectEligible(dateStr) {
   });
 }
 
+// ONE day hash, used by every picker. Two copies of "which item does this date
+// map to" drifting apart is how one surface shows a different thing from
+// another on the same day.
+function _reflectDayHash(day) {
+  let h = 0;
+  for (let i = 0; i < day.length; i++) h = (h * 31 + day.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Does today's slot give, or ask? Deterministic per day, so it does not flip
+// between app loads, and offset from the item hash so the two decisions are not
+// correlated.
+function reflectWantsQuote(dateStr) {
+  if (typeof REFLECT_QUOTES === 'undefined' || !REFLECT_QUOTES.length) return false;
+  const day = dateStr || ds(new Date());
+  const m = REFLECT_MIXES.find(x => x.id === reflectMix()) || REFLECT_MIXES[1];
+  return (_reflectDayHash(day + '|mix') % 7) < m.q;
+}
+
+const REFLECT_QSEEN_KEY = 'reflect_qseen';
+function reflectQuoteSeen() {
+  try {
+    const p = JSON.parse(localStorage.getItem(REFLECT_QSEEN_KEY) || '[]');
+    return Array.isArray(p) ? p : [];
+  } catch (e) { return []; }
+}
+function reflectMarkQuoteSeen(id) {
+  const seen = reflectQuoteSeen().filter(x => x !== id);
+  seen.push(id);
+  // Half a cycle. A quote is re-readable in a way a question is not, so the
+  // no-repeat window is shorter on purpose — suppressing a full cycle over a
+  // 39-line corpus would mean seeing every one before any comes round again.
+  while (seen.length > Math.floor(REFLECT_QUOTES.length / 2)) seen.shift();
+  try { localStorage.setItem(REFLECT_QSEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+}
+
+// One quote for this day, same rules as the prompt picker: stable within the
+// day, freshest-first, never random.
+function reflectQuotePick(dateStr) {
+  if (typeof REFLECT_QUOTES === 'undefined' || !REFLECT_QUOTES.length) return null;
+  const day = dateStr || ds(new Date());
+  const seen = reflectQuoteSeen();
+  const fresh = REFLECT_QUOTES.filter(q => seen.indexOf(q.id) === -1);
+  const from = fresh.length ? fresh : REFLECT_QUOTES;
+  return from[_reflectDayHash(day) % from.length];
+}
+
 // One prompt for this day. Stable within the day — the same date always yields
 // the same prompt, so a re-render (or 'every app load') does not shuffle it.
 function reflectPick(dateStr) {
@@ -12823,9 +13377,7 @@ function reflectPick(dateStr) {
   const fresh = pool.filter(p => seen.indexOf(p.id) === -1);
   const from = fresh.length ? fresh : pool;
   // Deterministic per day: a stable hash of the date, not Math.random().
-  let h = 0;
-  for (let i = 0; i < day.length; i++) h = (h * 31 + day.charCodeAt(i)) >>> 0;
-  return from[h % from.length];
+  return from[_reflectDayHash(day) % from.length];
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -13247,6 +13799,73 @@ const CONDITION_EX_RULES = {
   shoulder_oa:         { caution:['overhead','shoulder'], note:'Work the pain-free range only. Stop short of the pinch rather than pushing to lockout.' },
 };
 
+// ── What you are ALREADY LOGGING should reach the exercise screen ─────────
+// Craig logged left wrist pain on 2026-09-22 — "suspect repetitive stress from
+// hike" — and three days later the app happily offered him push-ups with no
+// mention of it. The cautions above read USER_PROFILE.conditions, a curated list
+// he ticks in Settings; the episode log is a different store, and nothing joined
+// them. Two stores answering one question, with a physio consequence rather than
+// a cosmetic one.
+//
+// A condition ticked in Settings is a standing fact ("I have shoulder OA"). An
+// episode is a live one ("this hurts, since Monday"). The live one is the more
+// useful input to today's session, and it was the one being ignored.
+//
+// Deliberately CAUTION and never BLOCK. An episode is self-reported, often
+// transient, and hiding movements on the strength of "my wrist hurts" would make
+// the library lie about what exists. A note says the thing; a disappearance does
+// not.
+const EPISODE_EX_RULES = [
+  { match: /wrist|hand|thumb|finger/i, flags: ['grip'],
+    names: /push-?up|plank|dip|burpee|farmer|clean|front squat/i,
+    note: 'Loads the wrist. Fists, handles or dumbbells keep it neutral; drop the movement rather than work through it.' },
+  { match: /shoulder|rotator|ac joint|clavicle/i, flags: ['overhead', 'shoulder'],
+    names: /overhead|press|dip|pull-?up|lateral raise/i,
+    note: 'Pain-free range only. Stop short of the pinch rather than pushing to lockout.' },
+  { match: /back|lumbar|spine|sciatic|disc/i, flags: ['spine'],
+    names: /sit-?up|crunch|deadlift|good ?morning|leg raise|toe touch/i,
+    note: 'Repeated loaded spinal flexion is the pattern to avoid here. Brace first, and stop the set when form goes.' },
+  { match: /elbow|forearm|epicond/i, flags: ['grip'],
+    names: /curl|pushdown|row|pull-?up|chin/i,
+    note: 'Grip and elbow load provoke this. Reduce the load before reducing the reps.' },
+  { match: /knee|patell|acl|meniscus/i, flags: [], muscles: ['quads', 'hamstrings', 'calves'],
+    names: /squat|lunge|leg press|leg extension|step-?up|jump/i,
+    note: 'Knee-loaded. Shorten the range before adding load, and keep it pain-free.' },
+  { match: /ankle|achilles|foot|plantar/i, flags: [], muscles: ['calves'],
+    names: /calf|jump|lunge|run|skip/i,
+    note: 'Ankle-loaded. Controlled tempo, and no jumping while this is live.' },
+  { match: /hip|groin|glute|piriformis/i, flags: [], muscles: ['glutes', 'hamstrings', 'quads'],
+    names: /squat|lunge|deadlift|bridge|hip thrust|leg raise/i,
+    note: 'Hip-loaded. Keep it inside the pain-free range rather than chasing depth.' },
+  { match: /neck|cervical/i, flags: ['overhead'],
+    names: /overhead|shrug|press|sit-?up/i,
+    note: 'Neck-loaded. Keep the chin tucked and the load light while this is live.' },
+];
+
+// Active, mine, musculoskeletal. A resolved episode is history, and someone
+// else's episode is not a reason to change Craig's session.
+function activeEpisodes() {
+  if (typeof EPISODES === 'undefined' || !Array.isArray(EPISODES)) return [];
+  return EPISODES.filter(e => e && e.status === 'active' && !e.ended_on &&
+                              (!e.person || e.person === 'me'));
+}
+
+function episodeExRules() {
+  const flags = {}, names = [], muscles = {};
+  activeEpisodes().forEach(function (e) {
+    const hay = [e.condition, e.body_part, e.treatment].filter(Boolean).join(' ');
+    EPISODE_EX_RULES.forEach(function (r) {
+      if (!r.match.test(hay)) return;
+      const where = [e.side, e.body_part].filter(Boolean).join(' ').trim();
+      const note = (e.condition || 'An open episode') + (where ? ' (' + where + ')' : '') + ' — ' + r.note;
+      (r.flags || []).forEach(f => { if (!flags[f]) flags[f] = note; });
+      (r.muscles || []).forEach(m => { if (!muscles[m]) muscles[m] = note; });
+      if (r.names) names.push({ re: r.names, note: note });
+    });
+  });
+  return { flags: flags, names: names, muscles: muscles };
+}
+
 // Returns { blocked:Set(names), cautions:[{name, note}] } for the gym library.
 function exContraindications() {
   const blockedFlags = new Set(); const cautionFlags = {}; const blockedMuscles = new Set();
@@ -13259,18 +13878,34 @@ function exContraindications() {
     // Active gout flare — hide lower-limb work entirely, same rule as stretches.
     if (_conditionFlaringNow(c)) ['quads','hamstrings','glutes','calves'].forEach(m => blockedMuscles.add(m));
   });
+  // Fold in what is currently being logged as an open episode.
+  const epr = (typeof episodeExRules === 'function') ? episodeExRules() : { flags:{}, names:[], muscles:{} };
+  Object.keys(epr.flags).forEach(f => { if (!cautionFlags[f]) cautionFlags[f] = epr.flags[f]; });
+
   const blocked = new Set(); const cautions = [];
   EX_LIB.forEach(e => {
     const flags = e.flags || [];
     if (blockedMuscles.has(e.m) || flags.some(f => blockedFlags.has(f))) { blocked.add(e.name); return; }
     const hit = flags.find(f => cautionFlags[f]);
-    if (hit) cautions.push({ name: e.name, note: cautionFlags[hit] });
+    if (hit) { cautions.push({ name: e.name, note: cautionFlags[hit] }); return; }
+    if (epr.muscles[e.m]) { cautions.push({ name: e.name, note: epr.muscles[e.m] }); return; }
+    const byName = epr.names.find(n => n.re.test(e.name));
+    if (byName) cautions.push({ name: e.name, note: byName.note });
   });
   return { blocked, cautions };
 }
+
+// By NAME, not only by library entry. Half the movements Craig actually performs
+// — every bodyweight routine exercise — are in ROUTINES and not in EX_LIB, so a
+// lookup that only consults the library cannot warn him off a push-up, which is
+// the exact movement his open wrist episode argues against.
 function exCautionFor(name) {
+  if (!name) return null;
   const c = exContraindications().cautions.find(x => x.name === name);
-  return c ? c.note : null;
+  if (c) return c.note;
+  const epr = (typeof episodeExRules === 'function') ? episodeExRules() : { names: [] };
+  const hit = epr.names.find(n => n.re.test(name));
+  return hit ? hit.note : null;
 }
 
 function conditionById(id) { return CONDITIONS.find(c => c.id === id); }
@@ -14607,7 +15242,7 @@ function _actSave(dateStr, rows) {
 // which is precisely how an unconditional upsert hides behind a dirty check.
 const _ACT_COMPARED = ['log_date','kind','movement_id','exercise_key','exercise_name',
   'muscle','equip','set_index','weight','reps','distance_m','duration_s','side',
-  'rest_s','flag','rpe','notes','source'];
+  'rest_s','flag','rpe','notes','source','variant','variant_mult'];
 function _actSameRow(a, b) {
   if (!a || !b) return false;
   for (const k of _ACT_COMPARED) {
@@ -14646,6 +15281,8 @@ function logActivity(o) {
     distance_m: o.distance_m ?? null,
     duration_s: o.duration_s ?? null,
     side: o.side || '',
+    variant: o.variant || '',
+    variant_mult: (Number(o.variant_mult) > 0 ? Number(o.variant_mult) : 1),
     rest_s: o.rest_s ?? null,
     flag: o.flag || '',
     rpe: o.rpe ?? null,
@@ -14742,27 +15379,38 @@ function getWeekLoad() {
 // Craig: "rowing, I can do 4 sets of 1km (each set has a timer) with a cool down
 // timer between them." Each interval is its own row, so 4x1km stays
 // distinguishable from one 4km piece.
+// `key` is the movement key every other surface uses. Without it this screen
+// wrote exercise_key 'cardio_walk' while the Log Workout row wrote 'wo_walk' —
+// one walk, two movements, and the day rollup showed them as separate lines.
+// Nothing had noticed because activity_log holds zero cardio_* rows: the screen
+// existed and was never successfully used.
+//
+// The unit here MUST match what the movement declares in EX_TRACKS, because the
+// conversion to metres is done from the movement, not from this table. Treadmill
+// is miles for that reason — it is the unit the machine reports, which is what
+// gymcardio_treadmill already meant.
 const CARDIO_MODES = [
-  { id:'row',       icon:'🚣', label:'Row',       unit:'m',  defDist:1000 },
-  { id:'treadmill', icon:'🏃', label:'Treadmill', unit:'km', defDist:1 },
-  { id:'walk',      icon:'🚶', label:'Walk',      unit:'km', defDist:2 },
-  { id:'run',       icon:'🏃', label:'Run',       unit:'km', defDist:3 },
-  { id:'bike',      icon:'🚴', label:'Bike',      unit:'km', defDist:5 },
-  { id:'swim',      icon:'🏊', label:'Swim',      unit:'m',  defDist:500 },
-  { id:'elliptical',icon:'🔄', label:'Elliptical',unit:'min',defDist:0 },
-  { id:'stairs',    icon:'🪜', label:'Stairs',    unit:'min',defDist:0 },
+  { id:'row',       key:'wo_row',                icon:'🚣', label:'Row',       unit:'m',  defDist:1000 },
+  { id:'treadmill', key:'gymcardio_treadmill',   icon:'🏃', label:'Treadmill', unit:'mi', defDist:1 },
+  { id:'walk',      key:'wo_walk',               icon:'🚶', label:'Walk',      unit:'km', defDist:2 },
+  { id:'run',       key:'wo_run',                icon:'🏃', label:'Run',       unit:'km', defDist:3 },
+  { id:'bike',      key:'gymcardio_bike',        icon:'🚴', label:'Bike',      unit:'km', defDist:5 },
+  { id:'swim',      key:'wo_swim',               icon:'🏊', label:'Swim',      unit:'m',  defDist:500 },
+  { id:'elliptical',key:'gymcardio_elliptical',  icon:'🔄', label:'Elliptical',unit:'min',defDist:0 },
+  { id:'stairs',    key:'gymcardio_stairmaster', icon:'🪜', label:'Stairs',    unit:'min',defDist:0 },
 ];
 
 function logCardioInterval(modeId, distVal, minutes, seconds) {
   const mode = CARDIO_MODES.find(m => m.id === modeId);
   if (!mode) return;
-  const meters = mode.unit === 'km' ? (distVal * 1000) : (mode.unit === 'm' ? distVal : 0);
   const secs = (parseInt(minutes, 10) || 0) * 60 + (parseInt(seconds, 10) || 0);
-  return logActivity({
-    kind: 'cardio', name: mode.label, exercise_key: 'cardio_' + mode.id,
-    movement_id: 'cardio_' + mode.id, equip: mode.id,
-    distance_m: meters || null, duration_s: secs || null,
-  });
+  // Unit conversion comes from _trackToStorage, which reads the movement's own
+  // unit and UNIT_TO_M. The hand-rolled `unit === 'km' ? *1000 : ...` this
+  // replaces was a second copy of that table, and it silently dropped miles.
+  const stored = _trackToStorage(mode.key, mode.label, { d: Number(distVal) || 0, t: secs });
+  return logActivity(Object.assign({
+    name: mode.label, exercise_key: mode.key, movement_id: mode.key,
+  }, stored, { kind: 'cardio', equip: mode.id }));
 }
 
 // ── Per-set storage ───────────────────────────────────────────
@@ -14824,6 +15472,10 @@ const EX_TRACKS = {
   wo_row:   { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'm'  },
   wo_walk:  { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'km' },
   wo_swim:  { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'm'  },
+  wo_run:   { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'km' },
+  // Yoga is time on the mat. Declaring it here is what lets the Kids chip open
+  // the same screen everything else opens, with a clock instead of a rep box.
+  wo_yoga_session: { tracks: ['duration'], kind: 'mobility' },
   gymcardio_treadmill:   { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'mi' },
   gymcardio_bike:        { tracks: ['distance', 'duration'], kind: 'cardio', unit: 'km' },
   gymcardio_elliptical:  { tracks: ['duration'], kind: 'cardio' },
@@ -14905,6 +15557,35 @@ function _routineTracks(exKey) {
 // The resolver every caller goes through. Never read EX_TRACKS directly — an
 // unknown key has to fall back to the default rather than render a modal with no
 // inputs at all, which is how a movement silently becomes unloggable.
+// What an EX_LIB entry tracks, from the entry itself (2026-09-26).
+//
+// This was falling through to weight + reps for everything the muscle picker
+// opened, which was wrong in two ways at once:
+//
+//   * A BAND has no weight. There is no number to type. Asking for one
+//     produces a column of nulls and a log that cannot answer 'is this getting
+//     easier'.
+//   * A BODYWEIGHT movement with a variant family had a weight box, and
+//     variantsFor() deliberately returns nothing once a movement tracks weight
+//     — so the entire difficulty-variant model shipped on 2026-09-25 was
+//     unreachable from the muscle picker. It worked from the routine screens
+//     (those resolve through _routineTracks) and nowhere else. Found by the
+//     guidance suite, not by looking at the screen, which is the point of it.
+//
+// Weighted bodyweight work is deliberately still possible: a movement with NO
+// variant family — a weighted dip, a loaded split squat — keeps its weight
+// box. The rule is one answer per question: if a movement has a difficulty
+// ladder, the ladder is how difficulty gets recorded.
+function _libTracks(e) {
+  if (!e) return TRACKS_DEFAULT;
+  const isHold = (typeof _isHoldPrescription === 'function') && _isHoldPrescription(e.reps);
+  if (e.equip === 'band') return isHold ? ['duration'] : ['reps'];
+  if (e.equip === 'bw') {
+    if (isHold) return ['duration'];
+    if (typeof _variantFamilyFor === 'function' && _variantFamilyFor(e.name)) return ['reps'];
+  }
+  return TRACKS_DEFAULT;
+}
 function exTracksFor(exKey, exName) {
   const hit = EX_TRACKS[exKey];
   if (hit) return hit;
@@ -14926,7 +15607,7 @@ function exTracksFor(exKey, exName) {
   }
   if (typeof EX_LIB !== 'undefined' && exName) {
     const e = EX_LIB.find(x => x.name === exName);
-    if (e) return { tracks: TRACKS_DEFAULT, kind: 'strength', muscle: e.m || '', equip: e.equip || '' };
+    if (e) return { tracks: _libTracks(e), kind: 'strength', muscle: e.m || '', equip: e.equip || '' };
   }
   return { tracks: TRACKS_DEFAULT, kind: 'strength' };
 }
@@ -14970,6 +15651,198 @@ function _fmtClock(iso) {
   const ap = h < 12 ? 'am' : 'pm';
   h = h % 12; if (!h) h = 12;
   return h + ':' + m + ap;
+}
+
+// ══════════════════════════════════════════════
+// DIFFICULTY VARIANTS (2026-09-26)
+// ══════════════════════════════════════════════
+// Craig: "I have a decline bench, and do situps on it … can we add a decline
+// option for situps? or some 'difficulty modifier' like pushups with legs
+// lifted? … (and what would be usable, not just present.)"
+//
+// WHY NOT SEPARATE EXERCISES. "Decline sit-ups" as its own movement splits the
+// history: ten declined becomes a new movement with no past, and months of flat
+// sit-ups never connect to it. You could never see that 10 steep beats 20 flat.
+//
+// WHY NOT A FREE-TEXT NOTE. Unqueryable. That is the exact mistake stretchDone()
+// made until 2026-09-20 — prose in `notes`, and nothing could roll it up.
+//
+// SO: a variant per set, with a coefficient, stored on the row. The precedent is
+// already here: strengthScore() multiplies e1RM by EQUIP_COEF because 130 on a
+// machine and 130 on dumbbells are not the same effort. Bodyweight has the same
+// problem and never got the same answer — you cannot add 5 lb to a sit-up, so
+// CHANGING LEVERAGE IS how bodyweight progresses, and it was the one thing the
+// log could not see.
+//
+// Only offered where there is no load to add. A movement that tracks weight
+// progresses by weight; giving it leverage variants as well would be two
+// answers to one question.
+//
+// variant_mult is written onto the row rather than looked up at read time, so
+// history keeps the coefficient it was logged under if this table is ever
+// recalibrated. A number that silently changes under old rows is not a record.
+
+// Work per rep against gravity's moment about the hip. Over one rep that work
+// tracks the change in height of the trunk's centre of mass, so relative to a
+// flat sit-up finishing near 80°:
+//
+//     coefficient = 1 + sin(θ) / sin(80°)
+//
+// HONEST LIMITS, kept here rather than in a footnote: this is WORK PER REP, not
+// peak tension, and it treats the trunk as a point mass. It is a proxy. What it
+// gets right is the ordering and roughly the spacing, which is what progression
+// detection needs. Decline is positive θ; an incline is negative and scores
+// BELOW 1.0, deliberately — a regression is a real training choice and the scale
+// should be able to say so rather than bottoming out at "normal".
+function declineMult(deg) {
+  const d = Number(deg) || 0;
+  return Math.round((1 + Math.sin(d * Math.PI / 180) / Math.sin(80 * Math.PI / 180)) * 100) / 100;
+}
+
+// Generic leverage progressions. These ship to everyone because they are
+// properties of the movement, not of anyone's equipment.
+const EX_VARIANT_FAMILIES = [
+  { id: 'pushup', match: /push-?up/i, skip: /pike|plank-to|wall walk/i, variants: [
+    { id: 'knees',   label: 'On knees',     mult: 0.50 },
+    { id: 'incline', label: 'Hands raised', mult: 0.65 },
+    { id: 'std',     label: 'Standard',     mult: 1.00 },
+    { id: 'feet',    label: 'Feet raised',  mult: 1.25 },
+    { id: 'deficit', label: 'On handles',   mult: 1.40 },
+  ]},
+  { id: 'situp', match: /sit-?up|crunch/i, variants: [
+    { id: 'std',      label: 'Flat',     mult: 1.00 },
+    { id: 'anchored', label: 'Anchored', mult: 1.05 },
+  ]},
+  { id: 'plank', match: /^plank|superman/i, variants: [
+    { id: 'knees', label: 'On knees',    mult: 0.60 },
+    { id: 'std',   label: 'Standard',    mult: 1.00 },
+    { id: 'feet',  label: 'Feet raised', mult: 1.30 },
+    { id: 'long',  label: 'Long lever',  mult: 1.50 },
+  ]},
+  { id: 'squat', match: /squat/i, skip: /goblet|barbell|split|bulgarian|front|hack/i, variants: [
+    { id: 'box',   label: 'To a box',   mult: 0.80 },
+    { id: 'std',   label: 'Standard',   mult: 1.00 },
+    { id: 'pause', label: '2s pause',   mult: 1.15 },
+    { id: 'jump',  label: 'Jump',       mult: 1.35 },
+  ]},
+  { id: 'bridge', match: /glute bridge|hip thrust/i, variants: [
+    { id: 'std',    label: 'Two legs',    mult: 1.00 },
+    { id: 'pause',  label: '2s hold',     mult: 1.15 },
+    { id: 'single', label: 'Single leg',  mult: 1.70 },
+  ]},
+  { id: 'lunge', match: /lunge|step-?up/i, variants: [
+    { id: 'std',    label: 'Standard',   mult: 1.00 },
+    { id: 'pause',  label: '2s pause',   mult: 1.15 },
+    { id: 'deficit',label: 'Deficit',    mult: 1.25 },
+  ]},
+  { id: 'deadbug', match: /dead ?bug/i, variants: [
+    { id: 'bent', label: 'Knees bent',    mult: 0.75 },
+    { id: 'std',  label: 'Standard',      mult: 1.00 },
+    { id: 'long', label: 'Legs straight', mult: 1.40 },
+  ]},
+  { id: 'legraise', match: /leg (raise|lift)|knee raise/i, variants: [
+    { id: 'bent', label: 'Knees bent',    mult: 0.80 },
+    { id: 'std',  label: 'Standard',      mult: 1.00 },
+    { id: 'long', label: 'Legs straight', mult: 1.35 },
+  ]},
+  // Band resistance (2026-09-26). Anchored on '^band ' so it catches the eight
+  // band movements and nothing in STRETCH_LIB, and never 'IT band'.
+  //
+  // Graded by FEEL, not by colour, deliberately: colour means different things
+  // in every brand, and Craig does not know what he owns. 'Medium' is whatever
+  // band makes the listed rep range genuinely hard.
+  //
+  // These multipliers are cruder than the decline-bench ones and should be read
+  // that way. Band tension is non-linear through the range and cannot be
+  // measured without a scale, so no coefficient here is a real load ratio. The
+  // job is narrow: stop '20 reps on the light band' and '20 reps on the heavy
+  // band' from being recorded as the same set. Anything more precise would be
+  // a number pretending to be a measurement.
+  { id: 'band', match: /^band /i, variants: [
+    { id: 'light',  label: 'Light',      mult: 0.70 },
+    { id: 'medium', label: 'Medium',     mult: 1.00 },
+    { id: 'heavy',  label: 'Heavy',      mult: 1.35 },
+    { id: 'double', label: 'Doubled up', mult: 1.60 },
+  ]},
+];
+
+// The user's own adjustable bench, if they have configured one. Deliberately
+// per-user data rather than a table in this file: a bench's notches are a fact
+// about one person's equipment, and hardcoding somebody's gear into a file that
+// ships to every user is the mistake this project has already written down once.
+const BENCH_KEY = 'bench_profile';
+function benchProfile() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BENCH_KEY) || 'null');
+    if (raw && Array.isArray(raw.positions)) return raw;
+  } catch (e) {}
+  return null;
+}
+function setBenchProfile(profile) {
+  const val = JSON.stringify(profile || { name: '', positions: [] });
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(BENCH_KEY, val);
+  else { try { localStorage.setItem(BENCH_KEY, val); } catch (e) {} }
+  if (typeof renderBenchPrefs === 'function') renderBenchPrefs();
+}
+
+// Every variant available for a movement, easiest first.
+// Name → variant family, in one place. exTracksFor() needs this answer too
+// (a movement with a difficulty ladder must not also offer a weight box), and
+// it cannot ask variantsFor() for it without the two calling each other
+// forever. Matching on the name alone is a pure function and breaks the cycle.
+function _variantFamilyFor(exName) {
+  const name = String(exName || '');
+  if (!name || typeof EX_VARIANT_FAMILIES === 'undefined') return null;
+  return EX_VARIANT_FAMILIES.find(f => f.match.test(name) && !(f.skip && f.skip.test(name))) || null;
+}
+function variantsFor(exKey, exName) {
+  const name = exName || (typeof exNameForKey === 'function' ? exNameForKey(exKey, null) : '') || '';
+  // A movement that tracks weight progresses by weight. One answer per question.
+  const list = (typeof exTrackList === 'function') ? exTrackList(exKey, name) : [];
+  if (list.indexOf('weight') !== -1) return [];
+  const fam = _variantFamilyFor(name);
+  if (!fam) return [];
+  let out = fam.variants.slice();
+  if (fam.id === 'situp') {
+    const b = benchProfile();
+    if (b && b.positions && b.positions.length) {
+      b.positions.forEach(function (p) {
+        const deg = Number(p.deg) || 0;
+        if (!deg) return;                        // flat is already in the list
+        out.push({ id: 'bench_' + p.pos, mult: declineMult(deg),
+                   label: (deg > 0 ? 'Decline ' : 'Incline ') + p.pos + ' · ' + Math.abs(deg) + '°' });
+      });
+    }
+  }
+  return out.sort((a, b2) => a.mult - b2.mult);
+}
+
+// What was used last for this movement, so the chip row opens on it. The rule
+// that decides whether this feature gets used at all: ONE TAP, AND IT REMEMBERS.
+// Ask for the variant on every set and it will be set wrong or not at all, and
+// half-true data is worse than none.
+function lastVariantFor(exKey) {
+  try { return localStorage.getItem('varlast_' + exKey) || ''; } catch (e) { return ''; }
+}
+function setLastVariantFor(exKey, id) {
+  try { localStorage.setItem('varlast_' + exKey, id || ''); } catch (e) {}
+}
+function variantById(exKey, exName, id) {
+  const all = variantsFor(exKey, exName);
+  if (!all.length) return null;
+  return all.find(v => v.id === id) || all.find(v => v.id === 'std') || all[0];
+}
+function currentVariant(exKey, exName) {
+  return variantById(exKey, exName, lastVariantFor(exKey));
+}
+
+// Reps normalised for leverage. This is the bodyweight answer to "am I getting
+// stronger" when the load never changes — the question strengthScore answers for
+// loaded work and could never answer here.
+function effectiveReps(row) {
+  const r = Number(row && row.reps) || 0;
+  const m = Number(row && row.variant_mult) || 1;
+  return Math.round(r * m * 10) / 10;
 }
 
 // Entry (what the user typed, in their unit) → activity_log row fields (SI).
@@ -15093,10 +15966,657 @@ function getDayTotals(dateStr) {
   return { date: dateStr, byExercise: list, day: day };
 }
 
+// ══════════════════════════════════════════════
+// TRAINING REVIEW (2026-09-25)
+// ══════════════════════════════════════════════
+// Craig: "suggestions... you worked these groups, maybe you should make these
+// changes? ... can be a repetitive task you do every week or month to look at
+// what I'm doing and offer suggestions."
+//
+// Written to the house rule this project runs on: realism, not encouragement.
+// Every line below is a statement about what the log says, and where it makes a
+// recommendation it says the mechanism. No streaks, no praise for showing up,
+// and nothing that reads as a scold for a light week — the module that measures
+// gaps is the one most likely to turn into another thing to fail at.
+//
+// It reports what is MISSING rather than scoring what is there, because an
+// absent muscle group is actionable and a total is not.
+const REVIEW_GROUPS = {
+  push:  ['chest', 'shoulders', 'triceps'],
+  pull:  ['back', 'lats', 'biceps', 'reardelts'],
+  legs:  ['quads', 'hamstrings', 'glutes', 'calves'],
+  core:  ['core'],
+};
+const REVIEW_GROUP_LABEL = { push: 'Push', pull: 'Pull', legs: 'Legs', core: 'Core' };
+
+// Sets per muscle group per week that the evidence supports as a working floor
+// for maintenance. Deliberately a FLOOR, not a target: the research on
+// hypertrophy dose-response keeps finding more is better up to a high ceiling,
+// and printing that ceiling at someone training twice a week is useless.
+const REVIEW_MIN_SETS_WK = 4;
+
+function _reviewMuscleOf(row) {
+  if (row.muscle) return row.muscle;
+  if (typeof EX_LIB !== 'undefined' && row.exercise_name) {
+    const e = EX_LIB.find(x => x.name === row.exercise_name);
+    if (e && e.m) return e.m;
+  }
+  return '';
+}
+
+function buildTrainingReview(days, dateStr) {
+  const win = Math.max(7, Number(days) || 28);
+  const today = dateStr || ds(new Date());
+  const byMuscle = {}, byGroup = { push: 0, pull: 0, legs: 0, core: 0 };
+  const byMovement = {}, sessionDays = {};
+  let sets = 0, reps = 0, volume = 0, distance_m = 0, duration_s = 0;
+
+  for (let i = 0; i < win; i++) {
+    const day = _dayBefore(today, i);
+    let rows; try { rows = getActivity(day); } catch (e) { rows = []; }
+    if (!rows || !rows.length) continue;
+    sessionDays[day] = true;
+    rows.forEach(function (r) {
+      sets += 1;
+      reps += Number(r.reps) || 0;
+      if (r.weight && r.reps) volume += Number(r.weight) * Number(r.reps);
+      distance_m += Number(r.distance_m) || 0;
+      duration_s += Number(r.duration_s) || 0;
+      const m = _reviewMuscleOf(r);
+      if (m) {
+        byMuscle[m] = (byMuscle[m] || 0) + 1;
+        Object.keys(REVIEW_GROUPS).forEach(g => {
+          if (REVIEW_GROUPS[g].indexOf(m) !== -1) byGroup[g] += 1;
+        });
+      }
+      const k = r.exercise_key;
+      if (!k) return;
+      const mv = byMovement[k] || (byMovement[k] = { key: k, name: r.exercise_name || k, days: {}, byDay: {}, top: 0, topEff: 0, last: day, first: day });
+      mv.days[day] = true;
+      if (Number(r.weight) > mv.top) mv.top = Number(r.weight);
+      // Per-day bests, gathered in the pass we are already making. The stall
+      // check used to re-scan the whole window once per movement, which is
+      // O(days × movements) reads of localStorage to answer a question the loop
+      // was already walking past.
+      const bd = mv.byDay[day] || (mv.byDay[day] = { w: 0, eff: 0, mult: 0 });
+      if (Number(r.weight) > bd.w) bd.w = Number(r.weight);
+      const _eff = (typeof effectiveReps === 'function') ? effectiveReps(r) : (Number(r.reps) || 0);
+      if (_eff > bd.eff) bd.eff = _eff;
+      if (Number(r.variant_mult) > bd.mult) bd.mult = Number(r.variant_mult) || 1;
+      if (_eff > mv.topEff) mv.topEff = _eff;
+      if (day > mv.last) mv.last = day;
+      if (day < mv.first) mv.first = day;
+    });
+  }
+
+  const weeks = win / 7;
+  const activeDays = Object.keys(sessionDays).length;
+  const perWeek = activeDays / weeks;
+
+  // ── The findings. Order matters: the omissions first, because they are the
+  // ones with something to do about them.
+  const findings = [];
+  Object.keys(REVIEW_GROUPS).forEach(function (g) {
+    const perWk = byGroup[g] / weeks;
+    if (byGroup[g] === 0) {
+      findings.push({ tone: 'gap', text: REVIEW_GROUP_LABEL[g] + ' has not been trained at all in ' + win + ' days.',
+        why: 'Nothing here is a judgement about effort — it is just absent from the log, so either it did not happen or it is not being recorded.' });
+    } else if (perWk < REVIEW_MIN_SETS_WK) {
+      findings.push({ tone: 'low', text: REVIEW_GROUP_LABEL[g] + ' is running at ' + perWk.toFixed(1) + ' sets a week.',
+        why: 'Below about ' + REVIEW_MIN_SETS_WK + ' weekly sets a group tends to hold rather than gain. Fine if it is deliberate.' });
+    }
+  });
+
+  // Push/pull balance. The direction that matters for a desk worker is pull.
+  if (byGroup.push > 0 && byGroup.pull > 0) {
+    const ratio = byGroup.push / byGroup.pull;
+    if (ratio > 1.6) {
+      findings.push({ tone: 'balance', text: 'Push work is running at ' + ratio.toFixed(1) + '× pull (' + byGroup.push + ' vs ' + byGroup.pull + ' sets).',
+        why: 'Pressing pulls the shoulders forward over time; rowing and pulling are what hold the posture. Add a row rather than removing a press.' });
+    } else if (ratio < 0.6) {
+      findings.push({ tone: 'balance', text: 'Pull work is running at ' + (1 / ratio).toFixed(1) + '× push.',
+        why: 'Less common and less consequential than the other way round, but worth knowing.' });
+    }
+  }
+
+  // A number that has not moved across several sessions is a stall, not a
+  // failure. Two flavours, because bodyweight work has no load to watch.
+  Object.keys(byMovement).forEach(function (k) {
+    const mv = byMovement[k];
+    const days = Object.keys(mv.byDay).sort();
+    if (days.length < 3) return;
+
+    if (mv.top > 0) {
+      const loads = days.map(d => mv.byDay[d].w).filter(x => x > 0);
+      if (loads.length >= 3 && Math.max.apply(null, loads) === Math.min.apply(null, loads)) {
+        findings.push({ tone: 'stall', text: mv.name + ' has sat at ' + mv.top + ' lb for ' + loads.length + ' sessions.',
+          why: 'Add a rep before adding load, and add load before adding a set. A stall is only a problem if nothing is moving.' });
+      }
+      return;
+    }
+
+    // Bodyweight. Before variants existed this check could never fire here at
+    // all: it watched top load, and a sit-up has none. Leverage IS the load, so
+    // the number to watch is reps × the difficulty coefficient.
+    const effs = days.map(d => mv.byDay[d].eff).filter(x => x > 0);
+    if (effs.length < 3) return;
+    if (Math.max.apply(null, effs) === Math.min.apply(null, effs)) {
+      const harder = (typeof variantsFor === 'function')
+        ? variantsFor(mv.key, mv.name).filter(v => v.mult > (mv.byDay[days[days.length - 1]].mult || 1)) : [];
+      findings.push({ tone: 'stall',
+        text: mv.name + ' has sat at the same effort for ' + effs.length + ' sessions.',
+        why: harder.length
+          ? 'There is no weight to add, so leverage is the load. Next step up is "' + harder[0].label + '" at the same reps.'
+          : 'There is no weight to add, so the levers are reps, tempo and range. Add one rep before anything else.' });
+    }
+  });
+
+  if (activeDays === 0) {
+    findings.push({ tone: 'gap', text: 'Nothing logged in the last ' + win + ' days.',
+      why: 'Either a quiet month or the logging slipped. Both are worth knowing; only one needs anything done.' });
+  } else if (perWeek < 1) {
+    findings.push({ tone: 'low', text: 'Training on ' + perWeek.toFixed(1) + ' days a week over this window.',
+      why: 'Two sessions a week is roughly where strength holds. One is a maintenance floor at best.' });
+  }
+
+  // Anything currently sore gets said out loud, because a review that
+  // recommends more volume while an episode is open is giving bad advice.
+  if (typeof activeEpisodes === 'function') {
+    activeEpisodes().forEach(function (e) {
+      findings.push({ tone: 'care', text: 'Open: ' + (e.condition || 'an episode') + (e.side ? ' (' + e.side + ')' : '') + ', since ' + e.started_on + '.',
+        why: 'Work around it rather than through it. Anything below is subject to this.' });
+    });
+  }
+
+  return {
+    days: win, from: _dayBefore(today, win - 1), to: today,
+    activeDays: activeDays, perWeek: perWeek,
+    totals: { sets: sets, reps: reps, volume: volume, distance_m: distance_m, duration_s: duration_s },
+    byMuscle: byMuscle, byGroup: byGroup,
+    movements: Object.keys(byMovement).map(k => byMovement[k]).sort((a, b) => b.last.localeCompare(a.last)),
+    findings: findings,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// GUIDANCE — rank, grouping, session plan  (2026-09-26)
+// ══════════════════════════════════════════════════════════════
+// Craig: "Something that makes the app feel smart, not just a fancy
+// spreadsheet." And earlier, the shape he actually wanted: "'learn these' or
+// 'do these' or 'these are what you need' first, then 'do these'."
+//
+// THE GOVERNING RULE, and everything below obeys it:
+//   If the app cannot explain a recommendation from his own log in one
+//   sentence, it does not make it.
+// A recommendation with no stated reason is a horoscope. Where no reason can be
+// derived from the log, the plan says the structural one out loud instead
+// ("covers the hinge") and shows it dimmer, so the two are never confused.
+//
+// WHAT IS DELIBERATELY NOT HERE:
+//
+// * No beginner/intermediate/advanced tag. Difficulty is not a property of a
+//   movement, it is a relationship between a movement and a person, and a
+//   static label is wrong for somebody the moment they change. `technique` —
+//   how much can go wrong — is a property of the movement and does not move.
+//
+// * No `fixes:` field. It would have listed the review group a movement
+//   addresses, which is already derivable from `m` through REVIEW_GROUPS. Two
+//   places holding one fact is how they come to disagree; the second one is
+//   just a cache, and a cache that answers is not a source that agrees.
+//
+// * No difficulty progression in `teaches`. Within one movement, harder and
+//   easier is the variant model's job (EX_VARIANT_FAMILIES). `teaches` only
+//   ever crosses to a DIFFERENT movement — usually different equipment.
+//   Two systems describing one progression would eventually contradict.
+
+const EX_PATTERNS = ['push', 'pull', 'squat', 'hinge', 'carry', 'core'];
+const EX_PATTERN_LABEL = { push:'Push', pull:'Pull', squat:'Squat / knee', hinge:'Hinge / hip', carry:'Carry', core:'Core' };
+// Which review group each pattern's shortfall shows up in. Not a second
+// taxonomy — the mapping from a movement to a group still goes through `m` and
+// REVIEW_GROUPS. This only says which group a PATTERN feeds.
+const EX_PATTERN_GROUP = { push:'push', pull:'pull', squat:'legs', hinge:'legs', carry:'core', core:'core' };
+const EX_ROLE_LABEL = { foundation:'Start here', targeted:'Add when you need it' };
+const EX_TECHNIQUE_LABEL = { 1:'Hard to do badly', 2:'Form matters', 3:'Easy to get wrong' };
+
+function exById(id) {
+  if (!id || typeof EX_LIB === 'undefined') return null;
+  return EX_LIB.find(function (e) { return e.id === id; }) || null;
+}
+// The inverse of `teaches`, derived rather than stored. A hard movement should
+// be able to say "learn X first" without X's entry and its entry both having to
+// be right.
+function exPrereqsFor(id) {
+  if (!id || typeof EX_LIB === 'undefined') return [];
+  return EX_LIB.filter(function (e) { return e.teaches === id; });
+}
+// A tagged movement's review group, through `m`. The single path.
+function exReviewGroup(e) {
+  if (!e || !e.m || typeof REVIEW_GROUPS === 'undefined') return '';
+  const keys = Object.keys(REVIEW_GROUPS);
+  for (let i = 0; i < keys.length; i++) {
+    if (REVIEW_GROUPS[keys[i]].indexOf(e.m) !== -1) return keys[i];
+  }
+  return '';
+}
+// Ordering inside the muscle picker: foundation, then targeted, then the rest;
+// within a tier, the movement with least to go wrong first. An entry with no
+// role sorts into the last tier, and an entry with no `technique` either ties
+// at 9 with its untagged neighbours — and the sort is stable — so the parts of
+// the library that carry no tags at all keep their library order.
+const _EX_ROLE_RANK = { foundation: 0, targeted: 1 };
+function guidanceRank(e) {
+  const role = _EX_ROLE_RANK[e && e.role];
+  if (role === undefined) return 9;
+  return role;
+}
+function exSortForPicker(list) {
+  return list.slice().sort(function (a, b) {
+    const ra = guidanceRank(a), rb = guidanceRank(b);
+    if (ra !== rb) return ra - rb;
+    const ta = Number(a.technique) || 9, tb = Number(b.technique) || 9;
+    return ta - tb;
+  });
+}
+
+// ── The session plan ──────────────────────────────────────────────────────
+// Scoped honestly: bodyweight and band only. Everything it recommends is
+// something he can start in the next sixty seconds without leaving the house.
+// A gym plan needs the machine list for wherever he is going and is a separate
+// job; pretending this covers that would put barbell rows on a card he reads in
+// his kitchen.
+const SESS_PLAN_EQUIP = ['bw', 'band', 'kb'];
+// Tie-break order within a pattern. Bodyweight first because the floor is
+// always there and needs no fetching; kettlebells next because he owns a lot of
+// them and said so; bands last because he said he *thinks* he has one. A card
+// that promises "start in the next sixty seconds" has to be ordered by what is
+// actually to hand, not by what is theoretically best.
+const SESS_PLAN_EQUIP_ORDER = ['bw', 'kb', 'band'];
+// Distinct days a movement must appear on, inside the window, before the plan
+// offers the thing it teaches instead. Twice a week for a month.
+const SESS_GRADUATE_DAYS = 8;
+const SESS_PLAN_WINDOW = 28;
+// Capacity → how many movements. Taken from the activity level he already sets
+// at the top of this same card, because asking twice for one answer is how the
+// two answers start to disagree.
+const SESS_PLAN_PICKS = { 1: 0, 2: 1, 3: 3, 4: 4 };
+
+function buildSessionPlan(dateStr) {
+  const today = dateStr || ds(new Date());
+  const out = { picks: [], skip: [], extra: null, capacity: 0, restOnly: false, window: SESS_PLAN_WINDOW };
+  if (typeof EX_LIB === 'undefined') return out;
+
+  const d = (typeof DB_CACHE !== 'undefined' && DB_CACHE.daily && DB_CACHE.daily[today]) || {};
+  const chosen = Number(d.activity_level) || 0;
+  out.capacity = chosen;
+  const want = chosen ? SESS_PLAN_PICKS[chosen] : 3;
+  if (!want) { out.restOnly = true; return out; }
+
+  let rev = null;
+  try { rev = buildTrainingReview(SESS_PLAN_WINDOW, today); } catch (e) { rev = null; }
+  const byGroup = (rev && rev.byGroup) || { push: 0, pull: 0, legs: 0, core: 0 };
+  const weeks = SESS_PLAN_WINDOW / 7;
+
+  // Never recommend something already logged today.
+  const doneKeys = {};
+  try { (getActivity(today) || []).forEach(function (r) { if (r.exercise_key) doneKeys[r.exercise_key] = true; }); } catch (e) {}
+
+  // Same condition gate the muscle picker uses, so one movement cannot be
+  // blocked in one surface and recommended in the other.
+  const cx = (typeof exContraindications === 'function') ? exContraindications() : { blocked: new Set() };
+
+  const cands = EX_LIB.filter(function (e) {
+    return e.pattern && SESS_PLAN_EQUIP.indexOf(e.equip) !== -1 && !cx.blocked.has(e.name);
+  });
+
+  // Days since each PATTERN was last trained, read off the review's movement
+  // list rather than re-walking the log.
+  const patLast = {};
+  ((rev && rev.movements) || []).forEach(function (mv) {
+    const e = cands.find(function (x) { return exSlug(x.name) === mv.key; });
+    if (!e) return;
+    if (!patLast[e.pattern] || mv.last > patLast[e.pattern]) patLast[e.pattern] = mv.last;
+  });
+
+  // Which patterns, worst-served first. Ties broken by how long since that
+  // pattern was touched, so two legs patterns don't both jump the queue.
+  const patterns = EX_PATTERNS.filter(function (p) {
+    return cands.some(function (e) { return e.pattern === p && e.role === 'foundation'; });
+  }).sort(function (a, b) {
+    const ga = byGroup[EX_PATTERN_GROUP[a]] || 0, gb = byGroup[EX_PATTERN_GROUP[b]] || 0;
+    if (ga !== gb) return ga - gb;
+    const la = patLast[a] || '', lb = patLast[b] || '';
+    return la.localeCompare(lb);
+  });
+
+  function reasonFor(pat) {
+    const g = EX_PATTERN_GROUP[pat];
+    const n = byGroup[g] || 0;
+    const perWk = Math.round((n / weeks) * 10) / 10;
+    const label = (typeof REVIEW_GROUP_LABEL !== 'undefined' && REVIEW_GROUP_LABEL[g]) || g;
+    if (n === 0) return { text: label + ' has nothing in your log for ' + SESS_PLAN_WINDOW + ' days.', kind: 'log' };
+    if (typeof REVIEW_MIN_SETS_WK !== 'undefined' && perWk < REVIEW_MIN_SETS_WK) {
+      return { text: label + ' is running at ' + perWk + ' sets a week; the floor is ' + REVIEW_MIN_SETS_WK + '.', kind: 'log' };
+    }
+    // Push/pull imbalance, stated in his own numbers.
+    if (g === 'pull' && byGroup.push >= Math.round(n * 1.6) && n > 0) {
+      return { text: 'You have done ' + Math.round((byGroup.push / n) * 10) / 10 + '× as much pushing as pulling this month.', kind: 'log' };
+    }
+    const last = patLast[pat];
+    if (last && typeof daysAgoFrom === 'function') {
+      const ago = daysAgoFrom(last, today);
+      if (ago >= 4) return { text: 'Last ' + (EX_PATTERN_LABEL[pat] || pat).toLowerCase() + ' work was ' + ago + ' days ago.', kind: 'log' };
+    }
+    return { text: 'Covers the ' + (EX_PATTERN_LABEL[pat] || pat).toLowerCase() + '.', kind: 'structure' };
+  }
+
+  // One movement per pattern. A caution does not remove the pattern from the
+  // plan — it moves that MOVEMENT to the skip line and takes the next clean
+  // option for the same pattern, which is the difference between working around
+  // a wrist and losing a day of pressing to it.
+  patterns.forEach(function (pat) {
+    if (out.picks.length >= want) return;
+    const forPat = exSortForPicker(cands.filter(function (e) { return e.pattern === pat; }))
+      .filter(function (e) { return !doneKeys[exSlug(e.name)]; });
+    const preferred = forPat.filter(function (e) { return e.role === 'foundation'; });
+    preferred.sort(function (a, b) {
+      return SESS_PLAN_EQUIP_ORDER.indexOf(a.equip) - SESS_PLAN_EQUIP_ORDER.indexOf(b.equip);
+    });
+    if (!preferred.length) return;
+    let chosenEx = null;
+    for (let i = 0; i < preferred.length; i++) {
+      const note = (typeof exCautionFor === 'function') ? exCautionFor(preferred[i].name) : null;
+      if (!note) { chosenEx = preferred[i]; break; }
+      if (!out.skip.some(function (s) { return s.ex.name === preferred[i].name; })) {
+        out.skip.push({ ex: preferred[i], note: note, instead: null });
+      }
+    }
+    if (!chosenEx) {
+      // Nothing clean in the foundation tier — fall back to any uncautioned
+      // movement in the same pattern rather than dropping the pattern.
+      chosenEx = forPat.find(function (e) {
+        return !(typeof exCautionFor === 'function' && exCautionFor(e.name));
+      }) || null;
+    }
+    if (!chosenEx) return;
+    // If something was skipped for this pattern, name the replacement on the
+    // skip line. "Don't do X" without "do Y instead" is a subtraction, not advice.
+    out.skip.forEach(function (sk) { if (sk.ex.pattern === pat && !sk.instead) sk.instead = chosenEx; });
+    // Two patterns can share a review group (squat and hinge both feed legs),
+    // and then reasonFor() hands back the same sentence twice. A card that says
+    // "Legs has nothing in your log" on two consecutive rows reads like a
+    // template, which is exactly the impression the whole thing exists to avoid.
+    // The second one falls back to the structural statement, which is still true.
+    // ── Graduation ────────────────────────────────────────────────────────
+    // If he has actually been doing the foundation movement, offer the thing it
+    // teaches instead, and say how many days it took. This is the only place in
+    // the app where the recommendation CHANGES because of accumulated work
+    // rather than because of a gap, and it is the difference between a checklist
+    // and a program.
+    //
+    // Capped at technique 2 on purpose. A rep count is not evidence that
+    // somebody is ready for a ballistic hinge or a loaded get-up, and the app
+    // has no way to watch him do one. Harder movements stay in the library with
+    // their watch note and their derived "learn X first" line, reached by
+    // choosing them rather than by being handed them.
+    let why = null;
+    const nxt = chosenEx.teaches ? ((typeof exById === 'function') ? exById(chosenEx.teaches) : null) : null;
+    if (nxt && (Number(nxt.technique) || 9) <= 2 &&
+        SESS_PLAN_EQUIP.indexOf(nxt.equip) !== -1 &&
+        !doneKeys[exSlug(nxt.name)] && !cx.blocked.has(nxt.name) &&
+        !(typeof exCautionFor === 'function' && exCautionFor(nxt.name))) {
+      const mv = ((rev && rev.movements) || []).find(function (m) { return m.key === exSlug(chosenEx.name); });
+      const days = mv ? Object.keys(mv.days || {}).length : 0;
+      if (days >= SESS_GRADUATE_DAYS) {
+        why = { text: 'You have logged ' + chosenEx.name + ' on ' + days + ' days this month. This is the next step.', kind: 'log' };
+        chosenEx = nxt;
+      }
+    }
+    if (!why) why = reasonFor(pat);
+    if (out.picks.some(function (x) { return x.reason.text === why.text; })) {
+      why = { text: 'Covers the ' + (EX_PATTERN_LABEL[pat] || pat).toLowerCase() + '.', kind: 'structure' };
+    }
+    out.picks.push({ ex: chosenEx, reason: why, pattern: pat });
+  });
+
+  // "5 more minutes" — one targeted movement for a pattern today's plan did NOT
+  // already cover, worst-served first. Never one of the picks, never something
+  // already done today.
+  //
+  // Chosen by PATTERN rather than by review group, and this is not cosmetic. An
+  // earlier version ranked by group and offered a band external rotation under
+  // "push is the thinnest thing in your log", because external rotation is
+  // m:'shoulders' and REVIEW_GROUPS files shoulders under push. The sentence
+  // was derived correctly and the advice was still wrong: rotator-cuff work is
+  // not an answer to a pressing shortfall. Patterns describe what the movement
+  // DOES, which is the question being asked here.
+  const coveredPats = {};
+  out.picks.forEach(function (p) { coveredPats[p.pattern] = true; });
+  const pickedNames = {};
+  out.picks.forEach(function (p) { pickedNames[p.ex.name] = true; });
+  const extras = exSortForPicker(cands.filter(function (e) {
+    return e.role === 'targeted' && !coveredPats[e.pattern] && !pickedNames[e.name] &&
+           !doneKeys[exSlug(e.name)] &&
+           !(typeof exCautionFor === 'function' && exCautionFor(e.name));
+  })).sort(function (a, b) {
+    const ga = byGroup[EX_PATTERN_GROUP[a.pattern]] || 0, gb = byGroup[EX_PATTERN_GROUP[b.pattern]] || 0;
+    if (ga !== gb) return ga - gb;
+    return (Number(a.technique) || 9) - (Number(b.technique) || 9);
+  });
+  if (extras.length) {
+    const e0 = extras[0];
+    const g = EX_PATTERN_GROUP[e0.pattern];
+    const n = byGroup[g] || 0;
+    const label = (typeof REVIEW_GROUP_LABEL !== 'undefined' && REVIEW_GROUP_LABEL[g]) || g;
+    out.extra = {
+      ex: e0,
+      reason: n === 0
+        ? 'Nothing else today covers this, and ' + label.toLowerCase() + ' has nothing in your log for ' + SESS_PLAN_WINDOW + ' days.'
+        : 'Nothing else in today’s plan covers the ' + (EX_PATTERN_LABEL[e0.pattern] || e0.pattern).toLowerCase() + '.',
+    };
+  }
+  return out;
+}
+
+// ── The session card ──────────────────────────────────────────────────────
+// WHERE THIS LIVES, and why there. It goes inside the capacity block at the top
+// of the workout card, directly under the capacity chips and above "Start a
+// session". Three reasons, in order of how much they mattered:
+//
+//   1. The plan READS the capacity chips. Putting the answer above the question
+//      would be a lie about causation; a tired day really does produce a
+//      shorter card, and he should see that happen.
+//   2. It is the first thing on the card, which is the only position where a
+//      recommendation gets read before he has already decided what to do.
+//   3. It replaces nothing. "Start a session" and "Just browse exercises" both
+//      still work, and a plan you can ignore without a detour is a plan people
+//      keep reading.
+//
+// It is NOT a separate screen. A guidance screen you have to navigate to is a
+// screen that gets opened twice and then never again.
+function _spRow(ex, reason, kind) {
+  const nm = String(ex.name).replace(/'/g, "\\'");
+  const tech = Number(ex.technique) || 0;
+  return `<div class="sp-row" onclick="mpickDoing('${nm}',${ex.rest || 120})">
+    <span class="sp-dot sp-t${tech}" title="${EX_TECHNIQUE_LABEL[tech] || ''}"></span>
+    <span class="sp-body">
+      <span class="sp-name">${escapeHtml(ex.name)}</span>
+      <span class="sp-why ${kind === 'structure' ? 'sp-why-dim' : ''}">${escapeHtml(reason)}</span>
+    </span>
+    <span class="sp-go">›</span>
+  </div>`;
+}
+
+function sessionPlanHtml(dateStr) {
+  let plan; try { plan = buildSessionPlan(dateStr); } catch (e) { return ''; }
+  if (!plan) return '';
+  if (plan.restOnly) {
+    return `<div class="sp-wrap"><div class="sp-head">Today's plan</div>
+      <div class="sp-empty">You picked stretch-only. Nothing to add — that is a choice, not a gap.</div></div>`;
+  }
+  if (!plan.picks.length) {
+    // Everything the plan would have said is already in today's log.
+    return `<div class="sp-wrap"><div class="sp-head">Today's plan</div>
+      <div class="sp-empty">Everything this would suggest is already logged today.</div></div>`;
+  }
+  const skipHtml = plan.skip.map(function (sk) {
+    const alt = sk.instead ? ` <b>${escapeHtml(sk.instead.name)}</b> instead.` : '';
+    return `<div class="sp-skip"><span class="sp-skip-i">⚠</span><span>Skip <b>${escapeHtml(sk.ex.name)}</b> — ${escapeHtml(sk.note)}${alt}</span></div>`;
+  }).join('');
+  const extraHtml = plan.extra ? `<div class="sp-extra-label">5 more minutes?</div>` +
+    _spRow(plan.extra.ex, plan.extra.reason, 'log') : '';
+  return `<div class="sp-wrap">
+    <div class="sp-head">Today's plan <span class="sp-scope">at home — bodyweight, kettlebell, band</span></div>
+    ${plan.picks.map(function (p) { return _spRow(p.ex, p.reason.text, p.reason.kind); }).join('')}
+    ${skipHtml}
+    ${extraHtml}
+    <div class="sp-foot">Every line above comes from your own log. When there is nothing in the log to point at, it says so instead of inventing a reason.</div>
+  </div>`;
+}
+
+let _reviewWindow = 28;
+function setReviewWindow(d) { _reviewWindow = d; renderTrainingReview(); }
+
+function renderTrainingReview() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+  if (title) title.textContent = 'Training review';
+  const rv = buildTrainingReview(_reviewWindow);
+  const toneColor = { gap:'var(--red)', low:'var(--orange)', balance:'var(--orange)',
+                      stall:'var(--cyan)', care:'var(--purple)' };
+  const toneBg = { gap:'var(--red-bg, var(--orange-bg))', low:'var(--orange-bg)', balance:'var(--orange-bg)',
+                   stall:'var(--cyan-bg)', care:'var(--purple-bg)' };
+  const maxG = Math.max(1, Math.max.apply(null, Object.keys(rv.byGroup).map(g => rv.byGroup[g])));
+
+  body.innerHTML = `
+    <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">‹ Back</button>
+    <div style="display:flex;gap:5px;margin-bottom:10px">
+      ${[7, 28, 90].map(d => `<button onclick="setReviewWindow(${d})"
+        style="flex:1;padding:7px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:10.5px;font-weight:700;
+        border:1px solid ${_reviewWindow === d ? 'var(--cyan)' : 'var(--card-border)'};
+        background:${_reviewWindow === d ? 'var(--cyan-bg)' : 'var(--input-bg)'};
+        color:${_reviewWindow === d ? 'var(--cyan)' : 'var(--text-muted)'}">${d} days</button>`).join('')}
+    </div>
+    <div style="font-size:10.5px;color:var(--text-muted);line-height:1.6;margin-bottom:10px">
+      Trained on <b style="color:var(--text)">${rv.activeDays}</b> of ${rv.days} days
+      (${rv.perWeek.toFixed(1)}/week) · ${rv.totals.sets} sets · ${rv.totals.reps} reps${
+      rv.totals.distance_m ? ' · ' + (rv.totals.distance_m / 1000).toFixed(1) + ' km' : ''}
+    </div>
+    <div style="margin-bottom:12px">
+      ${Object.keys(rv.byGroup).map(g => `<div style="display:flex;align-items:center;gap:7px;padding:3px 0">
+        <span style="font-size:10px;color:var(--text-muted);min-width:42px">${REVIEW_GROUP_LABEL[g]}</span>
+        <div style="flex:1;height:7px;border-radius:4px;background:var(--input-bg);overflow:hidden">
+          <div style="height:100%;width:${Math.round((rv.byGroup[g] / maxG) * 100)}%;background:${rv.byGroup[g] ? 'var(--cyan)' : 'transparent'}"></div>
+        </div>
+        <span style="font-size:10px;font-weight:700;color:${rv.byGroup[g] ? 'var(--text-dim)' : 'var(--red)'};min-width:52px;text-align:right">${rv.byGroup[g]} ${rv.byGroup[g] === 1 ? 'set' : 'sets'}</span>
+      </div>`).join('')}
+    </div>
+    ${rv.findings.length ? rv.findings.map(f => `
+      <div style="border-radius:7px;padding:9px 10px;margin-bottom:6px;background:${toneBg[f.tone] || 'var(--input-bg)'}">
+        <div style="font-size:11.5px;font-weight:700;color:${toneColor[f.tone] || 'var(--text)'};line-height:1.45">${escapeHtml(f.text)}</div>
+        <div style="font-size:10px;color:var(--text-muted);line-height:1.5;margin-top:3px">${escapeHtml(f.why)}</div>
+      </div>`).join('')
+      : '<div style="font-size:11px;color:var(--text-muted);padding:10px 0;line-height:1.6">Nothing stands out in this window. Every group has been trained and no load has been sitting still.</div>'}
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:12px;border-top:1px solid var(--divider);padding-top:8px">
+      Read from what is logged, so anything not logged is invisible to it. It reports omissions rather than scoring you — an absent muscle group is something you can act on, a total is not.
+    </div>`;
+}
+
+function openTrainingReview() {
+  _sessEx = '__review2__';
+  const bd = document.getElementById('session-backdrop');
+  if (bd) bd.classList.add('open');
+  renderTrainingReview();
+}
+
+// ── "Here is what you did last time" ───────────────────────────────
+// Craig, 2026-09-25: "when I go to the gym, finding what I did last time from a
+// big list... doesn't make sense. I should have 'here is what you did last
+// time!'"
+//
+// He is right, and the reason it was a big list is that nothing ever asked
+// activity_log the obvious question. The rollup existed; the query did not.
+//
+// Reads the LOCAL day caches rather than issuing a query per day. That is a
+// deliberate ceiling: it sees the history this device has synced, which for the
+// loaded window is everything, and it costs no requests at all. On a free-tier
+// instance that lost a day to disk IO in September, a scan that fires sixty
+// round trips to answer "what did I lift on Tuesday" is not a feature.
+const LAST_SESS_LOOKBACK_DAYS = 60;
+
+function _dayBefore(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() - n);
+  return ds(d);
+}
+
+function daysAgoFrom(dateStr, fromStr) {
+  const a = new Date((fromStr || ds(new Date())) + 'T12:00:00');
+  const b = new Date(dateStr + 'T12:00:00');
+  return Math.max(0, Math.round((a - b) / 86400000));
+}
+
+// The most recent day BEFORE `dateStr` on which any of `keys` was logged.
+// keys empty/null = any movement at all.
+function lastSessionFor(keys, dateStr) {
+  if (typeof getActivity !== 'function') return null;
+  const today = dateStr || ds(new Date());
+  const want = (keys && keys.length) ? keys : null;
+  for (let i = 1; i <= LAST_SESS_LOOKBACK_DAYS; i++) {
+    const day = _dayBefore(today, i);
+    let rows;
+    try { rows = getActivity(day); } catch (e) { rows = []; }
+    if (!rows || !rows.length) continue;
+    const hit = want ? rows.filter(r => want.indexOf(r.exercise_key) !== -1) : rows.slice();
+    if (!hit.length) continue;
+    const byKey = {};
+    hit.forEach(function (r) {
+      const t = byKey[r.exercise_key] || (byKey[r.exercise_key] = {
+        key: r.exercise_key, name: r.exercise_name || r.exercise_key, kind: r.kind || 'strength',
+        sets: 0, reps: 0, volume: 0, distance_m: 0, duration_s: 0, topWeight: 0,
+        segs: [], variants: [],
+      });
+      t.sets += 1;
+      t.reps += Number(r.reps) || 0;
+      if (r.weight && r.reps) t.volume += Number(r.weight) * Number(r.reps);
+      if (Number(r.weight) > t.topWeight) t.topWeight = Number(r.weight);
+      t.distance_m += Number(r.distance_m) || 0;
+      t.duration_s += Number(r.duration_s) || 0;
+      t.segs.push({ w: Number(r.weight) || 0, r: Number(r.reps) || 0,
+                    d: Number(r.distance_m) || 0, t: Number(r.duration_s) || 0,
+                    variant: r.variant || '' });
+      if (r.variant && t.variants.indexOf(r.variant) === -1) t.variants.push(r.variant);
+    });
+    return { date: day, daysAgo: daysAgoFrom(day, today),
+             byKey: byKey, list: Object.keys(byKey).map(k => byKey[k]) };
+  }
+  return null;
+}
+
+// Set by set, the way it was actually performed — "95×10 · 95×10 · 95×8", not
+// an average. The pattern is the information: three sets at the same load with
+// falling reps is a different session from three even ones.
+function lastSetsLine(t) {
+  if (!t) return '';
+  if (t.kind === 'cardio' || (!t.reps && t.duration_s)) return dayTotalLine(t);
+  const sets = t.segs.map(e => (e.w ? e.w + '×' + e.r : String(e.r))).join(' · ');
+  // "20 · 20" says nothing useful if one was flat and the other was declined.
+  // The variant is part of what the set WAS.
+  const vs = (t.variants || []).filter(Boolean);
+  return sets + (vs.length ? '  ' + vs.join(' / ') : '');
+}
+
 // One line per exercise, for whichever surface wants to show the day.
 function dayTotalLine(t) {
   const bits = [];
-  if (t.sets) bits.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
+  const kind = t.kind || 'strength';
+  // A "set" is meaningless for a clock row and wrong for a cardio interval.
+  // Found 2026-09-25 the moment this got its first surface: the gym clock read
+  // "1 set · 45:00", which is not a thing anyone did.
+  if (t.sets && kind !== 'gym_time' && kind !== 'stretch_time') {
+    const unit = kind === 'cardio' ? 'interval' : 'set';
+    bits.push(t.sets + ' ' + unit + (t.sets === 1 ? '' : 's'));
+  }
   if (t.reps) bits.push(t.reps + ' reps');
   if (t.distance_m) {
     bits.push(t.distance_m >= 1000 ? (t.distance_m / 1000).toFixed(2).replace(/\.?0+$/, '') + ' km'
@@ -15128,7 +16648,9 @@ function dayTotalLine(t) {
 //   wlog_<date>.<woId>.exercises{}  — bodyweight/kettlebell reps (the bw_/kb_ mess)
 //   wlog_<date>.<woId>.{time,dist}  — row/walk/swim aggregates
 // It does NOT touch exsets_ — that path already writes activity_log.
-const MIGRATED_WO_IDS = ['row', 'walk', 'swim'];
+// yoga_session added 2026-09-24 — minutes on the mat had been accumulating in
+// wlog_ since the app existed with no reader anywhere.
+const MIGRATED_WO_IDS = ['row', 'walk', 'swim', 'yoga_session'];
 
 function _migrateWorkoutLogToActivity(dateStr) {
   if (typeof logActivity !== 'function') return 0;
@@ -15174,6 +16696,48 @@ function _migrateWorkoutLogToActivity(dateStr) {
     }
   });
   return n;
+}
+
+// Which movement keys belong to a row of the workout card.
+//
+// For a routine this is the routine's OWN exercise list, slugged — not a guess
+// from the key prefix. Gym and bodyweight movements share the gymex_ key space,
+// so "did anything from THIS routine get logged" has no prefix-shaped answer;
+// asking the routine is the only honest one. (A movement in both routines —
+// Plank is in gym_upper and in bodyweight — counts for both rows. That is the
+// truth: it was logged, and both routines prescribe it.)
+function woLoggedKeys(woId, routineKey) {
+  const out = [];
+  if (woId === 'walk' || woId === 'row' || woId === 'swim') return ['wo_' + woId];
+  if (woId === 'yoga_session') return ['wo_yoga_session'];
+  if (routineKey && typeof ROUTINES !== 'undefined' && ROUTINES[routineKey]) {
+    (ROUTINES[routineKey].exercises || []).forEach(function (e) {
+      if (e && !e._divider && e.name) out.push(exSlug(e.name));
+    });
+  }
+  return out;
+}
+
+// Totals for one row of the card, from activity_log and nothing else.
+function woLoggedTotals(dateStr, woId, routineKey) {
+  if (typeof getDayTotals !== 'function') return null;
+  const keys = woLoggedKeys(woId, routineKey);
+  const isGym = woId === 'gym';
+  const all = getDayTotals(dateStr).byExercise.filter(function (t) {
+    if (keys.indexOf(t.key) !== -1) return true;
+    // The gym popup's machines and cardio sections are part of a gym session
+    // even though they are not in the routine's prescribed list.
+    return isGym && /^gymmachine_|^gymcardio_/.test(t.key);
+  });
+  if (!all.length) return null;
+  return {
+    n: all.length,
+    sets: all.reduce((a, t) => a + t.sets, 0),
+    reps: all.reduce((a, t) => a + t.reps, 0),
+    distance_m: all.reduce((a, t) => a + t.distance_m, 0),
+    duration_s: all.reduce((a, t) => a + t.duration_s, 0),
+    volume: all.reduce((a, t) => a + t.volume, 0),
+  };
 }
 
 function _legacyWoLabel(woId) {
@@ -15373,9 +16937,12 @@ function addSessionSegment(exKey, exName, entry) {
   // _trackToStorage decides kind/muscle and converts the user's unit to SI, so
   // this call site does not need to know whether it just logged a lift or a run.
   const stored = _trackToStorage(exKey, exName, e);
+  const v = (typeof currentVariant === 'function') ? currentVariant(exKey, exName) : null;
   logActivity(Object.assign({
     name: exName, exercise_key: exKey, set_index: idx,
     flag: e.flag || '', side: e.side || '',
+    variant: v && v.id !== 'std' ? v.label : '',
+    variant_mult: v ? v.mult : 1,
   }, stored));
 
   // Rest belongs to the set BEFORE this one — it's the gap that preceded it.
@@ -15602,6 +17169,7 @@ function renderSessionScreen() {
   // A: something is open full-screen
   if (_sessEx === '__cardio__') { renderCardioScreen(); return; }
   if (_sessEx === '__review__') { renderDayReview(); return; }
+  if (_sessEx === '__review2__') { renderTrainingReview(); return; }
   if (_sessEx) { renderExerciseScreen(); return; }
 
   // B: no session yet → plan builder
@@ -15699,11 +17267,16 @@ function renderCardioScreen() {
   if (title) title.textContent = mode.label;
 
   const dateStr = ds(new Date());
-  const rows = getActivity(dateStr).filter(r => r.kind === 'cardio' && r.equip === mode.id);
+  const rows = getActivity(dateStr).filter(r => r.exercise_key === mode.key);
   const fmt = s => s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '—';
   const dist = r => {
     if (!r.distance_m) return '—';
-    return mode.unit === 'km' ? (r.distance_m / 1000).toFixed(2) + ' km' : Math.round(r.distance_m) + ' m';
+    // Displayed back in the unit it was entered in, via the same table that
+    // stored it. Hardcoding km-or-metres here printed a 1-mile treadmill run as
+    // "1609 m".
+    const per = (typeof UNIT_TO_M !== 'undefined' && UNIT_TO_M[mode.unit]) || 1;
+    const v = r.distance_m / per;
+    return (per === 1 ? Math.round(v) : v.toFixed(2)) + ' ' + mode.unit;
   };
   const pace = r => {
     if (!r.distance_m || !r.duration_s) return '';
@@ -15817,7 +17390,8 @@ function renderExerciseScreen() {
     <div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--divider)">
       <span style="font-size:10px;font-weight:700;color:var(--text-muted);min-width:34px">${segWord} ${i + 1}</span>
       <span style="font-size:9px;color:var(--text-muted);min-width:26px" title="Normalised strength score">${(_trackList.indexOf('weight') !== -1 ? strengthScore(s.w, s.r, ex) : '') || ''}</span>
-      <span style="font-size:15px;font-weight:700;color:var(--text);flex:1">${fmtSegment(_sessEx, _sessExName, s)}</span>
+      <span style="font-size:15px;font-weight:700;color:var(--text);flex:1">${fmtSegment(_sessEx, _sessExName, s)}${
+        a.variant ? `<span class="var-tag">${escapeHtml(a.variant)}</span>` : ''}</span>
       ${clock ? `<span style="font-size:9px;color:var(--text-muted)" title="When this set was logged">${clock}</span>` : ''}
       ${restTxt}
       ${s.flag ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${s.flag}</span>` : ''}
@@ -15885,6 +17459,18 @@ function renderExerciseScreen() {
           }).join('');
         })()}
       </div>
+      ${(function () {
+        // ONE TAP, AND IT REMEMBERS. The chip row opens on whatever was used
+        // last for this movement, so the common case costs nothing.
+        const vs = (typeof variantsFor === 'function') ? variantsFor(_sessEx, _sessExName) : [];
+        if (vs.length < 2) return '';
+        const cur = currentVariant(_sessEx, _sessExName) || {};
+        return `<div class="var-row">
+          <div class="var-lbl">How hard</div>
+          <div class="var-chips">${vs.map(v => `<span class="var-chip ${v.id === cur.id ? 'active' : ''}"
+            onclick="_sessSetVariant('${v.id}')">${escapeHtml(v.label)}<span class="var-x">×${v.mult.toFixed(2)}</span></span>`).join('')}</div>
+        </div>`;
+      })()}
       ${_trackList.indexOf('duration') !== -1 ? `<button id="sess-hold-btn" onclick="_holdToggle()"
         style="width:100%;margin-bottom:9px;padding:12px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">▶ Start the clock</button>` : ''}
       <div style="display:flex;gap:4px;margin-bottom:9px">
@@ -15942,7 +17528,8 @@ function renderDayReview() {
       </div>
       ${set.map((r, i) => `<div style="display:flex;align-items:center;gap:8px;padding:4px 0 4px 20px;border-bottom:1px solid var(--divider)">
         <span style="font-size:9.5px;color:var(--text-muted);min-width:30px">${i + 1}</span>
-        <span style="font-size:12px;color:var(--text);flex:1">${detail(r)}</span>
+        <span style="font-size:12px;color:var(--text);flex:1">${detail(r)}${
+          r.variant ? `<span class="var-tag">${escapeHtml(r.variant)}</span>` : ''}</span>
         ${_fmtClock(r.started_at) ? `<span style="font-size:9.5px;color:var(--text-muted)">${_fmtClock(r.started_at)}</span>` : ''}
         ${r.flag ? `<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${r.flag}</span>` : ''}
         <button onclick="removeActivity('${dateStr}','${r.client_id}');renderDayReview()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:13px;padding:0 3px">×</button>
@@ -16005,6 +17592,11 @@ function _holdToggle() {
   };
   _holdTimer.iv = setInterval(paint, 250);
   paint();
+}
+
+function _sessSetVariant(id) {
+  setLastVariantFor(_sessEx, id);
+  renderExerciseScreen();
 }
 
 function _sessAddSet() {
@@ -16337,6 +17929,137 @@ const GYM_CARDIO = [
   { id: 'stairmaster', icon: '🪜', label: 'Stairmaster', hasTime: true, hasDist: false },
 ];
 
+// ══════════════════════════════════════════════
+// GYM LOCATIONS (2026-09-25)
+// ══════════════════════════════════════════════
+// Craig: "when I do a gym exercise; I should be able to record a gym location,
+// and say 'these are the machines they have'... or say 'here is where I'm
+// going' and have it save my exercises, so I can have suggestions."
+//
+// The machines list has been a single global array since it was written, which
+// is fine for one gym and wrong the moment there are two — half the rows are
+// equipment that is not in the building.
+//
+// Hybrid cache, same shape as medications and body_log: localStorage is the
+// offline buffer, Supabase is the source of truth, client_id is the dedup key.
+let GYM_LOCATIONS = [];
+const GYMLOC_KEY = 'gym_locations';
+
+function _glSaveLocal() {
+  try { localStorage.setItem(GYMLOC_KEY, JSON.stringify(GYM_LOCATIONS)); } catch (e) {}
+}
+function _glLoadLocal() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(GYMLOC_KEY) || '[]');
+    GYM_LOCATIONS = Array.isArray(raw) ? raw : [];
+  } catch (e) { GYM_LOCATIONS = []; }
+  return GYM_LOCATIONS;
+}
+
+async function refreshGymLocations() {
+  if (typeof sbReady === 'undefined' || !sbReady) return GYM_LOCATIONS;
+  try {
+    const { data, error } = await sb.from('gym_locations').select('*');
+    if (error) throw error;
+    // Merge, never replace. A server list that has not caught up with a gym
+    // added on the phone must not delete it — the rule learned the hard way
+    // on 2026-09-21.
+    const local = GYM_LOCATIONS.slice();
+    const seen = {};
+    const out = (data || []).map(r => { seen[r.client_id] = true; return {
+      client_id: r.client_id, name: r.name, machines: r.machines || [],
+      notes: r.notes || '', is_default: !!r.is_default }; });
+    local.forEach(l => { if (!seen[l.client_id]) out.push(l); });
+    GYM_LOCATIONS = out;
+    _glSaveLocal();
+  } catch (e) { if (typeof syncNote === 'function') syncNote('Gyms', e); }
+  return GYM_LOCATIONS;
+}
+
+function _glPush(loc) {
+  _glSaveLocal();
+  if (typeof sbReady !== 'undefined' && sbReady) {
+    sb.from('gym_locations').upsert([{
+      client_id: loc.client_id, name: loc.name, machines: loc.machines || [],
+      notes: loc.notes || '', is_default: !!loc.is_default,
+    }], { onConflict: 'user_id,client_id' })
+      .then(r => { if (r && r.error) syncNote('Gyms', r.error); });
+  }
+}
+
+function glById(id) { return GYM_LOCATIONS.find(l => l.client_id === id) || null; }
+
+function glAdd(name) {
+  const nm = String(name || '').trim();
+  if (!nm) return null;
+  const loc = { client_id: 'gl-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6),
+                name: nm, machines: [], notes: '', is_default: !GYM_LOCATIONS.length };
+  GYM_LOCATIONS.push(loc);
+  _glPush(loc);
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+  return loc;
+}
+function glRename(id, name) {
+  const loc = glById(id); if (!loc) return;
+  loc.name = String(name || '').trim() || loc.name;
+  _glPush(loc);
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+}
+function glToggleMachine(id, machineId) {
+  const loc = glById(id); if (!loc) return;
+  loc.machines = loc.machines || [];
+  const i = loc.machines.indexOf(machineId);
+  if (i >= 0) loc.machines.splice(i, 1); else loc.machines.push(machineId);
+  _glPush(loc);
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+}
+function glSetDefault(id) {
+  GYM_LOCATIONS.forEach(l => { const was = l.is_default; l.is_default = (l.client_id === id);
+    if (was !== l.is_default) _glPush(l); });
+  _glSaveLocal();
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+}
+function glRemove(id) {
+  const i = GYM_LOCATIONS.findIndex(l => l.client_id === id);
+  if (i < 0) return;
+  GYM_LOCATIONS.splice(i, 1);
+  _glSaveLocal();
+  if (typeof sbReady !== 'undefined' && sbReady) {
+    sb.from('gym_locations').delete().eq('client_id', id).then(() => {});
+  }
+  if (typeof renderGymLocPrefs === 'function') renderGymLocPrefs();
+}
+
+// Where he trained on a given day. Local per date: it is a fact about one
+// session, it is tiny, and it must not cost a round trip to read while he is
+// standing in the gym.
+function gymLocFor(dateStr) {
+  const day = dateStr || ds(new Date());
+  let id = null;
+  try { id = localStorage.getItem('gymloc_' + day); } catch (e) {}
+  if (id && glById(id)) return glById(id);
+  return GYM_LOCATIONS.find(l => l.is_default) || null;
+}
+function setGymLocFor(dateStr, id) {
+  const day = dateStr || ds(new Date());
+  try { localStorage.setItem('gymloc_' + day, id || ''); } catch (e) {}
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, day));
+  }
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+}
+
+// The machines actually in the building. No location set, or a location with
+// nothing ticked yet, falls back to the whole list — an empty gym is never the
+// right answer, and a half-configured location must not hide the equipment.
+function machinesAtLocation(dateStr) {
+  const loc = gymLocFor(dateStr);
+  if (!loc || !loc.machines || !loc.machines.length) return GYM_MACHINES;
+  const set = {}; loc.machines.forEach(m => { set[m] = true; });
+  const hit = GYM_MACHINES.filter(m => set[m.id]);
+  return hit.length ? hit : GYM_MACHINES;
+}
+
 const GYM_MACHINES = [
   { id: 'chest_press', icon: '🫁', label: 'Chest Press', muscle: 'Chest' },
   { id: 'incline_press', icon: '🫁', label: 'Incline Press', muscle: 'Upper Chest' },
@@ -16398,6 +18121,26 @@ function prevDataLabel(prev) {
   if (d.dist) parts.push(d.dist + (d.distUnit || ''));
   return '<div style="font-size:8px;color:var(--purple);margin-top:1px">📋 Last: ' + parts.join(' × ') + ' <span style="color:var(--text-muted)">(' + ago + 'd ago)</span></div>';
 }
+
+// What each row of "Log a Workout" trains. Craig, 2026-09-24: "I don't like how
+// it's displayed, listed etc."
+//
+// The flat list answered "what can I log" and nothing else. Grouping answers
+// "what am I choosing between", which is the question actually being asked when
+// someone opens that section.
+const WO_GROUPS = [
+  { id:'strength', label:'Strength', ids:['gym', 'bodyweight', 'kettlebell'] },
+  { id:'cardio',   label:'Cardio',   ids:['walk', 'row', 'swim'] },
+  { id:'recovery', label:'Recovery', ids:['yoga_session'] },
+];
+
+// Circuits are routines, not workout types, so they get their own strip on the
+// card rather than a fake OTHER_WORKOUTS entry. One list, one truth.
+const WO_CIRCUITS = [
+  { key:'circuit_core',           label:'Core & Push',   icon:'\ud83d\udd01' },
+  { key:'circuit_full',           label:'Full Body',     icon:'\ud83d\udd01' },
+  { key:'circuit_wrist_friendly', label:'No Wrist Load', icon:'\ud83d\udd01' },
+];
 
 const OTHER_WORKOUTS = [
   { id: 'row', icon: '🚣', label: 'Row', hasTime: true, hasDist: true, distUnit: 'm', types: ['steady', 'intervals'] },
@@ -19613,6 +21356,7 @@ function buildActivityDecisionTree(dateStr) {
       </div>
       <div class="adt-row">${chips}</div>
       ${intentHtml}
+      ${(typeof sessionPlanHtml === 'function') ? sessionPlanHtml(dateStr) : ''}
       <div id="gym-clock-host"></div>
       <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
       <button onclick="openMusclePicker()" style="width:100%;margin-top:5px;padding:7px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit">Just browse exercises</button>
@@ -19706,7 +21450,7 @@ const CHECKIN_QUESTIONS = [
 // ════════════════════════════════════════════════════════════════════════════
 const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done',
                              'evening_prompt_last_done', 'view_hidden',
-                             'reflect_mode'];
+                             'reflect_mode', 'reflect_mix', 'bench_profile'];
 
 async function pullSyncedSettings() {
   if (typeof sbReady === 'undefined' || !sbReady) return false;
@@ -19799,6 +21543,7 @@ function renderReflectPrefs() {
     return;
   }
   const cur = reflectMode();
+  const curMix = reflectMix();
   host.innerHTML =
     '<div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">' +
     'A question to think about — to be ignored, but occasionally typed in. ' +
@@ -19814,12 +21559,101 @@ function renderReflectPrefs() {
         </div>
       </div>`;
     }).join('') +
+    (cur === 'off' ? '' :
+      '<div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;' +
+      'letter-spacing:1px;padding:12px 0 2px">Give or ask</div>' +
+      '<div style="font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.5">' +
+      'A prompt asks something of you. A quote gives you something.</div>' +
+      REFLECT_MIXES.map(m => {
+        const on = curMix === m.id;
+        return `<div onclick="setReflectMix('${m.id}')"
+          style="display:flex;align-items:flex-start;gap:9px;padding:9px 6px;border-bottom:1px solid var(--divider);cursor:pointer;min-height:44px">
+          <div style="width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:2px;border:1.5px solid ${on ? 'var(--purple)' : 'var(--card-border)'};background:${on ? 'var(--purple)' : 'transparent'}"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:11.5px;font-weight:600;color:${on ? 'var(--text)' : 'var(--text-muted)'}">${m.label}</div>
+            <div style="font-size:9.5px;color:var(--text-muted);line-height:1.45">${m.desc}</div>
+          </div>
+        </div>`;
+      }).join('')) +
     '<div style="font-size:9.5px;color:var(--text-muted);padding-top:8px;line-height:1.5">' +
     REFLECT_PROMPTS.length + ' prompts. A question you answer is spent — you get a full ' +
     'cycle before any repeat, and a rough morning only gets the gentle ones.<br><br>' +
-    '<b style="color:var(--text-dim)">Quotes are not here yet.</b> The design pairs these with ' +
-    'a quote most nights so the slot gives as often as it asks. That corpus needs ' +
-    'verified public-domain sources, so it is its own careful job.</div>';
+    REFLECT_QUOTES.length + ' quotes, each one pulled out of a public-domain source rather ' +
+    'than written down from memory, and each carrying where it came from. Most of what ' +
+    'circulates as Stoic quotation is paraphrased or invented; the line under every quote ' +
+    'is how you can check this lot is not.</div>';
+}
+
+function renderBenchPrefs() {
+  const host = document.getElementById('bench-prefs-body');
+  if (!host) return;
+  const b = benchProfile() || { name: '', positions: [] };
+  const rows = (b.positions || []).map(function (p, i) {
+    const m = declineMult(p.deg);
+    return `<div class="bp-row">
+      <span class="bp-pos">Position ${escapeHtml(String(p.pos))}</span>
+      <input class="bp-deg" type="number" step="1" value="${p.deg === 0 || p.deg ? p.deg : ''}" placeholder="deg"
+        onchange="_benchSetDeg(${i}, this.value)">
+      <span style="font-size:9.5px;color:var(--text-muted)">deg</span>
+      <span class="bp-mult">×${m.toFixed(2)}</span>
+      <span style="color:var(--text-muted);font-size:13px;cursor:pointer;padding:0 3px" onclick="_benchRemove(${i})">×</span>
+    </div>`;
+  }).join('');
+  host.innerHTML = (rows || '<div style="font-size:10.5px;color:var(--text-muted);padding-bottom:6px">No positions yet.</div>') +
+    `<div style="display:flex;gap:5px;margin-top:8px">
+      <button onclick="_benchAdd()" style="flex:1;padding:10px;border-radius:7px;border:1px solid var(--cyan);background:var(--cyan-bg);color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Add position</button>
+    </div>
+    <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:8px">
+      The coefficient is 1 + sin(angle) / sin(80°) — work per rep against gravity, relative to flat.
+      It is a proxy, not a measurement of tension: what it gets right is the order and roughly the spacing.
+    </div>`;
+}
+function _benchAdd() {
+  const b = benchProfile() || { name: '', positions: [] };
+  b.positions = b.positions || [];
+  b.positions.push({ pos: b.positions.length + 1, deg: 0 });
+  setBenchProfile(b);
+}
+function _benchSetDeg(i, val) {
+  const b = benchProfile(); if (!b || !b.positions[i]) return;
+  b.positions[i].deg = parseFloat(val) || 0;
+  setBenchProfile(b);
+}
+function _benchRemove(i) {
+  const b = benchProfile(); if (!b || !b.positions) return;
+  b.positions.splice(i, 1);
+  setBenchProfile(b);
+}
+
+let _glOpen = null;
+function renderGymLocPrefs() {
+  const host = document.getElementById('gymloc-prefs-body');
+  if (!host) return;
+  const rows = GYM_LOCATIONS.map(function (l) {
+    const open = _glOpen === l.client_id;
+    const n = (l.machines || []).length;
+    return `<div>
+      <div class="gl-row">
+        <div style="width:13px;height:13px;border-radius:50%;flex-shrink:0;cursor:pointer;border:1.5px solid ${l.is_default ? 'var(--cyan)' : 'var(--card-border)'};background:${l.is_default ? 'var(--cyan)' : 'transparent'}"
+             title="Default gym" onclick="glSetDefault('${l.client_id}')"></div>
+        <div class="gl-name" onclick="_glOpen = _glOpen === '${l.client_id}' ? null : '${l.client_id}'; renderGymLocPrefs()" style="cursor:pointer">
+          ${escapeHtml(l.name)}
+          <div class="gl-sub">${n ? n + ' machine' + (n === 1 ? '' : 's') + ' ticked' : 'nothing ticked — shows everything'}</div>
+        </div>
+        <span style="color:var(--text-muted);font-size:13px;cursor:pointer" onclick="_glOpen = _glOpen === '${l.client_id}' ? null : '${l.client_id}'; renderGymLocPrefs()">${open ? '‹' : '›'}</span>
+        <span style="color:var(--text-muted);font-size:13px;cursor:pointer;padding:0 3px" title="Remove" onclick="glRemove('${l.client_id}')">×</span>
+      </div>
+      ${open ? `<div class="gl-machines">${GYM_MACHINES.map(m =>
+        `<span class="gl-m ${(l.machines || []).indexOf(m.id) !== -1 ? 'on' : ''}" onclick="glToggleMachine('${l.client_id}','${m.id}')">${escapeHtml(m.label)}</span>`
+      ).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  host.innerHTML = (rows || '<div style="font-size:10.5px;color:var(--text-muted);padding-bottom:6px">No gyms yet.</div>') +
+    `<div style="display:flex;gap:5px;margin-top:8px">
+      <input id="gl-new" placeholder="Gym name" style="flex:1;min-width:0;padding:8px;border-radius:6px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:11px;font-family:inherit">
+      <button onclick="glAdd((document.getElementById('gl-new')||{}).value);(document.getElementById('gl-new')||{}).value=''"
+        style="padding:8px 12px;border-radius:6px;border:1px solid var(--cyan);background:var(--cyan-bg);color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
+    </div>`;
 }
 
 function renderViewPrefs() {
@@ -20896,6 +22730,25 @@ function setExSet(dateStr, exKey, field, val) {
 //
 // exsets_ stays the offline buffer (gym basements have no signal);
 // activity_log is the source of truth.
+
+// The banner a routine opens with. Answers "where was I" before asking for
+// anything, which is the order the question actually arrives in.
+function lastSessionBannerHtml(dateStr, routineKey) {
+  if (typeof ROUTINES === 'undefined' || !ROUTINES[routineKey]) return '';
+  const keys = (ROUTINES[routineKey].exercises || [])
+    .filter(e => e && !e._divider && e.name).map(e => exSlug(e.name));
+  if (!keys.length) return '';
+  const last = lastSessionFor(keys, dateStr);
+  if (!last) return '';
+  const when = last.daysAgo === 1 ? 'yesterday' : last.daysAgo + ' days ago';
+  return `<div class="last-sess">
+    <div class="last-sess-head">Last time · ${when}</div>
+    ${last.list.map(t => `<div class="last-sess-row">
+      <span class="last-sess-name">${escapeHtml(t.name)}</span>
+      <span class="last-sess-sets">${escapeHtml(lastSetsLine(t))}</span>
+    </div>`).join('')}
+  </div>`;
+}
 
 function exSlug(name) {
   return 'gymex_' + String(name || '').toLowerCase()
@@ -22137,6 +23990,130 @@ function _queueComplete() {
 }
 
 // ══════════════════════════════════════════════
+// CIRCUITS — rounds, not sets (2026-09-25)
+// ══════════════════════════════════════════════
+// A round logs ONE set of every station, all at once. That is what a circuit is,
+// and it is also the only way this is faster than the per-set screen — which is
+// the entire reason to do it.
+//
+// Every station still lands in activity_log as an ordinary set, keyed by the
+// same gymex_ slug the routine popup uses. A circuit is a way of ORDERING work,
+// not a third record shape; inventing one would undo the whole of last week.
+const CIRCUIT_KEY = 'circuit_state';
+
+function circuitRoundsDone(dateStr, routineKey) {
+  const r = ROUTINES[routineKey];
+  if (!r || !r.exercises || !r.exercises.length) return 0;
+  const keys = r.exercises.filter(e => e && !e._divider && e.name).map(e => exSlug(e.name));
+  if (!keys.length) return 0;
+  const act = (typeof getActivity === 'function') ? getActivity(dateStr) : [];
+  // A round is complete when EVERY station has that many sets. The weakest
+  // station decides, so a half-finished round does not read as a whole one.
+  return keys.reduce(function (min, k) {
+    const n = act.filter(r2 => r2.exercise_key === k).length;
+    return Math.min(min, n);
+  }, Infinity) || 0;
+}
+
+// Prescriptions are written as "10 reps", "8/side", "30s". Parse what to log.
+function circuitTarget(setsStr) {
+  const t = String(setsStr || '');
+  if (typeof _isHoldPrescription === 'function' && _isHoldPrescription(t)) {
+    const m = t.match(/(\d+)/);
+    return { t: m ? parseInt(m[1], 10) : 30 };
+  }
+  const m = t.match(/(\d+)/);
+  const reps = m ? parseInt(m[1], 10) : 10;
+  // "8/side" is eight each way; the honest total for one round is sixteen.
+  return { r: /\/\s*(side|leg|arm)/i.test(t) ? reps * 2 : reps };
+}
+
+function circuitLogRound(routineKey, dateStr) {
+  const r = ROUTINES[routineKey];
+  if (!r) return 0;
+  const day = dateStr || ds(new Date());
+  let n = 0;
+  (r.exercises || []).forEach(function (ex) {
+    if (!ex || ex._divider || !ex.name) return;
+    const key = exSlug(ex.name);
+    _exNameCache[key] = ex.name;
+    const idx = ((typeof getActivity === 'function') ? getActivity(day) : [])
+      .filter(x => x.exercise_key === key).length;
+    const entry = circuitTarget(ex.sets);
+    logActivity(Object.assign({
+      date: day, name: ex.name, exercise_key: key, set_index: idx,
+      client_id: 'al-' + day + '-' + key + '-' + idx,
+      source: 'circuit', notes: r.title || routineKey,
+    }, _trackToStorage(key, ex.name, entry)));
+    // Keep the offline buffer in step, so the per-set screen opens on the same
+    // numbers rather than a shorter list.
+    if (typeof setExSetEntry === 'function') {
+      _exSyncSuspended = true;
+      try {
+        if (entry.r) setExSetEntry(day, key, idx, 'r', entry.r);
+        if (entry.t) setExSetEntry(day, key, idx, 't', entry.t);
+      } finally { _exSyncSuspended = false; }
+    }
+    n++;
+  });
+  if (typeof toast === 'function') toast('Round ' + circuitRoundsDone(day, routineKey) + ' logged');
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, day));
+  }
+  return n;
+}
+
+// Undo. An action with no inverse is not a control, it is a ratchet — the rule
+// this codebase learned from the medication stepper on 2026-09-22.
+function circuitUndoRound(routineKey, dateStr) {
+  const r = ROUTINES[routineKey];
+  if (!r) return 0;
+  const day = dateStr || ds(new Date());
+  let n = 0;
+  (r.exercises || []).forEach(function (ex) {
+    if (!ex || ex._divider || !ex.name) return;
+    const key = exSlug(ex.name);
+    const rows = getActivity(day).filter(x => x.exercise_key === key)
+      .sort((a, b) => b.set_index - a.set_index);
+    if (!rows.length) return;
+    removeActivity(day, rows[0].client_id);
+    const all = getExSets(day);
+    if (all[key] && Array.isArray(all[key].entries) && all[key].entries.length) {
+      all[key].entries.pop();
+      all[key].sets = all[key].entries.length;
+      try { localStorage.setItem('exsets_' + day, JSON.stringify(all)); } catch (e) {}
+    }
+    n++;
+  });
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
+    scheduleRender(() => openRoutinePopup(_lastPopupKey, day));
+  }
+  return n;
+}
+
+function circuitHeaderHtml(routineKey, dateStr) {
+  const r = ROUTINES[routineKey];
+  if (!r || !r._circuit) return '';
+  const day = dateStr || ds(new Date());
+  const done = circuitRoundsDone(day, routineKey);
+  const target = r.rounds || 3;
+  const rest = r.restBetweenRounds || 60;
+  return `<div class="circ-head">
+    <div class="circ-rounds">${Array.from({ length: Math.max(target, done) }, (_, i) =>
+      `<span class="circ-pip ${i < done ? 'on' : ''}"></span>`).join('')}
+      <span class="circ-count">${done} / ${target} rounds</span></div>
+    <div class="circ-note">One tap logs a set of every station below. Each one rests the last.</div>
+    <div class="circ-actions">
+      <button class="circ-btn circ-btn-go" onclick="circuitLogRound('${routineKey}','${day}')">✓ Round done</button>
+      <button class="circ-btn" onclick="startRestTimer(${rest},'${(r.title || '').replace(/'/g, "\\'")}')">⏱ Rest ${rest}s</button>
+      ${done ? `<button class="circ-btn circ-btn-undo" onclick="circuitUndoRound('${routineKey}','${day}')">↩ Undo</button>` : ''}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════
 // POPUP SYSTEM
 // ══════════════════════════════════════════════
 function openRoutinePopup(routineKey, dateStr) {
@@ -22168,7 +24145,8 @@ function openRoutinePopup(routineKey, dateStr) {
   const checked = getChecked(dateStr);
   const prefix = 'r_' + routineKey + '_';
   const isGymRoutine = routineKey === 'gym' || routineKey.indexOf('gym_') === 0;
-  const isBwRoutine = routineKey === 'bodyweight' || routineKey.indexOf('bodyweight_') === 0;
+  const isBwRoutine = routineKey === 'bodyweight' || routineKey.indexOf('bodyweight_') === 0
+                      || routineKey.indexOf('circuit_') === 0;
   const isKbRoutine = routineKey.indexOf('kettlebell_') === 0;
   const isLiftRoutine = isGymRoutine || isBwRoutine || isKbRoutine;
   const isTrackable = isLiftRoutine;
@@ -22188,6 +24166,8 @@ function openRoutinePopup(routineKey, dateStr) {
   (typeof getActivity === 'function' ? getActivity(dateStr) : [])
     .forEach(function (r) { _actCount[r.exercise_key] = (_actCount[r.exercise_key] || 0) + 1; });
   document.getElementById('popup-body').innerHTML =
+    ((isLiftRoutine && typeof lastSessionBannerHtml === 'function') ? lastSessionBannerHtml(dateStr, routineKey) : '') +
+    ((typeof circuitHeaderHtml === 'function') ? circuitHeaderHtml(routineKey, dateStr) : '') +
     (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
     '<div class="exercise-list">' +
     effectiveExercises.map((ex, i) => {
@@ -22217,6 +24197,10 @@ function openRoutinePopup(routineKey, dateStr) {
             ${exNameCell(ex, exKey, !!(showGymTrack || showBwTrack))}
             <div class="ex-detail">${ex.detail}</div>
             ${ex.link ? '<a class="ex-link" href="' + ex.link + '" target="_blank" onclick="event.stopPropagation()">▶ Watch video</a>' : ''}
+            ${(function () {
+              const w = (typeof exCautionFor === 'function') ? exCautionFor(ex.name) : null;
+              return w ? `<div class="ex-caution">⚠ ${escapeHtml(w)}</div>` : '';
+            })()}
             ${showGymTrack ? buildExSetStack(dateStr, exKey) + prevDataLabel(getPrevExData(dateStr, exKey)) : ''}
             ${showBwTrack && !showGymTrack ? bwTrackRow(dateStr, exKey, ex.name) : ''}
           </div>
@@ -22323,14 +24307,31 @@ function buildGymExtras(dateStr, exSets) {
   // ── MACHINES SECTION ──
   // Group by muscle
   var muscleGroups = {};
-  GYM_MACHINES.forEach(function(m) {
+  var _machines = (typeof machinesAtLocation === 'function') ? machinesAtLocation(dateStr) : GYM_MACHINES;
+  _machines.forEach(function(m) {
     if (!muscleGroups[m.muscle]) muscleGroups[m.muscle] = [];
     muscleGroups[m.muscle].push(m);
   });
 
+  var _loc = (typeof gymLocFor === 'function') ? gymLocFor(dateStr) : null;
+  var _locStrip = (typeof GYM_LOCATIONS === 'undefined' || !GYM_LOCATIONS.length) ? '' :
+    '<div class="gymloc-strip">' +
+      '<span class="gymloc-lbl">Where are you?</span>' +
+      GYM_LOCATIONS.map(function (l) {
+        var on = _loc && _loc.client_id === l.client_id;
+        return '<span class="gymloc-pill' + (on ? ' active' : '') + '" onclick="event.stopPropagation();setGymLocFor(\'' + dateStr + '\',\'' + l.client_id + '\')">' +
+               escapeHtml(l.name) + '</span>';
+      }).join('') +
+    '</div>';
+
   var machineHtml = '<div style="margin-top:14px;padding-top:10px;border-top:2px solid var(--purple-border)">' +
     '<div style="font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">🏋️ Machines</div>' +
-    '<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px">Log weight × reps × sets for each machine used. Previous workout shown in purple.</div>';
+    _locStrip +
+    '<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px">' +
+      (_loc && _loc.machines && _loc.machines.length
+        ? 'Showing what ' + escapeHtml(_loc.name) + ' has. Edit the list in Settings → Gyms.'
+        : 'Log weight × reps × sets for each machine used. Previous workout shown in purple.') +
+    '</div>';
 
   Object.keys(muscleGroups).forEach(function(muscle) {
     machineHtml += '<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:0.5px;margin:8px 0 3px;padding-top:4px;border-top:1px solid var(--divider)">' + muscle + '</div>';
@@ -22723,50 +24724,90 @@ function renderDaily() {
   }
 
   // Other workouts section — compressed with sub-type pills
-  const otherWoHtml = OTHER_WORKOUTS.map(w => {
+  // ── Log a Workout, rebuilt 2026-09-24 ───────────────────────────────────
+  // What changed and why:
+  //   * Grouped by what it trains, so the list answers "what am I choosing
+  //     between" rather than just "what exists".
+  //   * The inline m:ss and distance boxes are GONE. They wrote a day-level
+  //     aggregate that could only ever hold one outing, and the cardio screen
+  //     already logs interval by interval into the same table. Two ways to
+  //     enter one number is what produced two record shapes for one movement.
+  //   * Every row now opens a logger. Nothing on this card records a claim
+  //     without a measurement behind it.
+  //   * The summary under each row is read from activity_log, so a row cannot
+  //     say "done" over an empty log.
+  const _woRow = (w) => {
     const entry = wlog[w.id] || {};
-    const isDone = entry.done;
     let subtype = entry.subtype || (w.types ? w.types[0] : '');
     // Intent-A migration (2026-05-10): 'lower' → 'legs' on display so old
     // wlog entries stored as subtype='lower' still light up the right pill.
     if (w.id === 'gym' && subtype === 'lower') subtype = 'legs';
-    const typePills = w.types ? `<div class="wlog-types">${w.types.map(t =>
-      `<span class="wlog-type-pill ${subtype === t ? 'active' : ''}" onclick="event.stopPropagation();setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
-    ).join('')}</div>` : '';
-    // Exercise-tracking workouts (gym/bodyweight/kettlebell) open the full
-    // routine popup directly on row tap. The previous inline-summary +
-    // expand pattern was an extra step before reaching the actual tracker.
-    // (Per Craig's UX feedback 2026-05-15 — match the eat-out picker pattern.)
-    // Intent A 'free' (2026-05-10) = no template, freeform log — no popup opens.
-    let popupRoutineKey = '';
-    if (w.id === 'gym') {
-      if (subtype === 'free')                         popupRoutineKey = '';
-      else if (subtype === 'full' || !subtype)        popupRoutineKey = 'gym';
-      else                                            popupRoutineKey = 'gym_' + subtype;
-    }
-    else if (w.id === 'bodyweight')  popupRoutineKey = (subtype === 'full' || !subtype) ? 'bodyweight' : 'bodyweight_' + subtype;
-    else if (w.id === 'kettlebell')  popupRoutineKey = 'kettlebell_' + (subtype || 'circuits');
 
+    let routineKey = '';
+    if (w.id === 'gym') {
+      if (subtype === 'free')                  routineKey = '';
+      else if (subtype === 'full' || !subtype) routineKey = 'gym';
+      else                                     routineKey = 'gym_' + subtype;
+    } else if (w.id === 'bodyweight') routineKey = (subtype === 'full' || !subtype) ? 'bodyweight' : 'bodyweight_' + subtype;
+    else if (w.id === 'kettlebell')   routineKey = 'kettlebell_' + (subtype || 'circuits');
+
+    let open;
+    if (routineKey)                        open = `openRoutinePopup('${routineKey}','${dateStr}')`;
+    else if (w.id === 'walk' || w.id === 'row' || w.id === 'swim') open = `openCardio('${w.id}')`;
+    else if (w.id === 'yoga_session')      open = `openExercise('wo_yoga_session','Yoga')`;
+    else                                   open = `toggleWorkoutDone('${dateStr}','${w.id}')`;
+
+    const tot = (typeof woLoggedTotals === 'function') ? woLoggedTotals(dateStr, w.id, routineKey) : null;
+    const isDone = !!entry.done || !!tot;
     const fromHealth = entry.source === 'apple_health';
-    const healthBadge = fromHealth ? '<span title="From Apple Health" style="font-size:8px;opacity:0.7;margin-left:2px">⌚</span>' : '';
-    // Tap-target hierarchy:
-    //   - Row click → opens popup (for exercise-tracking types) or no-op (for inline-input types)
-    //   - Checkbox / inputs / type pills → stopPropagation, do their own thing
-    const opensPopup = popupRoutineKey !== '';
-    const rowOnclick = opensPopup ? ` onclick="openRoutinePopup('${popupRoutineKey}','${dateStr}')"` : '';
-    const checkboxStop = opensPopup ? 'event.stopPropagation();' : '';
-    const rowExtraClass = opensPopup ? ' has-popup' : '';
-    const trackerHint = opensPopup ? '<span class="wlog-tracker-hint" title="Open exercise tracker">›</span>' : '';
-    return `<div class="wlog-row ${isDone ? 'done' : ''}${rowExtraClass}" data-wid="${w.id}"${rowOnclick}>
-      <div class="check-box ${isDone ? 'checked' : ''}" onclick="${checkboxStop}toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
-      <span class="wlog-icon">${w.icon}</span>
-      <span class="wlog-label">${w.label}${healthBadge}</span>
-      ${w.hasTime ? `<input class="wlog-input" type="text" placeholder="m:ss" value="${fmtTimeVal(entry.time)}" onchange="setWorkoutTime('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()" style="width:36px">` : ''}
-      ${w.hasDist ? `<input class="wlog-input" type="number" placeholder="${w.distUnit}" min="0" step="0.1" value="${entry.dist || ''}" onchange="setWorkoutDist('${dateStr}','${w.id}',this.value)" onclick="event.stopPropagation()">` : ''}
-      ${w.hasDist ? `<span class="wlog-unit">${w.distUnit}</span>` : ''}
-      ${typePills}
-      ${trackerHint}
+    const summary = tot ? dayTotalLine(tot) : '';
+
+    const pills = w.types ? `<div class="wo-pills" onclick="event.stopPropagation()">${w.types.map(t =>
+      `<span class="wo-pill ${subtype === t ? 'active' : ''}" onclick="setWorkoutSubtype('${dateStr}','${w.id}','${t}')">${t}</span>`
+    ).join('')}</div>` : '';
+
+    return `<div class="wo-row ${isDone ? 'done' : ''}" data-wid="${w.id}" onclick="${open}">
+      <div class="check-box ${isDone ? 'checked' : ''}" onclick="event.stopPropagation();toggleWorkoutDone('${dateStr}','${w.id}')">${isDone ? '✓' : ''}</div>
+      <span class="wo-icon">${w.icon}</span>
+      <div class="wo-main">
+        <div class="wo-name">${w.label}${fromHealth ? ' <span title="From Apple Health" style="font-size:8px;opacity:0.7">⌚</span>' : ''}</div>
+        ${summary ? `<div class="wo-sum">${summary}</div>` : ''}
+        ${pills}
+      </div>
+      <span class="wo-go">›</span>
     </div>`;
+  };
+
+  // Where he left off, above the list rather than buried in it.
+  const _lastAny = (typeof lastSessionFor === 'function') ? lastSessionFor(null, dateStr) : null;
+  const lastLineHtml = !_lastAny ? '' : (function () {
+    const when = _lastAny.daysAgo === 1 ? 'yesterday' : _lastAny.daysAgo + ' days ago';
+    const sets = _lastAny.list.reduce((a, t) => a + t.sets, 0);
+    const names = _lastAny.list.slice(0, 3).map(t => t.name).join(', ');
+    const more = _lastAny.list.length > 3 ? ' +' + (_lastAny.list.length - 3) + ' more' : '';
+    return `<div class="last-line"><b>Last session · ${when}</b> — ${escapeHtml(names)}${more}
+      · ${sets} ${sets === 1 ? 'set' : 'sets'}</div>`;
+  })();
+
+  const circuitsHtml = `<div class="wo-group"><div class="wo-group-label">Circuits</div>${
+    WO_CIRCUITS.map(c => {
+      const done = (typeof circuitRoundsDone === 'function') ? circuitRoundsDone(dateStr, c.key) : 0;
+      const target = (ROUTINES[c.key] || {}).rounds || 3;
+      return `<div class="wo-row ${done ? 'done' : ''}" onclick="openRoutinePopup('${c.key}','${dateStr}')">
+        <span class="wo-icon">${c.icon}</span>
+        <div class="wo-main">
+          <div class="wo-name">${c.label}</div>
+          ${done ? `<div class="wo-sum">${done} of ${target} rounds</div>`
+                 : `<div class="wo-hint">${(ROUTINES[c.key] || {}).exercises.length} stations · ${target} rounds</div>`}
+        </div>
+        <span class="wo-go">›</span>
+      </div>`;
+    }).join('')}</div>`;
+
+  const otherWoHtml = lastLineHtml + circuitsHtml + WO_GROUPS.map(g => {
+    const rows = g.ids.map(id => OTHER_WORKOUTS.find(w => w.id === id)).filter(Boolean).map(_woRow).join('');
+    if (!rows) return '';
+    return `<div class="wo-group"><div class="wo-group-label">${g.label}</div>${rows}</div>`;
   }).join('');
 
   // Stretch tiers section
@@ -22796,27 +24837,84 @@ function renderDaily() {
   const quickPicks = isKidDay2
     ? [{ id:'walk', label:'🚶 Walk', sub:'walk' }, { id:'bodyweight', label:'💪 Body', sub:'upper' }, { id:'yoga_session', label:'🧘 Yoga', sub:'' }]
     : [{ id:'gym', label:'🏋️ Gym', sub:'full' }, { id:'row', label:'🚣 Row', sub:'steady' }, { id:'walk', label:'🚶 Walk', sub:'walk' }];
+  // What each measurable chip logs. Craig, 2026-09-24: "I can hit 'walk' but not
+  // how far / how long."
+  //
+  // It used to call toggleWorkoutDone(), which set a `done` flag in wlog_ and
+  // nothing else. An unmeasured walk migrates to NOTHING — the migration only
+  // converts rows with a time or a distance — so the chip went green over an
+  // empty log. A tick with no measurement behind it is not a record of a walk.
+  //
+  // Now they open the same screens everything else opens.
+  const CHIP_KEY = { walk:'wo_walk', row:'wo_row', swim:'wo_swim', yoga_session:'wo_yoga_session' };
+  const _chipLogged = {};
+  (typeof getActivity === 'function' ? getActivity(dateStr) : [])
+    .forEach(function (r) { _chipLogged[r.exercise_key] = (_chipLogged[r.exercise_key] || 0) + 1; });
   const quickPickHtml = `<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:4px 0 6px">
     <span style="font-size:9px;color:var(--text-muted);flex-shrink:0">${!_custodyAware ? '⚡ Quick:' : (isKidDay2 ? '👧 Kids:' : '🆓 Free:')}</span>
     ${quickPicks.map(p => {
-      const done = (wlog[p.id] || {}).done;
-      // Exercise-tracking chips (gym/body/kettlebell) open the routine popup
-      // directly. Inline-input chips (walk/row/swim/yoga) toggle done since
-      // they're already trackable via the row's inline inputs.
+      // Green means logged, not ticked. The two used to be able to disagree.
+      const done = !!(wlog[p.id] || {}).done || (_chipLogged[CHIP_KEY[p.id]] || 0) > 0;
       let chipOnclick;
       if (p.id === 'gym')             chipOnclick = `openRoutinePopup('${(p.sub === 'full' || !p.sub) ? 'gym' : 'gym_' + p.sub}','${dateStr}')`;
       else if (p.id === 'bodyweight') chipOnclick = `openRoutinePopup('${(p.sub === 'full' || !p.sub) ? 'bodyweight' : 'bodyweight_' + p.sub}','${dateStr}')`;
       else if (p.id === 'kettlebell') chipOnclick = `openRoutinePopup('kettlebell_${p.sub || 'circuits'}','${dateStr}')`;
+      // Distance + time, interval by interval — the cardio screen.
+      else if (p.id === 'walk' || p.id === 'row' || p.id === 'swim') chipOnclick = `openCardio('${p.id}')`;
+      // Time on the mat — the per-set screen, which now has a clock.
+      else if (p.id === 'yoga_session') chipOnclick = `openExercise('wo_yoga_session','Yoga')`;
       else                            chipOnclick = `toggleWorkoutDone('${dateStr}','${p.id}')`;
       return `<span style="display:inline-flex;align-items:center;gap:2px;padding:3px 8px;border-radius:12px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid ${done ? 'var(--green-border)' : 'var(--card-border)'};background:${done ? 'var(--green-bg)' : 'transparent'};color:${done ? 'var(--green)' : 'var(--text-dim)'}" onclick="${chipOnclick}">${done ? '✓ ' : ''}${p.label}</span>`;
     }).join('')}
   </div>`;
 
+  // ── What you actually did today ─────────────────────────────────────────
+  // Craig, 2026-09-24: "when we do an exercise, show it on the things you've
+  // done card."
+  //
+  // This is the reader getDayTotals() and dayTotalLine() were written for on
+  // 2026-09-12 and never got. They have been correct and unreachable for
+  // twelve days — a rollup with no surface is the same defect as a writer with
+  // no reader, one layer up.
+  //
+  // Grouped by movement so four intervals read as one walk. Times come from
+  // started_at, which nothing wrote to until yesterday.
+  const _tdTotals = (typeof getDayTotals === 'function') ? getDayTotals(dateStr) : { byExercise: [], day: {} };
+  const _tdFirstSeen = {};
+  (typeof getActivity === 'function' ? getActivity(dateStr) : []).forEach(function (r) {
+    const cur = _tdFirstSeen[r.exercise_key];
+    if (!cur || (r.started_at && r.started_at < cur)) _tdFirstSeen[r.exercise_key] = r.started_at || cur;
+  });
+  const _tdIcon = { strength:'\ud83c\udfcb\ufe0f', cardio:'\ud83c\udfc3', stretch:'\ud83e\uddd8', mobility:'\ud83e\udd38', gym_time:'\ud83d\udccd' };
+  const todayDoneHtml = !_tdTotals.byExercise.length ? '' : `
+    <div class="td-block">
+      <div class="td-label">What you did today</div>
+      ${_tdTotals.byExercise
+        .slice()
+        .sort((a, b) => String(_tdFirstSeen[a.key] || '').localeCompare(String(_tdFirstSeen[b.key] || '')))
+        .map(t => `<div class="td-row">
+          <span class="td-time">${(typeof _fmtClock === 'function' && _fmtClock(_tdFirstSeen[t.key])) || ''}</span>
+          <span class="td-icon">${_tdIcon[t.kind] || '\u2022'}</span>
+          <span class="td-name">${escapeHtml(t.name)}</span>
+          <span class="td-detail">${dayTotalLine(t)}</span>
+        </div>`).join('')}
+      <div class="td-review" onclick="openTrainingReview()">📊 Training review ›</div>
+      <div class="td-total">${(function () {
+        const d = _tdTotals.day;
+        const bits = [d.exercises + (d.exercises === 1 ? ' movement' : ' movements')];
+        if (d.sets) bits.push(d.sets + (d.sets === 1 ? ' set' : ' sets'));
+        if (d.reps) bits.push(d.reps + ' reps');
+        if (d.distance_m) bits.push((d.distance_m / 1000).toFixed(2).replace(/\.?0+$/, '') + ' km');
+        if (d.duration_s) bits.push(Math.round(d.duration_s / 60) + ' min');
+        return bits.join(' \u00b7 ');
+      })()}</div>
+    </div>`;
+
   // Task #16 — activity decision tree at the top of the workout card
   const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr) : '';
   // #gym-clock-host lives inside adtHtml, so it only exists after this write —
   // renderGymClock() is called at the end of this function, not here.
-  wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + `
+  wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + todayDoneHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
     </div>
@@ -23826,6 +25924,7 @@ async function _refreshDataInner(btn) {
   } finally { _flushActBatch(); }
   // A stretch session survives a reload the same way the gym clock does.
   try { _stSessLoad(); } catch (e) {}
+  try { _glLoadLocal(); refreshGymLocations(); } catch (e) {}
   // Record what's cached so the stats view knows when it must widen the range.
   _trackingLoaded = { start: ds(start), end: ds(end) };
 
