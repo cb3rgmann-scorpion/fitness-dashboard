@@ -4151,7 +4151,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.30.03';
+const APP_VERSION = '2026.09.30.06';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11823,32 +11823,37 @@ const ROUTINES = {
       { name: "⚠ DO NOT squeeze a stress ball or grip strengthener", sets: "", detail: "Common bad advice. Repetitive forceful gripping is what aggravates trigger finger — it's the cause, not the cure. Strength work waits until catching has resolved.", _divider: true },
     ]
   },
+  // Rebuilt 2026-09-30 (Craig): everything above the divider is done standing,
+  // so it works at the office — he skips floor work there, and cat-cow was the
+  // item that went undone. The floor block is for mornings at home. No chair
+  // stretches (his call). Prayer, the interlaced palm press (his "reverse"), the
+  // palm-up wrist extension stretch his physio gave him and a finger stretch are
+  // what he does every morning. Kept in step with the database copy
+  // (routine_exercises, routine_id 'morning') — names unchanged where the
+  // movement is unchanged, because the name is the movement's key in the log.
+  // Generic wording only: this list is shown to every user.
   morning: {
-    title: "Morning Stretch — ~10 Min (Egoscue-Inspired)",
+    title: "Morning Stretch — ~10 min standing (+ floor at home)",
     exercises: [
-      // — LYING (start on your back, wake up the nervous system) —
-      { name: "Core Breathing (Diaphragmatic)", sets: "5 breaths", link: "https://www.youtube.com/watch?v=YauKps6MGIE", detail: "Hand on belly — inhale expand 4s, hold 4s, exhale slow 6s. Ease into the day." },
-      { name: "Static Back (Egoscue)", sets: "3–5 min", link: "https://www.youtube.com/watch?v=It7Vs5Y6gDw", detail: "Legs on chair/bed, arms 45° palms up. Let gravity reset your spine." },
-      { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on back from Static Back. Slow circles, then point/flex. Wakes up the ankles." },
-      // — ALL FOURS (roll over, transition through hands & knees) —
-      { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "All fours — drop belly/look up, then round back/tuck chin. Slow, sync with breath." },
-      { name: "Wrist Circles + Reverse Prayer Stretch", sets: "10 circles + 20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arms out, rotate wrists 10 each way. Then reverse prayer: backs of hands together behind your back, fingers pointing DOWN, slowly slide hands up your spine, hold 20s." },
-      // — STANDING (rise up, open the upper body) —
-      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall. Slow, full range. Loosens up after sleeping." },
-      // Added 2026-08-14. Distinct from Shoulder Rolls above: rolls move the
-      // SCAPULA, circles move the GLENOHUMERAL joint. Different structures, and
-      // with shoulder OA the glenohumeral range is the one that stiffens.
-      // Small-to-large progression is deliberate — starting at full range on a
-      // cold arthritic shoulder is how you provoke it.
-      { name: "Arm Circles (small → large)", sets: "10 small + 10 large, each way", link: "https://www.youtube.com/watch?v=140RTNMciH8", detail: "Arms out to the sides. Start with circles the size of a dinner plate, build to as large as stays comfortable. Both directions. STOP at the point it pinches — with OA, pain-free range is the range that's useful. Never force the top of the arc." },
-      // Finger pulley work moved into the daily routine 2026-08-14, replacing the
-      // separate 3×/day rehab entry point after the cortisone injection resolved
-      // the locking. Once daily is a maintenance dose, not rehab.
-      { name: "Finger Pulley Stretch + Tendon Glide", sets: "5 glides + 10s × 3", link: "https://www.youtube.com/watch?v=Tn5WcjpWoIo", detail: "Right middle finger. Run the five glide positions once (straight hand → hook fist → full fist → tabletop → straight fist), then gently pull the finger back toward the wrist with the other hand, 10s × 3. Mild catching is expected post-injection. If it starts LOCKING again, that's the signal to call the hand surgeon — don't wait it out." },
-      { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring elbows together in front, open wide. Slow." },
-      { name: "Standing Arm Circles (Egoscue)", sets: "25 forward + 25 back", link: "https://www.youtube.com/watch?v=K0M_Bi-OgJ0", detail: "Arms straight out at shoulder height, palms down. Small circles, gradually bigger. Resets shoulder girdle." },
-      { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace fingers overhead, palms up, lengthen and breathe. Big stretch to finish." },
-      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Hand on wall for balance — good for your ankle rehab. Last move before you go." },
+      { name: "Core Breathing (Diaphragmatic)", sets: "5 breaths", link: "https://www.youtube.com/watch?v=YauKps6MGIE", detail: "Standing or sitting. Hand on belly — in for 4s, hold 4s, out slowly for 6s." },
+      { name: "Standing Cat-Cow", sets: "8 reps", link: "", detail: "Feet hip-width, knees soft, hands on thighs. Round the back and tuck the chin, then arch and look ahead. Slow, with the breath — the no-floor version of cats & dogs." },
+      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall, slow and full range. Then arm circles out to the sides — small, building to as large as stays comfortable, both directions. Stop where it pinches." },
+      { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring the elbows together in front, then open wide. Slow." },
+      { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace the fingers, palms up, reach tall and breathe. Stop below any pinch in the shoulders — reach, don't force." },
+      { name: "Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "A few wrist circles each way first. Then palms together at the chest, fingers up, and slowly lower the hands toward the waist until the forearms stretch." },
+      { name: "Interlaced Palm Press", sets: "20s hold", link: "", detail: "Interlace the fingers with the hands pointing down, then turn the hands over so the palms face the floor. Straighten the arms and press the palms down until the palm side of the forearms and fingers stretches." },
+      { name: "Wrist Extension Stretch (palm up)", sets: "20s each arm", link: "https://www.youtube.com/watch?v=QiMiia4F7Xg", detail: "Arm straight out in front, palm up, fingers straight. With the other hand, gently pull the fingers down and back toward the floor until the palm side of the forearm and fingers stretches." },
+      { name: "Finger Extension Stretch", sets: "10s each finger", link: "", detail: "Palm up. With the other hand, gently ease one finger at a time back toward the back of the hand. Stop at the first resistance — a stretch, never a catch or a click." },
+      { name: "Standing Hip Flexor Stretch", sets: "30s each side", link: "", detail: "Split stance, back heel up, a hand on a desk or wall if needed. Tuck the tailbone under and squeeze the back glute until the front of that hip stretches. Don't lean back." },
+      { name: "Standing Calf Stretch", sets: "30s each side, straight and bent knee", link: "", detail: "Hands on a wall or desk, back leg straight, heel down. Then bend the back knee a little for the lower calf." },
+      { name: "Single-Leg Balance", sets: "30s each side", link: "", detail: "Near something to hold. Stand on one leg, eyes forward. When that's easy, turn the head slowly or close your eyes. It's the balance work, not the stretching, that keeps an ankle from rolling." },
+      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "On the lifted foot during the balance, or with a hand on the wall." },
+      { name: "── At home, on the floor ──", sets: "", detail: "", _divider: true },
+      { name: "Static Back (Egoscue)", sets: "3–5 min", link: "https://www.youtube.com/watch?v=It7Vs5Y6gDw", detail: "On your back, calves up on the edge of the bed or a sofa, arms out at 45° palms up. Let the low back settle.", _optional: true },
+      { name: "Supine Foot Circles & Point/Flexes", sets: "20 each way, each foot", link: "https://www.youtube.com/watch?v=qP3PSkRTY-s", detail: "Stay on your back. Slow circles, then point and flex.", _optional: true },
+      { name: "Cats & Dogs (Egoscue)", sets: "10 reps", link: "https://www.youtube.com/watch?v=J4kpno_lI-w", detail: "On all fours — drop the belly and look up, then round the back and tuck the chin. Slow, with the breath.", _optional: true },
+      { name: "Lying Glute Bridge", sets: "10 reps", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "On your back, knees bent. Squeeze the glutes and lift until hips and ribs are in line; pause 2s at the top.", _optional: true },
+      { name: "Open Book Rotation", sets: "6 each side", link: "", detail: "On your side, knees bent and together, arms stacked in front. Open the top arm across and follow it with your eyes; let the ribcage turn.", _optional: true },
     ]
   },
   stretch_A: {
@@ -15686,14 +15691,14 @@ function stretchRoutineLabel(k) {
     name: name,
     sub: sub,
     time: tier ? tier.time : (m ? m[0].replace(/\s+/g, ' ').toLowerCase() : ''),
-    icon: tier ? tier.icon : (k === 'morning' ? '☀️' : '🧘'),
+    icon: tier ? tier.icon : (k === 'morning' ? '☀️' : k === 'trigger_finger' ? '👆' : '🧘'),
   };
 }
 // Per routine: days with at least one tick in the window, the newest such day
 // before today, and today's tick count.
 function stretchRoutineUsage(todayStr, days) {
   const out = {};
-  stretchRoutineKeys().forEach(function (k) { out[k] = { key: k, days: 0, last: null, today: 0 }; });
+  stretchScreenRoutineKeys().forEach(function (k) { out[k] = { key: k, days: 0, last: null, today: 0 }; });
   for (let i = 0; i <= (days || 60); i++) {
     const d = i ? _isoAddDays(todayStr, -i) : todayStr;
     let cb; try { cb = getChecked(d) || {}; } catch (e) { cb = {}; }
@@ -15712,7 +15717,7 @@ function stretchRoutineUsage(todayStr, days) {
   return out;
 }
 function stretchRoutinesSorted(use) {
-  const keys = stretchRoutineKeys();
+  const keys = stretchScreenRoutineKeys();
   return keys.slice().sort(function (a, b) {
     return (use[b].days - use[a].days)
       || String(use[b].last || '').localeCompare(String(use[a].last || ''))
@@ -15721,6 +15726,16 @@ function stretchRoutinesSorted(use) {
 }
 let _stAllRoutines = false;
 const STRETCH_ROUTINES_SHOWN = 4;
+// What the stretch screen lists: the stretch routines, plus the tendon glides for
+// someone who has trigger finger set as a condition. The glides are not a stretch routine for logging — a day of
+// finger glides is not a stretching day.
+function stretchScreenRoutineKeys() {
+  const keys = stretchRoutineKeys();
+  let tf = false;
+  try { tf = getUserConditions().some(c => c && c.id === 'trigger_finger'); } catch (e) {}
+  if (tf && typeof ROUTINES !== 'undefined' && ROUTINES.trigger_finger) keys.push('trigger_finger');
+  return keys;
+}
 function stretchRoutinesHtml() {
   const today = ds(new Date());
   const use = stretchRoutineUsage(today, 60);
@@ -15821,7 +15836,19 @@ const ROUTINE_STRETCH_LIB = {
   'lying glute bridge': 'h_glutebridge',
   'arm circles (small → large)': 's_cars',
   'neck side bends': 'n_uppertrap',
+  // Morning, rebuilt 2026-09-30.
+  'standing cat-cow': 't_catcow',
+  // Palm up, fingers pulled back: the WRIST is extended, so it is the FLEXORS that
+  // stretch — the palm-side tendons. Easy to name backwards; the movement decides.
+  'wrist extension stretch (palm up)': 'w_flexor',
+  'standing calf stretch': 'cf_wall',
+  'open book rotation': 't_rot_open',
 };
+// A routine whose list was rebuilt: a tick made before this date points at the
+// OLD list's item at that index. Those ticks were brought into the log by the
+// sweep before the change; one this device never swept stays out rather than be
+// logged as whatever now sits at that position.
+const ROUTINE_REVISED = { morning: '2026-10-01' };
 function _rtNorm(name) { return String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 function routineStretchLibId(name) {
   const id = ROUTINE_STRETCH_LIB[_rtNorm(name)];
@@ -15891,7 +15918,10 @@ function routineItemSegments(item, measured) {
       t = Number(d.t) || 0; r = Number(d.r) || 0;
     }
     if (!t && !r) r = 1;     // a tick is evidence of one, whatever else is missing
-    rounds = _rtPerSide(item) ? 2 : 1;
+    // A library movement: as many holds as Done on the stretch screen logs
+    // (each side, and both variants — the wall calf stretch is straight AND bent
+    // knee). Anything else: each side if the routine says so.
+    rounds = (item.lib && typeof stretchRounds === 'function') ? stretchRounds(item.lib.id) : (_rtPerSide(item) ? 2 : 1);
   }
   const out = [];
   for (let n = 0; n < rounds; n++) out.push({ w: 0, r: r, d: 0, t: t, side: rounds > 1 ? 'both' : '', flag: '' });
@@ -16023,7 +16053,11 @@ function routineItemDone(dateStr, key, measured) {
 function routineItemUndo(dateStr, key) {
   const item = routineItemForKey(dateStr, key);
   if (!item) return 0;
-  const n = _removeTaggedEntries(dateStr, item.exKey, item.name, item.key);
+  let n = _removeTaggedEntries(dateStr, item.exKey, item.name, item.key);
+  // A tick on a past day of a rebuilt routine wrote its rows under the movement
+  // that sat at that position THEN. The tag still says which tick they came from.
+  getActivity(dateStr).filter(r => r.metrics && r.metrics.routine_item === item.key)
+    .forEach(r => { removeActivity(dateStr, r.client_id); n++; });
   if (typeof setChecked === 'function') setChecked(dateStr, item.key, false);
   return n;
 }
@@ -16091,7 +16125,9 @@ async function routineTickSweep() {
     const cb = getChecked(d) || {};
     Object.keys(cb).forEach(k => {
       if (!cb[k] || k.indexOf('r_') !== 0) return;
-      if (!routineItemForKey(d, k) || isTagged(d, k)) return;
+      const it = routineItemForKey(d, k);
+      if (!it || isTagged(d, k)) return;
+      if (typeof ROUTINE_REVISED !== 'undefined' && ROUTINE_REVISED[it.rk] && d < ROUTINE_REVISED[it.rk]) return;
       todo.push([d, k]);
     });
   });
@@ -26782,28 +26818,17 @@ function renderDaily() {
     wcCard.insertBefore(banner, wc);
   }
 
-  // Morning routine — always shown, clickable for details
-  // Trigger finger — DEMOTED 2026-08-14 after corticosteroid injection resolved the
-  // locking and pain (mild painless catching remains). Kept, not removed: a single
-  // injection resolves roughly 60-70% of cases at 6 months, but recurrence inside
-  // 12 months is common, and glides are near-zero cost to keep doing. Dropped from
-  // 3×/day rehab dosing to 1×/day maintenance and stripped the orange urgency border.
-  // NEXT CHECK ~2026-11-14 (3 months post-demotion): if catching has increased or
-  // locking has returned, that's a failed injection — back to the hand surgeon, and
-  // a second injection has lower success odds than the first.
-  // PRIVACY FIX 2026-08-19: the trigger-finger entry rendered for every user, so
-  // Sary was shown Craig's post-cortisone rehab protocol. That's Craig's medical
-  // information on a stranger's screen.
+  // Morning routine — always shown, clickable for details.
   //
-  // Gated on isContentOwner() — a stopgap. The RIGHT fix is Phase B of the May
-  // refactor plan: injuries as per-user DATA rather than hardcoded markup, so
-  // each person sees their own rehab work and nobody sees anyone else's. Until
-  // that exists, every hardcoded personal-health element needs this guard, and
-  // the next one added will leak again unless someone remembers. Build Phase B.
+  // The tendon-glide entry that sat here left the main screen 2026-09-30 (Craig).
+  // It is on the stretch screen's routine list for whoever has trigger finger set
+  // as a condition — a per-user gate, replacing the isContentOwner() stopgap of
+  // 2026-08-19 (that line had shown one person's rehab protocol to everyone).
+  // Nothing personal belongs in this markup: it renders for every user.
   const morningHtml = `
     <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning Stretch</div>
     <div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openStretch()">🧘 Stretch &amp; mobility <span style="font-size:9px;opacity:0.7;font-weight:600">(what feels stiff?)</span></div>
-    ${isContentOwner() ? `<div class="workout-type morning" style="margin-bottom:6px; cursor:pointer" onclick="openRoutinePopup('trigger_finger','${dateStr}')">👆 Trigger Finger — Tendon Glides <span style="font-size:9px;opacity:0.7;font-weight:600">(1×/day · maintenance)</span></div>` : ''}`;
+    `;
 
   // Recommended workout section
   let recommendedHtml = '';
