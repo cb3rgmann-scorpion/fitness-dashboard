@@ -2787,6 +2787,45 @@
   .legend-item { display: flex; align-items: center; gap: 4px; font-size: 9px; color: var(--text-dim); }
 
   /* ── Exercise Stats Panel (Month View) ── */
+  /* Find an exercise: search + recent (2026-09-30) */
+  .mpk-search { width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--card-border); background: var(--input-bg); color: var(--text); font-size: 14px; font-family: inherit; margin: 2px 0 8px; }
+  .mpk-hit { display: flex; align-items: center; gap: 8px; padding: 10px 10px; border-radius: 7px; border: 1px solid var(--card-border); background: var(--input-bg); margin-bottom: 5px; cursor: pointer; }
+  .mpk-hit-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+  .mpk-hit-tag { font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: var(--purple-bg); color: var(--purple); }
+  .mpk-hit-go { margin-left: auto; color: var(--cyan); font-size: 14px; }
+  .mpk-none { font-size: 11px; color: var(--text-muted); padding: 6px 2px 10px; }
+  .mpk-recent-h { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin: 4px 0 5px; }
+  .mpk-recent { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+  .mpk-chip { padding: 7px 11px; border-radius: 16px; border: 1px solid var(--purple-border); background: var(--purple-bg); color: var(--purple); font-size: 11px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  /* Gym logging rows (2026-09-30) */
+  .gx-section { margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--purple-border); }
+  .gx-section-h { font-size: 11px; font-weight: 800; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .gx-section-h span { font-size: 9px; font-weight: 500; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin-left: 6px; }
+  .gx-row { border-bottom: 1px solid var(--divider); }
+  .gx-row.done .gx-name { color: var(--green); }
+  .gx-head { display: flex; align-items: baseline; gap: 8px; padding: 9px 2px; cursor: pointer; flex-wrap: wrap; }
+  .gx-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+  .gx-today { font-size: 10px; color: var(--green); font-weight: 600; }
+  .gx-last { font-size: 9.5px; color: var(--purple); }
+  .gx-caret { margin-left: auto; font-size: 14px; font-weight: 700; color: var(--cyan); min-width: 18px; text-align: center; }
+  .gx-body { padding: 0 2px 10px; }
+  .gx-rest { margin-top: 6px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-dim); font-size: 10.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  /* Stretch routines on the stretch screen (2026-09-30) */
+  .st-rt { margin: 0 0 14px; }
+  .st-rt-h { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+  .st-rt-h span { font-size: 10.5px; font-weight: 500; color: var(--text-muted); margin-left: 6px; }
+  .st-rt-row { display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 9px; background: var(--input-bg); border: 1px solid var(--card-border); margin-bottom: 6px; cursor: pointer; min-height: 48px; }
+  .st-rt-ic { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+  .st-rt-main { flex: 1; min-width: 0; }
+  .st-rt-name { font-size: 13px; font-weight: 700; color: var(--text); }
+  .st-rt-sub { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+  .st-rt-meta { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+  .st-rt-last { color: var(--cyan); }
+  .st-rt-done { color: var(--green); font-weight: 700; }
+  .st-rt-go { color: var(--text-muted); font-size: 16px; }
+  .st-rt-more { width: 100%; padding: 8px; border-radius: 8px; border: 1px dashed var(--card-border); background: transparent; color: var(--text-dim); font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .st-pop { margin-bottom: 6px; }
+  .st-pop-back { background: none; border: none; color: var(--cyan); font-size: 12px; cursor: pointer; padding: 0 0 8px; font-family: inherit; }
   /* Stats overview cards (2026-09-27) */
   .ov-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
   .ov-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
@@ -4112,7 +4151,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.27.03';
+const APP_VERSION = '2026.09.30.03';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -4214,11 +4253,13 @@ async function startDashboard() {
   // exercise log from the server (the review and the session card read 28
   // days — until 2026-09-27 each device only ever saw what was logged on it),
   // then any new Concept2 rows.
+  try { if (typeof c2AuthoritySweepLocal === 'function') c2AuthoritySweepLocal(); } catch (e) {}
   try {
     const _t = ds(new Date());
     ensureActivityRange(_isoAddDays(_t, -35), _t)
       .then(grew => { if (grew && typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily); })
       .then(() => (typeof c2AutoSync === 'function' ? c2AutoSync() : null))
+      .then(() => (typeof resyncSessionTimeRows === 'function' ? resyncSessionTimeRows() : null))
       .catch(e => console.warn('background log sync failed — this device shows what it has', e));
   } catch (e) {}
 }
@@ -4260,6 +4301,7 @@ async function loadRoutinesFromDB() {
     });
 
     console.log('Routines loaded from Supabase: ' + routines.length + ' routines, ' + (exercises || []).length + ' exercises');
+    window._routinesFromDB = true;   // routineTickSweep waits for this
     return true;
   } catch(e) {
     console.warn('Supabase routines load failed, using hardcoded', e);
@@ -6366,6 +6408,28 @@ function c2ResultToActivity(r, setIndex) {
     notes: bits.join(' · '), metrics: metrics,
   };
 }
+async function c2FetchAllResults(cutoffDate, onPage) {
+  const all = [], seen = {};
+  for (let page = 1; page <= 60; page++) {
+    if (onPage) onPage(page);
+    const data = await c2Fetch('/users/me/results?type=rower&num=50&number=50&page=' + page);
+    if (!data || !data.data || !data.data.length) break;
+    let fresh = 0, pastCutoff = false;
+    for (const r of data.data) {
+      const key = r.id !== undefined ? 'id' + r.id : String(r.date) + '|' + r.distance + '|' + r.time;
+      if (seen[key]) continue;
+      seen[key] = true; fresh++;
+      const dateKey = r.date ? String(r.date).substring(0, 10) : '';
+      if (dateKey && dateKey < cutoffDate) { pastCutoff = true; continue; }
+      all.push(r);
+    }
+    const pg = data.meta && data.meta.pagination;
+    if (!fresh || pastCutoff) break;
+    if (pg && pg.total_pages && page >= pg.total_pages) break;
+  }
+  return all;
+}
+
 // Returns { sessions, days, superseded }: days = days that gained a C2 row.
 function importC2ToActivity(results) {
   const byDate = {};
@@ -6410,6 +6474,24 @@ function importC2ToActivity(results) {
     }
   }
   return { sessions: sessions, days: days, superseded: superseded.length };
+}
+
+// One pass over every activity day on this device: where a day has C2 rows,
+// drop any other row-ergometer total. Cleans up what the legacy sweep put back
+// before 2026-09-29. Local only — the server enforces the same rule itself
+// (trigger activity_c2_authority). Returns the number of days changed.
+function c2AuthoritySweepLocal() {
+  let changed = 0;
+  let keys = [];
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (/^activity_\d{4}-\d{2}-\d{2}$/.test(k)) keys.push(k); } } catch (e) { return 0; }
+  keys.forEach(k => {
+    const d = k.slice(9);
+    const rows = getActivity(d);
+    if (!rows.some(r => r && r.exercise_key === 'wo_row' && /^c2-/.test(String(r.client_id || '')))) return;
+    const kept = rows.filter(r => !(r && r.exercise_key === 'wo_row' && !/^c2-/.test(String(r.client_id || ''))));
+    if (kept.length !== rows.length) { _actSave(d, kept); changed++; }
+  });
+  return changed;
 }
 
 // The per-day blob the workout card's row inputs and the old Rowing view read.
@@ -6486,38 +6568,14 @@ async function syncC2Data() {
   btn.textContent = '⏳ Syncing page 1...';
   const cutoffDate = '2024-12-01'; // fetch back to Dec 2024
 
-  // Paginate through all C2 results until we reach the cutoff
-  const allResults = [];
-  let page = 1;
-  let nextUrl = '/users/me/results?type=rower&num=50';
-  let reachedCutoff = false;
-
-  while (nextUrl && !reachedCutoff) {
-    btn.textContent = `⏳ Syncing page ${page}...`;
-    const data = await c2Fetch(nextUrl);
-    if (!data || !data.data) break;
-
-    for (const r of data.data) {
-      const dateKey = r.date ? String(r.date).substring(0, 10) : '';
-      if (dateKey < cutoffDate) { reachedCutoff = true; break; }
-      allResults.push(r);
-    }
-
-    // Check for next page in API response
-    const nextLink = data.meta && data.meta.pagination && data.meta.pagination.links && data.meta.pagination.links.next;
-    if (nextLink && !reachedCutoff) {
-      // nextLink is a full URL — extract the path+query
-      try {
-        const u = new URL(nextLink);
-        nextUrl = u.pathname.replace('/api', '') + u.search;
-      } catch(e) {
-        nextUrl = null;
-      }
-      page++;
-    } else {
-      nextUrl = null;
-    }
-  }
+  // Paginate by page NUMBER (2026-09-29). This used to follow
+  // meta.pagination.links.next, and the first full sync after the activity_log
+  // change stopped at exactly one page — 50 sessions, back to May 2025 — while
+  // the older C2 days (Dec 2024 – May 2025) never arrived. Whatever the link
+  // looked like, it is no longer relied on: the loop asks for page 1, 2, 3… until a page is
+  // empty, passes the cutoff, exceeds total_pages, or repeats a page it has
+  // already seen (a server that ignored `page` would otherwise loop forever).
+  const allResults = await c2FetchAllResults(cutoffDate, n => { btn.textContent = `⏳ Syncing page ${n}...`; });
 
   if (allResults.length === 0) { btn.textContent = '❌ No data found — check token'; setTimeout(() => btn.textContent = '🔄 Sync All Rowing Data', 3000); return; }
 
@@ -6722,7 +6780,7 @@ function weightTrendNote(t) {
 function statsTrainingSummary(days, grain) {
   const out = { activeDays: 0, strengthDays: 0, sets: 0, reps: 0,
     byGroup: { push: 0, pull: 0, legs: 0, core: 0 }, byMovement: {}, buckets: {}, bucketOrder: [],
-    cardioM: 0, cardioS: 0, stretchS: 0, cardioDays: 0, mobilityDays: 0, weeks: Math.max(1, (days || []).length / 7) };
+    cardioM: 0, cardioS: 0, stretchS: 0, cardioDays: 0, mobilityDays: 0, byStretch: {}, weeks: Math.max(1, (days || []).length / 7) };
   (days || []).forEach(d => {
     const b = statsBucketOf(d, grain);
     if (!out.buckets[b.key]) { out.buckets[b.key] = { label: b.label, days: 0, sets: 0 }; out.bucketOrder.push(b.key); }
@@ -6738,7 +6796,7 @@ function statsTrainingSummary(days, grain) {
     if (!rows.length && !c2) return;
     out.activeDays++;
     out.buckets[b.key].days++;
-    let str = false, car = !!c2, mob = false;
+    let str = false, car = !!c2, mob = false, holdS = 0, sessS = 0;
     if (c2) { out.cardioM += Number(c2.dist) || 0; out.cardioS += (Number(c2.time) || 0) * 60; }
     rows.forEach(r => {
       const kind = r.kind || 'strength';
@@ -6757,16 +6815,29 @@ function statsTrainingSummary(days, grain) {
         car = true;
         out.cardioM += Number(r.distance_m) || 0;
         out.cardioS += Number(r.duration_s) || 0;
-      } else {
+      } else if (kind === 'stretch' || kind === 'mobility') {
         mob = true;
-        out.stretchS += Number(r.duration_s) || 0;
+        holdS += Number(r.duration_s) || 0;
+        const sk = r.exercise_key || r.exercise_name || '?';
+        const sv = out.byStretch[sk] || (out.byStretch[sk] = { name: r.exercise_name || sk, days: {} });
+        sv.days[d] = true;
+      } else if (kind === 'stretch_time') {
+        // The session clock is the wrapper around the holds, not another hold.
+        mob = true;
+        sessS += Number(r.duration_s) || 0;
       }
+      // gym_time (the gym clock) and 'other': an active day, nothing more. Until
+      // 2026-09-30 they fell into the else branch and a 60-minute gym visit
+      // counted as 60 minutes of stretching.
     });
+    out.stretchS += Math.max(holdS, sessS);
     if (str) out.strengthDays++;
     if (car) out.cardioDays++;
     if (mob) out.mobilityDays++;
   });
   out.bucketOrder.sort();
+  out.topStretches = Object.keys(out.byStretch).map(k => ({ key: k, name: out.byStretch[k].name, dayCount: Object.keys(out.byStretch[k].days).length }))
+    .sort((a, b) => b.dayCount - a.dayCount || String(a.name).localeCompare(String(b.name))).slice(0, 5);
   out.topMovements = Object.keys(out.byMovement).map(k => Object.assign({ key: k, dayCount: Object.keys(out.byMovement[k].days).length }, out.byMovement[k]))
     .sort((a, b) => b.dayCount - a.dayCount || b.sets - a.sets).slice(0, 6);
   return out;
@@ -6805,6 +6876,38 @@ async function ensureActivityRange(startStr, endStr) {
     return false;
   }
 }
+// Session-time rows the server used to refuse (2026-09-30). 'gym_time' and
+// 'stretch_time' were not in activity_log's kind check, so every gym-clock and
+// stretch session was rejected with a 400 and lived only on the device that
+// logged it. The constraint now allows them; this sends the ones still sitting
+// here. Only these two kinds: the server has never held one, so pushing them
+// cannot resurrect a row someone deleted elsewhere — which a general "push
+// whatever the server lacks" would. The flag is set only after a clean write,
+// so a failed attempt retries on the next load.
+async function resyncSessionTimeRows() {
+  if (typeof sbReady === 'undefined' || !sbReady) return 0;
+  try { if (localStorage.getItem('resync_session_times_v1') === 'done') return 0; } catch (e) { return 0; }
+  const rows = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!/^activity_\d{4}-\d{2}-\d{2}$/.test(k)) continue;
+      getActivity(k.slice(9)).forEach(r => {
+        if (r && (r.kind === 'gym_time' || r.kind === 'stretch_time') && r.client_id) {
+          const { created_at, id, user_id, updated_at, ...payload } = r;
+          rows.push(payload);
+        }
+      });
+    }
+  } catch (e) { return 0; }
+  for (let i = 0; i < rows.length; i += 100) {
+    const r = await sb.from('activity_log').upsert(rows.slice(i, i + 100), { onConflict: 'user_id,client_id' });
+    if (r && r.error) { syncNote('Exercise log', r.error); return 0; }
+  }
+  try { localStorage.setItem('resync_session_times_v1', 'done'); } catch (e) {}
+  return rows.length;
+}
+
 // Split out so the merge rule can be tested without a network. Returns how many
 // days changed.
 function mergeServerActivity(serverRows, readDay, writeDay) {
@@ -7216,8 +7319,11 @@ function trainingCardHtml(t, grain) {
   if (t.sets) bits.push(t.sets + ' strength set' + (t.sets === 1 ? '' : 's') + ' on ' + t.strengthDays + ' day' + (t.strengthDays === 1 ? '' : 's'));
   if (t.cardioDays) bits.push((t.cardioM >= 1000 ? (t.cardioM / 1000).toFixed(1) + ' km' : Math.round(t.cardioM) + ' m') +
     ' of cardio on ' + t.cardioDays + ' day' + (t.cardioDays === 1 ? '' : 's'));
-  if (t.mobilityDays) bits.push(t.mobilityDays + ' mobility day' + (t.mobilityDays === 1 ? '' : 's'));
+  if (t.mobilityDays) bits.push(t.mobilityDays + ' stretching day' + (t.mobilityDays === 1 ? '' : 's') +
+    (t.stretchS >= 60 ? ' (' + Math.round(t.stretchS / 60) + ' min)' : ''));
   const top = t.topMovements.length ? '<div class="ov-mini-h">Most done</div><div class="ov-chips">' + t.topMovements.slice(0, 5).map(m =>
+    '<span class="ov-chip">' + esc(m.name) + ' <b>' + m.dayCount + 'd</b></span>').join('') + '</div>' : '';
+  const topSt = (t.topStretches && t.topStretches.length) ? '<div class="ov-mini-h">Most-done stretches</div><div class="ov-chips">' + t.topStretches.map(m =>
     '<span class="ov-chip">' + esc(m.name) + ' <b>' + m.dayCount + 'd</b></span>').join('') + '</div>' : '';
   const note = perWk < 2
     ? '<div class="ov-note">Under two logged days a week. If you are training more than that, the rest is not reaching the log — and this page and the Sunday review can only count what is logged.</div>'
@@ -7230,7 +7336,7 @@ function trainingCardHtml(t, grain) {
     '<div class="ov-bars-l"><span>' + firstL + '</span><span>days per ' + grainWord + '</span><span>' + lastL + '</span></div>' +
     (groups ? '<div class="ov-mini-h">Strength balance</div>' + groups +
       '<div class="ov-foot">Grey: under ' + (typeof REVIEW_MIN_SETS_WK !== 'undefined' ? REVIEW_MIN_SETS_WK : 4) + ' sets a week — roughly the floor for keeping muscle, not building it.</div>' : '') +
-    top + note +
+    top + topSt + note +
   '</div>';
 }
 function feltCardHtml(days) {
@@ -13090,7 +13196,7 @@ const EX_FLAG_NOTES = {
   spine:    { icon:'⚠️', tone:'orange', text:'Loads the lower back. Skip on any day it\'s already complaining.' },
 };
 
-let _mpickMuscle = null, _mpickShowAll = false, _mpickWhere = 'all';
+let _mpickMuscle = null, _mpickShowAll = false, _mpickWhere = 'all', _mpickQuery = '';
 
 // Where-am-I filter. The real question at home isn't "which muscle" but "what can
 // I do with what's in this room". Persisted, because the answer is usually the
@@ -13192,9 +13298,72 @@ function _mpickTeachLines(e) {
   return out;
 }
 
-function mpickDoing(exName, restSecs) {
-  const key = exSlug(exName);
-  _exNameCache[key] = exName;
+// ── Find: one key per machine, a search box, and what you did last (2026-09-30)
+// A machine in the library that is also on the gym's machine list logs under
+// the MACHINE's key, so "Chest press (machine)" from Find and "Chest Press" from
+// the gym popup are one history, not two. gm:'cable' means "any cable station",
+// not one machine, so those keep their own key.
+function exCanonicalKey(name) {
+  const e = (typeof EX_LIB !== 'undefined') ? EX_LIB.find(x => x.name === name) : null;
+  if (e && e.gm && e.gm !== 'cable' && typeof GYM_MACHINES !== 'undefined' && GYM_MACHINES.some(m => m.id === e.gm)) return 'gymmachine_' + e.gm;
+  return exSlug(name);
+}
+function _mpickNorm(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+// Everything loggable by name: the library, gym machines the library does not
+// cover, and anything in his own log. One entry per key.
+function mpickSearchCorpus() {
+  const out = {}, add = (key, name, tag, rest, extra) => {
+    if (!key || out[key]) return;
+    out[key] = { key: key, name: name, tag: tag || '', rest: rest || 120, hay: _mpickNorm(name + ' ' + (extra || '')) };
+  };
+  const mgLabel = id => { const g = (typeof MUSCLE_GROUPS !== 'undefined') ? MUSCLE_GROUPS.find(x => x.id === id) : null; return g ? g.label : id; };
+  (typeof EX_LIB !== 'undefined' ? EX_LIB : []).forEach(e =>
+    add(exCanonicalKey(e.name), e.name, EQUIP_LABEL[e.equip] || e.equip, e.rest, mgLabel(e.m) + ' ' + (e.equip || '')));
+  (typeof GYM_MACHINES !== 'undefined' ? GYM_MACHINES : []).forEach(m =>
+    add('gymmachine_' + m.id, m.label, 'Machine', 120, (m.muscle || '') + ' ' + mgLabel(m.m) + ' machine'));
+  try {
+    const idx = gymLogIndex(ds(new Date()), 120);
+    Object.keys(idx).forEach(k => add(k, idx[k].name, 'Yours', 120, ''));
+  } catch (e) {}
+  return Object.keys(out).map(k => out[k]);
+}
+function mpickSearchResults(q) {
+  const n = _mpickNorm(q);
+  if (!n) return [];
+  const words = n.split(' ');
+  const squash = n.replace(/ /g, '');
+  return mpickSearchCorpus().filter(c => {
+    const hs = c.hay.replace(/ /g, '');
+    return words.every(w => c.hay.indexOf(w) !== -1 || hs.indexOf(w) !== -1) || hs.indexOf(squash) !== -1;
+  }).sort((a, b) => {
+    const as = _mpickNorm(a.name).indexOf(n) === 0 ? 0 : 1, bs = _mpickNorm(b.name).indexOf(n) === 0 ? 0 : 1;
+    return as - bs || a.name.length - b.name.length;
+  }).slice(0, 12);
+}
+function mpickSearch(q) {
+  _mpickQuery = q || '';
+  const box = document.getElementById('mpick-results');
+  if (!box) return;
+  const res = mpickSearchResults(_mpickQuery);
+  box.innerHTML = !_mpickNorm(_mpickQuery) ? '' : (res.length
+    ? res.map(c => `<div class="mpk-hit" onclick="mpickDoing('${c.name.replace(/'/g, "\\'")}',${c.rest},'${c.key}')">
+        <span class="mpk-hit-name">${escapeHtml(c.name)}</span><span class="mpk-hit-tag">${escapeHtml(c.tag)}</span><span class="mpk-hit-go">›</span></div>`).join('')
+    : `<div class="mpk-none">Nothing called that. Try one word — "press", "row", "curl".</div>`);
+}
+function _mpickRecentHtml() {
+  let usual = [];
+  try { usual = gymUsualKeys(ds(new Date()), gymLogIndex(ds(new Date()), 90), 8); } catch (e) {}
+  if (!usual.length) return '';
+  return `<div class="mpk-recent-h">Recently</div><div class="mpk-recent">` +
+    usual.map(e => {
+      const nm = (typeof exNameForKey === 'function' ? exNameForKey(e.key, {}) : '') || e.name;
+      return `<button class="mpk-chip" onclick="mpickDoing('${nm.replace(/'/g, "\\'")}',120,'${e.key}')">${escapeHtml(nm)}</button>`;
+    }).join('') + `</div>`;
+}
+
+function mpickDoing(exName, restSecs, key) {
+  key = key || exCanonicalKey(exName);
+  if (!_exNameCache[key]) _exNameCache[key] = exName;
   closeMusclePicker();
   _sessReturnTo = 'picker';
   openExercise(key, exName);
@@ -13212,7 +13381,12 @@ function renderMusclePicker() {
     const byPattern = {};
     MUSCLE_GROUPS.forEach(m => { (byPattern[m.pattern] = byPattern[m.pattern] || []).push(m); });
     const patternLabel = { push:'Push', pull:'Pull', squat:'Squat / knee', hinge:'Hinge / hip', core:'Core' };
-    body.innerHTML = _mpickWhereChips() + Object.keys(byPattern).map(p => `
+    body.innerHTML = _mpickWhereChips() +
+      `<input id="mpick-q" class="mpk-search" type="search" placeholder="Search — chest press, row, rear delt…" autocomplete="off"
+         value="${escapeHtml(_mpickQuery || '')}" oninput="mpickSearch(this.value)">
+       <div id="mpick-results"></div>` +
+      _mpickRecentHtml() +
+      Object.keys(byPattern).map(p => `
       <div style="margin-bottom:12px">
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:5px">${patternLabel[p] || p}</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
@@ -13224,6 +13398,7 @@ function renderMusclePicker() {
       `<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--divider);padding-top:8px">
         Grouped by movement pattern so a session stays balanced. Suggestions show every equipment option — pick whatever's free.
       </div>`;
+    if (_mpickQuery) mpickSearch(_mpickQuery);
     return;
   }
 
@@ -15197,6 +15372,16 @@ function stretchSessionStart() {
   _stSessSave();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   renderStretchScreen();
+  if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
+}
+// "I wasn't stretching" — the clock was left running and there is nothing true
+// to log. Mirrors gymClockDiscard.
+function stretchSessionDiscard() {
+  STRETCH_SESSION = null;
+  _stSessSave();
+  if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
+  renderStretchScreen();
+  if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
 }
 // mins optional — the correction path when the clock was left running.
 function stretchSessionStop(mins) {
@@ -15215,6 +15400,7 @@ function stretchSessionStop(mins) {
   }
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   renderStretchScreen();
+  if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
   return secs;
 }
 function stretchTimeTodayS() {
@@ -15420,9 +15606,24 @@ function _stCard(s) {
 // now", not two.
 function stretchSessionBannerHtml() {
   const today = stretchTimeTodayS();
+  // STRETCH_SESSION_SANE_H was declared on 2026-09-20 ("same implausible-elapsed
+  // guard" as the gym clock) and never used, so a clock left running overnight
+  // would have logged as a 20-hour stretch. Until 2026-09-30 that row never
+  // reached the server anyway; now it does, into every weekly total. Same answer
+  // as the gym clock: ask, don't assume.
+  if (STRETCH_SESSION && stretchSessionElapsedS() > STRETCH_SESSION_SANE_H * 3600) {
+    return `<div style="padding:11px;border-radius:9px;background:var(--orange-bg);border:1px solid var(--orange-border, var(--orange));margin-bottom:12px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--orange)">Stretch clock has run ${fmtDurationS(stretchSessionElapsedS())}</div>
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:3px">That's longer than a session \u2014 it was probably left running. How long were you actually stretching?</div>
+      <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+        ${[10, 15, 20, 30, 45].map(m => `<button class="st-sess-fix" onclick="stretchSessionStop(${m})" style="flex:1;min-width:50px;padding:9px 4px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">${m}m</button>`).join('')}
+      </div>
+      <button onclick="stretchSessionDiscard()" style="width:100%;margin-top:6px;padding:8px;border-radius:7px;border:1px solid var(--card-border);background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">Discard \u2014 I wasn't stretching</button>
+    </div>`;
+  }
   if (STRETCH_SESSION) {
     return `<div style="padding:11px;border-radius:9px;background:var(--green-bg);border:1px solid var(--green);margin-bottom:12px;display:flex;align-items:center;gap:10px">
-      <span style="font-size:13px;font-weight:700;color:var(--green);flex:1">\ud83e\uddd8 Stretching \u2014 <span id="st-sess-elapsed">${fmtDurationS(stretchSessionElapsedS() || 1)}</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--green);flex:1">\ud83e\uddd8 Stretching \u2014 <span class="st-sess-elapsed">${fmtDurationS(stretchSessionElapsedS() || 1)}</span></span>
       <button onclick="stretchSessionStop()" style="padding:8px 14px;border-radius:7px;border:1px solid var(--green-border, var(--green));background:transparent;color:var(--green);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Finish</button>
     </div>`;
   }
@@ -15430,6 +15631,482 @@ function stretchSessionBannerHtml() {
     <button onclick="stretchSessionStart()" style="width:100%;padding:11px;border-radius:9px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">\ud83e\uddd8 I'm stretching</button>
     ${today ? `<div style="font-size:10.5px;color:var(--text-muted);text-align:center;margin-top:5px">${fmtDurationS(today)} stretched today</div>` : ''}
   </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STRETCH ROUTINES ON THE STRETCH SCREEN  (2026-09-30)
+// ══════════════════════════════════════════════════════════════
+// Craig: "I really like the stretch routine, I opened 'start a stretch'
+// yesterday, and needed to select the individual body parts... didn't find
+// routines."
+//
+// The routines (A/B/C, Quick, Deep, Ball release, Yoga, Morning) were reachable
+// only from the workout card — as the day's recommendation on a stretch day, or
+// inside the "other workouts" drawer. This screen, where the "I'm stretching"
+// clock lives, offered body parts and nothing else. Same failure the gym popup
+// had the same day: what he uses was somewhere other than where he went to use
+// it.
+//
+// Now: routines first on this screen, most-done at the top, and a stretch
+// routine's popup carries the same clock, so a session starts and finishes where
+// the stretching happens. Usage comes from the routine ticks (checkboxes
+// r_<routine>_<i>) — the only place a routine has ever recorded being done.
+
+// A/B/C sit where the "Standard" tier is; the morning routine is a stretch
+// routine too, it just had its own button.
+function stretchRoutineKeys() {
+  const keys = [];
+  (typeof STRETCH_TIERS !== 'undefined' ? STRETCH_TIERS : []).forEach(function (t) {
+    if (t.routineKey) keys.push(t.routineKey);
+    else keys.push('stretch_A', 'stretch_B', 'stretch_C');
+  });
+  keys.push('morning');
+  return keys.filter(function (k, i) {
+    return keys.indexOf(k) === i && typeof ROUTINES !== 'undefined' && !!ROUTINES[k];
+  });
+}
+function isStretchRoutineKey(k) {
+  if (!k || typeof ROUTINES === 'undefined' || !ROUTINES[k]) return false;
+  return stretchRoutineKeys().indexOf(k) >= 0 || /^stretch_/.test(k);
+}
+function stretchRoutineLabel(k) {
+  const r = ROUTINES[k] || {};
+  const title = String(r.title || k);
+  const parts = title.split(' — ');
+  const name = parts[0].replace(/^Stretch Routine /, 'Routine ');
+  // The durations in the titles are shown once, in the meta line.
+  const sub = parts.slice(1).join(' — ')
+    .replace(/\(?\s*~?\d+(?:\s*-\s*\d+)?\s*min(?:ute)?s?\s*\)?/ig, '')
+    .replace(/[()]/g, '').trim();
+  const tiers = (typeof STRETCH_TIERS !== 'undefined' ? STRETCH_TIERS : []);
+  const tier = tiers.find(function (t) { return t.routineKey === k; })
+    || (/^stretch_[ABC]$/.test(k) ? tiers.find(function (t) { return t.id === 'standard'; }) : null);
+  const m = title.match(/~?\s*\d+(?:\s*-\s*\d+)?\s*min/i);
+  return {
+    name: name,
+    sub: sub,
+    time: tier ? tier.time : (m ? m[0].replace(/\s+/g, ' ').toLowerCase() : ''),
+    icon: tier ? tier.icon : (k === 'morning' ? '☀️' : '🧘'),
+  };
+}
+// Per routine: days with at least one tick in the window, the newest such day
+// before today, and today's tick count.
+function stretchRoutineUsage(todayStr, days) {
+  const out = {};
+  stretchRoutineKeys().forEach(function (k) { out[k] = { key: k, days: 0, last: null, today: 0 }; });
+  for (let i = 0; i <= (days || 60); i++) {
+    const d = i ? _isoAddDays(todayStr, -i) : todayStr;
+    let cb; try { cb = getChecked(d) || {}; } catch (e) { cb = {}; }
+    const hit = {};
+    Object.keys(cb).forEach(function (ck) {
+      if (!cb[ck] || ck.indexOf('r_') !== 0) return;
+      const rk = ck.slice(2).replace(/_\d+$/, '');
+      if (out[rk]) hit[rk] = (hit[rk] || 0) + 1;
+    });
+    Object.keys(hit).forEach(function (rk) {
+      out[rk].days++;
+      if (i === 0) out[rk].today = hit[rk];
+      else if (!out[rk].last) out[rk].last = d;
+    });
+  }
+  return out;
+}
+function stretchRoutinesSorted(use) {
+  const keys = stretchRoutineKeys();
+  return keys.slice().sort(function (a, b) {
+    return (use[b].days - use[a].days)
+      || String(use[b].last || '').localeCompare(String(use[a].last || ''))
+      || (keys.indexOf(a) - keys.indexOf(b));
+  });
+}
+let _stAllRoutines = false;
+const STRETCH_ROUTINES_SHOWN = 4;
+function stretchRoutinesHtml() {
+  const today = ds(new Date());
+  const use = stretchRoutineUsage(today, 60);
+  const sorted = stretchRoutinesSorted(use);
+  if (!sorted.length) return '';
+  const shown = _stAllRoutines ? sorted : sorted.slice(0, STRETCH_ROUTINES_SHOWN);
+  const rows = shown.map(function (k) {
+    const L = stretchRoutineLabel(k), u = use[k];
+    const total = ((ROUTINES[k] || {}).exercises || []).filter(function (e) { return !e._divider; }).length;
+    const status = u.today
+      ? '<span class="st-rt-done">✓ today · ' + Math.min(u.today, total || u.today) + ' of ' + total + '</span>'
+      : (u.last ? '<span class="st-rt-last">Last ' + _isoShort(u.last) + '</span>' : '');
+    return '<div class="st-rt-row" data-key="' + k + '" onclick="openStretchRoutine(\'' + k + '\')">' +
+      '<span class="st-rt-ic">' + L.icon + '</span>' +
+      '<div class="st-rt-main">' +
+        '<div class="st-rt-name">' + escapeHtml(L.name) + (L.sub ? ' <span class="st-rt-sub">' + escapeHtml(L.sub) + '</span>' : '') + '</div>' +
+        '<div class="st-rt-meta">' + escapeHtml(L.time || '') + (L.time && status ? ' · ' : '') + status + '</div>' +
+      '</div>' +
+      '<span class="st-rt-go">›</span>' +
+    '</div>';
+  }).join('');
+  const more = sorted.length > STRETCH_ROUTINES_SHOWN
+    ? '<button class="st-rt-more" onclick="_stAllRoutines=!_stAllRoutines;renderStretchScreen()">' +
+        (_stAllRoutines ? 'Show fewer' : 'All routines (' + sorted.length + ')') + '</button>'
+    : '';
+  const anyUse = sorted.some(function (k) { return use[k].days; });
+  return '<div class="st-rt"><div class="st-rt-h">Routines <span>' + (anyUse ? 'most-done first' : 'tap one to start') + '</span></div>' +
+    rows + more + '</div>';
+}
+function openStretchRoutine(k) {
+  closeStretch();
+  openRoutinePopup(k, ds(new Date()));
+}
+// Top of a stretch routine's popup: the same "I'm stretching" clock as the
+// stretch screen (today only — a clock on a past day's routine would be a lie),
+// and a way back to the stretch screen.
+function stretchPopupHeaderHtml(routineKey, dateStr) {
+  if (!isStretchRoutineKey(routineKey)) return '';
+  const isToday = dateStr === ds(new Date());
+  return '<div class="st-pop" data-date="' + dateStr + '">' +
+    (isToday && typeof stretchSessionBannerHtml === 'function' ? stretchSessionBannerHtml() : '') +
+    '<button class="st-pop-back" onclick="closePopup();openStretch()">‹ Stretch &amp; mobility — all routines and body parts</button>' +
+  '</div>';
+}
+// Start / Finish pressed inside the popup: redraw it, but only when the popup
+// on screen IS a stretch routine — never clobber some other popup.
+function _stRefreshRoutinePopup() {
+  const bd = document.getElementById('popup-backdrop');
+  const hdr = document.querySelector('#popup-body .st-pop');
+  if (!bd || !bd.classList.contains('open') || !hdr) return;
+  if (typeof _lastPopupKey === 'undefined' || !isStretchRoutineKey(_lastPopupKey)) return;
+  openRoutinePopup(_lastPopupKey, hdr.getAttribute('data-date') || ds(new Date()));
+}
+
+// ══════════════════════════════════════════════════════════════
+// ROUTINE STRETCHES REACH THE LOG  (2026-09-30)
+// ══════════════════════════════════════════════════════════════
+// Craig: "Should have a few ways to get to the 'I did this' being checked, but
+// all things get logged in the same way, then visible through the summary
+// screen."
+//
+// Until this, a tick in a stretch routine wrote a checkbox and nothing else.
+// activity_log — what the day card, the stats page and the Sunday review read —
+// held one stretch row between mid-August and today, while Routine A had been
+// ticked on six days. The stretching was invisible to everything that counts.
+//
+// Every route to "I did this" now ends in one writer:
+//   * the tick in a routine (popup, card, the combined stretch + bodyweight day)
+//   * the routine timer finishing an item
+//   * the ⏱ on a single item finishing
+//   * Done / hold timers on the stretch screen (stretchDone — same store, same key)
+// One shape: an entry in the day's per-set store and a row in activity_log with
+// set_index = that entry's index — what stretchDone and the per-set screen write.
+// One key per movement: a routine item that is a STRETCH_LIB movement logs as
+// st_<lib id>, so Child's Pose from Routine A, from Quick and from the stretch
+// screen is one movement, and doing it one way ticks it everywhere. Items with no
+// library entry log as st_<slug>.
+//
+// A tick records the routine's own prescription (45s hold, 10 reps; the low end
+// of a range) — the rule the stretch screen's Done button has followed since
+// 2026-09-20. A timer that ran to the end records what it counted.
+//
+// Rows from a routine carry metrics.routine_item = the tick's key. That is what
+// makes a tick reversible: un-ticking removes exactly those rows and nothing
+// logged another way, on any device. An action with no inverse is a ratchet.
+
+// Same movement, different wording. Kept explicit — a fuzzy match that decided
+// "Wrist Flexor/Extensor Stretch" was one of two library entries would be a guess
+// written into the log.
+const ROUTINE_STRETCH_LIB = {
+  'cat-cow': 't_catcow', 'cat-cow on floor': 't_catcow', 'cat-cow flow': 't_catcow',
+  'cats & dogs (egoscue)': 't_catcow',
+  "child's pose": 'lb_childs', "child's pose (wide knee)": 'lb_childs',
+  'hip flexor stretch (half-kneel)': 'h_hipflexor',
+  'cross-body shoulder stretch': 's_sleeper',
+  'doorway chest stretch': 'c_doorway',
+  'lying hamstring stretch': 'ham_supine',
+  'lying glute bridge': 'h_glutebridge',
+  'arm circles (small → large)': 's_cars',
+  'neck side bends': 'n_uppertrap',
+};
+function _rtNorm(name) { return String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+function routineStretchLibId(name) {
+  const id = ROUTINE_STRETCH_LIB[_rtNorm(name)];
+  return (id && typeof stretchById === 'function' && stretchById(id)) ? id : '';
+}
+function routineStretchKey(name) {
+  const id = routineStretchLibId(name);
+  if (id) return 'st_' + id;
+  return 'st_' + _rtNorm(name).replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+}
+// Which routine item a tick key is: 'r_<routine>_<i>'. The combined stretch +
+// bodyweight day lists that day's stretch routine first, so its first block maps
+// straight onto it; the bodyweight half is not a stretch and returns null.
+function routineItemForKey(dateStr, key) {
+  const m = /^r_(.+)_(\d+)$/.exec(String(key || ''));
+  if (!m || typeof ROUTINES === 'undefined') return null;
+  let rk = m[1];
+  const i = +m[2];
+  if (rk === 'stretch_bodyweight' && typeof getStretchRotation === 'function') rk = 'stretch_' + getStretchRotation(dateStr);
+  if (!isStretchRoutineKey(rk)) return null;
+  const ex = ((ROUTINES[rk] || {}).exercises || [])[i];
+  if (!ex || ex._divider || !ex.name) return null;
+  const id = routineStretchLibId(ex.name);
+  const lib = id ? stretchById(id) : null;
+  const exKey = routineStretchKey(ex.name);
+  const name = lib ? lib.name : ex.name;
+  if (typeof _exNameCache !== 'undefined') _exNameCache[exKey] = name;
+  return { key: String(key), rk: rk, i: i, ex: ex, lib: lib, exKey: exKey, name: name };
+}
+// What an unlisted routine stretch tracks, from its prescription. Not cached:
+// ROUTINES can be replaced from the database after first paint.
+function _routineStretchTracks(exKey) {
+  if (!exKey || !/^st_/.test(exKey) || typeof ROUTINES === 'undefined') return null;
+  let hit = null;
+  try {
+    stretchRoutineKeys().some(function (rk) {
+      return ((ROUTINES[rk] || {}).exercises || []).some(function (ex) {
+        if (!ex || ex._divider || !ex.name || routineStretchLibId(ex.name)) return false;
+        if (routineStretchKey(ex.name) !== exKey) return false;
+        const timed = parseTimerSeconds(ex.sets) > 0;
+        hit = { tracks: timed ? ['duration'] : ['reps'],
+                kind: rk === 'ball_release' ? 'mobility' : (timed ? 'stretch' : 'mobility'), muscle: '' };
+        return true;
+      });
+    });
+  } catch (e) {}
+  return hit;
+}
+function _rtPerSide(item) {
+  const text = ((item.ex.name || '') + ' ' + (item.ex.sets || '')).toLowerCase();
+  return /\beach (side|leg|arm|foot|hand)\b|per side|l\/r/.test(text) || !!(item.lib && item.lib.perSide);
+}
+// The segments one tick (or one finished timer) stands for.
+function routineItemSegments(item, measured) {
+  const sets = String(item.ex.sets || '');
+  let t, r, rounds;
+  if (measured && Number(measured.t) > 0) {
+    t = Math.round(Number(measured.t)); r = 0;
+    rounds = Math.max(1, Number(measured.sides) || 1);
+  } else {
+    t = parseTimerSeconds(sets);
+    const reps = /(\d+)\s*reps?\b/i.exec(sets);
+    const lead = /(\d+)/.exec(sets);
+    r = reps ? +reps[1] : (t ? 0 : (lead ? +lead[1] : 0));
+    if (!t && !r && item.lib && typeof stretchDefaultEntry === 'function') {
+      const d = stretchDefaultEntry(item.lib.id) || {};
+      t = Number(d.t) || 0; r = Number(d.r) || 0;
+    }
+    if (!t && !r) r = 1;     // a tick is evidence of one, whatever else is missing
+    rounds = _rtPerSide(item) ? 2 : 1;
+  }
+  const out = [];
+  for (let n = 0; n < rounds; n++) out.push({ w: 0, r: r, d: 0, t: t, side: rounds > 1 ? 'both' : '', flag: '' });
+  return out;
+}
+
+function _exAggregate(data) {
+  const first = (data.entries || [])[0] || {};
+  data.weight = first.w || 0; data.reps = first.r || 0; data.sets = (data.entries || []).length;
+}
+function _exSaveDay(dateStr, all) {
+  try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
+}
+function _entryFromRow(r) {
+  const e = { w: Number(r.weight) || 0, r: Number(r.reps) || 0, d: Number(r.distance_m) || 0,
+              t: Number(r.duration_s) || 0, flag: r.flag || '' };
+  if (r.side) e.side = r.side;
+  if (r.metrics && r.metrics.routine_item) e.src = r.metrics.routine_item;
+  return e;
+}
+// The per-set store is per device; the log is not. When the log holds rows for
+// this movement beyond what this device's store knows (logged on the phone,
+// looked at on the laptop), bring the store up to the log before appending —
+// otherwise the next entry takes an index the phone already used and overwrites
+// that row.
+function _hydrateEntriesFromLog(dateStr, exKey, exName) {
+  if (typeof getActivity !== 'function' || typeof getExSets !== 'function') return false;
+  const rows = getActivity(dateStr).filter(r => r.exercise_key === exKey);
+  if (!rows.length) return false;
+  const all = getExSets(dateStr);
+  const data = all[exKey] || (all[exKey] = {});
+  const entries = Array.isArray(data.entries) ? data.entries : [];
+  const maxIdx = Math.max.apply(null, rows.map(r => Number(r.set_index) || 0));
+  if (maxIdx < entries.length) return false;
+  const out = entries.slice();
+  for (let i = 0; i <= maxIdx; i++) {
+    if (out[i]) continue;
+    const r = rows.find(x => (Number(x.set_index) || 0) === i);
+    out[i] = r ? _entryFromRow(r) : { w: 0, r: 0, flag: '' };
+  }
+  data.entries = out;
+  if (!data.name && exName) data.name = exName;
+  _exAggregate(data);
+  _exSaveDay(dateStr, all);
+  return true;
+}
+function _logEntryRow(dateStr, exKey, exName, idx, e, prev) {
+  if (!e || !_trackEntryIsReal(exKey, exName, e)) return null;
+  const o = Object.assign({
+    date: dateStr, name: exName, exercise_key: exKey, set_index: idx,
+    flag: e.flag || '', side: e.side || '',
+  }, prev ? { started_at: prev.started_at || null, rest_s: prev.rest_s ?? null,
+              variant: prev.variant || '', variant_mult: prev.variant_mult || 1, notes: prev.notes || '' } : {},
+  _trackToStorage(exKey, exName, e));
+  if (e.src) {
+    o.source = 'routine';
+    o.metrics = Object.assign({}, (prev && prev.metrics) || {}, { routine_item: e.src });
+  } else if (prev) {
+    if (prev.source) o.source = prev.source;
+    if (prev.metrics) o.metrics = prev.metrics;
+  }
+  return logActivity(o);
+}
+// The one writer. Appends to the day's per-set store and logs each new entry.
+function logMovementSegments(dateStr, exKey, exName, segs, tag) {
+  if (typeof getExSets !== 'function' || !segs || !segs.length) return 0;
+  if (typeof _materializeEntries === 'function') _materializeEntries(dateStr, exKey, exName);
+  _hydrateEntriesFromLog(dateStr, exKey, exName);
+  const all = getExSets(dateStr);
+  const data = all[exKey] || (all[exKey] = {});
+  if (!Array.isArray(data.entries)) data.entries = getExSetEntries(dateStr, exKey).slice();
+  if (!data.name) data.name = exName;
+  const start = data.entries.length;
+  segs.forEach(function (sg) {
+    const e = { w: Number(sg.w) || 0, r: Number(sg.r) || 0, d: Number(sg.d) || 0,
+                t: Math.round(Number(sg.t) || 0), flag: sg.flag || '' };
+    if (sg.side) e.side = sg.side;
+    if (tag) e.src = tag;
+    data.entries.push(e);
+  });
+  _exAggregate(data);
+  _exSaveDay(dateStr, all);
+  for (let i = start; i < data.entries.length; i++) _logEntryRow(dateStr, exKey, exName, i, data.entries[i], null);
+  return data.entries.length - start;
+}
+let _rtQuietRemove = false;   // true while rows are removed only to be renumbered
+function _removeTaggedEntries(dateStr, exKey, exName, tag) {
+  _hydrateEntriesFromLog(dateStr, exKey, exName);
+  const all = getExSets(dateStr);
+  const data = all[exKey];
+  let removed = 0;
+  _rtQuietRemove = true;
+  try {
+    if (data && Array.isArray(data.entries)) {
+      const first = data.entries.findIndex(e => e && e.src === tag);
+      if (first !== -1) {
+        const before = getActivity(dateStr).filter(r => r.exercise_key === exKey);
+        const byIdx = {};
+        before.forEach(r => { byIdx[Number(r.set_index) || 0] = r; });
+        const keep = [];
+        data.entries.forEach((e, idx) => { if (e && e.src === tag) removed++; else keep.push({ e: e, oldIdx: idx }); });
+        data.entries = keep.map(k => k.e);
+        _exAggregate(data);
+        _exSaveDay(dateStr, all);
+        // Same renumbering as removeSessionSet: drop this movement's rows from the
+        // first removed index on, re-log the survivors at their new positions,
+        // carrying what each row already knew (time, rest, variant, source).
+        before.filter(r => (Number(r.set_index) || 0) >= first).forEach(r => removeActivity(dateStr, r.client_id));
+        keep.forEach((k, newIdx) => { if (newIdx >= first) _logEntryRow(dateStr, exKey, exName, newIdx, k.e, byIdx[k.oldIdx]); });
+      }
+    }
+    // Rows another device tagged, with no entry on this one.
+    getActivity(dateStr)
+      .filter(r => r.exercise_key === exKey && r.metrics && r.metrics.routine_item === tag)
+      .forEach(r => { removeActivity(dateStr, r.client_id); removed++; });
+  } finally { _rtQuietRemove = false; }
+  return removed;
+}
+// Idempotent: a tick already in the log is not logged twice. A finished timer
+// replaces what the tick assumed with what it measured.
+function routineItemDone(dateStr, key, measured) {
+  const item = routineItemForKey(dateStr, key);
+  if (!item || typeof getActivity !== 'function') return 0;
+  const tagged = getActivity(dateStr).some(r => r.exercise_key === item.exKey && r.metrics && r.metrics.routine_item === item.key);
+  if (tagged && !measured) return 0;
+  if (tagged) _removeTaggedEntries(dateStr, item.exKey, item.name, item.key);
+  return logMovementSegments(dateStr, item.exKey, item.name, routineItemSegments(item, measured), item.key);
+}
+function routineItemUndo(dateStr, key) {
+  const item = routineItemForKey(dateStr, key);
+  if (!item) return 0;
+  const n = _removeTaggedEntries(dateStr, item.exKey, item.name, item.key);
+  if (typeof setChecked === 'function') setChecked(dateStr, item.key, false);
+  return n;
+}
+// Morning / stretch task auto-ticks past half the routine — the rule
+// toggleExercise and the routine timer already apply.
+function _rtAutoTask(dateStr, key) {
+  const m = /^r_(.+)_\d+$/.exec(String(key || ''));
+  if (!m || typeof ROUTINES === 'undefined') return;
+  const rk = m[1], routine = ROUTINES[rk];
+  if (!routine || !routine.exercises) return;
+  const total = routine.exercises.filter(e => !e._divider).length;
+  const prefix = 'r_' + rk + '_';
+  const checked = getChecked(dateStr);
+  const done = Object.keys(checked).filter(k => k.startsWith(prefix) && checked[k]).length;
+  const taskKey = rk === 'morning' ? 's_morning' : rk.startsWith('stretch_') ? 's_stretch' : null;
+  if (taskKey && done > total / 2) setChecked(dateStr, taskKey, true);
+}
+// The tick on a stretch-routine item. The box shows the LOG: done when this
+// movement is logged today by any route, so un-ticking something that was also
+// done on the stretch screen removes the routine's rows and says why it stays.
+function toggleRoutineStretch(el, dateStr, item) {
+  const turningOn = !(el && el.classList && el.classList.contains('done'));
+  if (turningOn) {
+    setChecked(dateStr, item.key, true);
+    routineItemDone(dateStr, item.key);
+    _rtAutoTask(dateStr, item.key);
+  } else {
+    routineItemUndo(dateStr, item.key);
+  }
+  const left = getActivity(dateStr).filter(r => r.exercise_key === item.exKey).length;
+  const done = left > 0 || !!getChecked(dateStr)[item.key];
+  if (el && el.classList) {
+    el.classList.toggle('done', done);
+    const cb = el.querySelector && el.querySelector('.check-box');
+    if (cb) { cb.textContent = done ? '✓' : ''; cb.classList.toggle('checked', done); }
+  }
+  if (!turningOn && done && typeof toast === 'function') {
+    toast(item.name + ' is also logged another way today — remove it from the day’s log if that was a mistake.', 'warn');
+  }
+  if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+  return done;
+}
+// Ticks made before this existed. Safe on every load and every device: a tick
+// whose rows are already in the log is skipped. Reaches back as far as this
+// device has checkboxes loaded (about three months).
+async function routineTickSweep() {
+  if (typeof getChecked !== 'function' || typeof getActivity !== 'function') return 0;
+  // An old tick indexes into the routine as it stood when it was ticked — for a
+  // signed-in user, the database's copy. The built-in list differs (the morning
+  // routine does), so without the database copy, wait for the next load rather
+  // than map ticks onto the wrong movements.
+  if (typeof sbReady !== 'undefined' && sbReady && !window._routinesFromDB) return 0;
+  const today = ds(new Date());
+  const dates = {};
+  try { Object.keys((DB_CACHE && DB_CACHE.checkboxes) || {}).forEach(d => { dates[d] = true; }); } catch (e) {}
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && /^cb_\d{4}-\d{2}-\d{2}$/.test(k)) dates[k.slice(3)] = true;
+    }
+  } catch (e) {}
+  const isTagged = (d, k) => (getActivity(d) || []).some(r => r.metrics && r.metrics.routine_item === k);
+  const todo = [];
+  Object.keys(dates).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d) && d <= today).sort().forEach(d => {
+    const cb = getChecked(d) || {};
+    Object.keys(cb).forEach(k => {
+      if (!cb[k] || k.indexOf('r_') !== 0) return;
+      if (!routineItemForKey(d, k) || isTagged(d, k)) return;
+      todo.push([d, k]);
+    });
+  });
+  if (!todo.length) return 0;
+  // Know the server's rows for those days first, or this device would write
+  // ticks another device already wrote.
+  if (typeof ensureActivityRange === 'function') { try { await ensureActivityRange(todo[0][0], today); } catch (e) {} }
+  let n = 0;
+  const own = (typeof _actBatch !== 'undefined' && _actBatch === null);
+  if (own) _actBatch = [];
+  try {
+    todo.forEach(function (x) { if (!isTagged(x[0], x[1])) n += routineItemDone(x[0], x[1]); });
+  } finally { if (own) _flushActBatch(); }
+  if (n && typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+  return n;
 }
 
 function renderStretchScreen() {
@@ -15453,9 +16130,11 @@ function _stSessTick() {
   if (_stSessTicker) { clearInterval(_stSessTicker); _stSessTicker = null; }
   if (!STRETCH_SESSION) return;
   _stSessTicker = setInterval(() => {
-    const el = document.getElementById('st-sess-elapsed');
-    if (!el) { clearInterval(_stSessTicker); _stSessTicker = null; return; }
-    el.textContent = fmtDurationS(stretchSessionElapsedS() || 1);
+    // Every banner showing — the stretch screen and a stretch routine's popup.
+    const els = document.querySelectorAll('.st-sess-elapsed');
+    if (!els.length) { clearInterval(_stSessTicker); _stSessTicker = null; return; }
+    const t = fmtDurationS(stretchSessionElapsedS() || 1);
+    els.forEach(el => { el.textContent = t; });
   }, 1000);
 }
 
@@ -15550,7 +16229,7 @@ function _renderStretchScreenInner() {
   if (title) title.textContent = 'Stretch & mobility';
   const myConds = getUserConditions();
   const cx = contraindications();
-  body.innerHTML = `
+  body.innerHTML = (typeof stretchRoutinesHtml === 'function' ? stretchRoutinesHtml() : '') + `
     <div onclick="_stGo('conditions')" style="display:flex;align-items:center;gap:9px;padding:11px;border-radius:9px;background:var(--input-bg);border:1px solid var(--card-border);cursor:pointer;margin-bottom:12px;min-height:48px">
       <span style="font-size:16px">🩺</span>
       <div style="flex:1">
@@ -16398,9 +17077,20 @@ function _flushActBatch() {
 }
 
 function removeActivity(dateStr, clientId) {
-  const rows = getActivity(dateStr).filter(r => r.client_id !== clientId);
+  const before = getActivity(dateStr);
+  const gone = before.find(r => r.client_id === clientId);
+  const rows = before.filter(r => r.client_id !== clientId);
   _actSave(dateStr, rows);
   if (sbReady) sb.from('activity_log').delete().eq('client_id', clientId).then(() => {});
+  // A routine tick is the record of the rows it wrote (2026-09-30). Delete the
+  // last of them from the day's log and the tick goes too — or the next sweep
+  // would write it straight back.
+  const tag = gone && gone.metrics && gone.metrics.routine_item;
+  if (tag && !(typeof _rtQuietRemove !== 'undefined' && _rtQuietRemove)
+      && !rows.some(r => r.metrics && r.metrics.routine_item === tag)
+      && typeof setChecked === 'function') {
+    setChecked(dateStr, tag, false);
+  }
 }
 
 async function fetchActivity(dateStr) {
@@ -16422,6 +17112,7 @@ function getWeekLoad() {
     const d = new Date(today); d.setDate(d.getDate() - i);
     const rows = getActivity(ds(d));
     if (rows.length) out.days++;
+    let holdS = 0, sessS = 0;
     rows.forEach(r => {
       if (r.kind === 'strength') {
         out.strength_sets++;
@@ -16429,10 +17120,14 @@ function getWeekLoad() {
       } else if (r.kind === 'cardio') {
         out.cardio_m += Number(r.distance_m) || 0;
         out.cardio_s += Number(r.duration_s) || 0;
-      } else {
-        out.stretch_s += Number(r.duration_s) || 0;
+      } else if (r.kind === 'stretch' || r.kind === 'mobility') {
+        holdS += Number(r.duration_s) || 0;
+      } else if (r.kind === 'stretch_time') {
+        sessS += Number(r.duration_s) || 0;
       }
+      // gym_time is not stretching (it was counted as such until 2026-09-30).
     });
+    out.stretch_s += Math.max(holdS, sessS);
   }
   return out;
 }
@@ -16657,7 +17352,8 @@ function exTracksFor(exKey, exName) {
   // ("30s each side") and left reps/duration_s/side NULL — nothing could roll it
   // up, and the log recorded what was asked for rather than what was done.
   if (typeof stretchTracksFor === 'function' && /^st_/.test(exKey || '')) {
-    const st = stretchTracksFor(exKey);
+    const st = stretchTracksFor(exKey)
+      || (typeof _routineStretchTracks === 'function' ? _routineStretchTracks(exKey) : null);
     if (st) return st;
   }
   const rt = (typeof _routineTracks === 'function') ? _routineTracks(exKey) : null;
@@ -17876,7 +18572,14 @@ function _migrateWorkoutLogToActivity(dateStr) {
     if (MIGRATED_WO_IDS.indexOf(woId) !== -1) {
       const t = Number(entry.time) || 0;      // minutes, as the old rows stored it
       const d = Number(entry.dist) || 0;
-      if (t > 0 || d > 0) {
+      // 2026-09-29: a day blob written BY a machine source is not a legacy
+      // entry to convert. The C2 sync writes the row blob for the card's row
+      // line; this sweep turned it back into a day-total on the next load, on
+      // top of the per-session C2 rows — every synced day counted twice.
+      // Apple walks own their rows the same way (ah- ids).
+      const machine = entry.source === 'c2' || entry.source === 'apple_health' ||
+        (woId === 'row' && getActivity(dateStr).some(r => /^c2-/.test(String(r.client_id || ''))));
+      if (!machine && (t > 0 || d > 0)) {
         const key = 'wo_' + woId;
         logActivity(Object.assign({
           date: dateStr, name: _legacyWoLabel(woId), exercise_key: key,
@@ -18154,6 +18857,7 @@ function removeSessionSet(exKey, idx) {
   const all = (typeof getExSets === 'function') ? getExSets(dateStr) : {};
   const data = all[exKey];
   if (!data || !Array.isArray(data.entries)) return;
+  const removedSrc = (data.entries[idx] && data.entries[idx].src) || '';
   data.entries.splice(idx, 1);
   const first = data.entries[0] || {};
   data.weight = first.w || 0;
@@ -18162,14 +18866,24 @@ function removeSessionSet(exKey, idx) {
   try { localStorage.setItem('exsets_' + dateStr, JSON.stringify(all)); } catch (e) {}
   // Removing set 2 of 4 renumbers 3 and 4, so drop this exercise's rows for the
   // day and re-log the survivors rather than trying to patch indices in place.
-  getActivity(dateStr)
-    .filter(r => r.exercise_key === exKey && r.set_index >= idx)
-    .forEach(r => removeActivity(dateStr, r.client_id));
+  // A survivor a routine tick wrote keeps its tag (2026-09-30), and the removed
+  // set's tick clears only when none of its rows is left.
+  if (typeof _rtQuietRemove !== 'undefined') _rtQuietRemove = true;
+  try {
+    getActivity(dateStr)
+      .filter(r => r.exercise_key === exKey && r.set_index >= idx)
+      .forEach(r => removeActivity(dateStr, r.client_id));
+  } finally { if (typeof _rtQuietRemove !== 'undefined') _rtQuietRemove = false; }
   data.entries.slice(idx).forEach((e, i) => {
     logActivity(Object.assign({
       name: _sessExName, exercise_key: exKey, set_index: idx + i, flag: e.flag || '',
-    }, _trackToStorage(exKey, _sessExName, e)));
+    }, _trackToStorage(exKey, _sessExName, e),
+    e.src ? { source: 'routine', metrics: { routine_item: e.src } } : {}));
   });
+  if (removedSrc && typeof setChecked === 'function'
+      && !getActivity(dateStr).some(r => r.metrics && r.metrics.routine_item === removedSrc)) {
+    setChecked(dateStr, removedSrc, false);
+  }
   renderExerciseScreen();
   _refreshBehindSession();
 }
@@ -25114,16 +25828,31 @@ function startExTimer(seconds, btnEl) {
       _timerLabel().textContent = 'FLIP SIDES';
       if (navigator.vibrate) navigator.vibrate([150, 100, 150]);
       _beep([[660, 0], [880, 0.25]]);
-      setTimeout(() => runPhase('→ Right Side', () => _timerFinishSolo(btnEl, wakeLock)), 2000);
+      setTimeout(() => runPhase('→ Right Side', () => _timerFinishSolo(btnEl, wakeLock, seconds, 2)), 2000);
     });
   } else {
-    runPhase('', () => _timerFinishSolo(btnEl, wakeLock));
+    runPhase('', () => _timerFinishSolo(btnEl, wakeLock, seconds, 1));
   }
 }
 
-function _timerFinishSolo(btnEl, wakeLock) {
+function _timerFinishSolo(btnEl, wakeLock, secs, sides) {
   if (_activeTimer) clearInterval(_activeTimer.interval);
   _activeTimer = null;
+  // A ⏱ that ran to the end on a stretch-routine item ticks it and logs the hold
+  // (2026-09-30). It used to beep and record nothing.
+  try {
+    const item = btnEl && btnEl.closest ? btnEl.closest('.exercise-item') : null;
+    const ck = item && item.getAttribute('data-ck'), dt = item && item.getAttribute('data-date');
+    if (ck && dt && secs > 0 && typeof routineItemForKey === 'function' && routineItemForKey(dt, ck)) {
+      setChecked(dt, ck, true);
+      routineItemDone(dt, ck, { t: secs, sides: sides || 1 });
+      _rtAutoTask(dt, ck);
+      item.classList.add('done');
+      const cb = item.querySelector('.check-box');
+      if (cb) cb.textContent = '\u2713';
+      if (typeof scheduleRender === 'function' && typeof renderDaily === 'function') scheduleRender(renderDaily);
+    }
+  } catch (e) {}
   _showDone();
   btnEl.classList.remove('running');
   btnEl.textContent = '✓';
@@ -25196,6 +25925,10 @@ function _runQueueStep() {
   function afterPhases() {
     // Auto-check the exercise
     setChecked(dateStr, ex.checkKey, true);
+    // Ran to the end: a measured hold, logged the same way a tick is (2026-09-30).
+    if (typeof routineItemDone === 'function') {
+      try { routineItemDone(dateStr, ex.checkKey, { t: ex.secs, sides: ex.bothSides ? 2 : 1 }); } catch (e) {}
+    }
     // Also auto-check morning/stretch task if >50% done
     const routine = ROUTINES[_timerQueue.routineKey];
     if (routine) {
@@ -25392,6 +26125,111 @@ function circuitHeaderHtml(routineKey, dateStr) {
 // ══════════════════════════════════════════════
 // POPUP SYSTEM
 // ══════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// GYM LOGGING — find it, and log it the way it happened (2026-09-30)
+// ────────────────────────────────────────────────────────────────────────────
+// Craig, after a gym session: "the way we have the exercise menu, I couldn't
+// find what was needed; instead I had to log my exercises through ideas." He
+// typed each machine's sets into the suggestions box as free text.
+//
+// Why the app lost him:
+//   * 🏋️ Gym opens on a prescribed Full Body routine (dumbbell bench, cable
+//     row…) he does not follow. The machines he actually uses were ~1,400 px
+//     further down.
+//   * When he got there, each machine was ONE weight × ONE rep count × sets.
+//     A session that changes weight between sets could not be said, and no set
+//     could be flagged. The per-set fix of 2026-09-25 reached
+//     the routine rows and never reached this section.
+//   * "Find an exercise" logged the same machine under a different key
+//     (gymex_chest_press_machine vs gymmachine_chest_press), so the two routes
+//     would have split one machine's history in two.
+//
+// Now: the popup opens with "Your usual" — what he has logged recently — and
+// every machine row is the same per-set stack as a routine row (weight × reps
+// per set, S/F/P flag), collapsed to one line until tapped. "Last time" comes
+// from activity_log, so it is the same on every device.
+// ════════════════════════════════════════════════════════════════════════════
+const _gxOpen = {};   // exKey → true while expanded this session
+
+// One pass over the last `days` of the log: per key, how many days it was
+// logged, the newest day, that day's sets and a display name.
+function gymLogIndex(dateStr, days) {
+  const idx = {};
+  for (let i = 1; i <= (days || 90); i++) {
+    const d = _isoAddDays(dateStr, -i);
+    let rows; try { rows = getActivity(d) || []; } catch (e) { rows = []; }
+    rows.forEach(r => {
+      if ((r.kind || 'strength') !== 'strength' || !r.exercise_key) return;
+      const k = r.exercise_key;
+      const e = idx[k] || (idx[k] = { key: k, name: r.exercise_name || k, days: {}, lastDate: null, lastSets: [] });
+      e.days[d] = true;
+      if (!e.lastDate || d > e.lastDate) { e.lastDate = d; e.lastSets = []; }
+      if (d === e.lastDate) e.lastSets.push(r);
+    });
+  }
+  Object.keys(idx).forEach(k => {
+    idx[k].dayCount = Object.keys(idx[k].days).length;
+    idx[k].lastSets.sort((a, b) => (a.set_index || 0) - (b.set_index || 0));
+  });
+  return idx;
+}
+function _gxSetsText(sets) {
+  return sets.map(s => {
+    const w = Number(s.weight || s.w) || 0, r = Number(s.reps || s.r) || 0;
+    return (w ? w + '×' : '') + r + (s.flag ? ' [' + s.flag + ']' : '');
+  }).join(', ');
+}
+// Recently used strength movements, most-used first. Machines, gym moves and
+// anything logged from Find — the list is what he does, not what a plan says.
+function gymUsualKeys(dateStr, idx, n) {
+  const since = _isoAddDays(dateStr, -42);
+  return Object.keys(idx)
+    .map(k => idx[k])
+    .filter(e => e.lastDate >= since && /^(gymmachine_|gymex_)/.test(e.key))
+    .sort((a, b) => b.dayCount - a.dayCount || (a.lastDate < b.lastDate ? 1 : -1))
+    .slice(0, n || 8);
+}
+function _gxIsOpen(dateStr, exKey) {
+  if (_gxOpen[exKey] !== undefined) return _gxOpen[exKey];
+  // Not touched yet this session: open when today already has sets.
+  const today = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey).filter(s => (Number(s.r) || 0) > 0) : [];
+  return today.length > 0;
+}
+function toggleGymLogRow(dateStr, exKey) {
+  _gxOpen[exKey] = !_gxIsOpen(dateStr, exKey);
+  if (typeof _lastPopupKey === 'string' && _lastPopupKey) openRoutinePopup(_lastPopupKey, dateStr);
+}
+// One movement, one line until tapped; tapped, the per-set stack.
+function gymLogRowHtml(dateStr, exKey, label, idx) {
+  const today = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, exKey).filter(s => (Number(s.r) || 0) > 0) : [];
+  const open = _gxIsOpen(dateStr, exKey);
+  const prev = idx && idx[exKey] && idx[exKey].lastDate < dateStr ? idx[exKey] : null;
+  const safeKey = String(exKey).replace(/'/g, "\\'");
+  const sum = today.length
+    ? '<span class="gx-today">' + today.length + ' set' + (today.length === 1 ? '' : 's') + ' · ' + escapeHtml(_gxSetsText(today)) + '</span>'
+    : (prev ? '<span class="gx-last">Last ' + _isoShort(prev.lastDate) + ': ' + escapeHtml(_gxSetsText(prev.lastSets)) + '</span>' : '');
+  return '<div class="gx-row' + (open ? ' open' : '') + (today.length ? ' done' : '') + '">' +
+    '<div class="gx-head" onclick="event.stopPropagation();toggleGymLogRow(\'' + dateStr + '\',\'' + safeKey + '\')">' +
+      '<span class="gx-name">' + escapeHtml(label) + '</span>' + sum +
+      '<span class="gx-caret">' + (open ? '▾' : '+') + '</span>' +
+    '</div>' +
+    (open
+      ? '<div class="gx-body" onclick="event.stopPropagation()">' + buildExSetStack(dateStr, exKey) +
+          (prev && today.length ? '<div class="gx-last" style="margin-top:3px">Last ' + _isoShort(prev.lastDate) + ': ' + escapeHtml(_gxSetsText(prev.lastSets)) + '</div>' : '') +
+          '<button class="gx-rest" onclick="event.stopPropagation();startRestTimer(null,\'' + String(label).replace(/'/g, "\\'") + '\')">⏱ Rest</button>' +
+        '</div>'
+      : '') +
+  '</div>';
+}
+function gymUsualHtml(dateStr, idx) {
+  const usual = gymUsualKeys(dateStr, idx, 8);
+  if (!usual.length) return '';
+  return '<div class="gx-section">' +
+    '<div class="gx-section-h">Your usual <span>tap one, then weight × reps for each set</span></div>' +
+    usual.map(e => gymLogRowHtml(dateStr, e.key, (typeof exNameForKey === 'function' ? exNameForKey(e.key, {}) : '') || e.name, idx)).join('') +
+  '</div>';
+}
+
 function openRoutinePopup(routineKey, dateStr) {
   // Handle combined stretch + bodyweight days
   if (routineKey === 'stretch_bodyweight' || routineKey === 'stretch_day') {
@@ -25432,6 +26270,8 @@ function openRoutinePopup(routineKey, dateStr) {
     ? applyExSwaps(routineKey, routine.exercises, dateStr)
     : routine.exercises;
   const hasTimedExs = effectiveExercises.some(e => !e._divider && parseTimerSeconds(e.sets) > 0);
+  const _isStretchRt = typeof isStretchRoutineKey === 'function' && typeof routineStretchKey === 'function'
+    && isStretchRoutineKey(routineKey);
 
   document.getElementById('popup-title').textContent = routine.title;
   const ratings = getRatings(dateStr);
@@ -25441,7 +26281,10 @@ function openRoutinePopup(routineKey, dateStr) {
   const _actCount = {};
   (typeof getActivity === 'function' ? getActivity(dateStr) : [])
     .forEach(function (r) { _actCount[r.exercise_key] = (_actCount[r.exercise_key] || 0) + 1; });
+  const _gxIdx = isGymRoutine ? gymLogIndex(dateStr, 90) : null;
   document.getElementById('popup-body').innerHTML =
+    (isGymRoutine ? gymUsualHtml(dateStr, _gxIdx) : '') +
+    ((typeof stretchPopupHeaderHtml === 'function') ? stretchPopupHeaderHtml(routineKey, dateStr) : '') +
     ((isLiftRoutine && typeof lastSessionBannerHtml === 'function') ? lastSessionBannerHtml(dateStr, routineKey) : '') +
     ((typeof circuitHeaderHtml === 'function') ? circuitHeaderHtml(routineKey, dateStr) : '') +
     (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
@@ -25453,7 +26296,9 @@ function openRoutinePopup(routineKey, dateStr) {
       const key = prefix + i;
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      // A stretch routine's item is its movement (2026-09-30): the same key the
+      // stretch screen logs, so doing it either way ticks it here.
+      const exKey = (_isStretchRt ? routineStretchKey(ex.name) : exSetKey(dateStr, routineKey, i, ex.name));
       // Ticked manually, OR logged. Logging a set IS doing the exercise.
       const done = (checked[key] || (_actCount[exKey] || 0) > 0) ? 'done' : '';
       const setData = getExSets(dateStr)[exKey] || {};
@@ -25466,7 +26311,7 @@ function openRoutinePopup(routineKey, dateStr) {
       const timerSecs = parseTimerSeconds(ex.sets);
       const timerHtml = timerSecs > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs},this)">⏱</div></div>` : '';
       return `
-        <div class="exercise-item ${done}">
+        <div class="exercise-item ${done}" data-ck="${key}" data-date="${dateStr}">
           ${timerHtml}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">
@@ -25491,7 +26336,7 @@ function openRoutinePopup(routineKey, dateStr) {
         </div>`;
     }).join('') +
     '</div>' +
-    (isGymRoutine ? buildGymExtras(dateStr, exSets) : '') +
+    (isGymRoutine ? buildGymExtras(dateStr, exSets, _gxIdx) : '') +
     '<div class="notes-section">' +
       '<div class="notes-label">Notes for ' + dateStr + '</div>' +
       '<textarea class="notes-input" placeholder="How did it feel? Any modifications? Energy level?" oninput="setNotes(\'' + dateStr + '\',this.value)">' + getNotes(dateStr) + '</textarea>' +
@@ -25499,6 +26344,7 @@ function openRoutinePopup(routineKey, dateStr) {
   document.getElementById('popup-backdrop').classList.add('open');
   // iOS Safari caches textarea.value across innerHTML replacements — force reset
   document.querySelectorAll('#popup-body textarea').forEach(ta => { ta.value = ta.defaultValue; });
+  if (typeof _stSessTick === 'function' && document.querySelector('#popup-body .st-sess-elapsed')) _stSessTick();
 }
 
 function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
@@ -25520,14 +26366,15 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
       const key = prefix + i;
       const rKey = routineKey + '_' + i;
       const rating = ratings[rKey];
-      const exKey = exSetKey(dateStr, routineKey, i, ex.name);
+      const exKey = (ex._section === 'stretch' && typeof routineStretchKey === 'function')
+        ? routineStretchKey(ex.name) : exSetKey(dateStr, routineKey, i, ex.name);
       const done = (checked[key] || (_actCount[exKey] || 0) > 0) ? 'done' : '';
       const setData = getExSets(dateStr)[exKey] || {};
       const showBwTrack = ex.trackReps;
       const timerSecs2 = parseTimerSeconds(ex.sets);
       const timerHtml2 = timerSecs2 > 0 ? `<div style="display:flex;align-items:center;flex-shrink:0" onclick="event.stopPropagation()"><div class="ex-timer-btn" onclick="startExTimer(${timerSecs2},this)">⏱</div></div>` : '';
       return `
-        <div class="exercise-item ${done}">
+        <div class="exercise-item ${done}" data-ck="${key}" data-date="${dateStr}">
           ${timerHtml2}
           <div class="check-box" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">${done ? '✓' : ''}</div>
           <div class="ex-info" onclick="toggleExercise(this.parentElement,'${dateStr}','${key}','${exKey}')">
@@ -25553,7 +26400,7 @@ function openRoutinePopupWithData(routineKey, routine, dateStr, isTrackable) {
   document.querySelectorAll('#popup-body textarea').forEach(ta => { ta.value = ta.defaultValue; });
 }
 
-function buildGymExtras(dateStr, exSets) {
+function buildGymExtras(dateStr, exSets, glIdx) {
   // ── CARDIO SECTION ──
   let cardioHtml = '<div style="margin-top:14px;padding-top:10px;border-top:2px solid var(--purple-border)">' +
     '<div style="font-size:11px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">🏃 Cardio</div>';
@@ -25606,35 +26453,16 @@ function buildGymExtras(dateStr, exSets) {
     '<div style="font-size:9px;color:var(--text-muted);margin-bottom:8px">' +
       (_loc && _loc.machines && _loc.machines.length
         ? 'Showing what ' + escapeHtml(_loc.name) + ' has. Edit the list in Settings → Gyms.'
-        : 'Log weight × reps × sets for each machine used. Previous workout shown in purple.') +
+        : 'Tap a machine, then weight × reps for each set. S / F / P flags a shoulder, form or pain set.') +
     '</div>';
 
   Object.keys(muscleGroups).forEach(function(muscle) {
     machineHtml += '<div style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;letter-spacing:0.5px;margin:8px 0 3px;padding-top:4px;border-top:1px solid var(--divider)">' + muscle + '</div>';
     muscleGroups[muscle].forEach(function(m) {
-      var ek = 'gymmachine_' + m.id;
-      var d = exSets[ek] || {};
-      var prev = getPrevExData(dateStr, ek);
-      var isDone = d.weight > 0 || d.reps > 0;
-      machineHtml += '<div style="display:flex;align-items:center;gap:4px;padding:3px 0;' + (isDone ? 'background:rgba(74,222,128,0.06);margin:0 -4px;padding:3px 4px;border-radius:4px' : '') + '">' +
-        '<span style="font-size:11px;font-weight:600;color:var(--text);min-width:130px;font-size:10px">' + m.label + '</span>' +
-        '<input class="wlog-input" type="number" placeholder="lbs" min="0" max="999" step="5" style="width:40px" value="' + (d.weight || '') + '" ' +
-          'onchange="setExSet(\'' + dateStr + '\',\'' + ek + '\',\'weight\',parseFloat(this.value)||0)" onclick="event.stopPropagation()">' +
-        '<span class="wlog-unit">lbs</span>' +
-        '<input class="wlog-input" type="number" placeholder="reps" min="0" max="100" style="width:36px" value="' + (d.reps || '') + '" ' +
-          'onchange="setExSet(\'' + dateStr + '\',\'' + ek + '\',\'reps\',parseFloat(this.value)||0)" onclick="event.stopPropagation()">' +
-        '<span class="wlog-unit">×</span>' +
-        '<input class="wlog-input" type="number" placeholder="sets" min="0" max="20" style="width:32px" value="' + (d.sets || '') + '" ' +
-          'onchange="setExSet(\'' + dateStr + '\',\'' + ek + '\',\'sets\',parseFloat(this.value)||0)" onclick="event.stopPropagation()">' +
-        '<span class="wlog-unit">sets</span>' +
-        // Per-set rest trigger (added 2026-08-14). Compound lifts default to the
-        // long rest, isolation work to the short one — see REST_PRESETS.
-        '<button onclick="event.stopPropagation();startRestTimer(null,\'' + m.label.replace(/'/g, "\\'") + '\')" ' +
-          'title="Start rest timer" ' +
-          'style="margin-left:4px;padding:2px 6px;border-radius:4px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:10px;cursor:pointer;font-family:inherit;flex-shrink:0">⏱</button>';
-      if (isDone) machineHtml += '<span style="color:var(--green);font-size:10px;margin-left:auto">✓</span>';
-      machineHtml += '</div>';
-      if (prev) machineHtml += prevDataLabel(prev);
+      // Per-set, like every other lift (2026-09-30). This row used to be one
+      // weight × one rep count × sets, which cannot hold a different weight on
+      // each set, or a flag — why Craig ended up typing a session into Ideas.
+      machineHtml += gymLogRowHtml(dateStr, 'gymmachine_' + m.id, m.label, glIdx || gymLogIndex(dateStr, 90));
     });
   });
   machineHtml += '</div>';
@@ -25648,6 +26476,10 @@ function closePopup() {
 }
 
 function toggleExercise(el, dateStr, key, exKey) {
+  // Stretch routines log what they tick (2026-09-30) — see ROUTINE STRETCHES
+  // REACH THE LOG.
+  const _rtItem = (typeof routineItemForKey === 'function') ? routineItemForKey(dateStr, key) : null;
+  if (_rtItem) return toggleRoutineStretch(el, dateStr, _rtItem);
   // A tick and a set of logged sets are two claims about the same thing, and
   // only one of them has evidence behind it. If sets exist, the movement was
   // performed — un-ticking it would leave the card saying "not done" over four
@@ -27203,6 +28035,8 @@ async function _refreshDataInner(btn) {
   try { _glLoadLocal(); refreshGymLocations(); } catch (e) {}
   // Record what's cached so the stats view knows when it must widen the range.
   _trackingLoaded = { start: ds(start), end: ds(end) };
+  // Routine ticks from before 2026-09-30 into the log. Background, idempotent.
+  try { if (typeof routineTickSweep === 'function') routineTickSweep().catch(e => console.warn('routine tick sweep', e)); } catch (e) {}
 
   if (currentView === 'daily') renderDaily();
   else if (currentView === 'week') renderWeek();
