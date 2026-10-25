@@ -895,6 +895,63 @@
   }
   .var-chip.active { border-color: var(--cyan); background: var(--cyan-bg); color: var(--cyan); }
   .var-x { font-size: 9px; opacity: 0.7; font-weight: 600; }
+  .su-box { position: relative; margin-bottom: 10px; padding: 8px 30px 8px 10px; border-radius: 7px; border: 1px dashed var(--card-border); background: var(--input-bg); cursor: pointer; }
+  .su-box.su-edit-on { padding: 10px; cursor: default; }
+  .su-line { font-size: 12px; color: var(--text); line-height: 1.5; }
+  .su-place { font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--text-muted); margin-right: 7px; }
+  .su-pen { position: absolute; right: 9px; top: 7px; color: var(--text-muted); font-size: 13px; }
+  .su-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .su-row span { font-size: 10px; font-weight: 700; color: var(--text-muted); min-width: 64px; }
+  .su-row input { flex: 1; min-width: 0; padding: 9px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--card-bg, var(--input-bg)); color: var(--text); font-size: 13px; font-family: inherit; }
+  .su-btn { flex: 1; padding: 10px; border-radius: 7px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .su-btn.go { border-color: var(--green-border, var(--green)); background: var(--green-bg); color: var(--green); }
+  .su-add { display: block; width: 100%; margin-bottom: 10px; padding: 8px; border-radius: 7px; border: 1px dashed var(--card-border); background: transparent; color: var(--text-muted); font-size: 11px; cursor: pointer; font-family: inherit; text-align: left; }
+  .gv-head { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
+  .gv-head b { color: var(--green); }
+  .gv-sec { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin: 14px 0 6px; }
+  .gv-sec span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); margin-left: 6px; }
+  .gv-row { display: flex; align-items: center; gap: 10px; padding: 10px 10px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--input-bg); margin-bottom: 6px; cursor: pointer; }
+  .gv-row.done { border-color: var(--green-border, var(--green)); }
+  .gv-ic { width: 22px; text-align: center; font-size: 16px; flex-shrink: 0; }
+  .gv-row.done .gv-ic { color: var(--green); font-weight: 800; }
+  .gv-main { flex: 1; min-width: 0; }
+  .gv-t { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gv-s { font-size: 10.5px; color: var(--text-muted); margin-top: 1px; }
+  .gv-go { color: var(--text-muted); font-size: 14px; }
+  .gv-pill { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: var(--cyan-bg); color: var(--cyan); margin-left: 4px; }
+  .gv-due { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 8px; background: var(--orange-bg); color: var(--orange); white-space: nowrap; }
+  .gv-dueline { font-size: 10.5px; color: var(--text-muted); margin: 2px 0 6px; line-height: 2; }
+  .gv-chip { display: inline-block; padding: 6px 10px; margin: 0 4px 4px 0; border-radius: 14px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-dim); font-size: 10.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .gv-more { width: 100%; padding: 9px; border-radius: 8px; border: 1px dashed var(--card-border); background: transparent; color: var(--text-muted); font-size: 11.5px; cursor: pointer; font-family: inherit; }
+  .gv-empty { font-size: 11px; color: var(--text-muted); padding: 8px 2px; }
+  .gv-btn { flex: 1; padding: 11px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text-dim); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .gv-btn.go { flex: 2; border-color: var(--green-border, var(--green)); background: var(--green-bg); color: var(--green); }
+  details.gv-tm { border: 1px solid var(--card-border); border-radius: 8px; background: var(--input-bg); padding: 0 10px; }
+  details.gv-tm summary { font-size: 13px; font-weight: 700; color: var(--text); padding: 11px 0; cursor: pointer; list-style: none; }
+  details.gv-tm summary::-webkit-details-marker { display: none; }
+  details.gv-tm summary span { display: block; font-size: 10.5px; font-weight: 400; color: var(--text-muted); margin-top: 1px; }
+  .gv-tm-presets { display: flex; gap: 5px; margin-bottom: 8px; }
+  .gv-tm-grid { display: grid; grid-template-columns: 1.4fr .8fr .9fr .9fr; gap: 5px; align-items: center; }
+  .gv-tm-grid span { font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+  .gv-tm-grid input, .gv-tm-row input { min-width: 0; width: 100%; box-sizing: border-box; padding: 8px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--card-bg, var(--input-bg)); color: var(--text); font-size: 13px; font-family: inherit; }
+  .gv-tm-row { display: flex; gap: 6px; margin: 8px 0; }
+  .gv-tm-row label { flex: 1; font-size: 9.5px; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+  .gv-go-btn { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg); color: var(--cyan); font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .gv-note { font-size: 10px; color: var(--text-muted); line-height: 1.5; margin: 8px 0 10px; }
+  .gs-big { font-size: 40px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; margin-bottom: 6px; }
+  .gs-big small { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-left: 8px; }
+  .gs-line { font-size: 12px; color: var(--text); padding: 7px 0; border-bottom: 1px solid var(--divider); }
+  .gs-line span { display: inline-block; min-width: 76px; font-size: 9.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--text-muted); }
+  .gs-line.due { color: var(--orange); }
+  .gs-ex { font-size: 12px; color: var(--text); padding: 6px 0; border-bottom: 1px solid var(--divider); display: flex; flex-direction: column; gap: 2px; }
+  .gs-ex span { font-size: 11px; color: var(--text-muted); }
+  details.sib { margin: -2px 0 10px; }
+  details.sib summary { font-size: 11px; font-weight: 700; color: var(--text-muted); cursor: pointer; padding: 6px 0; list-style: none; }
+  details.sib summary::-webkit-details-marker { display: none; }
+  details.sib summary span { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 8px; background: var(--input-bg); margin-left: 4px; }
+  details.sib .var-chips { padding: 4px 0 2px; }
+  .mpk-iso { width: 100%; margin: 2px 0 12px; padding: 11px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; text-align: left; }
+  .mpk-iso small { display: block; font-size: 10px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
   .var-tag {
     font-size: 9px; font-weight: 700; color: var(--cyan); background: var(--cyan-bg);
     border-radius: 4px; padding: 2px 5px; margin-left: 6px; vertical-align: middle;
@@ -2771,6 +2828,33 @@
   .mc-workout { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
   .mc-event { font-size: 8px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .mc-stretch { font-size: 7px; color: var(--purple); font-weight: 600; }
+  .mc-acts { font-size: 11px; line-height: 1.15; letter-spacing: -1px; word-break: break-all; }
+  @keyframes swL { from { transform: translateX(28px); opacity: .5; } to { transform: none; opacity: 1; } }
+  @keyframes swR { from { transform: translateX(-28px); opacity: .5; } to { transform: none; opacity: 1; } }
+  @keyframes swU { from { transform: translateY(28px); opacity: .5; } to { transform: none; opacity: 1; } }
+  @keyframes swD { from { transform: translateY(-28px); opacity: .5; } to { transform: none; opacity: 1; } }
+  .view.sw-l { animation: swL .22s ease-out; } .view.sw-r { animation: swR .22s ease-out; }
+  .view.sw-u { animation: swU .22s ease-out; } .view.sw-d { animation: swD .22s ease-out; }
+  .dt-wrap { margin-bottom: 10px; }
+  .dt-h { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+  .dt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .dt-tile { position: relative; padding: 12px 4px 10px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text); font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .dt-tile .dt-i { font-size: 22px; line-height: 1; }
+  .dt-tile .dt-l { font-size: 11.5px; font-weight: 800; }
+  .dt-tile .dt-s { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .dt-tile.done { border-color: var(--green-border, var(--green)); background: var(--green-bg); }
+  .dt-tile.done .dt-s { color: var(--green); font-weight: 700; }
+  .dt-tile.live { border-color: var(--cyan-border, var(--cyan)); background: var(--cyan-bg); }
+  .dt-tile.live .dt-s { color: var(--cyan); font-weight: 700; }
+  .dt-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+  .dt-links button { flex: 1; min-width: 0; padding: 9px 6px; border-radius: 8px; border: 1px solid var(--card-border); background: transparent; color: var(--text-dim); font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  details.home-more { margin-top: 10px; border-top: 1px solid var(--divider); padding-top: 4px; }
+  details.home-more summary { font-size: 12px; font-weight: 800; color: var(--text-dim); padding: 9px 2px; cursor: pointer; list-style: none; }
+  details.home-more summary::-webkit-details-marker { display: none; }
+  details.home-more summary::before { content: '▸ '; }
+  details.home-more[open] summary::before { content: '▾ '; }
+  details.home-more summary span { font-weight: 400; font-size: 10.5px; color: var(--text-muted); margin-left: 4px; }
+  .home-more-btn { width: 100%; margin: 4px 0 10px; padding: 11px; border-radius: 8px; border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg); color: var(--cyan); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
   .mc-progress { display: flex; align-items: center; gap: 3px; margin-top: auto; }
   .mc-progress-bar { flex: 1; height: 3px; background: var(--divider); border-radius: 2px; overflow: hidden; }
@@ -4174,7 +4258,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.10.25.01';
+const APP_VERSION = '2026.10.25.05';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -13069,13 +13153,13 @@ const EX_LIB = [
 
   // ── CORE ──
   { m:'core', name:'Cable woodchop', equip:'cable', reps:'12-15', rest:90, cue:'Rotate from the trunk, arms fairly straight. Controlled — this isn\'t a speed movement.', id:'c_woodchop', pattern:'core', role:'targeted', technique:2, gm:'cable_woodchop', link:'https://www.youtube.com/watch?v=PCQCwP1Xy0g', linkBy:'TurnFit' },
-  { m:'core', name:'Plank', equip:'bw', reps:'30-60s', rest:60, cue:'Ribs down, glutes on. Quality beats duration; stop when form goes.', id:'bw_plank', pattern:'core', technique:2, link:'https://www.youtube.com/watch?v=ASdvN_XEl_c', linkBy:'BowFlex' },
+  { m:'core', name:'Plank', equip:'bw', reps:'30-60s', rest:60, cue:'Ribs down, glutes on. Quality beats duration; stop when form goes.', iso:true, id:'bw_plank', pattern:'core', technique:2, link:'https://www.youtube.com/watch?v=ASdvN_XEl_c', linkBy:'BowFlex' },
   { m:'core', name:'Dead bug', equip:'bw', reps:'8-12 each side', rest:60, cue:'Lower back stays flat on the floor. Best core option if your back is sensitive.', id:'bw_deadbug', pattern:'core', role:'foundation', technique:2, teaches:'bw_plank', link:'https://www.youtube.com/watch?v=I5xbsA71v1A', linkBy:'Kristy Lee Wilson' },
   { m:'core', name:'Ab crunch (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Loaded spinal flexion — skip it on any day the lower back is talking.', flags:['spine'], id:'m_ab_crunch', pattern:'core', technique:1, gm:'ab_crunch_m', link:'https://www.youtube.com/watch?v=_O1xunCfYEM', linkBy:'ScottHermanFitness' },
   { m:'core', name:'Suitcase carry', equip:'kb', reps:'30-40m each side', rest:90, cue:'One kettlebell, walk tall, resist the lean. Very grip-intensive.', flags:['grip'], id:'kb_suitcase_carry', pattern:'carry', role:'targeted', technique:1, link:'https://www.youtube.com/watch?v=CsSQtaE9SAQ', linkBy:'CORE Strong Fitness' },
 
   // ══ FREE WEIGHT / HOME BLOCK (added 2026-08-18) ══
-  // Kettlebell + bodyweight, so kid weeks aren't a training write-off.
+  // Kettlebell + bodyweight, so home weeks aren't a training write-off.
   // Grip flags matter more here than in the machine list: a kettlebell hangs off
   // the fingers in a way a machine handle doesn't.
 
@@ -13116,7 +13200,7 @@ const EX_LIB = [
   { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees and ankles.', flags:['grip'], id:'kb_rev_lunge', pattern:'squat', technique:2, link:'https://www.youtube.com/watch?v=y2jz7ot6r2I', linkBy:'Greg Brookes' },
   { m:'quads', name:'Bulgarian split squat', equip:'bw', reps:'8-15 each leg', rest:150, cue:'Rear foot on a chair. Brutal without any weight at all. Add a kettlebell only once bodyweight is easy.', id:'bw_bulgarian', pattern:'squat', technique:3, watch:'The front knee caves inward and the torso pitches forward. Both are how this quietly becomes a lower-back exercise. Hold something for balance before you think about adding load.', link:'https://www.youtube.com/watch?v=2C-uNgKwPLE', linkBy:'ScottHermanFitness' },
   { m:'quads', name:'Step-up', equip:'bw', reps:'10-15 each leg', rest:120, cue:'Onto a sturdy chair or stair. Drive through the heel of the top foot; don\'t push off the back leg.', id:'bw_stepup', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=dQqApCGd5Ss', linkBy:'LIVESTRONG' },
-  { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.', id:'bw_wall_sit', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=y-wV4Venusw', linkBy:'ScottHermanFitness' },
+  { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.', iso:true, id:'bw_wall_sit', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=y-wV4Venusw', linkBy:'ScottHermanFitness' },
 
   // ── HAMSTRINGS / GLUTES ──
   { m:'hamstrings', name:'Kettlebell single-leg deadlift', equip:'kb', reps:'8-10 each leg', rest:150, cue:'Bell in the opposite hand, hinge on one leg. Balance and hamstring in one. Start with no weight.', flags:['grip'], id:'kb_sl_dl', pattern:'hinge', technique:3, watch:'Balance fails before the hamstring does, so the set ends in a wobble rather than in fatigue and you learn nothing. Touch a wall with the free hand and do it with no weight at all until the standing leg stops shaking.', link:'https://www.youtube.com/watch?v=SuNgD0x2U6U', linkBy:'Elements Online Coaching' },
@@ -13131,9 +13215,9 @@ const EX_LIB = [
   // ── CORE ──
   { m:'core', name:'Kettlebell Turkish get-up', equip:'kb', reps:'3-5 each side', rest:180, cue:'Floor to standing with the bell locked overhead. Superb full-body control work — but it means holding a weight overhead for a long time. Learn it with a shoe on your fist before any load.', flags:['grip','overhead'], id:'kb_tgu', pattern:'core', technique:3, watch:'Seven positions, five to ten minutes a side, with a weight locked overhead the entire time \u2014 that is a long time under an arthritic shoulder, and the reason this is not a beginner movement despite how often it is sold as one. Learn it with a shoe balanced on your fist. If the shoe falls, the bell would have too.', link:'https://www.youtube.com/watch?v=iM2oTXgnDRU', linkBy:'Keira Newton' },
   { m:'core', name:'Kettlebell windmill', equip:'kb', reps:'5-8 each side', rest:120, cue:'Bell overhead, hinge sideways toward the opposite foot. Go very light and stop well short of your end range.', flags:['grip','overhead','spine'], id:'kb_windmill', pattern:'core', technique:3, watch:'Loaded side-bending with the arm overhead, which stacks the two positions your shoulder and your back each like least. Go light enough that it feels pointless, and stop well short of your end range rather than chasing the floor.', link:'https://www.youtube.com/watch?v=VsxdNUc5Jb4', linkBy:'MSP Fitness' },
-  { m:'core', name:'Side plank', equip:'bw', reps:'20-45s each side', rest:60, cue:'Stack the hips, don\'t let them sag. Trains the obliques without loading the spine into flexion.', id:'bw_side_plank', pattern:'core', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=qbuqsJ9CuQA', linkBy:'Hinge Health' },
+  { m:'core', name:'Side plank', equip:'bw', reps:'20-45s each side', rest:60, cue:'Stack the hips, don\'t let them sag. Trains the obliques without loading the spine into flexion.', iso:true, id:'bw_side_plank', pattern:'core', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=qbuqsJ9CuQA', linkBy:'Hinge Health' },
   { m:'core', name:'Bird dog', equip:'bw', reps:'8-12 each side', rest:60, cue:'Opposite arm and leg, slow. Anti-rotation. One of the few core moves that\'s good FOR a cranky lower back rather than bad for it.', id:'bw_bird_dog', pattern:'core', role:'targeted', technique:2, link:'https://www.youtube.com/watch?v=wiFNA3sqjCA', linkBy:'Howcast' },
-  { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.', id:'bw_hollow_hold', pattern:'core', technique:3, watch:'The lower back lifting off the floor is the set ending, not a rep to push through. Bend the knees and keep the back down.', link:'https://www.youtube.com/watch?v=LlDNef_Ztsc', linkBy:'GMB Fitness (Praxis)' },
+  { m:'core', name:'Hollow hold', equip:'bw', reps:'15-40s', rest:90, cue:'Lower back pressed into the floor. Bend the knees to make it easier. Stop the moment the back lifts.', iso:true, id:'bw_hollow_hold', pattern:'core', technique:3, watch:'The lower back lifting off the floor is the set ending, not a rep to push through. Bend the knees and keep the back down.', link:'https://www.youtube.com/watch?v=LlDNef_Ztsc', linkBy:'GMB Fitness (Praxis)' },
   // ── The ones he actually does (2026-09-27) ──
   // Ninety movements were curated on 2026-09-26/27 and sit-ups were not among
   // them — the one movement Craig logs most. The variant model already knew
@@ -13155,6 +13239,26 @@ const EX_LIB = [
   { m:'core', name:'Crunch', equip:'bw', reps:'12-20', rest:60, cue:'Shoulder blades off the floor, not the whole back. The short range is the point: it trains the abs before the hip flexors can take over, which is also why it is easier on the lower back than a full sit-up.', id:'bw_crunch', pattern:'core', technique:1, link:'https://www.youtube.com/watch?v=NGRKFMKhF8s', linkBy:'ScottHermanFitness' },
   { m:'core', name:'Oblique crunch', equip:'bw', reps:'10-15 each side', rest:60, cue:'Rotate the ribcage toward the opposite hip, not the elbow toward the knee \u2014 an elbow can travel a long way while the trunk barely turns.', id:'bw_oblique_crunch', pattern:'core', technique:1, link:'https://www.youtube.com/watch?v=QxaKQG-gmPY', linkBy:'ScottHermanFitness' },
   { m:'core', name:'Lying leg raise', equip:'bw', reps:'8-15', rest:60, cue:'Press the lower back into the floor before the legs move, and keep it there. The legs are heavy levers pulling on the pelvis through the hip flexors; the moment the back arches, the set is over. Bend the knees to shorten the lever.', flags:['spine'], id:'bw_leg_raise', pattern:'core', technique:2, teaches:'bw_hollow_hold', link:'https://www.youtube.com/watch?v=3oIpxsn6FxQ', linkBy:'Mobility Doc' },
+
+  // ── Back extension (2026-10-25) ──
+  // Credited to glutes: the job is hip extension, and the lower back holds the
+  // position rather than doing the work — which is also how it should be coached.
+  { m:'glutes', name:'Back extension (machine)', equip:'machine', reps:'10-15', rest:120, cue:'Seated: line the hips up with the pivot and push back against the pad from the hips, chest up. Stop at upright or just past — arching further squeezes the lower back for nothing. Slow on the way forward. (The face-down kind is the 45° bench.)', flags:['spine'], id:'m_back_ext', pattern:'hinge', technique:1, gm:'back_extension_m', head:'glutes and hamstrings, with the spinal erectors holding the position', link:'https://www.youtube.com/watch?v=l1BmzpEiPQI', linkBy:'Live Lean TV Daily Exercises' },
+  { m:'glutes', name:'Back extension (45° bench)', equip:'bw', reps:'10-15', rest:90, cue:'Pad just below the hip bones so the hips can hinge. Arms crossed is the easy version, hands at the head is harder. Up to a straight line and squeeze the glutes there — over-arching past straight turns it into a lower-back squeeze.', flags:['spine'], id:'bw_back_ext', pattern:'hinge', technique:2, link:'https://www.youtube.com/watch?v=xyV2rF8ismg', linkBy:'Live Lean TV Daily Exercises' },
+
+  // ── Isometric holds (2026-10-25) ──
+  // Craig: "Isometrics". A hold with no movement. Useful when a joint dislikes
+  // moving under load, and a well-supported way to settle a sore tendon:
+  // moderate effort, 30-45 s, repeated. Tracked as time. `iso: true` lists them
+  // together in the picker alongside the plank, side plank, hollow hold and wall
+  // sit, which were holds all along.
+  { m:'quads', name:'Split squat hold', equip:'bw', reps:'20-40s each leg', rest:60, iso:true, cue:'Sink until the front thigh is close to level and stay there. Front knee over the toes, weight through the front heel.', id:'iso_split_squat', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=9-E7YW2WAlM', linkBy:'Resilient Performance Physical Therapy' },
+  { m:'glutes', name:'Glute bridge hold', equip:'bw', reps:'20-45s', rest:60, iso:true, cue:'Hips up, ribs down, squeeze. The burn belongs in the glutes and hamstrings — if it is in the lower back, drop the hips an inch.', id:'iso_bridge', pattern:'hinge', technique:1, link:'https://www.youtube.com/watch?v=vtnpY_fYJ4M', linkBy:'Rehab My Patient' },
+  { m:'lats', name:'Dead hang', equip:'bw', reps:'15-45s', rest:90, iso:true, flags:['grip'], cue:'Hang from a bar with the shoulders gently set, not shrugged to the ears. Feet on a box to take some of the weight.', id:'iso_dead_hang', pattern:'pull', technique:1, link:'https://www.youtube.com/watch?v=2vspW4N4BMs', linkBy:'FIT.nl' },
+  { m:'chest', name:'Push-up hold (halfway)', equip:'bw', reps:'15-30s', rest:60, iso:true, flags:['grip'], cue:'Lower halfway and hold, body in one line. Hands on a bench makes it easier.', id:'iso_pushup_hold', pattern:'push', technique:1, link:'https://www.youtube.com/watch?v=mmTAFhFpdY8', linkBy:'Champion Physical Therapy and Performance' },
+  { m:'calves', name:'Calf raise hold', equip:'bw', reps:'20-45s', rest:60, iso:true, cue:'Up on the toes and hold at the top. One leg at a time once both is easy.', id:'iso_calf_hold', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=YM2M1_Al5fo', linkBy:'Competitive Edge Physical Therapy and Performance' },
+  { m:'shoulders', name:'Shoulder wall press (isometric)', equip:'bw', reps:'5 × 30s', rest:30, iso:true, cue:'Side-on to a wall, elbow bent at 90°, press the back of the hand into the wall at about half effort. Nothing moves. Then the palm (inward), then the elbow up (outward). A common physio starting point for a sore shoulder.', id:'iso_wall_shoulder', pattern:'push', technique:1, link:'https://www.youtube.com/watch?v=X0UwX_unA30', linkBy:'Rehab My Patient' },
+  { m:'back', name:'Prone back hold', equip:'bw', reps:'15-30s', rest:60, iso:true, flags:['spine'], cue:'Face down, arms overhead, lift the arms, chest and legs a few centimetres and hold — the superman. A small lift and a long neck; height is not the point. Lift only the arms for an easier version.', id:'iso_prone_hold', pattern:'pull', technique:1, link:'https://www.youtube.com/watch?v=PKQlXa3qdJo', linkBy:'AskDoctorJo' },
 
   // ── BANDS (2026-09-26) ──
   //
@@ -13225,8 +13329,21 @@ function _mpickEquipFilter() {
   const w = MPICK_WHERE.find(x => x.id === _mpickWhere);
   return (w && w.equip) || null;
 }
+const MPICK_ISO = { id: '__iso', icon: '⏸', label: 'Isometric holds' };
+// The stretch-screen area for each muscle — so "chest" can also mean stretching it.
+const MUSCLE_STRETCH_REGION = { chest:'chest', shoulders:'shoulder', triceps:'shoulder', back:'thoracic', lats:'thoracic',
+  reardelts:'shoulder', biceps:'wrist', quads:'hip', hamstrings:'hamstring', glutes:'hip', calves:'calf', core:'lowback' };
+function mpickStretch(region) {
+  closeMusclePicker();
+  if (typeof openStretch === 'function') { openStretch('home'); if (typeof _stGo === 'function') _stGo('region', region); }
+}
 function _mpickExercisesFor(muscleId) {
   const eq = _mpickEquipFilter();
+  if (muscleId === '__iso') {
+    const _cxi = (typeof exContraindications === 'function') ? exContraindications() : { blocked: new Set() };
+    const iso = EX_LIB.filter(e => e.iso && !_cxi.blocked.has(e.name));
+    return eq ? iso.filter(e => eq.indexOf(e.equip) !== -1) : iso;
+  }
   // Condition gate (2026-09-07): contraindicated movements are removed here, so
   // every consumer of this function — muscle picker, session plan, variant
   // suggestions — inherits it rather than each needing its own check.
@@ -13405,6 +13522,7 @@ function renderMusclePicker() {
             <span style="font-size:17px">${m.icon}</span>${m.label}</button>`).join('')}
         </div>
       </div>`).join('') +
+      `<button class="mpk-iso" onclick="mpickSelect('__iso')">⏸ Isometric holds<small>No movement, just time — plank, wall sit, dead hang, a shoulder wall press…</small></button>` +
       `<div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;border-top:1px solid var(--divider);padding-top:8px">
         Grouped by movement pattern so a session stays balanced. Suggestions show every equipment option — pick whatever's free.
       </div>`;
@@ -13413,7 +13531,7 @@ function renderMusclePicker() {
   }
 
   // ── Step 2: suggestions for that muscle ──
-  const mg = MUSCLE_GROUPS.find(x => x.id === _mpickMuscle);
+  const mg = MUSCLE_GROUPS.find(x => x.id === _mpickMuscle) || MPICK_ISO;
   if (title) title.textContent = `${mg.icon} ${mg.label}`;
   const all = _mpickExercisesFor(_mpickMuscle);
   // Guidance order (2026-09-26): Start here, then Add when you need it, then
@@ -13428,7 +13546,7 @@ function renderMusclePicker() {
   const _sorted = (typeof exSortForPicker === 'function') ? exSortForPicker(all) : all;
   const _tagged = _sorted.filter(e => e.role);
   const _untagged = _sorted.filter(e => !e.role);
-  const shown = _mpickShowAll ? _sorted
+  const shown = (_mpickShowAll || _mpickMuscle === '__iso') ? _sorted
     : _tagged.concat(_untagged.slice(0, Math.max(0, 4 - _tagged.length)));
   let _headExplained = false;
 
@@ -13497,7 +13615,8 @@ function renderMusclePicker() {
     <button onclick="mpickBack()" style="background:none;border:none;color:var(--cyan);font-size:11px;cursor:pointer;padding:0 0 8px;font-family:inherit">‹ All muscles</button>
     ${_mpickWhereChips()}
     ${all.length ? cards : `<div style="padding:14px;border-radius:7px;background:var(--input-bg);border:1px dashed var(--card-border);font-size:11px;color:var(--text-muted);line-height:1.5;text-align:center">Nothing for ${mg.label} with that equipment.<br>Try <b style="color:var(--text)">Anywhere</b>.</div>`}
-    ${all.length > 4 ? `<button onclick="mpickToggleAll()" style="width:100%;padding:7px;border-radius:6px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">${_mpickShowAll ? 'Show fewer' : `Show ${all.length - 4} more`}</button>` : ''}
+    ${MUSCLE_STRETCH_REGION[_mpickMuscle] ? `<button class="mpk-iso" style="margin-top:8px" onclick="mpickStretch('${MUSCLE_STRETCH_REGION[_mpickMuscle]}')">🧘 Stretch it<small>The stretches for this area, on the stretch screen</small></button>` : ''}
+    ${(all.length > 4 && _mpickMuscle !== '__iso') ? `<button onclick="mpickToggleAll()" style="width:100%;padding:7px;border-radius:6px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">${_mpickShowAll ? 'Show fewer' : `Show ${all.length - 4} more`}</button>` : ''}
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
       Rep ranges are suggestions, not a program — pick a weight where the top of the range is hard but clean.
       No set count on purpose. Rest matters more than most people think: it preserves the load and reps of your next set,
@@ -13678,6 +13797,8 @@ function toggleEquipment(loc, id) {
 // Where is he training today? Kids present = home. This is the whole mechanism
 // behind raising his weekly frequency without needing more gym time.
 function sessionLocationFor(dateStr) {
+  // The gym clock running today is a fact; the calendar is a guess (2026-10-25).
+  try { if (GYMCLOCK && (GYMCLOCK.date || ds(new Date())) === dateStr) return 'gym'; } catch (e) {}
   if (typeof custodyType !== 'function') return 'gym';
   return custodyType(dateStr) === 'C' ? 'home' : 'gym';
 }
@@ -13732,13 +13853,13 @@ const EQUIP_COEF = {
 // Only movements that genuinely have variants need grouping. Everything else is
 // its own movement and needs no entry here.
 const MOVEMENT_GROUPS = {
-  chest_press:  ['Chest press (machine)','Dumbbell bench press','Incline dumbbell press','Kettlebell floor press','Smith machine bench','Push-up','Incline push-up','Decline push-up'],
+  chest_press:  ['Chest press (machine)','Dumbbell bench press','Incline dumbbell press','Kettlebell floor press','Smith machine bench','Push-up','Incline push-up','Decline push-up','Band chest press'],
   chest_fly:    ['Cable chest fly'],
-  row:          ['Seated row (machine)','Cable row','Dumbbell single-arm row','Chest-supported row','Kettlebell bent-over row','Kettlebell renegade row','Inverted row'],
+  row:          ['Seated row (machine)','Cable row','Dumbbell single-arm row','Chest-supported row','Kettlebell bent-over row','Kettlebell renegade row','Inverted row','Band row'],
   pulldown:     ['Lat pulldown','Straight-arm pulldown','Assisted pull-up','Chin-up','Kettlebell pullover'],
-  shoulder_press:['Machine shoulder press','Kettlebell strict press','Pike push-up'],
+  shoulder_press:['Machine shoulder press','Kettlebell strict press','Pike push-up','Band overhead press'],
   lateral_raise:['Dumbbell lateral raise','Cable lateral raise','Front raise'],
-  rear_delt:    ['Rear delt fly (machine)','Cable face pull','Bent-over dumbbell fly','Kettlebell high pull','Prone Y-T-W raise'],
+  rear_delt:    ['Rear delt fly (machine)','Cable face pull','Bent-over dumbbell fly','Kettlebell high pull','Prone Y-T-W raise','Band face pull','Band pull-apart'],
   curl:         ['Dumbbell curl','Cable curl','Hammer curl','Bicep curl (machine)','Kettlebell curl','21s (7-7-7 barbell curl)','21s (dumbbell version)'],
   tricep_ext:   ['Cable rope pushdown','Overhead cable extension','Tricep press (machine)','Dumbbell skull crusher','Kettlebell overhead extension','Close-grip push-up','Bench dip','Diamond push-up'],
   squat:        ['Leg press','Goblet squat','Bodyweight / box squat','Smith machine squat','Kettlebell front squat','Bulgarian split squat','Step-up','Wall sit'],
@@ -13747,6 +13868,7 @@ const MOVEMENT_GROUPS = {
   leg_ext:      ['Leg extension'],
   glute:        ['Hip thrust','Glute bridge','Single-leg glute bridge','Cable kickback','Hip abductor (machine)'],
   calf:         ['Calf raise (machine)','Standing calf raise','Kettlebell calf raise'],
+  back_ext:     ['Back extension (machine)','Back extension (45° bench)'],
 };
 
 function movementFor(exName) {
@@ -17620,6 +17742,16 @@ function variantsFor(exKey, exName) {
                    label: (deg > 0 ? 'Decline ' : 'Incline ') + p.pos + ' · ' + Math.abs(deg) + '°' });
       });
     }
+    // Other benches (2026-10-25) — the one at the gym has its own notches and
+    // angles. Same coefficient, so a gym set and a home set compare.
+    ((b && b.others) || []).forEach(function (o, k) {
+      (o.positions || []).forEach(function (p) {
+        const deg = Number(p.deg) || 0;
+        if (!deg) return;
+        out.push({ id: 'bench' + (k + 2) + '_' + p.pos, mult: declineMult(deg),
+                   label: (o.name || ('Bench ' + (k + 2))) + ' ' + p.pos + ' · ' + Math.abs(deg) + '°' + (deg < 0 ? ' up' : '') });
+      });
+    });
   }
   return out.sort((a, b2) => a.mult - b2.mult);
 }
@@ -17641,6 +17773,129 @@ function variantById(exKey, exName, id) {
 }
 function currentVariant(exKey, exName) {
   return variantById(exKey, exName, lastVariantFor(exKey));
+}
+
+// ── One movement, many ways to do it (2026-10-25) ──────────────────────
+// Craig: "stretches, isometrics, freeweights, machines, Cable — all the same
+// group. a row is a row is a row" … "Did low row instead of row."
+//
+// Two different things, kept apart on purpose:
+//   SAME MOVEMENT, OTHER KIT — a cable row and a machine row. Different
+//     exercises with their own history (the loads are not comparable), linked
+//     by MOVEMENT_GROUPS so the movement's trend sees all of them. The screen
+//     offers them as a one-tap switch.
+//   SAME KIT, ANOTHER WAY — low row, wide grip, single arm. The same exercise
+//     and the same history; the way is written on the set (activity_log.variant)
+//     so 115 × 10 low and 115 × 10 usual are never mistaken for each other.
+//     One tap, and it remembers, like the bodyweight ladder.
+// Properties of the movements, so they ship to everyone.
+const MOVE_HOW = {
+  row:            ['Low row', 'Wide grip', 'Close grip', 'Underhand', 'Single arm', 'Pause'],
+  pulldown:       ['Wide grip', 'Close grip', 'Underhand', 'Neutral grip', 'Single arm'],
+  chest_press:    ['Incline', 'Decline', 'Close grip', 'Single arm', 'Pause at the chest'],
+  chest_fly:      ['High to low', 'Low to high', 'Single arm'],
+  shoulder_press: ['Neutral grip', 'Single arm', 'Standing'],
+  lateral_raise:  ['Single arm', 'Leaning away', 'Partials'],
+  rear_delt:      ['Single arm', 'Rope', 'Pause'],
+  curl:           ['Hammer grip', 'Single arm', 'Preacher', 'Rope', 'Straight bar'],
+  tricep_ext:     ['Rope', 'Straight bar', 'V-bar', 'Single arm', 'Reverse grip'],
+  squat:          ['Narrow stance', 'Wide stance', 'Feet high', 'Feet low', 'Single leg', 'Pause'],
+  hinge:          ['Single leg', 'Pause', 'Deficit'],
+  leg_curl:       ['Seated', 'Lying', 'Single leg'],
+  leg_ext:        ['Single leg', 'Pause at the top'],
+  glute:          ['Single leg', 'Pause at the top'],
+  calf:           ['Bent knee', 'Single leg', 'Pause at the bottom'],
+  back_ext:       ['Arms crossed', 'Hands at the head', 'Pause at the top', 'Slow lowering'],
+};
+// Machines on the gym list that have no library entry of their own.
+const GM_MOVEMENT = {
+  chest_press: 'chest_press', incline_press: 'chest_press', smith_bench: 'chest_press', pec_fly: 'chest_fly',
+  shoulder_press_m: 'shoulder_press', lateral_raise_m: 'lateral_raise', rear_delt_fly: 'rear_delt',
+  lat_pulldown_m: 'pulldown', seated_row_m: 'row', cable_row: 'row',
+  bicep_curl_m: 'curl', tricep_press: 'tricep_ext', cable_tricep: 'tricep_ext',
+  leg_press_m: 'squat', smith_squat: 'squat', leg_extension: 'leg_ext', leg_curl: 'leg_curl',
+  calf_raise_m: 'calf', hip_abductor: 'glute', back_extension_m: 'back_ext',
+};
+function exMovementFor(exKey, exName) {
+  const lib = (typeof exLibFor === 'function') ? exLibFor(exKey, exName) : null;
+  if (lib) { const mv = movementFor(lib.name); if (MOVEMENT_GROUPS[mv]) return mv; }
+  const gm = String(exKey || '').match(/^gymmachine_(.+)$/);
+  if (gm && GM_MOVEMENT[gm[1]]) return GM_MOVEMENT[gm[1]];
+  return null;
+}
+function exHowTags(exKey, exName) {
+  if (variantsFor(exKey, exName).length) return [];   // the bodyweight ladder already answers "how"
+  const t = exTracksFor(exKey, exName) || {};
+  if ((t.kind || 'strength') !== 'strength') return [];
+  const mv = exMovementFor(exKey, exName);
+  return (mv && MOVE_HOW[mv]) || [];
+}
+function lastHowFor(exKey) { try { return localStorage.getItem('howlast_' + exKey) || ''; } catch (e) { return ''; } }
+function setLastHowFor(exKey, tag) {
+  try { if (tag) localStorage.setItem('howlast_' + exKey, tag); else localStorage.removeItem('howlast_' + exKey); } catch (e) {}
+}
+function currentHow(exKey, exName) {
+  const t = lastHowFor(exKey);
+  return t && exHowTags(exKey, exName).indexOf(t) !== -1 ? t : '';
+}
+// Same movement, other kit — every library entry in the movement but this one.
+function exSiblings(exKey, exName) {
+  const mv = exMovementFor(exKey, exName);
+  if (!mv || !MOVEMENT_GROUPS[mv]) return [];
+  const seen = {};
+  return variantsOf(mv).map(e => ({ key: exCanonicalKey(e.name), name: e.name, equip: e.equip }))
+    .filter(x => x.key !== exKey && !seen[x.key] && (seen[x.key] = true));
+}
+
+// ── Setup notes, per place (2026-10-25) ───────────────────────────────
+// Craig: "the decline bench I have at the house; it's not at the gym, so I need
+// to be able to have notes or say 'decline 24 deg'". Seat height, pin, notch,
+// angle: a fact about one person's kit in one place, so it is per-user synced
+// data, never this file. Places are Home plus each gym he has set up.
+const EX_SETUP_KEY = 'ex_setup';
+function _exSetupAll() { try { return JSON.parse(localStorage.getItem(EX_SETUP_KEY) || '{}') || {}; } catch (e) { return {}; } }
+function exSetupPlaces() {
+  const gyms = (typeof GYM_LOCATIONS !== 'undefined' && GYM_LOCATIONS.length)
+    ? GYM_LOCATIONS.map(g => ({ id: String(g.client_id), label: g.name || 'Gym' })) : [{ id: 'gym', label: 'Gym' }];
+  return gyms.concat([{ id: 'home', label: 'Home' }]);
+}
+function exSetupFor(exKey) { return _exSetupAll()[exKey] || {}; }
+function setExSetup(exKey, place, text) {
+  const all = _exSetupAll();
+  const cur = Object.assign({}, all[exKey] || {});
+  const t = String(text || '').trim().slice(0, 140);
+  if (t) cur[place] = t; else delete cur[place];
+  if (Object.keys(cur).length) all[exKey] = cur; else delete all[exKey];
+  const val = JSON.stringify(all);
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(EX_SETUP_KEY, val);
+  else { try { localStorage.setItem(EX_SETUP_KEY, val); } catch (e) {} }
+}
+let _setupEditing = false;
+const _attr = v => escapeHtml(v).replace(/"/g, '&quot;');
+function _sessSetupHtml() {
+  if (!_sessEx) return '';
+  const t = exTracksFor(_sessEx, _sessExName) || {};
+  if ((t.kind || 'strength') !== 'strength') return '';
+  const s = exSetupFor(_sessEx), places = exSetupPlaces();
+  if (_setupEditing) {
+    return `<div class="su-box su-edit-on">
+      ${places.map(p => `<label class="su-row"><span>${escapeHtml(p.label)}</span>
+        <input id="su-${_attr(p.id)}" type="text" maxlength="140" autocomplete="off" value="${_attr(s[p.id] || '')}" placeholder="seat 4 · pin 6 · decline 24°"></label>`).join('')}
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button class="su-btn go" onclick="_sessSetupSave()">Save</button>
+        <button class="su-btn" onclick="_setupEditing=false;renderExerciseScreen()">Cancel</button>
+      </div></div>`;
+  }
+  const has = places.filter(p => s[p.id]);
+  if (!has.length) return `<button class="su-add" onclick="_setupEditing=true;renderExerciseScreen()">+ Setup note — seat, pin, notch, angle</button>`;
+  return `<div class="su-box" onclick="_setupEditing=true;renderExerciseScreen()">
+    ${has.map(p => `<div class="su-line"><span class="su-place">${escapeHtml(p.label)}</span>${escapeHtml(s[p.id])}</div>`).join('')}
+    <span class="su-pen">✎</span></div>`;
+}
+function _sessSetupSave() {
+  exSetupPlaces().forEach(p => { const el = document.getElementById('su-' + p.id); if (el) setExSetup(_sessEx, p.id, el.value); });
+  _setupEditing = false;
+  renderExerciseScreen();
 }
 
 // Reps normalised for leverage. This is the bodyweight answer to "am I getting
@@ -17821,6 +18076,20 @@ const REVIEW_MIN_SETS_WK = 4;
 //   4. the variant family the NAME belongs to — which is what catches free-text
 //      entries like 'Sit-ups / Crunches' and 'Push ups', which match nothing in
 //      any list but are unmistakably a sit-up and a push-up
+// The library entry behind an exercise screen, however it was opened
+// (2026-10-25). The screen used an exact-name lookup, which every gym-machine
+// label fails ('Seated Row (Machine)' vs 'Seated row (machine)'), so a machine
+// opened from the gym list had no cue, no video, no rest length and no
+// movement family.
+function exLibFor(exKey, exName) {
+  if (typeof EX_LIB === 'undefined') return null;
+  const name = String(exName || ''), lc = name.trim().toLowerCase();
+  let e = lc ? (EX_LIB.find(x => x.name === name) || EX_LIB.find(x => x.name.toLowerCase() === lc)) : null;
+  const key = String(exKey || '');
+  if (!e) { const gm = key.match(/^gymmachine_(.+)$/); if (gm) e = EX_LIB.find(x => x.gm === gm[1]); }
+  if (!e && key && typeof exSlug === 'function') e = EX_LIB.find(x => exSlug(x.name) === key);
+  return e || null;
+}
 function exMuscleFor(exKey, exName) {
   const key = String(exKey || '');
   let name = String(exName || '');
@@ -18861,6 +19130,7 @@ function _refreshBehindSession() {
 
 function addSessionSegment(exKey, exName, entry) {
   const dateStr = ds(new Date());
+  _sessFresh = true;   // the boxes start clean for the next set
   _materializeEntries(dateStr, exKey, exName);
   const entries = getSessionSets(exKey).slice();
   const idx = entries.length;
@@ -18882,11 +19152,13 @@ function addSessionSegment(exKey, exName, entry) {
   // this call site does not need to know whether it just logged a lift or a run.
   const stored = _trackToStorage(exKey, exName, e);
   const v = (typeof currentVariant === 'function') ? currentVariant(exKey, exName) : null;
+  // Same kit, another way (low row, wide grip): written on the set, like the ladder.
+  const how = (!v && typeof currentHow === 'function') ? currentHow(exKey, exName) : '';
   logActivity(Object.assign({
     name: exName, exercise_key: exKey, set_index: idx,
     flag: e.flag || '', side: e.side || '',
     notes: entry.note ? String(entry.note) : '',
-    variant: v && v.id !== 'std' ? v.label : '',
+    variant: v && v.id !== 'std' ? v.label : (how || ''),
     variant_mult: v ? v.mult : 1,
   }, stored));
 
@@ -19127,7 +19399,9 @@ function renderSessionScreen() {
   if (_sessEx === '__cardio__') { renderCardioScreen(); return; }
   if (_sessEx === '__review__') { renderDayReview(); return; }
   if (_sessEx === '__review2__') { renderTrainingReview(); return; }
+  if (_sessEx === '__gymsum__') { renderGymSummary(); return; }
   if (_sessEx) { renderExerciseScreen(); return; }
+  if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK && !_sessPlanner) { renderGymVisit(); return; }
 
   // B: no session yet → plan builder
   if (!SESSION) {
@@ -19169,7 +19443,7 @@ function renderSessionScreen() {
     if (!exs.length) exs = _mpickExercisesFor(mid).filter(e => e.equip === 'bw');
     exs = exs.slice(0, 4);
     const rows = exs.map(e => {
-      const key = exSlug(e.name);
+      const key = exCanonicalKey(e.name);
       const sets = (typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : [];
       const doneCls = sets.length ? 'var(--green)' : 'var(--text)';
       return `<div onclick="openExercise('${key}','${e.name.replace(/'/g, "\\'")}')"
@@ -19182,7 +19456,7 @@ function renderSessionScreen() {
       </div>`;
     }).join('');
     const anyDone = exs.some(e => {
-      const key = exSlug(e.name);
+      const key = exCanonicalKey(e.name);
       return ((typeof getExSetEntries === 'function') ? getExSetEntries(dateStr, key) : []).length > 0;
     });
     return `<div style="margin-bottom:12px">
@@ -19296,6 +19570,7 @@ function _cardioAdd() {
 
 function openExercise(key, name) {
   _sessEx = key; _sessExName = name;
+  if (typeof _setupEditing !== 'undefined') _setupEditing = false;
   if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'exercise', key: key, name: name });
   document.getElementById('session-backdrop').classList.add('open');
   renderExerciseScreen();
@@ -19320,9 +19595,13 @@ function renderExerciseScreen() {
   if (!body || !_sessEx) return;
   if (title) title.textContent = _sessExName;
 
+  // What he has typed survives a redraw (2026-10-25): tapping Form, a variation
+  // or the setup note used to rebuild the card and empty the boxes.
+  const _kept = (_sessInputsFor === _sessEx && !_sessFresh) ? _sessReadInputs() : null;
+  _sessFresh = false; _sessInputsFor = _sessEx;
   const sets = getSessionSets(_sessEx);
   const suggested = suggestedSetCount();
-  const ex = EX_LIB.find(e => e.name === _sessExName) || {};
+  const ex = exLibFor(_sessEx, _sessExName) || {};
   const lastW = sets.length ? sets[sets.length - 1].w : '';
   const _trackList = exTrackList(_sessEx, _sessExName);
 
@@ -19383,6 +19662,16 @@ function renderExerciseScreen() {
     })()}
     ${ex.cue ? `<div style="font-size:10.5px;color:var(--text-muted);line-height:1.5;margin-bottom:${ex.link ? '4' : '10'}px;padding:8px 10px;border-radius:6px;background:var(--input-bg)">${ex.cue}</div>` : ''}
     ${ex.link ? `<div style="margin-bottom:10px">${exVideoBtn(ex, 'inline')}</div>` : ''}
+    ${(typeof _sessSetupHtml === 'function') ? _sessSetupHtml() : ''}
+    ${(function () {
+      // Same movement, other kit: one tap to switch, each keeps its own history.
+      const sib = (typeof exSiblings === 'function') ? exSiblings(_sessEx, _sessExName).slice(0, 8) : [];
+      window._sessSibs = sib;
+      if (!sib.length) return '';
+      // Folded: it is a way out of this screen, not part of logging on it.
+      return `<details class="sib" ${discAttr('sib-' + _sessEx)}><summary>⇄ Same movement, other kit <span>${sib.length}</span></summary>
+        <div class="var-chips">${sib.map((x, i) => `<span class="var-chip" onclick="_sessSwitchTo(${i})">${escapeHtml(x.name)}</span>`).join('')}</div></details>`;
+    })()}
     ${rows}
     ${(function () {
       const g = (typeof setGuidance === 'function') ? setGuidance(ex.m, sets.length) : null;
@@ -19434,6 +19723,16 @@ function renderExerciseScreen() {
             onclick="_sessSetVariant('${v.id}')">${escapeHtml(v.label)}<span class="var-x">×${v.mult.toFixed(2)}</span></span>`).join('')}</div>
         </div>`;
       })()}
+      ${(function () {
+        // Same kit, another way. "Usual" is no tag at all.
+        const tags = (typeof exHowTags === 'function') ? exHowTags(_sessEx, _sessExName) : [];
+        if (!tags.length) return '';
+        const cur = currentHow(_sessEx, _sessExName);
+        return `<div class="var-row">
+          <div class="var-lbl">How</div>
+          <div class="var-chips"><span class="var-chip ${cur ? '' : 'active'}" onclick="_sessSetHow(-1)">Usual</span>${tags.map((t, i) => `<span class="var-chip ${t === cur ? 'active' : ''}" onclick="_sessSetHow(${i})">${escapeHtml(t)}</span>`).join('')}</div>
+        </div>`;
+      })()}
       ${_trackList.indexOf('duration') !== -1 ? `<button id="sess-hold-btn" onclick="_holdToggle()"
         style="width:100%;margin-bottom:9px;padding:12px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">▶ Start the clock</button>` : ''}
       <div style="display:flex;gap:4px;margin-bottom:9px">
@@ -19452,6 +19751,7 @@ function renderExerciseScreen() {
       style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
       ⏱ Restart rest — ${_restLenTxt(_sessRestS(ex))}</button>
     <div style="font-size:9.5px;color:var(--text-muted);text-align:center;margin-top:5px">Rest starts by itself when a set is logged.</div>`;
+  if (_kept) _sessWriteInputs(_kept);
   _sessAutoArm();
   // A hold left running for this exercise picks up where it is.
   if (_holdTimer && _holdTimer.exKey === _sessEx) _holdPaintStart();
@@ -19606,6 +19906,27 @@ function _sessSetVariant(id) {
   setLastVariantFor(_sessEx, id);
   renderExerciseScreen();
 }
+let _sessInputsFor = null, _sessFresh = false;
+function _sessReadInputs() {
+  const o = {};
+  ['w', 'r', 'd', 't', 'note'].forEach(k => { const el = document.getElementById('sess-' + k); if (el) o[k] = el.value; });
+  return o;
+}
+function _sessWriteInputs(o) {
+  Object.keys(o).forEach(k => { const el = document.getElementById('sess-' + k); if (el && o[k] !== undefined && o[k] !== '') el.value = o[k]; });
+}
+function _sessSetHow(i) {
+  const tags = exHowTags(_sessEx, _sessExName);
+  setLastHowFor(_sessEx, i >= 0 ? (tags[i] || '') : '');
+  renderExerciseScreen();
+}
+function _sessSwitchTo(i) {
+  const sib = (window._sessSibs || [])[i];
+  if (!sib) return;
+  const back = _sessReturnTo;
+  openExercise(sib.key, sib.name);
+  _sessReturnTo = back;
+}
 
 function _sessAddSet() {
   if (typeof _sessAutoCancel === 'function') _sessAutoCancel();
@@ -19640,7 +19961,7 @@ function _sessAddSet() {
   try {
     const meta = exTracksFor(exNow, nameNow) || {};
     if ((meta.kind || 'strength') === 'strength') {
-      const lib = (typeof EX_LIB !== 'undefined') ? (EX_LIB.find(e => e.name === nameNow) || {}) : {};
+      const lib = exLibFor(exNow, nameNow) || {};
       startRestTimer(lib.rest || _restDefaultSecsFor(nameNow), nameNow);
     }
   } catch (e) {}
@@ -19923,6 +20244,7 @@ function workoutContextLabel(c) {
   if (c.kind === 'stretch') return 'Stretch & mobility';
   if (c.kind === 'cardio') return 'Cardio';
   if (c.kind === 'picker') return 'Pick an exercise';
+  if (c.kind === 'gymvisit') return 'Gym visit';
   return 'Workout';
 }
 function resumeWorkout() {
@@ -19937,6 +20259,7 @@ function resumeWorkout() {
       else if (c.kind === 'stretch') openStretch(c.screen || 'home');
       else if (c.kind === 'cardio') openCardio(c.mode);
       else if (c.kind === 'picker') openMusclePicker(c.muscle || null);
+      else if (c.kind === 'gymvisit') { _sessEx = null; openSessionScreen(); }
     } catch (e) { console.warn('resume failed', e); }
   }
   renderDock();
@@ -19954,7 +20277,7 @@ function dockTimersRunning() {
   let overlay = false;
   try { overlay = !!(_timerQueue || _activeTimer); } catch (e) {}
   let on = false;
-  try { on = !!(GYMCLOCK || STRETCH_SESSION || _holdTimer); } catch (e) {}
+  try { on = !!(GYMCLOCK || STRETCH_SESSION || _holdTimer || (_ivTimer && !_ivTimer.pausedAt)); } catch (e) {}
   return !!(on || overlay || _restTimer.running);
 }
 async function wakeSync() {
@@ -19980,9 +20303,9 @@ async function wakeSync() {
 
 // ── Painting ──────────────────────────────────────────────────
 function _dockChip(kind, icon, timeTxt, label, extraCls) {
-  const exp = (kind === 'rest' || kind === 'gym' || kind === 'stretch')
+  const exp = (kind === 'rest' || kind === 'gym' || kind === 'stretch' || kind === 'iv')
     ? `<button class="dk-exp" onclick="event.stopPropagation();dockToggle('${kind}')" aria-label="Timer controls">${_dockOpen === kind ? '▾' : '⌃'}</button>` : '';
-  const go = kind === 'hold' ? `dockResumeHold()` : `resumeWorkout()`;
+  const go = kind === 'hold' ? `dockResumeHold()` : (kind === 'iv' ? `dockToggle('iv')` : `resumeWorkout()`);
   return `<div class="dk-chip ${kind} ${extraCls || ''}" data-dk="${kind}">
     <button class="dk-main" onclick="${go}"><span class="dk-t" data-dk-t="${kind}">${icon} ${timeTxt}</span><span class="dk-l">${escapeHtml(label || '')}</span></button>${exp}</div>`;
 }
@@ -20032,6 +20355,10 @@ function _dockDrawerHtml() {
       <button class="dk-min" onclick="dockToggle(null)">▾ Close</button>
     </div>`;
   }
+  if (_dockOpen === 'iv' && typeof _ivDrawerHtml === 'function') {
+    const h = _ivDrawerHtml();
+    if (h) return h;
+  }
   if (_dockOpen === 'stretch' && typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) {
     const s = stretchSessionElapsedS();
     const over = s > STRETCH_SESSION_SANE_H * 3600;
@@ -20060,6 +20387,12 @@ function renderDock() {
   if (typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) chips.push(_dockChip('stretch', '🧘', _dockClock(stretchSessionElapsedS()), 'Stretching'));
   if (typeof _holdTimer !== 'undefined' && _holdTimer) chips.push(_dockChip('hold', '⏳', _dockClock(_dockHoldS()), _holdTimer.name || 'Hold'));
   if (_restTimer.running) chips.push(_dockChip('rest', '⏱', _restFmt(_restTimer.remaining), _restTimer.label || 'Rest', _dockRestCls()));
+  if (typeof _ivTimer !== 'undefined' && _ivTimer) {
+    const p = ivPosition();
+    chips.push(_dockChip('iv', _ivTimer.pausedAt ? '⏸' : '🏃', _dockClock(p.left), p.seg ? p.seg.label : 'Intervals'));
+  } else if (typeof _ivDone !== 'undefined' && _ivDone) {
+    chips.push(_dockChip('iv', '✓', _dockClock(_ivDone.secs), 'Treadmill — save it'));
+  }
   if (!chips.length) {
     el.style.display = 'none'; el.innerHTML = '';
     document.body.classList.remove('rest-active');
@@ -20078,13 +20411,27 @@ function renderDock() {
 function _dockPaint() {
   const el = document.getElementById('rest-timer-bar');
   if (!el || el.style.display === 'none') { renderDock(); return; }
-  if (!dockTimersRunning()) { renderDock(); return; }
+  if (!dockTimersRunning()) {
+    // A paused interval or a finished one waiting for its distance: nothing is
+    // ticking, and a rebuild every second would wipe the box he is typing in.
+    if (!((typeof _ivDone !== 'undefined' && _ivDone) || (typeof _ivTimer !== 'undefined' && _ivTimer && _ivTimer.pausedAt))) renderDock();
+    return;
+  }
   const wasOver = el.querySelector('.dk-chip.rest.over');
   if (_restTimer.running) _restTick(true);
   const set = (k, txt) => { const n = el.querySelector('[data-dk-t="' + k + '"]'); if (n) n.textContent = txt; };
   if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK) set('gym', '📍 ' + _dockClock(gymClockElapsedS()));
   if (typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) set('stretch', '🧘 ' + _dockClock(stretchSessionElapsedS()));
   if (typeof _holdTimer !== 'undefined' && _holdTimer) set('hold', '⏳ ' + _dockClock(_dockHoldS()));
+  if (typeof _ivTimer !== 'undefined' && _ivTimer) {
+    if (_ivTick()) return;                       // a new segment rebuilt the dock
+    if (_ivTimer) {
+      const p = ivPosition();
+      set('iv', (_ivTimer.pausedAt ? '⏸ ' : '🏃 ') + _dockClock(p.left));
+      const big = document.getElementById('dk-iv-big'); if (big) big.textContent = _dockClock(p.left);
+      const tot = document.getElementById('dk-iv-tot'); if (tot) tot.textContent = _dockClock(ivElapsedS()) + ' of ' + _dockClock(ivTotalS(_ivTimer.segs));
+    }
+  }
   if (_restTimer.running) {
     set('rest', '⏱ ' + _restFmt(_restTimer.remaining));
     const chip = el.querySelector('.dk-chip.rest');
@@ -20104,6 +20451,402 @@ function dockToggle(kind) {
   renderDock();
 }
 function renderRestTimer() { renderDock(); }   // the old name, kept for its callers
+
+// ══════════════════════════════════════════════════════════════
+// THE GYM VISIT  (2026-10-25) — step 3 of the gym build
+// ══════════════════════════════════════════════════════════════
+// Craig: "When I go to the gym, I arrive, check in, change etc. … stretch and
+// track in either order … machines by feel … on cardio day treadmill intervals."
+// And on 2026-10-18: "Routine at gym should include stretches."
+//
+// The session screen used to open on "plan by muscle group", which is not how a
+// visit goes. At the gym it now follows the visit: warm up (a stretch routine
+// and/or a walk, either order) → machines by feel from what he usually does,
+// with the muscles that are due marked → treadmill intervals if it is a cardio
+// day → done, and a summary. Planning by group is still one tap away.
+let _sessPlanner = false;      // he asked for the by-group planner instead
+let _gvReturn = false;         // a routine opened from here comes back here
+let _gymSummary = null;
+function gymCheckIn() {
+  if (!GYMCLOCK) gymClockStart();
+  _sessPlanner = false;
+  _sessEx = null;
+  openSessionScreen();
+}
+function gvOpenRoutine(k) {
+  closeSessionScreen();
+  _gvReturn = true;
+  openRoutinePopup(k, ds(new Date()));
+}
+function gvOpenEx(i) {
+  const u = (window._gvUsual || [])[i];
+  if (u) openExercise(u.key, u.name);
+}
+const GV_WALK_KEYS = ['wo_walk', 'wo_run', 'gymcardio_treadmill'];
+function gymWarmupState(dateStr) {
+  const use = (typeof stretchRoutineUsage === 'function') ? stretchRoutineUsage(dateStr, 60) : {};
+  const keys = (typeof stretchRoutinesSorted === 'function')
+    ? stretchRoutinesSorted(use).filter(k => k !== 'morning' && k !== 'trigger_finger') : [];
+  const rows = getActivity(dateStr);
+  const walk = rows.filter(r => GV_WALK_KEYS.indexOf(r.exercise_key) !== -1);
+  // A routine counts as the warm-up once half of it is ticked — one tick is a start.
+  const half = k => Math.ceil(((ROUTINES[k] || {}).exercises || []).filter(e => !e._divider).length / 2) || 1;
+  const stretched = keys.some(k => use[k] && use[k].today >= half(k))
+    || rows.some(r => r.kind === 'stretch_time');
+  return { keys: keys.slice(0, 2), use: use, stretched: stretched,
+           walked: walk.length > 0, walkS: walk.reduce((a, r) => a + (Number(r.duration_s) || 0), 0) };
+}
+// What he actually does, most-days first — the honest "by feel" list.
+function gymUsual(dateStr, days, limit) {
+  const by = {};
+  for (let i = 0; i <= (days || 42); i++) {
+    const d = i ? _isoAddDays(dateStr, -i) : dateStr;
+    getActivity(d).forEach(r => {
+      if (r.kind !== 'strength' || !r.exercise_key) return;
+      const k = r.exercise_key;
+      const u = by[k] || (by[k] = { key: k, name: r.exercise_name || k, muscle: r.muscle || '', days: {}, last: null, lastRows: [], today: 0 });
+      if (i === 0) { u.today++; return; }
+      u.days[d] = true;
+      if (!u.last || d > u.last) { u.last = d; u.lastRows = []; }
+      if (d === u.last) u.lastRows.push(r);
+      if (!u.muscle && r.muscle) u.muscle = r.muscle;
+    });
+  }
+  return Object.values(by).filter(u => Object.keys(u.days).length || u.today)
+    .sort((a, b) => (Object.keys(b.days).length - Object.keys(a.days).length) || String(b.last || '').localeCompare(String(a.last || '')))
+    .slice(0, limit || 8);
+}
+function _gvLastTxt(u) {
+  if (!u.last) return '';
+  const top = u.lastRows.reduce((a, r) => (Number(r.weight) || 0) >= (Number(a && a.weight) || 0) ? r : a, null);
+  const what = top && top.weight && top.reps ? top.weight + '×' + top.reps
+    : (top && top.reps ? top.reps + ' reps' : (top && top.duration_s ? fmtDurationS(top.duration_s) : u.lastRows.length + ' sets'));
+  return what + ' · ' + _isoShort(u.last);
+}
+function _gvRow(icon, title, sub, done, onclick, extra) {
+  return `<div class="gv-row ${done ? 'done' : ''}" onclick="${onclick}">
+    <span class="gv-ic">${done ? '✓' : icon}</span>
+    <div class="gv-main"><div class="gv-t">${title}</div>${sub ? `<div class="gv-s">${sub}</div>` : ''}</div>
+    ${extra || ''}<span class="gv-go">›</span></div>`;
+}
+function renderGymVisit() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+  const T = ds(new Date());
+  if (title) title.textContent = '📍 At the gym';
+  if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'gymvisit' });
+  const w = gymWarmupState(T);
+  const seen = muscleDaysAgo(14);
+  const due = MUSCLE_GROUPS.filter(m => seen[m.id] === undefined || seen[m.id] >= STALE_DAYS);
+  const dueIds = due.map(m => m.id);
+  const usual = gymUsual(T, 42, 8);
+  window._gvUsual = usual;
+  const doneToday = {};
+  getActivity(T).forEach(r => { if (r.kind === 'strength' && r.exercise_key) doneToday[r.exercise_key] = (doneToday[r.exercise_key] || 0) + 1; });
+  const nDone = Object.keys(doneToday).length;
+  const mLabel = id => (MUSCLE_GROUPS.find(m => m.id === id) || {}).label || '';
+
+  // 1. Warm up — either order.
+  const warm = w.keys.map((k, i) => {
+    const L = (typeof stretchRoutineLabel === 'function') ? stretchRoutineLabel(k) : { name: k, time: '' };
+    const total = ((ROUTINES[k] || {}).exercises || []).filter(e => !e._divider).length;
+    const u = w.use[k] || {};
+    const sub = u.today ? `${Math.min(u.today, total)} of ${total} today` : (L.time || '') + (u.days ? ` · done ${u.days} of the last 60 days` : '');
+    return _gvRow('🧘', escapeHtml(L.name) + (i ? '' : ' <span class="gv-pill">your usual</span>'), sub, (u.today || 0) >= Math.ceil(total / 2), `gvOpenRoutine('${k}')`);
+  }).join('') + _gvRow('🚶', 'Track / treadmill walk', w.walked ? fmtDurationS(w.walkS) + ' today' : 'a few laps, or 5–10 min easy', w.walked, `openCardio('walk')`);
+
+  // 2. Machines by feel.
+  const usualHtml = usual.length ? usual.map((u, i) => {
+    const isDue = u.muscle && dueIds.indexOf(u.muscle) !== -1;
+    const t = doneToday[u.key];
+    return _gvRow('🏋', escapeHtml(u.name), t ? `${t} set${t > 1 ? 's' : ''} today` : escapeHtml(_gvLastTxt(u)), !!t, `gvOpenEx(${i})`,
+      isDue && !t ? `<span class="gv-due" title="Not trained in ${STALE_DAYS}+ days">${escapeHtml(mLabel(u.muscle))} due</span>` : '');
+  }).join('') : `<div class="gv-empty">Nothing logged in the last six weeks yet — pick from the list below.</div>`;
+  const dueHtml = due.length ? `<div class="gv-dueline">Due (${STALE_DAYS}+ days): ${due.map(m =>
+    `<span class="gv-chip" onclick="closeSessionScreen();openMusclePicker('${m.id}')">${m.icon} ${escapeHtml(m.label)}</span>`).join('')}</div>` : '';
+  const aim = nDone > 5 ? 'past 3–5 — more is optional, not better' : `of 3–5`;
+
+  // 3. Cardio.
+  const tm = tmPlan();
+  const tmHtml = `<details class="gv-tm" ${discAttr('gv-tm')}>
+      <summary>🏃 Treadmill intervals <span>${escapeHtml(tmSummary(tm))}</span></summary>
+      <div class="gv-tm-presets">${Object.keys(TM_PRESETS).map(id => `<span class="var-chip" onclick="tmUsePreset('${id}')">${escapeHtml(TM_PRESETS[id].name)}</span>`).join('')}</div>
+      <div class="gv-tm-grid">
+        <span></span><span>min</span><span>speed</span><span>incline</span>
+        <input id="tm-a-label" value="${_attr(tm.a.label)}" onchange="tmFromForm()"><input id="tm-a-min" type="number" step="0.5" inputmode="decimal" value="${tm.a.min}" onchange="tmFromForm()"><input id="tm-a-speed" inputmode="decimal" value="${_attr(tm.a.speed || '')}" placeholder="—" onchange="tmFromForm()"><input id="tm-a-inc" inputmode="decimal" value="${_attr(tm.a.incline || '')}" placeholder="—" onchange="tmFromForm()">
+        <input id="tm-b-label" value="${_attr(tm.b.label)}" onchange="tmFromForm()"><input id="tm-b-min" type="number" step="0.5" inputmode="decimal" value="${tm.b.min}" onchange="tmFromForm()"><input id="tm-b-speed" inputmode="decimal" value="${_attr(tm.b.speed || '')}" placeholder="—" onchange="tmFromForm()"><input id="tm-b-inc" inputmode="decimal" value="${_attr(tm.b.incline || '')}" placeholder="—" onchange="tmFromForm()">
+      </div>
+      <div class="gv-tm-row">
+        <label>Rounds <input id="tm-rounds" type="number" min="1" max="20" inputmode="numeric" value="${tm.rounds}" onchange="tmFromForm()"></label>
+        <label>Warm-up <input id="tm-warm" type="number" step="0.5" inputmode="decimal" value="${tm.warm}" onchange="tmFromForm()"> min</label>
+        <label>Cool-down <input id="tm-cool" type="number" step="0.5" inputmode="decimal" value="${tm.cool}" onchange="tmFromForm()"> min</label>
+      </div>
+      <button class="gv-go-btn" onclick="tmFromForm();ivStart(tmSegments(tmPlan()))">▶ Start — ${_dockClock(ivTotalS(tmSegments(tm)))}</button>
+      <div class="gv-note">The timer sits in the bar at the bottom and calls each change. If running is new, start at 1 min of running to 3 of walking and add 30 seconds of running a week — the tendons adapt slower than the lungs.</div>
+    </details>`;
+
+  body.innerHTML = `
+    <div class="gv-head">${GYMCLOCK ? `In for <b>${gymClockFmt(gymClockElapsedS())}</b>` : ''} · ${nDone} machine${nDone === 1 ? '' : 's'} so far</div>
+    <div class="gv-sec">1 · Warm up <span>either order</span></div>
+    ${warm}
+    <div class="gv-sec">2 · Machines by feel <span>${nDone} ${aim}</span></div>
+    ${usualHtml}
+    ${dueHtml}
+    <button class="gv-more" onclick="closeSessionScreen();openMusclePicker()">+ Something else</button>
+    <div class="gv-sec">3 · Cardio <span>on a cardio day</span></div>
+    ${tmHtml}
+    <div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 4px">
+      ${CARDIO_MODES.filter(m => m.id !== 'walk').slice(0, 5).map(m => `<button class="gv-chip" onclick="openCardio('${m.id}')">${m.icon} ${m.label}</button>`).join('')}
+    </div>
+    <div class="gv-sec">Cool down <span>optional</span></div>
+    ${ROUTINES.stretch_quick ? _gvRow('🧘', 'Quick stretch', '~10 min', false, `gvOpenRoutine('stretch_quick')`) : ''}
+    <div style="display:flex;gap:6px;margin-top:14px">
+      <button onclick="_sessPlanner=true;renderSessionScreen()" class="gv-btn">Plan by muscle group</button>
+      <button onclick="gymFinish()" class="gv-btn go">Done at the gym</button>
+    </div>`;
+}
+function gymFinish() {
+  const T = ds(new Date());
+  if (GYMCLOCK && gymClockElapsedS() > GYMCLOCK_SANE_H * 3600) {
+    // Left running: the dock asks how long it really was rather than logging hours.
+    _dockOpen = 'gym'; renderDock();
+    toast('The clock was left running — set the real length below', 'warn', 3500);
+    return;
+  }
+  const secs = GYMCLOCK ? gymClockElapsedS() : 0;
+  const startedAt = GYMCLOCK ? GYMCLOCK.startedAt : null;
+  if (GYMCLOCK) gymClockStop();
+  if (SESSION) { SESSION.status = 'finished'; _sessSave(); SESSION = null; try { localStorage.removeItem('workout_session'); } catch (e) {} }
+  _gymSummary = { date: T, secs: secs, startedAt: startedAt };
+  _sessPlanner = false;
+  _sessEx = '__gymsum__';
+  if (typeof setWorkoutContext === 'function') setWorkoutContext(null);
+  renderGymSummary();
+}
+function renderGymSummary() {
+  const body = document.getElementById('session-body');
+  const title = document.getElementById('session-title');
+  if (!body) return;
+  const g = _gymSummary || { date: ds(new Date()), secs: 0 };
+  if (title) title.textContent = 'Gym — summary';
+  const rows = getActivity(g.date);
+  const w = gymWarmupState(g.date);
+  const strength = rows.filter(r => r.kind === 'strength').sort((a, b) => String(a.started_at || '').localeCompare(String(b.started_at || '')) || (a.set_index - b.set_index));
+  const order = [], by = {};
+  strength.forEach(r => { if (!by[r.exercise_key]) { by[r.exercise_key] = []; order.push(r.exercise_key); } by[r.exercise_key].push(r); });
+  const setTxt = r => (r.weight && r.reps ? r.weight + '×' + r.reps : (r.reps ? r.reps + '' : (r.duration_s ? fmtDurationS(r.duration_s) : '·')))
+    + (r.variant ? ' ' + r.variant.toLowerCase() : '') + (r.flag === 'P' ? ' ⚠' : '');
+  const exHtml = order.map(k => {
+    const rs = by[k].sort((a, b) => a.set_index - b.set_index);
+    return `<div class="gs-ex"><b>${escapeHtml(rs[0].exercise_name || k)}</b><span>${rs.map(setTxt).map(escapeHtml).join(', ')}</span></div>`;
+  }).join('') || '<div class="gv-empty">No sets logged.</div>';
+  const rests = strength.map(r => Number(r.rest_s) || 0).filter(x => x > 0);
+  const avgRest = rests.length ? Math.round(rests.reduce((a, b) => a + b, 0) / rests.length) : 0;
+  const cardio = rows.filter(r => r.kind === 'cardio');
+  const cardioHtml = cardio.map(r => `<div class="gs-ex"><b>${escapeHtml(r.exercise_name || r.exercise_key)}</b><span>${fmtDurationS(r.duration_s) || ''}${r.notes ? ' · ' + escapeHtml(r.notes) : ''}</span></div>`).join('');
+  const seen = muscleDaysAgo(14);
+  const hit = MUSCLE_GROUPS.filter(m => seen[m.id] === 0).map(m => m.label);
+  const due = MUSCLE_GROUPS.filter(m => seen[m.id] === undefined || seen[m.id] >= STALE_DAYS).map(m => m.label);
+  const n = order.length;
+  const range = n === 0 ? 'no machines' : n < 3 ? `${n} — under your usual 3–5` : n <= 5 ? `${n} — in your 3–5` : `${n} — above your usual 3–5`;
+  body.innerHTML = `
+    <div class="gs-big">${g.secs ? gymClockFmt(g.secs) : '—'}<small>at the gym</small></div>
+    <div class="gs-line"><span>Warm-up</span>${w.stretched ? '✓ stretch' : '✗ no stretch'} · ${w.walked ? '✓ walk ' + fmtDurationS(w.walkS) : '✗ no walk'}</div>
+    <div class="gs-line"><span>Machines</span>${range}</div>
+    ${avgRest ? `<div class="gs-line"><span>Rest</span>average ${_restFmt(avgRest)} between sets (${rests.length} timed)</div>` : ''}
+    <div class="gv-sec">Sets</div>${exHtml}
+    ${cardioHtml ? `<div class="gv-sec">Cardio</div>${cardioHtml}` : ''}
+    <div class="gs-line"><span>Hit today</span>${hit.length ? escapeHtml(hit.join(', ')) : '—'}</div>
+    ${due.length ? `<div class="gs-line due"><span>Still due</span>${escapeHtml(due.join(', '))} — not trained in ${STALE_DAYS}+ days</div>` : ''}
+    <button class="gv-btn go" style="width:100%;margin-top:14px" onclick="_sessEx=null;_gymSummary=null;closeSessionScreen()">Close</button>`;
+}
+
+// ── Treadmill intervals ─────────────────────────────────────────────────
+// A plan he can repeat (synced per user), a timer in the dock that calls each
+// change, and one treadmill row at the end with what was done in `metrics`.
+// Like every timer here it is a stored start time, so leaving the app costs
+// nothing; what it cannot do is buzz the phone while he is in another app —
+// that is on the native list.
+const TM_KEY = 'tm_plan';
+const TM_PRESETS = {
+  walkrun: { name: 'Walk / run',   warm: 3, cool: 3, rounds: 6, a: { label: 'Walk', min: 3, speed: '', incline: '' }, b: { label: 'Run', min: 1, speed: '', incline: '' } },
+  incline: { name: 'Incline walk', warm: 3, cool: 3, rounds: 5, a: { label: 'Flat', min: 3, speed: '', incline: '' }, b: { label: 'Incline', min: 2, speed: '', incline: '' } },
+};
+function tmPlan() {
+  try { const p = JSON.parse(localStorage.getItem(TM_KEY) || 'null'); if (p && p.a && p.b) return p; } catch (e) {}
+  return JSON.parse(JSON.stringify(TM_PRESETS.walkrun));
+}
+function tmSetPlan(p) {
+  const v = JSON.stringify(p);
+  if (typeof pushSyncedSetting === 'function') pushSyncedSetting(TM_KEY, v); else { try { localStorage.setItem(TM_KEY, v); } catch (e) {} }
+}
+function tmUsePreset(id) {
+  const cur = tmPlan(), p = JSON.parse(JSON.stringify(TM_PRESETS[id] || TM_PRESETS.walkrun));
+  // Keep his speeds when the shape is the same kind of session.
+  if (cur.a && cur.a.label === p.a.label) { p.a.speed = cur.a.speed; p.a.incline = cur.a.incline; }
+  if (cur.b && cur.b.label === p.b.label) { p.b.speed = cur.b.speed; p.b.incline = cur.b.incline; }
+  tmSetPlan(p); renderSessionScreen();
+}
+function tmFromForm() {
+  const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const num = (id, d, lo, hi) => { const x = parseFloat(v(id)); return isNaN(x) ? d : Math.max(lo, Math.min(hi, x)); };
+  const cur = tmPlan();
+  if (!document.getElementById('tm-rounds')) return cur;
+  const p = { name: cur.name || '', warm: num('tm-warm', cur.warm, 0, 30), cool: num('tm-cool', cur.cool, 0, 30), rounds: Math.round(num('tm-rounds', cur.rounds, 1, 20)),
+    a: { label: (v('tm-a-label') || 'Walk').slice(0, 20), min: num('tm-a-min', cur.a.min, 0.25, 30), speed: v('tm-a-speed').slice(0, 8), incline: v('tm-a-inc').slice(0, 6) },
+    b: { label: (v('tm-b-label') || 'Run').slice(0, 20), min: num('tm-b-min', cur.b.min, 0.25, 30), speed: v('tm-b-speed').slice(0, 8), incline: v('tm-b-inc').slice(0, 6) } };
+  tmSetPlan(p);
+  return p;
+}
+function _tmLab(x) {
+  return x.label + (x.speed ? ' · ' + x.speed : '') + (String(x.incline || '').trim() ? ' · incline ' + x.incline : '');
+}
+function tmSegments(p) {
+  const segs = [];
+  if (p.warm > 0) segs.push({ label: 'Warm-up walk', secs: Math.round(p.warm * 60) });
+  for (let r = 1; r <= p.rounds; r++) {
+    segs.push({ label: _tmLab(p.a) + ' (' + r + '/' + p.rounds + ')', secs: Math.round(p.a.min * 60) });
+    segs.push({ label: _tmLab(p.b) + ' (' + r + '/' + p.rounds + ')', secs: Math.round(p.b.min * 60) });
+  }
+  if (p.cool > 0) segs.push({ label: 'Cool-down walk', secs: Math.round(p.cool * 60) });
+  return segs.filter(x => x.secs > 0);
+}
+function tmSummary(p) {
+  const f = m => (m % 1 ? Math.floor(m) + ':' + String(Math.round((m % 1) * 60)).padStart(2, '0') : m + ':00');
+  return p.rounds + ' × ' + f(p.a.min) + ' ' + p.a.label.toLowerCase() + ' / ' + f(p.b.min) + ' ' + p.b.label.toLowerCase();
+}
+let _ivTimer = null;   // { segs, startedAt, pausedAt, pausedMs, cued }
+let _ivDone = null;    // { secs, segs, reached, endedAt } — waiting for the distance
+function _ivSave() {
+  try {
+    if (_ivTimer) localStorage.setItem('iv_timer', JSON.stringify(_ivTimer)); else localStorage.removeItem('iv_timer');
+    if (_ivDone) localStorage.setItem('iv_done', JSON.stringify(_ivDone)); else localStorage.removeItem('iv_done');
+  } catch (e) {}
+}
+function _ivLoad() {
+  try {
+    const t = JSON.parse(localStorage.getItem('iv_timer') || 'null');
+    if (t && t.segs && Date.now() - t.startedAt < 3 * 3600 * 1000) _ivTimer = t; else localStorage.removeItem('iv_timer');
+    const d = JSON.parse(localStorage.getItem('iv_done') || 'null');
+    if (d && Date.now() - (d.endedAt || 0) < 6 * 3600 * 1000) _ivDone = d; else localStorage.removeItem('iv_done');
+  } catch (e) {}
+}
+function ivTotalS(segs) { return (segs || []).reduce((a, x) => a + x.secs, 0); }
+function ivElapsedS() {
+  if (!_ivTimer) return 0;
+  const now = _ivTimer.pausedAt || Date.now();
+  return Math.max(0, Math.floor((now - _ivTimer.startedAt - (_ivTimer.pausedMs || 0)) / 1000));
+}
+function ivPosition() {
+  const e = ivElapsedS(), segs = (_ivTimer && _ivTimer.segs) || [];
+  let acc = 0;
+  for (let i = 0; i < segs.length; i++) {
+    if (e < acc + segs[i].secs) return { i: i, left: acc + segs[i].secs - e, seg: segs[i], next: segs[i + 1] || null };
+    acc += segs[i].secs;
+  }
+  return { i: segs.length, left: 0, seg: null, next: null, done: true };
+}
+function ivStart(segs) {
+  if (!segs || !segs.length) return;
+  _ivDone = null;
+  _ivTimer = { segs: segs, startedAt: Date.now(), pausedAt: 0, pausedMs: 0, cued: 0 };
+  _dockOpen = 'iv';
+  _ivSave(); wakeSync(); renderDock();
+}
+function ivPause() {
+  if (!_ivTimer) return;
+  if (_ivTimer.pausedAt) { _ivTimer.pausedMs += Date.now() - _ivTimer.pausedAt; _ivTimer.pausedAt = 0; }
+  else _ivTimer.pausedAt = Date.now();
+  _ivSave(); wakeSync(); renderDock();
+}
+function ivSkip() {
+  if (!_ivTimer) return;
+  const p = ivPosition();
+  if (p.done) return;
+  _ivTimer.startedAt -= p.left * 1000;          // jump to the next change
+  if (_ivTimer.pausedAt) _ivTimer.pausedAt = Math.max(_ivTimer.pausedAt, _ivTimer.startedAt);
+  _ivSave(); _ivTick(); renderDock();
+}
+function ivEnd() {
+  if (!_ivTimer) return;
+  const p = ivPosition();
+  _ivDone = { secs: ivElapsedS(), segs: _ivTimer.segs, reached: p.i, endedAt: Date.now() };
+  _ivTimer = null;
+  _dockOpen = 'iv';
+  _ivSave(); wakeSync(); renderDock();
+}
+// Returns true when it rebuilt the dock (a new segment, or the end).
+function _ivTick() {
+  if (!_ivTimer || _ivTimer.pausedAt) return false;
+  const p = ivPosition();
+  if (p.done) { _ivCue(true); ivEnd(); return true; }
+  if (p.i > (_ivTimer.cued || 0)) {
+    _ivTimer.cued = p.i; _ivSave();
+    if (!document.hidden) _ivCue(false);
+    renderDock();
+    return true;
+  }
+  return false;
+}
+function _ivCue(final) {
+  try { if (navigator.vibrate) navigator.vibrate(final ? [200, 100, 200, 100, 400] : [150, 80, 150]); } catch (e) {}
+  try { if (typeof _beep === 'function') _beep(final ? [[880, 0], [1100, 0.3], [1320, 0.6]] : [[660, 0], [880, 0.25]]); } catch (e) {}
+}
+function ivSaveDone(withDistance) {
+  const d = _ivDone;
+  if (!d) return;
+  const el = document.getElementById('iv-dist');
+  const dist = withDistance ? (parseFloat(el && el.value) || 0) : 0;
+  const mode = CARDIO_MODES.find(m => m.id === 'treadmill');
+  const stored = _trackToStorage(mode.key, mode.label, { d: dist, t: d.secs });
+  const done = d.segs.slice(0, Math.min(d.segs.length, (d.reached || 0) + (d.reached >= d.segs.length ? 0 : 1)));
+  const rounds = done.filter(x => /\(\d+\/\d+\)/.test(x.label)).length;
+  logActivity(Object.assign({
+    name: mode.label, exercise_key: mode.key, movement_id: mode.key,
+    notes: 'Intervals: ' + (rounds ? Math.ceil(rounds / 2) + (Math.ceil(rounds / 2) === 1 ? ' round' : ' rounds') : 'warm-up only') + (d.reached < d.segs.length ? ' (ended early)' : ''),
+    metrics: { intervals: done.map(x => ({ label: x.label, s: x.secs })) },
+  }, stored, { kind: 'cardio', equip: 'treadmill' }));
+  _ivDone = null; _dockOpen = null;
+  _ivSave(); renderDock();
+  if (typeof toast === 'function') toast('Treadmill ' + _dockClock(d.secs) + ' logged', 'ok', 2000);
+  if (_isOpenBd('session-backdrop') && !_sessEx) renderSessionScreen();
+}
+function ivDiscard() { _ivDone = null; _ivTimer = null; _dockOpen = null; _ivSave(); wakeSync(); renderDock(); }
+function _ivDrawerHtml() {
+  if (_ivDone) {
+    const unit = (CARDIO_MODES.find(m => m.id === 'treadmill') || {}).unit || 'mi';
+    return `<div class="dk-drawer">
+      <div style="font-size:13px;font-weight:800;color:var(--green)">✓ Treadmill — ${_dockClock(_ivDone.secs)}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin:8px 0">
+        <input id="iv-dist" type="number" step="0.01" inputmode="decimal" placeholder="distance on the screen" style="flex:1;min-width:0;padding:10px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;font-family:inherit">
+        <span style="font-size:12px;color:var(--text-muted)">${unit}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="dk-btn go" style="flex:1" onclick="ivSaveDone(true)">Save</button>
+        <button class="dk-btn" onclick="ivSaveDone(false)">No distance</button>
+        <button class="dk-btn" onclick="ivDiscard()">Discard</button>
+      </div></div>`;
+  }
+  if (!_ivTimer) return '';
+  const p = ivPosition();
+  return `<div class="dk-drawer" style="display:flex;align-items:center;gap:12px">
+      <div style="min-width:0;flex:1">
+        <div id="dk-iv-big" style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan)">${_dockClock(p.left)}</div>
+        <div style="font-size:13px;color:var(--text);font-weight:800;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.seg ? p.seg.label : '')}</div>
+        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.next ? 'Next: ' + escapeHtml(p.next.label) + ' · ' + _dockClock(p.next.secs) : 'Last one'}</div>
+        <div id="dk-iv-tot" style="font-size:10px;color:var(--text-muted);margin-top:2px">${_dockClock(ivElapsedS())} of ${_dockClock(ivTotalS(_ivTimer.segs))}</div>
+        <button class="dk-min" onclick="dockToggle(null)">▾ Tuck it away — it keeps counting</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
+        <div style="display:flex;gap:6px">
+          <button class="dk-btn" onclick="ivPause()">${_ivTimer.pausedAt ? '▶' : '⏸'}</button>
+          <button class="dk-btn" onclick="ivSkip()">Next ›</button>
+        </div>
+        <button class="dk-btn go" onclick="ivEnd()">End</button>
+      </div>
+    </div>`;
+}
 
 // ══════════════════════════════════════════════════════
 // "I'M AT THE GYM" CLOCK  (task #30, 2026-09-07)
@@ -20222,7 +20965,7 @@ function renderGymClock() {
 
   if (!GYMCLOCK) {
     el.innerHTML = `
-      <button onclick="gymClockStart()" style="width:100%;margin-top:5px;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
+      <button onclick="gymCheckIn()" style="width:100%;margin-top:5px;padding:9px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">
         📍 I'm at the gym${loggedS ? ` · ${gymClockFmt(loggedS)} logged today` : ''}</button>`;
     return;
   }
@@ -20418,6 +21161,7 @@ const GYM_MACHINES = [
   { id: 'calf_raise_m', icon: '🦵', label: 'Calf Raise (Machine)', muscle: 'Calves', m: 'calves' },
   { id: 'hip_abductor', icon: '🦵', label: 'Hip Abductor', muscle: 'Hips', m: 'glutes' },
   { id: 'hip_adductor', icon: '🦵', label: 'Hip Adductor', muscle: 'Hips', m: 'glutes' },
+  { id: 'back_extension_m', icon: '🔙', label: 'Back Extension (Machine)', muscle: 'Lower back / glutes', m: 'glutes' },
   { id: 'ab_crunch_m', icon: '🎯', label: 'Ab Crunch (Machine)', muscle: 'Core', m: 'core' },
   { id: 'cable_woodchop', icon: '🎯', label: 'Cable Woodchop', muscle: 'Core', m: 'core' },
   { id: 'smith_squat', icon: '🏋️', label: 'Smith Machine Squat', muscle: 'Legs', m: 'quads' },
@@ -23204,7 +23948,7 @@ function renderMealSuggPopup() {
   body.innerHTML = `
     <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--divider)">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">
-        Add a meal idea for this day — yours, or eventually one your kids or Lisa can suggest.
+        Add a meal idea for this day — yours, or one someone you share the app with suggests.
       </div>
       <div style="display:flex;gap:6px;align-items:center">
         <input id="meal-sugg-input" type="text" placeholder="e.g. chicken stir-fry with rice"
@@ -23654,7 +24398,9 @@ function clearActivityLevel(dateStr) {
 // Build the decision tree UI at the top of the workout card.
 // Returns HTML string. Renders selected level highlighted, others dimmed,
 // or a suggestion banner if no level chosen yet.
-function buildActivityDecisionTree(dateStr) {
+// `simple` (2026-10-25): today, under the tiles, the clock and the two big
+// buttons are the tiles' job — the session planner moves into "More".
+function buildActivityDecisionTree(dateStr, simple) {
   const d = (DB_CACHE.daily && DB_CACHE.daily[dateStr]) || {};
   const chosen = Number(d.activity_level) || 0;
   const suggested = chosen ? null : suggestActivityLevel(dateStr);
@@ -23699,9 +24445,9 @@ function buildActivityDecisionTree(dateStr) {
       <div class="adt-row">${chips}</div>
       ${intentHtml}
       ${(typeof sessionPlanHtml === 'function') ? sessionPlanHtml(dateStr) : ''}
-      <div id="gym-clock-host"></div>
+      ${simple ? '' : `<div id="gym-clock-host"></div>
       <button onclick="openSessionScreen()" style="width:100%;margin-top:8px;padding:11px;border-radius:7px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">${(typeof _sessLoad === 'function' && _sessLoad()) ? '▶ Resume session' : '💪 Start a session'}</button>
-      <button onclick="openMusclePicker()" style="width:100%;margin-top:6px;padding:12px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">\ud83d\udd0d Find an exercise</button>
+      <button onclick="openMusclePicker()" style="width:100%;margin-top:6px;padding:12px;border-radius:7px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit">\ud83d\udd0d Find an exercise</button>`}
     </div>
   `;
 }
@@ -23793,7 +24539,8 @@ const CHECKIN_QUESTIONS = [
 // ════════════════════════════════════════════════════════════════════════════
 const SYNCED_SETTING_KEYS = ['checkin_prefs', 'morning_prompt_last_done',
                              'evening_prompt_last_done', 'view_hidden',
-                             'reflect_mode', 'reflect_mix', 'reflect_families', 'bench_profile'];
+                             'reflect_mode', 'reflect_mix', 'reflect_families', 'bench_profile',
+                             'ex_setup', 'tm_plan'];
 
 async function pullSyncedSettings() {
   if (typeof sbReady === 'undefined' || !sbReady) return false;
@@ -23972,10 +24719,30 @@ function renderBenchPrefs() {
       <span style="color:var(--text-muted);font-size:13px;cursor:pointer;padding:0 3px" onclick="_benchRemove(${i})">×</span>
     </div>`;
   }).join('');
+  const others = (b.others || []).map(function (o, k) {
+    const pr = (o.positions || []).map(function (p, i) {
+      return `<div class="bp-row">
+        <span class="bp-pos">Position ${escapeHtml(String(p.pos))}</span>
+        <input class="bp-deg" type="number" step="1" value="${p.deg === 0 || p.deg ? p.deg : ''}" placeholder="deg" onchange="_benchOtherDeg(${k}, ${i}, this.value)">
+        <span style="font-size:9.5px;color:var(--text-muted)">deg</span>
+        <span class="bp-mult">×${declineMult(p.deg).toFixed(2)}</span>
+        <span style="color:var(--text-muted);font-size:13px;cursor:pointer;padding:0 3px" onclick="_benchOtherDelPos(${k}, ${i})">×</span>
+      </div>`;
+    }).join('');
+    return `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--divider)">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <input class="bp-deg" style="flex:1;width:auto" type="text" maxlength="40" value="${escapeHtml(o.name || '').replace(/"/g, '&quot;')}" placeholder="Name — e.g. Gym bench" onchange="_benchOtherName(${k}, this.value)">
+        <span style="color:var(--text-muted);font-size:13px;cursor:pointer;padding:0 3px" title="Remove this bench" onclick="_benchOtherRemove(${k})">×</span>
+      </div>
+      ${pr || '<div style="font-size:10.5px;color:var(--text-muted);padding:4px 0">No positions yet.</div>'}
+      <button onclick="_benchOtherAddPos(${k})" style="margin-top:6px;width:100%;padding:8px;border-radius:7px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">+ Add position</button>
+    </div>`;
+  }).join('');
   host.innerHTML = (rows || '<div style="font-size:10.5px;color:var(--text-muted);padding-bottom:6px">No positions yet.</div>') +
     `<div style="display:flex;gap:5px;margin-top:8px">
       <button onclick="_benchAdd()" style="flex:1;padding:10px;border-radius:7px;border:1px solid var(--cyan);background:var(--cyan-bg);color:var(--cyan);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">+ Add position</button>
-    </div>
+    </div>` + others +
+    `<button onclick="_benchOtherAdd()" style="margin-top:10px;width:100%;padding:9px;border-radius:7px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;font-family:inherit">+ Another bench — e.g. the one at your gym</button>
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:8px">
       The coefficient is 1 + sin(angle) / sin(80°) — work per rep against gravity, relative to flat.
       It is a proxy, not a measurement of tension: what it gets right is the order and roughly the spacing.
@@ -23997,6 +24764,13 @@ function _benchRemove(i) {
   b.positions.splice(i, 1);
   setBenchProfile(b);
 }
+function _benchOthers() { const b = benchProfile() || { name: '', positions: [] }; b.others = b.others || []; return b; }
+function _benchOtherAdd() { const b = _benchOthers(); b.others.push({ name: '', positions: [{ pos: 1, deg: 0 }] }); setBenchProfile(b); }
+function _benchOtherName(k, v) { const b = _benchOthers(); if (!b.others[k]) return; b.others[k].name = String(v || '').slice(0, 40); setBenchProfile(b); }
+function _benchOtherRemove(k) { const b = _benchOthers(); b.others.splice(k, 1); setBenchProfile(b); }
+function _benchOtherAddPos(k) { const b = _benchOthers(); const o = b.others[k]; if (!o) return; o.positions = o.positions || []; o.positions.push({ pos: o.positions.length + 1, deg: 0 }); setBenchProfile(b); }
+function _benchOtherDeg(k, i, v) { const b = _benchOthers(); const o = b.others[k]; if (!o || !o.positions[i]) return; o.positions[i].deg = parseFloat(v) || 0; setBenchProfile(b); }
+function _benchOtherDelPos(k, i) { const b = _benchOthers(); const o = b.others[k]; if (!o) return; o.positions.splice(i, 1); setBenchProfile(b); }
 
 let _glOpen = null;
 function renderGymLocPrefs() {
@@ -26932,6 +27706,11 @@ function buildGymExtras(dateStr, exSets, glIdx) {
 function closePopup() {
   stopExTimer(); // kill any running countdown
   document.getElementById('popup-backdrop').classList.remove('open');
+  // A routine opened from the gym visit comes back to the visit (2026-10-25).
+  if (typeof _gvReturn !== 'undefined' && _gvReturn) {
+    _gvReturn = false;
+    if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK && typeof openSessionScreen === 'function') openSessionScreen();
+  }
 }
 
 function toggleExercise(el, dateStr, key, exKey) {
@@ -27467,10 +28246,20 @@ function renderDaily() {
     </div>`;
 
   // Task #16 — activity decision tree at the top of the workout card
-  const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr) : '';
+  const doingHtml = (dateStr === ds(new Date()) && typeof doingTodayHtml === 'function') ? doingTodayHtml(dateStr) : '';
+  const adtHtml = (typeof buildActivityDecisionTree === 'function') ? buildActivityDecisionTree(dateStr, !!doingHtml) : '';
+  // Simplified today (2026-10-25): what the tiles already do leaves the screen,
+  // and the day's schedule and the by-group planner fold into "More" — one tap
+  // away, not gone. Other days keep the full card.
+  const _sessOn = (typeof _sessLoad === 'function') && _sessLoad();
+  const moreHtml = !doingHtml ? '' : `<details class="home-more" ${discAttr('home-more')}>
+      <summary>More <span>plan a session by muscle group · today's schedule</span></summary>
+      <button onclick="openSessionScreen()" class="home-more-btn">${_sessOn ? '▶ Resume session' : '💪 Plan a session by muscle group'}</button>
+      ${recommendedHtml}
+    </details>`;
   // #gym-clock-host lives inside adtHtml, so it only exists after this write —
   // renderGymClock() is called at the end of this function, not here.
-  wc.innerHTML = adtHtml + morningHtml + recommendedHtml + quickPickHtml + todayDoneHtml + `
+  wc.innerHTML = doingHtml + adtHtml + (doingHtml ? '' : morningHtml + recommendedHtml) + ((doingHtml && !isKidDay2) ? '' : quickPickHtml) + todayDoneHtml + `
     <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
     </div>
@@ -27485,6 +28274,7 @@ function renderDaily() {
     <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
       <div class="stretch-tiers">${stretchTiersHtml}</div>
     </div>
+    ${moreHtml}
     ${(() => {
       const hd = getHealthData(dateStr);
       const hasHealth = hd.steps > 0 || hd.resting_hr > 0 || hd.active_cal > 0;
@@ -28067,6 +28857,10 @@ function renderMonth() {
 
   // Count trailing empty cells
   const trailingEmpty = totalCells - (firstDay + daysInMonth);
+  // The custody legend and counts are one household's (2026-10-25): only with that module on.
+  const _custodyOn = typeof canSee !== 'function' || canSee('custody');
+  _monthActEnsure(ds(new Date(year, month, 1)), ds(new Date(year, month, daysInMonth)));
+  const mActs = {};
 
   let html = '';
   for (let i = 0; i < totalCells; i++) {
@@ -28160,7 +28954,13 @@ function renderMonth() {
         evHtml = `<div title="${csvNote.replace(/"/g,'&quot;')}" style="padding:1px 5px;margin:0 -5px 1px;font-size:8px;font-weight:600;background:var(--cyan-bg);color:var(--cyan);${noteClamp}">📝 ${csvNote}</div>`;
       }
 
-      const strHtml = `<div class="mc-stretch">🧘 ${strR}</div>`;
+      // Done, not planned: a past day shows what happened; a future day the plan.
+      const acts = isPastOrToday ? dayActs(dStr) : [];
+      acts.forEach(a => { mActs[a.id] = (mActs[a.id] || 0) + 1; });
+      const actsHtml = acts.length ? `<div class="mc-acts" title="${acts.map(a => a.label).join(', ')}">${acts.map(a => a.icon).join('')}</div>` : '';
+      const isPast = dStr < todayStr;
+      if (isPast) woHtml = '';
+      const strHtml = isPast ? '' : `<div class="mc-stretch">🧘 ${strR}</div>`;
 
       const progHtml = isPastOrToday ? `
         <div class="mc-progress">
@@ -28178,6 +28978,7 @@ function renderMonth() {
             ${badgeLabel ? `<span class="mc-badge ${cellClass}">${badgeLabel}</span>` : ''}
           </div>
           <div class="mc-body">
+            ${actsHtml}
             ${woHtml}
             ${evHtml}
             ${strHtml}
@@ -28203,7 +29004,7 @@ function renderMonth() {
         ${mEnergyCount ? `<span>⚡${(mEnergySum/mEnergyCount).toFixed(1)}</span>` : ''}
         ${mSleepCount ? `<span>😴${(mSleepSum/mSleepCount).toFixed(1)}h</span>` : ''}
         <span>💧${mWater}</span>
-        <span style="margin-left:auto;white-space:nowrap"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span></span>
+        ${_custodyOn ? `<span style="margin-left:auto;white-space:nowrap"><span style="color:var(--green)">C:${mCraigDays}</span>/<span style="color:var(--pink)">L:${mLisaDays}</span></span>` : ''}
       </div>
       <div style="font-size:14px;font-weight:800;color:${overallColor};min-width:36px;text-align:right">${overallPct}%</div>
     </div>`;
@@ -28219,14 +29020,135 @@ function renderMonth() {
     ? `<div class="legend-item" onclick="openScheduleEditor()" style="cursor:pointer">${custodyShareChipHtml(year, month)}</div>`
     : '';
   document.getElementById('month-legend').innerHTML = `
-    <div class="legend-item"><div class="legend-dot craig"></div>Craig (${mCraigDays}d)</div>
+    ${_custodyOn ? `<div class="legend-item"><div class="legend-dot craig"></div>Craig (${mCraigDays}d)</div>
     <div class="legend-item"><div class="legend-dot lisa"></div>Lisa (${mLisaDays}d)</div>
-    ${shareChip}
-    <div class="legend-item">🚣 Row · 🏋️ Gym · 🧘 Yoga · 😴 Rest</div>
+    ${shareChip}` : ''}
+    <div class="legend-item">Done: ${DAY_ACTS.map(a => `${a.icon} ${a.label.toLowerCase()}${mActs[a.id] ? ' ' + mActs[a.id] : ''}`).join(' · ')}</div>
+    <div class="legend-item" style="color:var(--text-muted)">Swipe ← → or pull past the top / bottom to change month</div>
     <div class="legend-item"><span style="color:var(--cyan)">▂</span> No school</div>
     <div class="legend-item"><span style="color:#ff4444">▂</span> Stat holiday</div>
   `;
 }
+
+// ── What are you doing today? (2026-10-25) ────────────────────────────
+// Craig: "simplify the app" — the home screen built around picking what you
+// are doing today. Six doors, each into the one screen that logs it, and each
+// says when it is done. They replace the small "Quick:" chips on today (a kid
+// day keeps its own Walk / Body / Yoga set); the rest of the card is unchanged
+// until he decides what else can go.
+function doingTodayHtml(dateStr) {
+  let rows = [];
+  try { rows = getActivity(dateStr) || []; } catch (e) {}
+  const sum = (pred) => rows.filter(pred).reduce((a, r) => a + (Number(r.duration_s) || 0), 0);
+  const key = k => r => r.exercise_key === k;
+  const gymS = sum(r => r.kind === 'gym_time');
+  const strengthN = new Set(rows.filter(r => r.kind === 'strength').map(r => r.exercise_key)).size;
+  const atGym = typeof GYMCLOCK !== 'undefined' && !!GYMCLOCK;
+  const st = sum(r => r.kind === 'stretch_time') || sum(r => /^st_/.test(r.exercise_key || ''));
+  const stretched = rows.some(r => r.kind === 'stretch_time' || /^st_/.test(r.exercise_key || ''));
+  const walkS = sum(key('wo_walk')), rowS = sum(key('wo_row')), swimS = sum(key('wo_swim'));
+  const m = s => s >= 60 ? Math.round(s / 60) + ' min' : '';
+  const tile = (icon, label, sub, cls, onclick) =>
+    `<button class="dt-tile ${cls}" onclick="${onclick}"><span class="dt-i">${icon}</span><span class="dt-l">${label}</span><span class="dt-s">${sub}</span></button>`;
+  const hike = rows.some(r => r.exercise_key === 'wo_walk' && _isHike(r));
+  return `<div class="dt-wrap"><div class="dt-h">What are you doing?</div><div class="dt-grid">
+    ${atGym ? tile('📍', 'Gym', 'in ' + _dockClock(gymClockElapsedS()), 'live', 'gymCheckIn()')
+            : tile('📍', 'Gym', gymS ? '✓ ' + m(gymS) : 'check in', gymS ? 'done' : '', 'gymCheckIn()')}
+    ${tile('🧘', 'Stretch', stretched ? '✓ ' + (m(st) || 'done') : 'routines, holds', stretched ? 'done' : '', 'openStretch()')}
+    ${tile(hike ? '🥾' : '🚶', 'Walk / hike', walkS ? '✓ ' + m(walkS) : 'distance + time', walkS ? 'done' : '', "openCardio('walk')")}
+    ${tile('🚣', 'Row', rowS ? '✓ ' + m(rowS) : 'erg', rowS ? 'done' : '', "openCardio('row')")}
+    ${tile('🏊', 'Swim', swimS ? '✓ ' + m(swimS) : 'lengths', swimS ? 'done' : '', "openCardio('swim')")}
+    ${tile('🏠', 'Home', (!gymS && !atGym && strengthN) ? '✓ ' + strengthN + ' movement' + (strengthN === 1 ? '' : 's') : 'bodyweight, bells', (!gymS && !atGym && strengthN) ? 'done' : '', "mpickHomeOpen()")}
+  </div>
+  <div class="dt-links">
+    <button onclick="openMusclePicker()">🔍 Find an exercise</button>
+    <button onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning stretch</button>
+    ${(typeof _sessLoad === 'function' && _sessLoad()) ? `<button onclick="openSessionScreen()">▶ Resume session</button>` : ''}
+  </div></div>`;
+}
+function mpickHomeOpen() {
+  try { localStorage.setItem('mpick_where', 'home'); } catch (e) {}
+  openMusclePicker(null);
+}
+
+// ── What was done on a day, as icons (2026-10-25) ─────────────────────
+// Craig: "emojis on the calendar" — hike, row, swim, gym, walk, stretch. Read
+// from the one log, so a typed walk, an Apple Health hike and a Concept2 row
+// all show the same way, and a plan that was not done shows nothing.
+const _isHike = r => /\bhike|hiking/i.test(String(r.notes || '') + ' ' + JSON.stringify(r.metrics || {}));
+const DAY_ACTS = [
+  { id: 'gym',     icon: '🏋️', label: 'Strength',  test: r => r.kind === 'strength' || r.kind === 'gym_time' },
+  { id: 'hike',    icon: '🥾', label: 'Hike',      test: r => r.exercise_key === 'wo_walk' && _isHike(r) },
+  { id: 'walk',    icon: '🚶', label: 'Walk',      test: r => r.exercise_key === 'wo_walk' && !_isHike(r) },
+  { id: 'run',     icon: '🏃', label: 'Run / treadmill', test: r => ['wo_run', 'gymcardio_treadmill', 'gymcardio_elliptical', 'gymcardio_stairmaster'].indexOf(r.exercise_key) !== -1 },
+  { id: 'row',     icon: '🚣', label: 'Row',       test: r => r.exercise_key === 'wo_row' },
+  { id: 'swim',    icon: '🏊', label: 'Swim',      test: r => r.exercise_key === 'wo_swim' },
+  { id: 'bike',    icon: '🚴', label: 'Bike',      test: r => r.exercise_key === 'gymcardio_bike' },
+  { id: 'stretch', icon: '🧘', label: 'Stretch / yoga', test: r => r.kind === 'stretch_time' || r.kind === 'mobility' || r.kind === 'stretch' || /^st_/.test(r.exercise_key || '') || r.exercise_key === 'wo_yoga_session' },
+];
+function dayActs(dStr) {
+  let rows = [];
+  try { rows = getActivity(dStr) || []; } catch (e) {}
+  return DAY_ACTS.filter(a => rows.some(a.test));
+}
+// Months beyond the last five weeks are not on the device until asked for.
+const _monthActAsked = {};
+function _monthActEnsure(first, last) {
+  const k = first.slice(0, 7);
+  if (_monthActAsked[k] || typeof ensureActivityRange !== 'function') return;
+  _monthActAsked[k] = true;
+  ensureActivityRange(first, last).then(grew => { if (grew && currentView === 'month') renderMonth(); }).catch(() => {});
+}
+
+// ── Swipe between days, pull between months (2026-10-25) ─────────────
+// Craig: "Swipe left/right between days" and "scroll past the top/bottom of the
+// month to change month". Left = forward in time, like turning a page. Nothing
+// fires while a screen is open, or when the gesture starts on something that
+// takes touches of its own (a box being typed in, a row that scrolls sideways,
+// the bar at the bottom).
+function _swipeBlocked(el) {
+  for (let n = el; n && n !== document.body && n.nodeType === 1; n = n.parentElement) {
+    if (n.matches('input,textarea,select,[contenteditable="true"],.no-swipe,#rest-timer-bar,.popup-backdrop')) return true;
+    if (n.scrollWidth > n.clientWidth + 4) {
+      const ox = getComputedStyle(n).overflowX;
+      if (ox === 'auto' || ox === 'scroll') return true;
+    }
+  }
+  return false;
+}
+function _swipeFlash(dir) {
+  const v = document.getElementById(currentView === 'month' ? 'month-view' : currentView === 'week' ? 'week-view' : 'daily-view');
+  if (!v) return;
+  v.classList.remove('sw-l', 'sw-r', 'sw-u', 'sw-d'); void v.offsetWidth; v.classList.add('sw-' + dir);
+}
+let _sw = null;
+function _swipeStart(e) {
+  _sw = null;
+  if (!e.touches || e.touches.length !== 1) return;
+  if (document.querySelector('.popup-backdrop.open')) return;
+  if (_swipeBlocked(e.target)) return;
+  const se = document.scrollingElement || document.documentElement;
+  _sw = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(),
+          top: se.scrollTop <= 1, bottom: se.scrollTop + window.innerHeight >= se.scrollHeight - 2 };
+}
+function _swipeEnd(e) {
+  const s0 = _sw; _sw = null;
+  if (!s0 || !e.changedTouches || !e.changedTouches.length) return;
+  const t = e.changedTouches[0], dx = t.clientX - s0.x, dy = t.clientY - s0.y;
+  if (Date.now() - s0.t > 1200) return;
+  const horiz = Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy);
+  const vert = Math.abs(dy) > 90 && Math.abs(dy) > 2 * Math.abs(dx);
+  if (currentView === 'daily' && horiz) { changeDay(dx < 0 ? 1 : -1); _swipeFlash(dx < 0 ? 'l' : 'r'); }
+  else if (currentView === 'week' && horiz) { changeWeek(dx < 0 ? 1 : -1); _swipeFlash(dx < 0 ? 'l' : 'r'); }
+  else if (currentView === 'month') {
+    if (horiz) { changeMonth(dx < 0 ? 1 : -1); _swipeFlash(dx < 0 ? 'l' : 'r'); }
+    else if (vert && dy < 0 && s0.bottom) { changeMonth(1); _swipeFlash('u'); window.scrollTo(0, 0); }
+    else if (vert && dy > 0 && s0.top) { changeMonth(-1); _swipeFlash('d'); }
+  }
+}
+document.addEventListener('touchstart', _swipeStart, { passive: true });
+document.addEventListener('touchend', _swipeEnd, { passive: true });
+document.addEventListener('touchcancel', () => { _sw = null; }, { passive: true });
 
 // ── VIEW NAVIGATION ──
 let currentView = 'daily'; // 'daily', 'week', 'month'
@@ -28608,7 +29530,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // eviction. Elapsed is derived from the stored timestamp, so nothing is lost.
   if (typeof _gymClockLoad === 'function') _gymClockLoad();
   // And a rest or a hold, the same way (2026-10-25). The dock shows them all.
-  try { _restLoad(); _holdLoad(); renderDock(); wakeSync(); } catch (e) {}
+  try { _restLoad(); _holdLoad(); _ivLoad(); renderDock(); wakeSync(); } catch (e) {}
 
   // Check for existing session
   const loggedIn = await checkAuth();
