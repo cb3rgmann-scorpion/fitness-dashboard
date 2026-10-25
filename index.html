@@ -2977,6 +2977,29 @@
      big enough to sit on top of the Log-set button, so reserve its measured
      height while it's running. --rest-bar-h is set by renderRestTimer(). */
   body.rest-active .popup-body { padding-bottom: calc(var(--rest-bar-h, 120px) + 20px); }
+  /* The dock (2026-10-25): every running timer, and the way back to the workout.
+     The page under it gets the same reserved space the popups do. */
+  body.rest-active { padding-bottom: calc(var(--rest-bar-h, 60px) + 8px); }
+  .dk-row { display: flex; gap: 6px; padding: 8px 10px 10px; align-items: stretch; }
+  .dk-chip { display: flex; align-items: stretch; border-radius: 10px; border: 1px solid var(--card-border); background: var(--input-bg); min-height: 46px; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+  /* The timers keep their width; "where you were" takes what is left and trims. */
+  .dk-chip.resume { flex: 1 1 0; border-color: var(--purple-border, var(--card-border)); }
+  .dk-chip.resume .dk-t { overflow: hidden; text-overflow: ellipsis; }
+  .dk-chip:not(.resume) .dk-l { max-width: 92px; }
+  .dk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; padding: 4px 9px; cursor: pointer; background: none; border: none; color: var(--text); font-family: inherit; text-align: left; }
+  .dk-t { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; white-space: nowrap; }
+  .dk-l { font-size: 9.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dk-exp { width: 30px; flex-shrink: 0; border: none; border-left: 1px solid var(--card-border); background: none; color: var(--text-dim); font-size: 13px; cursor: pointer; font-family: inherit; padding: 0; }
+  .dk-chip.gym .dk-t, .dk-chip.stretch .dk-t, .dk-chip.hold .dk-t { color: var(--green); }
+  .dk-chip.rest .dk-t { color: var(--cyan); }
+  .dk-chip.rest.soon .dk-t { color: var(--orange); }
+  .dk-chip.rest.over { border-color: var(--green-border, var(--green)); }
+  .dk-chip.rest.over .dk-t { color: var(--green); }
+  .dk-chip.resume .dk-t { font-size: 15px; color: var(--purple); }
+  .dk-drawer { padding: 10px 14px 6px; border-bottom: 1px solid var(--divider); }
+  .dk-btn { min-width: 60px; height: 46px; border-radius: 9px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0 10px; }
+  .dk-btn.go { border-color: var(--green-border, var(--green)); background: var(--green-bg); color: var(--green); }
+  .dk-min { background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; font-family: inherit; padding: 4px 0; }
 
   /* ── Stats popup tabs ── */
   .stats-tabs { display: flex; gap: 4px; }
@@ -3693,7 +3716,7 @@
     </div>
     <a id="timer-video-link" class="timer-video-link" target="_blank" style="display:none">▶ Watch Video</a>
   </div>
-  <div class="timer-cancel" id="timer-hint">tap ring to skip</div>
+  <div class="timer-cancel" id="timer-hint">tap the ring to end it here and log it · Next → skips</div>
 </div>
 <div class="popup-backdrop" id="popup-backdrop" onclick="if(event.target===this)closePopup()">
   <div class="popup">
@@ -4151,7 +4174,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.09.30.06';
+const APP_VERSION = '2026.10.25.01';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -9218,8 +9241,6 @@ function openBodyLog(tab) {
       if (typeof _refreshLibraryFromSupabase === 'function') await _refreshLibraryFromSupabase();
       if (typeof _migrateLocalProvidersToSupabase === 'function') await _migrateLocalProvidersToSupabase();
       if (typeof _refreshProvidersFromSupabase === 'function') await _refreshProvidersFromSupabase();
-      // Task #31 — auto-migrate allopurinol from hardcoded chiclet to medication record
-      if (typeof _migrateAllopurinolToMedTracker === 'function') _migrateAllopurinolToMedTracker();
       // Idempotent and safe to run every load — it re-derives what's missing
       // rather than latching a "done" flag, so late-arriving rows still land.
       if (typeof _migrateSuppsToMedications === 'function') {
@@ -10269,7 +10290,7 @@ function buildMedsHtml() {
   };
 
   const listHtml = meds.length === 0
-    ? `<div class="bl-empty">No medications tracked yet. Add allopurinol, naproxen, Cialis, OTC items like Tylenol/Advil/Aleve/Gravol — anything you want to log.</div>`
+    ? `<div class="bl-empty">No medications tracked yet. Add prescriptions, over-the-counter painkillers, anything you take as needed — whatever you want to log.</div>`
     : meds.map(renderMedRow).join('');
 
   const freqOpts = MED_FREQUENCY_TYPES.map(f => `<option value="${f.id}" ${fFreqType === f.id ? 'selected' : ''}>${f.label}</option>`).join('');
@@ -10301,7 +10322,7 @@ function buildMedsHtml() {
       <div class="bl-grid-2">
         <div class="bl-row">
           <label class="bl-label">Name</label>
-          <input type="text" id="med-name" class="bl-input" placeholder="Allopurinol, Naproxen, Tylenol, etc." value="${fName}">
+          <input type="text" id="med-name" class="bl-input" placeholder="e.g. the name on the box" value="${fName}">
         </div>
         <div class="bl-row">
           <label class="bl-label">Type</label>
@@ -10365,7 +10386,7 @@ function buildMedsHtml() {
     </div>
 
     <div class="bl-realism" style="background:var(--cyan-bg,rgba(34,211,238,0.05));border-left-color:var(--cyan);">
-      <strong>Tracking patterns Craig has:</strong> Allopurinol 50mg M/W/F/Sun (weekly_specific_days). Naproxen 220mg n_per_day = 2 (prescribed) — log only what's actually taken. Cialis as_needed. Cortisone shot one_time. OTC Tylenol/Advil/Aleve/Gravol all as_needed — no scheduled chiclet, just quick-log when used. The +Dose button captures the moment; edit ✎ on a dose row to backdate.
+      <strong>Picking a schedule:</strong> a pill on set weekdays → specific days. A daily count your doctor set → times per day; log only what you actually take. A painkiller you take when needed → as needed (no scheduled chiclet, just quick-log it). A one-off injection → one time. The +Dose button captures the moment; edit ✎ on a dose row to backdate.
     </div>
   `;
 }
@@ -10494,7 +10515,7 @@ function removeDoseEntry(doseId) {
 // ════════════════════════════════════════════════════════════════════════════
 // MED CHICLETS — dynamic daily-view medication chiclets (task #31, 2026-06-16)
 // ────────────────────────────────────────────────────────────────────────────
-// Replaces the hardcoded allopurinol chiclet. Renders chiclets for all
+// Replaces the old built-in medication chiclet. Renders chiclets for all
 // medications scheduled today (or pending one-time meds). Click logs a dose.
 // Bold outline when attention required: one-time pending, prescription
 // ending in ≤14 days, or scheduled doses still 0/N late in the day.
@@ -10761,30 +10782,8 @@ function quickLogMedDose(medId) {
   if (typeof renderDaily === 'function') scheduleRender(renderDaily);
 }
 
-// One-shot migration: move the hardcoded allopurinol chiclet into the medications table.
-// Idempotent — only runs once, skips if Allopurinol med already exists.
-function _migrateAllopurinolToMedTracker() {
-  if (localStorage.getItem('allo_to_med_migrated') === '1') return;
-  if (typeof _getMedications !== 'function' || typeof addMedication !== 'function') return;
-  const meds = _getMedications();
-  if (meds.entries.some(m => m.name.toLowerCase().includes('allopurinol'))) {
-    localStorage.setItem('allo_to_med_migrated', '1');
-    return;
-  }
-  // Find seeded Allopurinol substance to link (optional)
-  const subs = (typeof _getSubstancesCache === 'function') ? _getSubstancesCache().entries : [];
-  const alloSub = subs.find(s => s.name === 'Allopurinol' && s.is_seeded);
-  addMedication({
-    name: 'Allopurinol',
-    med_type: 'rx',
-    dose: '50mg',
-    frequency_type: 'weekly_specific_days',
-    weekly_days: ['mon', 'wed', 'fri', 'sun'],
-    color: 'red',
-    notes: 'Migrated from hardcoded chiclet 2026-06-16. Per Craig profile: cognitive-regulation dose (50mg M/W/F/Sun), not gout dose. Reduced from 300mg in 2026.'
-  });
-  localStorage.setItem('allo_to_med_migrated', '1');
-}
+// (A one-off migration of the old built-in medication chiclet lived here until
+// 2026-10-24. It had done its job, and it carried one person's prescription.)
 
 // ════════════════════════════════════════════════════════════════════════════
 // BODY CARD (task #30, 2026-06-16)
@@ -11797,15 +11796,9 @@ const STRETCH_ROTATION = {
 // ROUTINE DETAILS — Exercises with YouTube links
 // ──────────────────────────────────────────────
 const ROUTINES = {
-  // ── Trigger finger routine (added 2026-05-14 · demoted to maintenance 2026-08-14) ──
-  // Right middle finger. Conservative care plateaued; corticosteroid injection was
-  // given and resolved the locking and pain. Mild painless catching persists, which
-  // is the expected partial-response state rather than a full resolution. Now 1×/day
-  // maintenance dosing. Original rehab-phase note follows:
-  // Tendon glides 3×/day, 5 reps each,
-  // hold 3 sec, stop short of any triggering or sharp pain. Reassess at 6 weeks
-  // (~2026-06-25): if no improvement, see a doctor — corticosteroid injection is the
-  // next step before pulley release surgery. REMOVE this routine when symptoms resolve.
+  // ── Trigger finger routine (added 2026-05-14 · maintenance dose since 2026-08-14) ──
+  // Tendon glides, 5 reps each, hold 3 sec, stop short of any triggering or sharp
+  // pain. Shown only to someone with trigger finger set as a condition.
   trigger_finger: {
     title: "Trigger Finger — Tendon Glides (1×/day maintenance)",
     exercises: [
@@ -11873,38 +11866,47 @@ const ROUTINES = {
       { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
   },
+  // Rebuilt 2026-10-01 with Craig, from how much each routine was actually used
+  // and a physio read. A is unchanged — he likes it. No chair or
+  // seated-in-a-chair stretches (his call). Every user sees these lists, so the
+  // wording is generic. Kept in step with routine_exercises in the database; a
+  // movement keeps its name where it is unchanged, because the name is its key in
+  // the log. See sql/stretch_routines_2026_10_01.sql.
+  // B: shoulder-safe. Out: the overhead tricep and cross-body stretches (end range
+  // under a pull, which tends to flare an arthritic or impinging shoulder) and the
+  // duplicate wrist stretch. The doorway stretch is kept LOW — the shoulder_oa
+  // condition already suppresses the at-shoulder-height version. Cuff work is the
+  // optional item because strength does more for that shoulder than stretching.
   stretch_B: {
-    title: "Stretch Routine B — Upper Body & Shoulders",
+    title: "Stretch Routine B — Neck, Upper Back & Shoulders",
     exercises: [
-      { name: "Cross-Body Shoulder Stretch", sets: "30s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest" },
-      { name: "Doorway Chest Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=B9uY01NoqBg", detail: "Arm on doorframe at 90°" },
-      { name: "Overhead Tricep Stretch", sets: "30s each arm", link: "https://www.youtube.com/watch?v=_IOHtPSYGbk", detail: "Reach behind head, pull elbow" },
-      { name: "Thread the Needle", sets: "30s each side", link: "https://www.youtube.com/watch?v=SkQhKf74nZk", detail: "On all fours, rotate through" },
-      { name: "Neck Side Bends", sets: "20s each side", link: "https://www.youtube.com/watch?v=54y0JAT46vE", detail: "Ear to shoulder, gentle" },
-      { name: "Wrist Flexor/Extensor Stretch", sets: "20s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arm straight, pull fingers back/forward" },
-      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
-      { name: "Child's Pose (wide knee)", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Knees wide, reach long" },
-      { name: "── Optional ──", sets: "", detail: "", _divider: true },
-      { name: "Wrist Flexor/Extensor Stretch", sets: "20s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Arm straight, pull fingers back then forward", _optional: true },
-      { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Slow, full range — nice cool-down for upper body day", _optional: true },
-      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
+      { name: "Chin Tucks", sets: "10 reps, hold each 3 seconds", link: "", detail: "Standing tall, or lying on your back. Slide the chin straight back — a double chin — without tipping the head down. Hold, release." },
+      { name: "Open Book Rotation", sets: "8 each side", link: "", detail: "On your side, knees bent and together, arms stacked in front. Open the top arm across and follow it with your eyes; let the ribcage turn." },
+      { name: "Thread the Needle", sets: "30s each side", link: "https://www.youtube.com/watch?v=SkQhKf74nZk", detail: "On all fours. Slide one arm under the body along the floor and let that shoulder and ear come down, so the upper back turns. Ease off if the shoulder on the floor pinches." },
+      { name: "Low Doorway Chest Stretch", sets: "30s each side", link: "", detail: "Forearm on the door frame with the elbow BELOW shoulder height. Step through gently until the front of the chest stretches. A stretch across the chest — never a pinch at the front of the shoulder." },
+      { name: "Upper Trap Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=54y0JAT46vE", detail: "Stand tall, one hand behind your back. Tip the ear toward the other shoulder; the free hand can rest on the head for a little weight — no pulling." },
+      { name: "Levator Scapulae Stretch", sets: "30s each side", link: "", detail: "Turn the nose toward the armpit and look down; the free hand rests on the back of the head for a little weight. The stretch runs from the back of the neck to the top of the shoulder blade." },
+      { name: "Floor Angels", sets: "8 reps", link: "", detail: "On your back, knees bent, arms in a goalpost shape on the floor. Slide them up and down slowly, only as far as stays pain-free. If the backs of the hands lift off the floor, that's fine." },
+      { name: "── Optional: strength ──", sets: "", detail: "", _divider: true },
+      { name: "Band External Rotation", sets: "15 each side", link: "", detail: "Light band. Elbow tucked at your side (a rolled towel under the arm helps), forearm across the belly. Rotate the hand out slowly, then back. Pain-free and light — endurance for the rotator cuff, not a strength test.", _optional: true },
     ]
   },
+  // C: moving, not holding — fine before a walk or the gym. Out: sun salutation
+  // (plank and down-dog load the shoulders), scorpion (twisting the low back while
+  // it is extended), the standing IT band stretch (the band barely lengthens) and
+  // the supine full-body stretch (filler). Balance is the evidence-based piece for
+  // an ankle that has rolled before.
   stretch_C: {
-    title: "Stretch Routine C — Full Body Flow",
+    title: "Stretch Routine C — Moving Mobility: Hips, Ankles, Spine",
     exercises: [
-      { name: "Sun Salutation (modified)", sets: "3 rounds", link: "https://www.youtube.com/watch?v=73sjOu0g58M", detail: "Slow, hold each pose 5s" },
-      { name: "World's Greatest Stretch", sets: "5 each side", link: "https://www.youtube.com/watch?v=-CiWQ2IvY34", detail: "Lunge + rotate + reach" },
-      { name: "Standing Quad Stretch", sets: "30s each leg", link: "https://www.youtube.com/watch?v=aNXGOpP37CY", detail: "Hold wall for balance" },
-      { name: "Standing IT Band Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=wzDoSQ8-GWY", detail: "Cross legs, side bend" },
-      { name: "Lying Glute Bridge", sets: "10 reps + 10s hold", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top" },
-      { name: "Scorpion Stretch", sets: "5 each side", link: "https://www.youtube.com/watch?v=NKmUc6KslDY", detail: "Face down, cross foot over" },
-      { name: "Seated Butterfly", sets: "45s hold", link: "https://www.youtube.com/watch?v=4xweyzS7Rno", detail: "Soles together, lean forward" },
-      { name: "Supine Full Body Stretch", sets: "30s hold", link: "", detail: "Arms overhead, toes pointed, lengthen" },
-      { name: "── Optional ──", sets: "", detail: "", _divider: true },
-      { name: "Wrist Circles + Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Rotate wrists both ways, then palms together prayer position, lower toward waist", _optional: true },
-      { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest — finishes off the upper body", _optional: true },
-      { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
+      { name: "Cat-Cow", sets: "10 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "On all fours. Round the back and tuck the chin, then let the belly drop and look ahead. Slow, with the breath." },
+      { name: "World's Greatest Stretch", sets: "5 each side", link: "https://www.youtube.com/watch?v=-CiWQ2IvY34", detail: "Long lunge, back knee down if you need it. Inside hand on the floor; the other arm turns up toward the ceiling and the eyes follow. Reach only as high as the shoulder allows." },
+      { name: "90/90 Hip Switches", sets: "8 each side", link: "", detail: "Sit with both knees bent to 90°, one leg in front and one to the side, hands behind you. Rotate both knees over to the other side and back, slowly." },
+      { name: "Ankle Rocks", sets: "10 each side", link: "", detail: "Half-kneeling facing a wall, front foot a few inches away. Drive the knee forward over the toes toward the wall, heel staying down. Rock in and out." },
+      { name: "Standing Calf Stretch", sets: "30s each side, straight and bent knee", link: "", detail: "Hands on a wall or desk, back leg straight, heel down. Then bend the back knee a little for the lower calf." },
+      { name: "Single-Leg Balance", sets: "30s each side", link: "", detail: "Near something to hold. Stand on one leg, eyes forward. When that's easy, turn the head slowly or close your eyes. It's the balance work, not the stretching, that keeps an ankle from rolling." },
+      { name: "Lying Glute Bridge", sets: "12 reps", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "On your back, knees bent. Squeeze the glutes and lift until hips and ribs are in line; pause 2s at the top." },
+      { name: "Bird Dog", sets: "8 each side", link: "https://www.youtube.com/watch?v=wiFNA3sqjCA", detail: "On all fours. Reach one arm forward and the opposite leg back until both are level with the body; hold 2s without the hips tipping. Slow." },
     ]
   },
   // ── GYM ROUTINES ──
@@ -11923,7 +11925,7 @@ const ROUTINES = {
       { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Chest — shoulder-friendly, don't flare elbows", muscleGroup: "chest" },
       { name: "Romanian Deadlift", sets: "3×8", link: "https://www.youtube.com/watch?v=7j-2w4-P14I", detail: "Hinge at hips, slight knee bend, hams loaded", muscleGroup: "hams" },
       { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades together", muscleGroup: "back" },
-      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light weight — protect right shoulder", muscleGroup: "shoulders" },
+      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light weight — stay in the pain-free range", muscleGroup: "shoulders" },
       { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Core — keep hips level, brace", muscleGroup: "core" },
       { name: "Cooldown Stretch", sets: "5 min", link: "", detail: "Light walking + today's stretch tier", muscleGroup: "cooldown", _cooldown: true },
     ]
@@ -11935,7 +11937,7 @@ const ROUTINES = {
       { name: "Lat Pulldown", sets: "3×10–12", link: "https://www.youtube.com/watch?v=CAwf7n6Luuc", detail: "Wide grip, chest up, drive elbows down — don't yank with biceps", muscleGroup: "back" },
       { name: "Dumbbell Bench Press", sets: "3×10", link: "https://www.youtube.com/watch?v=VmB1G1K7v94", detail: "Shoulder-friendly — keep elbows ~45°, full ROM", muscleGroup: "chest" },
       { name: "Seated Cable Row", sets: "3×12", link: "https://www.youtube.com/watch?v=GZbfZ033f74", detail: "Squeeze shoulder blades, control the eccentric", muscleGroup: "back" },
-      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load to protect the right shoulder. Slight forward angle is fine.", muscleGroup: "shoulders" },
+      { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load, pain-free range. Slight forward angle is fine.", muscleGroup: "shoulders" },
       { name: "Bicep Curl (DB)", sets: "3×12", link: "https://www.youtube.com/watch?v=ykJmrZ5v0Oo", detail: "No swing, full lockout, slow eccentric", muscleGroup: "biceps" },
       { name: "Tricep Rope Pushdown", sets: "3×12", link: "https://www.youtube.com/watch?v=2-LAMcpzODU", detail: "Elbows pinned to sides, full extension at the bottom", muscleGroup: "triceps" },
       { name: "Plank", sets: "3×30s", link: "https://www.youtube.com/watch?v=ASdvN_XEl_c", detail: "Core — neutral spine, hips level", muscleGroup: "core" },
@@ -12076,8 +12078,8 @@ const ROUTINES = {
   // and drops the repeated loaded lumbar flexion that sit-ups plus straight-leg
   // raises stack up.
   //
-  // 'Wrist-friendly' exists because on 2026-09-22 he logged left wrist pain and
-  // the first thing a circuit reaches for is a push-up.
+  // 'Wrist-friendly' exists because a sore wrist is common and the first thing a
+  // circuit reaches for is a push-up.
   circuit_core: {
     title: "Circuit — Core & Push",
     _circuit: true, rounds: 3, restBetweenRounds: 60,
@@ -12184,7 +12186,7 @@ const ROUTINES = {
     title: "Ball Release — Tennis / Squash Ball (~8 min)",
     exercises: [
       { name: "── Slow. 30–60s a spot, and never past two minutes anywhere. ──", sets: "", detail: "Find a tender spot, rest on it, and breathe until it eases. If it does not ease in a minute, it is not going to today — move on. Sharp, electric or radiating pain is a stop, not a target.", _divider: true },
-      { name: "Foot arch", sets: "45s each foot", link: "https://www.youtube.com/watch?v=3gDuNVtDO_M", detail: "Seated, tennis ball under the arch, roll heel to the ball of the foot. Stand up on it only once seated is easy. Relevant to the ankle history — a stiff foot changes how the ankle loads.", muscleGroup: "release", trackReps: true },
+      { name: "Foot arch", sets: "45s each foot", link: "https://www.youtube.com/watch?v=3gDuNVtDO_M", detail: "Seated, tennis ball under the arch, roll heel to the ball of the foot. Stand up on it only once seated is easy. A stiff foot changes how the ankle loads.", muscleGroup: "release", trackReps: true },
       { name: "Calf", sets: "45s each leg", link: "https://www.youtube.com/watch?v=tTKhYK30PuU", detail: "Sit on the floor, ball under the calf, other leg stacked on top for pressure. Work the meat of the muscle. Stay well clear of the back of the knee.", muscleGroup: "release", trackReps: true },
       { name: "Glute / piriformis", sets: "60s each side", link: "https://www.youtube.com/watch?v=l3flN43z-EQ", detail: "Sit on the ball, that ankle crossed over the opposite knee, lean into the side you are working. The one most likely to be genuinely tender after a desk day. Squash ball once a tennis ball stops registering.", muscleGroup: "release", trackReps: true },
       { name: "Upper back / between the shoulder blades", sets: "60s", link: "https://www.youtube.com/watch?v=DfmlI3e83kU", detail: "Ball between your back and a wall, lean in, move in small circles. Stay beside the spine, never on it. This is the one that buys you overhead range.", muscleGroup: "release", trackReps: true },
@@ -12194,37 +12196,41 @@ const ROUTINES = {
       { name: "── This is a warm-up, not a treatment. ──", sets: "", detail: "The range you gain lasts minutes to about an hour, so it is worth most immediately before you train, stretch or sit down to work — and worth little on its own. If a spot is tender in the same place every single week, that is a pattern to mention to a physio rather than to roll harder.", _divider: true },
     ]
   },
+  // Quick: one from each area. Child's Pose stays at the end (and at index 5).
   stretch_quick: {
     title: "Quick Stretch — ~10 Minutes",
     exercises: [
-      { name: "Cat-Cow", sets: "8 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, sync with breathing" },
-      { name: "Hip Flexor Stretch (half-kneel)", sets: "20s each side", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Squeeze glute on back leg" },
-      { name: "Seated Forward Fold", sets: "30s hold", link: "https://www.youtube.com/watch?v=1E-84p0itDs", detail: "Reach for toes, breathe" },
-      { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest" },
-      { name: "Standing Quad Stretch", sets: "20s each leg", link: "https://www.youtube.com/watch?v=aNXGOpP37CY", detail: "Hold wall for balance" },
-      { name: "Child's Pose", sets: "30s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, breathe deep" },
+      { name: "Cat-Cow", sets: "8 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "On all fours, or standing with hands on thighs. Round, then arch. Slow, with the breath." },
+      { name: "Hip Flexor Stretch (half-kneel)", sets: "30s each side", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Back knee down. Tuck the tailbone under and squeeze the back glute until the front of that hip stretches." },
+      { name: "Open Book Rotation", sets: "6 each side", link: "", detail: "On your side, knees bent and together, arms stacked in front. Open the top arm across and follow it with your eyes; let the ribcage turn." },
+      { name: "Low Doorway Chest Stretch", sets: "30s each side", link: "", detail: "Forearm on the door frame with the elbow BELOW shoulder height. Step through gently until the front of the chest stretches. A stretch across the chest — never a pinch at the front of the shoulder." },
+      { name: "Standing Calf Stretch", sets: "30s each side, straight and bent knee", link: "", detail: "Hands on a wall or desk, back leg straight, heel down. Then bend the back knee a little for the lower calf." },
+      { name: "Child's Pose", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Knees wide, sit back toward the heels. Arms forward — or by your sides if reaching forward bothers the shoulders." },
     ]
   },
+  // The old 45–60 minute session was never used once. This is A's main block
+  // followed by B — copied, so if A or B changes, change this with it.
   stretch_deep: {
-    title: "Deep Session — 45-60 Minutes",
+    title: "Long Session — Routine A then B (~30 min)",
     exercises: [
-      { name: "Cat-Cow Flow", sets: "2 min", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, full range, breathe deeply" },
-      { name: "Sun Salutation (modified)", sets: "5 rounds", link: "https://www.youtube.com/watch?v=73sjOu0g58M", detail: "Hold each pose 5-8s" },
-      { name: "Pigeon Pose (each side)", sets: "90s hold", link: "https://www.youtube.com/watch?v=1o7awuDGzag", detail: "Deep hip opener, breathe into it" },
-      { name: "Lying Hamstring Stretch", sets: "60s each leg", link: "https://www.youtube.com/watch?v=Il1L75v6gq0", detail: "Use strap, relax into it" },
-      { name: "Hip Flexor Stretch (half-kneel)", sets: "60s each", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Add overhead reach for deeper stretch" },
-      { name: "World's Greatest Stretch", sets: "8 each side", link: "https://www.youtube.com/watch?v=-CiWQ2IvY34", detail: "Lunge + rotate + reach. Full body." },
-      { name: "Figure-4 Stretch", sets: "60s each side", link: "https://www.youtube.com/watch?v=Xb5gHdYtHnk", detail: "Lying on back, ankle on knee" },
-      { name: "Doorway Chest Stretch", sets: "45s each side", link: "https://www.youtube.com/watch?v=B9uY01NoqBg", detail: "Arm at 90°, lean through" },
-      { name: "Thread the Needle", sets: "45s each side", link: "https://www.youtube.com/watch?v=SkQhKf74nZk", detail: "Deep thoracic rotation" },
-      { name: "Scorpion Stretch", sets: "8 each side", link: "https://www.youtube.com/watch?v=NKmUc6KslDY", detail: "Face down, cross foot over" },
-      { name: "Seated Spinal Twist", sets: "45s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, deep rotation" },
-      { name: "Standing IT Band Stretch", sets: "45s each side", link: "https://www.youtube.com/watch?v=wzDoSQ8-GWY", detail: "Cross legs, side bend" },
-      { name: "Wrist & Forearm Stretches", sets: "30s each", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Flexors, extensors, circles" },
-      { name: "Neck Stretches (all directions)", sets: "20s each", link: "https://www.youtube.com/watch?v=54y0JAT46vE", detail: "Side, forward, rotation — gentle" },
-      { name: "Lying Glute Bridge", sets: "15 reps + 15s hold", link: "https://www.youtube.com/watch?v=OUgsJ8-Vi0E", detail: "Squeeze at top, activate glutes" },
-      { name: "Supine Full Body Stretch", sets: "60s hold", link: "", detail: "Arms overhead, toes pointed, lengthen" },
-      { name: "Child's Pose (wide knee)", sets: "90s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Final relaxation. Breathe. Let go." },
+      { name: "Seated Forward Fold", sets: "45s hold", link: "https://www.youtube.com/watch?v=1E-84p0itDs", detail: "Legs straight, reach for toes" },
+      { name: "Pigeon Pose (each side)", sets: "45s hold", link: "https://www.youtube.com/watch?v=1o7awuDGzag", detail: "Front leg 90°, back leg extended" },
+      { name: "Lying Hamstring Stretch", sets: "30s each leg", link: "https://www.youtube.com/watch?v=Il1L75v6gq0", detail: "Use towel/strap if needed" },
+      { name: "Hip Flexor Stretch (half-kneel)", sets: "30s each", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Squeeze glute on back leg" },
+      { name: "Figure-4 Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=Xb5gHdYtHnk", detail: "Lying on back, ankle on knee" },
+      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
+      { name: "Cat-Cow on Floor", sets: "10 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, breathe with movement" },
+      { name: "Child's Pose", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, forehead to floor" },
+      { name: "── Then Routine B ──", sets: "", detail: "", _divider: true },
+      { name: "Chin Tucks", sets: "10 reps, hold each 3 seconds", link: "", detail: "Standing tall, or lying on your back. Slide the chin straight back — a double chin — without tipping the head down. Hold, release." },
+      { name: "Open Book Rotation", sets: "8 each side", link: "", detail: "On your side, knees bent and together, arms stacked in front. Open the top arm across and follow it with your eyes; let the ribcage turn." },
+      { name: "Thread the Needle", sets: "30s each side", link: "https://www.youtube.com/watch?v=SkQhKf74nZk", detail: "On all fours. Slide one arm under the body along the floor and let that shoulder and ear come down, so the upper back turns. Ease off if the shoulder on the floor pinches." },
+      { name: "Low Doorway Chest Stretch", sets: "30s each side", link: "", detail: "Forearm on the door frame with the elbow BELOW shoulder height. Step through gently until the front of the chest stretches. A stretch across the chest — never a pinch at the front of the shoulder." },
+      { name: "Upper Trap Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=54y0JAT46vE", detail: "Stand tall, one hand behind your back. Tip the ear toward the other shoulder; the free hand can rest on the head for a little weight — no pulling." },
+      { name: "Levator Scapulae Stretch", sets: "30s each side", link: "", detail: "Turn the nose toward the armpit and look down; the free hand rests on the back of the head for a little weight. The stretch runs from the back of the neck to the top of the shoulder blade." },
+      { name: "Floor Angels", sets: "8 reps", link: "", detail: "On your back, knees bent, arms in a goalpost shape on the floor. Slide them up and down slowly, only as far as stays pain-free. If the backs of the hands lift off the floor, that's fine." },
+      { name: "── Optional: strength ──", sets: "", detail: "", _divider: true },
+      { name: "Band External Rotation", sets: "15 each side", link: "", detail: "Light band. Elbow tucked at your side (a rolled towel under the arm helps), forearm across the belly. Rotate the hand out slowly, then back. Pain-free and light — endurance for the rotator cuff, not a strength test.", _optional: true },
     ]
   }
 };
@@ -12972,12 +12978,12 @@ function renderAdminPanel() {
 // Each exercise carries its OWN rest interval, replacing REST_COMPOUND_HINTS
 // keyword matching (a stopgap for the hardcoded machine list).
 //
-// `flags` drive injury cues, not blocks — Craig self-modifies and blocking would
-// just get ignored:
-//   grip     → trigger finger. Post-cortisone the pain signal is MUTED, so the
-//              usual "stop when it hurts" feedback loop is unreliable.
-//   overhead → shoulder OA. Pain-free range only.
-//   spine    → loaded lumbar flexion/extension; he has lower-back history.
+// `flags` drive injury cues, not blocks — people self-modify, and blocking would
+// just get ignored. Which flags matter to a person comes from their own
+// conditions (CONDITION_EX_RULES), never from this file:
+//   grip     → hand, finger, wrist or elbow problems.
+//   overhead → shoulder problems. Pain-free range only.
+//   spine    → loaded lumbar flexion/extension.
 const MUSCLE_GROUPS = [
   { id: 'chest',     icon: '🫁', label: 'Chest',      pattern: 'push' },
   { id: 'shoulders', icon: '🦾', label: 'Shoulders',  pattern: 'push' },
@@ -13010,7 +13016,7 @@ const EX_LIB = [
 
   // ── SHOULDERS ──
   { m:'shoulders', name:'Machine shoulder press', equip:'machine', reps:'8-12', rest:180, cue:'Stop short of lockout. Fixed path is kinder to an arthritic shoulder than free weight.', flags:['overhead'], id:'m_shoulder_press', pattern:'push', technique:2, gm:'shoulder_press_m', link:'https://www.youtube.com/watch?v=Wqq43dKW1TU', linkBy:'ScottHermanFitness' },
-  { m:'shoulders', name:'Dumbbell lateral raise', equip:'db', reps:'12-15', rest:90, cue:'Lead with the elbow, thumb slightly down. Stop at shoulder height — above that is where OA bites.', flags:['overhead'], id:'db_lateral_raise', pattern:'push', technique:2, head:'side delt', link:'https://www.youtube.com/watch?v=3VcKaXpzqRo', linkBy:'ScottHermanFitness' },
+  { m:'shoulders', name:'Dumbbell lateral raise', equip:'db', reps:'12-15', rest:90, cue:'Lead with the elbow, thumb slightly down. Stop at shoulder height — above that is where a sore shoulder complains.', flags:['overhead'], id:'db_lateral_raise', pattern:'push', technique:2, head:'side delt', link:'https://www.youtube.com/watch?v=3VcKaXpzqRo', linkBy:'ScottHermanFitness' },
   { m:'shoulders', name:'Cable lateral raise', equip:'cable', reps:'12-15', rest:90, cue:'Constant tension through the whole range. Lighter than you think.', flags:['overhead'], id:'c_lateral_raise', pattern:'push', technique:2, gm:'cable', head:'side delt', link:'https://www.youtube.com/watch?v=-CAGLnWUkWA', linkBy:'Jacob Garcia' },
   { m:'shoulders', name:'Front raise', equip:'db', reps:'12-15', rest:90, cue:'Only to shoulder height. Most people don\'t need direct front-delt work if they press.', flags:['overhead'], id:'db_front_raise', pattern:'push', technique:2, head:'front delt', link:'https://www.youtube.com/watch?v=-t7fuZ0KhDA', linkBy:'ScottHermanFitness' },
 
@@ -13028,7 +13034,7 @@ const EX_LIB = [
   { m:'back', name:'Chest-supported row', equip:'machine', reps:'8-12', rest:180, cue:'Best row option if the lower back is grumbling — the pad does the bracing.', flags:['grip'], id:'m_chest_supported_row', pattern:'pull', technique:1, link:'https://www.youtube.com/watch?v=H75im9fAUMc', linkBy:'Men\'s Health' },
   { m:'lats', name:'Lat pulldown', equip:'machine', reps:'8-12', rest:180, cue:'Pull the elbows down and back, not the bar to your chin. Lean back slightly.', flags:['grip'], id:'m_lat_pulldown', pattern:'pull', role:'foundation', technique:1, gm:'lat_pulldown_m', teaches:'m_assisted_pullup', link:'https://www.youtube.com/watch?v=CAwf7n6Luuc', linkBy:'ScottHermanFitness' },
   { m:'lats', name:'Straight-arm pulldown', equip:'cable', reps:'12-15', rest:120, cue:'Arms almost locked. Isolates the lats without the biceps taking over.', flags:['grip'], id:'c_straight_arm_pulldown', pattern:'pull', technique:2, gm:'cable', link:'https://www.youtube.com/watch?v=98W63pVdW38', linkBy:'Fitness Lab' },
-  { m:'lats', name:'Assisted pull-up', equip:'machine', reps:'6-10', rest:180, cue:'Use the assist rather than skipping it. Grip-heavy — watch the finger.', flags:['grip'], id:'m_assisted_pullup', pattern:'pull', technique:2, teaches:'bw_chinup', link:'https://www.youtube.com/watch?v=wFj808u2HWU', linkBy:'PureGym' },
+  { m:'lats', name:'Assisted pull-up', equip:'machine', reps:'6-10', rest:180, cue:'Use the assist rather than skipping it. Grip-heavy.', flags:['grip'], id:'m_assisted_pullup', pattern:'pull', technique:2, teaches:'bw_chinup', link:'https://www.youtube.com/watch?v=wFj808u2HWU', linkBy:'PureGym' },
 
   // ── REAR DELTS ──
   { m:'reardelts', name:'Rear delt fly (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Almost always undertrained, and it counteracts a desk-bound day.', id:'m_rear_delt_fly', pattern:'pull', role:'targeted', technique:1, gm:'rear_delt_fly', link:'https://www.youtube.com/watch?v=hmtnyIGgR9A', linkBy:'Ignore Limits' },
@@ -13055,10 +13061,10 @@ const EX_LIB = [
   { m:'glutes', name:'Hip thrust', equip:'bar', reps:'10-15', rest:150, cue:'Chin tucked, ribs down, squeeze at the top. Don\'t hyperextend the lower back.', flags:['spine'], id:'bar_hip_thrust', pattern:'hinge', role:'foundation', technique:2, link:'https://www.youtube.com/watch?v=SEdqd1n0cvg', linkBy:'ScottHermanFitness' },
   { m:'glutes', name:'Cable kickback', equip:'cable', reps:'12-15', rest:90, cue:'Small range, hold the squeeze. Keep the torso still.', id:'c_kickback', pattern:'hinge', technique:1, gm:'cable', link:'https://www.youtube.com/watch?v=l4zReIOfPCQ', linkBy:'Coach Jazz' },
   { m:'glutes', name:'Hip abductor (machine)', equip:'machine', reps:'15-20', rest:90, cue:'Glute medius. Boring, and genuinely useful for hip and knee stability.', id:'m_hip_abductor', pattern:'hinge', technique:1, gm:'hip_abductor', link:'https://www.youtube.com/watch?v=G_8LItOiZ0Q', linkBy:'PureGym' },
-  { m:'glutes', name:'Kettlebell swing', equip:'kb', reps:'10-20', rest:150, cue:'Hip hinge, not a squat. Arms are rope. **Grip-heavy and ballistic — the highest-risk option here for the finger.**', flags:['grip','spine'], id:'kb_swing', pattern:'hinge', technique:3, watch:'Two failures, and almost everyone makes both: squatting it instead of hinging, and lifting the bell with the arms rather than letting the hips throw it. It is also the most grip-intensive ballistic movement you own \u2014 with a trigger finger, judge it by whether catching increases, not by whether it hurts.', link:'https://www.youtube.com/watch?v=YSxHifyI6s8', linkBy:'Men\'s Health' },
+  { m:'glutes', name:'Kettlebell swing', equip:'kb', reps:'10-20', rest:150, cue:'Hip hinge, not a squat. Arms are rope. **Grip-heavy and ballistic — the highest-risk option here for a sore hand.**', flags:['grip','spine'], id:'kb_swing', pattern:'hinge', technique:3, watch:'Two failures, and almost everyone makes both: squatting it instead of hinging, and lifting the bell with the arms rather than letting the hips throw it. It is also the most grip-intensive ballistic movement you own \u2014 with a sore hand or finger, judge it by how the hand is the next day, not by whether it hurts during the set.', link:'https://www.youtube.com/watch?v=YSxHifyI6s8', linkBy:'Men\'s Health' },
 
   // ── CALVES ──
-  { m:'calves', name:'Calf raise (machine)', equip:'machine', reps:'12-20', rest:90, cue:'Full stretch at the bottom, pause at the top. Relevant to your ankle history.', id:'m_calf_raise', pattern:'squat', technique:1, gm:'calf_raise_m', link:'https://www.youtube.com/watch?v=YMmgqO8Jo-k', linkBy:'ScottHermanFitness' },
+  { m:'calves', name:'Calf raise (machine)', equip:'machine', reps:'12-20', rest:90, cue:'Full stretch at the bottom, pause at the top. Good ankle work as well as calf.', id:'m_calf_raise', pattern:'squat', technique:1, gm:'calf_raise_m', link:'https://www.youtube.com/watch?v=YMmgqO8Jo-k', linkBy:'ScottHermanFitness' },
   { m:'calves', name:'Standing calf raise', equip:'bw', reps:'15-25', rest:60, cue:'Off a step, one leg at a time if bodyweight is easy.', id:'bw_calf_raise', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=-M4-G8p8fmc', linkBy:'Howcast' },
 
   // ── CORE ──
@@ -13071,8 +13077,7 @@ const EX_LIB = [
   // ══ FREE WEIGHT / HOME BLOCK (added 2026-08-18) ══
   // Kettlebell + bodyweight, so kid weeks aren't a training write-off.
   // Grip flags matter more here than in the machine list: a kettlebell hangs off
-  // the fingers in a way a machine handle doesn't, and the trigger finger's pain
-  // signal is currently muted by the cortisone.
+  // the fingers in a way a machine handle doesn't.
 
   // ── CHEST ──
   { m:'chest', name:'Kettlebell floor press', equip:'kb', reps:'8-12', rest:150, cue:'Lying on the floor. The floor stops the elbow going too deep, which makes this the shoulder-friendliest press you own.', flags:['grip'], id:'kb_floor_press', pattern:'push', role:'foundation', technique:1, link:'https://www.youtube.com/watch?v=zGqkWqza2z8', linkBy:'StrongFirst' },
@@ -13082,7 +13087,7 @@ const EX_LIB = [
   // ── SHOULDERS ──
   { m:'shoulders', name:'Kettlebell strict press', equip:'kb', reps:'6-10', rest:180, cue:'Bell rests on the forearm, press straight up. Stop at the point the shoulder complains — don\'t fight for lockout.', flags:['grip','overhead'], id:'kb_strict_press', pattern:'push', technique:2, link:'https://www.youtube.com/watch?v=nJ3iAT3UP3k', linkBy:'StrongFirst' },
   { m:'shoulders', name:'Kettlebell halo', equip:'kb', reps:'8-10 each way', rest:90, cue:'Circle the bell around the head, slow and close. Excellent shoulder warm-up and mobility work; go light.', flags:['grip','overhead'], link:'https://www.youtube.com/watch?v=LEjVh4scVy4', linkBy:'Kettlebell Emma' },
-  { m:'shoulders', name:'Pike push-up', equip:'bw', reps:'6-12', rest:120, cue:'Hips high, head toward the floor. The bodyweight overhead press. Hard on an arthritic shoulder — skip if it pinches.', flags:['overhead','grip'], id:'bw_pike_pushup', pattern:'push', technique:3, head:'front delt', watch:'The hips drift backwards and it turns into a downward dog, which takes the load off entirely. With shoulder OA, stop at the first pinch \u2014 there is no version of this worth a flare-up.', link:'https://www.youtube.com/watch?v=fXgou2W10ok', linkBy:'The Bodyweight Process' },
+  { m:'shoulders', name:'Pike push-up', equip:'bw', reps:'6-12', rest:120, cue:'Hips high, head toward the floor. The bodyweight overhead press. Hard on an arthritic shoulder — skip if it pinches.', flags:['overhead','grip'], id:'bw_pike_pushup', pattern:'push', technique:3, head:'front delt', watch:'The hips drift backwards and it turns into a downward dog, which takes the load off entirely. With a sore shoulder, stop at the first pinch \u2014 there is no version of this worth a flare-up.', link:'https://www.youtube.com/watch?v=fXgou2W10ok', linkBy:'The Bodyweight Process' },
 
   // ── TRICEPS ──
   { m:'triceps', name:'Kettlebell overhead extension', equip:'kb', reps:'10-12', rest:120, cue:'Two hands on one bell, lower behind the head. Elbows stay narrow.', flags:['grip','overhead'], id:'kb_oh_ext', pattern:'push', technique:2, head:'triceps \u2014 long head (the only head that crosses the shoulder, so overhead is the position that loads it)', link:'https://www.youtube.com/watch?v=UMIz2mRchNA', linkBy:'Nurture Fitness with Norma Thallon' },
@@ -13091,10 +13096,10 @@ const EX_LIB = [
 
   // ── BACK / LATS ──
   { m:'back', name:'Kettlebell bent-over row', equip:'kb', reps:'8-12', rest:150, cue:'Hinge to about 45°, pull the bell to the hip. Back stays flat throughout.', flags:['grip','spine'], id:'kb_row', pattern:'pull', technique:3, watch:'Unsupported and hinged over, so the lower back holds the position for the whole set. It rounds under fatigue before the arms give out. If you cannot keep the back flat for every rep, use a chest-supported row instead \u2014 that is not a lesser version, it is the same job with the spine taken out of it.', link:'https://www.youtube.com/watch?v=roCP6wCXPqo', linkBy:'Men\'s Health' },
-  { m:'back', name:'Kettlebell renegade row', equip:'kb', reps:'6-10 each side', rest:150, cue:'Push-up position on two bells, row one at a time. Very demanding on grip and core — probably park this until the finger settles.', flags:['grip','spine'], id:'kb_renegade_row', pattern:'pull', technique:3, watch:'The hips rotate every time you row, which turns an anti-rotation exercise into a rotation one. Widen the feet. It also parks your whole bodyweight on one gripping hand \u2014 park this one entirely until the finger has settled.', link:'https://www.youtube.com/watch?v=KG_JGuhjBeY', linkBy:'Hardstyle Kettlebell Pro' },
+  { m:'back', name:'Kettlebell renegade row', equip:'kb', reps:'6-10 each side', rest:150, cue:'Push-up position on two bells, row one at a time. Very demanding on grip and core — skip it while a hand or wrist is sore.', flags:['grip','spine'], id:'kb_renegade_row', pattern:'pull', technique:3, watch:'The hips rotate every time you row, which turns an anti-rotation exercise into a rotation one. Widen the feet. It also parks your whole bodyweight on one gripping hand \u2014 skip it entirely while a hand or finger is healing.', link:'https://www.youtube.com/watch?v=KG_JGuhjBeY', linkBy:'Hardstyle Kettlebell Pro' },
   { m:'back', name:'Inverted row', equip:'bw', reps:'8-15', rest:150, cue:'Under a table or a bar, body straight, pull the chest to it. The best bodyweight horizontal pull.', flags:['grip'], id:'bw_inverted_row', pattern:'pull', role:'foundation', technique:2, teaches:'bw_chinup', link:'https://www.youtube.com/watch?v=OYUxXMGVuuU', linkBy:'Nerd Fitness' },
   { m:'lats', name:'Kettlebell pullover', equip:'kb', reps:'10-12', rest:120, cue:'Lying down, bell over the chest, lower behind the head with slight elbow bend. Stop where the shoulder is comfortable.', flags:['grip','overhead'], id:'kb_pullover', pattern:'pull', technique:2, link:'https://www.youtube.com/watch?v=H2XP9rtvHBQ', linkBy:'Keep It Moving Physical Therapy & Wellness' },
-  { m:'lats', name:'Chin-up', equip:'bw', reps:'as many as clean', rest:180, cue:'Palms toward you. Grip-heavy and the single most demanding pull you own — watch the finger closely.', flags:['grip'], id:'bw_chinup', pattern:'pull', technique:3, watch:'The grip fails before the back does, and with a trigger finger that is the joint paying for it. Use a band or keep your feet on the floor rather than fighting for a last rep.', link:'https://www.youtube.com/watch?v=mRy9m2Q9_1I', linkBy:'KILO Strength Coach Education' },
+  { m:'lats', name:'Chin-up', equip:'bw', reps:'as many as clean', rest:180, cue:'Palms toward you. Grip-heavy and the single most demanding pull you own.', flags:['grip'], id:'bw_chinup', pattern:'pull', technique:3, watch:'The grip fails before the back does, and with a sore finger that is the joint paying for it. Use a band or keep your feet on the floor rather than fighting for a last rep.', link:'https://www.youtube.com/watch?v=mRy9m2Q9_1I', linkBy:'KILO Strength Coach Education' },
 
   // ── REAR DELTS ──
   { m:'reardelts', name:'Kettlebell high pull', equip:'kb', reps:'10-12', rest:120, cue:'Hinge, pull the bell to chest height with elbows leading. Explosive but controlled.', flags:['grip'], id:'kb_high_pull', pattern:'pull', technique:3, watch:'It is a swing with a pull bolted on, so every swing fault applies plus one: yanking with the arm before the hips have finished. If the elbow is not leading, you are doing an upright row with a moving weight.', link:'https://www.youtube.com/watch?v=OkLpueSAKrY', linkBy:'Greg Brookes' },
@@ -13108,7 +13113,7 @@ const EX_LIB = [
 
   // ── QUADS ──
   { m:'quads', name:'Kettlebell front squat', equip:'kb', reps:'8-12', rest:180, cue:'One or two bells racked at the chest. The rack position does the bracing for you.', flags:['grip'], id:'kb_front_squat', pattern:'squat', technique:2, link:'https://www.youtube.com/watch?v=583VTObuySM', linkBy:'Kettlebell Emma' },
-  { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees. Relevant given the ankle history.', flags:['grip'], id:'kb_rev_lunge', pattern:'squat', technique:2, link:'https://www.youtube.com/watch?v=y2jz7ot6r2I', linkBy:'Greg Brookes' },
+  { m:'quads', name:'Kettlebell reverse lunge', equip:'kb', reps:'8-12 each leg', rest:150, cue:'Step BACK, not forward — much kinder to the knees and ankles.', flags:['grip'], id:'kb_rev_lunge', pattern:'squat', technique:2, link:'https://www.youtube.com/watch?v=y2jz7ot6r2I', linkBy:'Greg Brookes' },
   { m:'quads', name:'Bulgarian split squat', equip:'bw', reps:'8-15 each leg', rest:150, cue:'Rear foot on a chair. Brutal without any weight at all. Add a kettlebell only once bodyweight is easy.', id:'bw_bulgarian', pattern:'squat', technique:3, watch:'The front knee caves inward and the torso pitches forward. Both are how this quietly becomes a lower-back exercise. Hold something for balance before you think about adding load.', link:'https://www.youtube.com/watch?v=2C-uNgKwPLE', linkBy:'ScottHermanFitness' },
   { m:'quads', name:'Step-up', equip:'bw', reps:'10-15 each leg', rest:120, cue:'Onto a sturdy chair or stair. Drive through the heel of the top foot; don\'t push off the back leg.', id:'bw_stepup', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=dQqApCGd5Ss', linkBy:'LIVESTRONG' },
   { m:'quads', name:'Wall sit', equip:'bw', reps:'30-60s', rest:90, cue:'Back flat to a wall, thighs parallel. Zero joint load, high burn. Good on a day the knees are grumpy.', id:'bw_wall_sit', pattern:'squat', technique:1, link:'https://www.youtube.com/watch?v=y-wV4Venusw', linkBy:'ScottHermanFitness' },
@@ -13177,11 +13182,10 @@ const EX_LIB = [
   //      house has no pull-up bar; a band around a door hinge fixes that today.
   //   2. SHOULDER WORK IN A PAIN-FREE RANGE. Resistance is lowest where the
   //      arm is weakest (bottom) and highest where it is strongest (end range),
-  //      which is the opposite of a dumbbell and the reason bands suit an
-  //      arthritic shoulder.
-  //   3. PRESSING WITH NOTHING THROUGH THE WRIST. He logged left wrist pain on
-  //      the 22nd and the first thing a bodyweight session reaches for is a
-  //      push-up.
+  //      which is the opposite of a dumbbell and the reason bands suit a
+  //      sore shoulder.
+  //   3. PRESSING WITH NOTHING THROUGH THE WRIST. The first thing a bodyweight
+  //      session reaches for is a push-up, which is no good on a sore wrist.
   // No band squats, no band deadlifts, no band curls: a band that is easy at
   // the bottom of a squat and hardest at the top loads the range that was never
   // the hard part. That is a worse squat, not a portable one.
@@ -13196,8 +13200,8 @@ const EX_LIB = [
 ];
 
 const EX_FLAG_NOTES = {
-  grip:     { icon:'👆', tone:'orange', text:'Grip-heavy — trigger finger. Cortisone muted the pain signal, so "it doesn\'t hurt" isn\'t proof it\'s fine. Watch for increased catching instead, and use straps if grip fails before the target muscle.' },
-  overhead: { icon:'🦾', tone:'orange', text:'Overhead / lateral range — shoulder OA. Work the pain-free range only; don\'t chase the top of the arc.' },
+  grip:     { icon:'👆', tone:'orange', text:'Grip-heavy. With a sore hand, finger or forearm, judge it by how the hand is the next day, not during the set, and use straps if grip fails before the target muscle.' },
+  overhead: { icon:'🦾', tone:'orange', text:'Overhead / lateral range. With a sore shoulder, work the pain-free range only; don\'t chase the top of the arc.' },
   spine:    { icon:'⚠️', tone:'orange', text:'Loads the lower back. Skip on any day it\'s already complaining.' },
 };
 
@@ -13241,6 +13245,7 @@ function _mpickWhereChips() {
 
 function openMusclePicker(muscleId) {
   _mpickMuscle = muscleId || null;
+  if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'picker', muscle: _mpickMuscle });
   _mpickShowAll = false;
   try { _mpickWhere = localStorage.getItem('mpick_where') || 'all'; } catch (e) { _mpickWhere = 'all'; }
   const bd = document.getElementById('muscle-picker-backdrop');
@@ -13907,7 +13912,7 @@ function setGuidance(muscleId, setsThisSession) {
     return { tone:'green', text:`Three sets is the dose. More is optional, not better.` };
   }
   if (setsThisSession > 0) {
-    return { tone:'', text:`${weekly + setsThisSession} sets this week. Aiming for ${plan.sets_min}-${plan.sets_max} across the week.` };
+    return { tone:'', text:`${weekly + setsThisSession} set${weekly + setsThisSession === 1 ? '' : 's'} this week. Aiming for ${plan.sets_min}-${plan.sets_max} across the week.` };
   }
   return null;
 }
@@ -13937,8 +13942,8 @@ function setGuidance(muscleId, setsThisSession) {
 // again, here's the weight, here's the reps." The suggested count is a hint that
 // gates nothing.
 //
-// Set rows are stored INDIVIDUALLY (weight/reps/flag each) because Craig
-// auto-regulates around his shoulder. 130x9, 120x10 (shoulder), 130x8 is a story;
+// Set rows are stored INDIVIDUALLY (weight/reps/flag each) because people
+// auto-regulate set to set. 130x9, 120x10 (form), 130x8 is a story;
 // "3 sets @ 127 avg" is not.
 let SESSION = null;            // { client_id, date, plan[], done[], status }
 let _sessEx = null;            // exercise key currently open full-screen
@@ -14255,7 +14260,7 @@ const REFLECT_QUOTES = [
   //  • Jack London, "There is an ecstasy that marks the summit of life" — the
   //    ecstasy is a hunting dog's, mid-chase.
   //  • Conrad, "O youth! The strength of it" — wistful rather than useful for a
-  //    44-year-old reading it at night.
+  //    person reading it at night.
   //  • Both Verne lines from Journey to the Centre of the Earth — the 1871
   //    Griffith & Farran text is, by Gutenberg's own note, not a translation but
   //    a rewrite. Words Verne did not write do not get his name on them.
@@ -14784,13 +14789,13 @@ const STRETCH_LIB = [
 
   // ── Calf / ankle ──
   { id:'cf_wall', region:'calf', type:'static', when:'post', name:'Wall calf stretch',
-    dose:'30s each side, both bent and straight knee', hold_s:30, variants:2, perSide:true, cue:'Straight knee targets gastroc, bent knee targets soleus. Do both — relevant given the ankle history.' },
+    dose:'30s each side, both bent and straight knee', hold_s:30, variants:2, perSide:true, cue:'Straight knee targets gastroc, bent knee targets soleus. Do both.' },
   { id:'cf_ankle_rock', region:'calf', type:'mobility', when:'pre', name:'Ankle rocks',
     dose:'10 each side', reps:10, perSide:true, cue:'Knee travels over the toes, heel stays down. Restores the ankle range that standing all day quietly removes.' },
 
-  // ── Wrist / hand — the massage-therapist career-enders ──
+  // ── Wrist / hand ──
   { id:'w_flexor', link:'https://www.youtube.com/watch?v=QiMiia4F7Xg', region:'wrist', type:'static', when:'post', name:'Forearm flexor stretch',
-    dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gets loaded by every hour of hands-on work.' },
+    dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm up, gently pull the fingers back and down. This is the tissue that gripping and hands-on work load all day.' },
   { id:'w_extensor', region:'wrist', type:'static', when:'post', name:'Forearm extensor stretch',
     dose:'30s each side', hold_s:30, perSide:true, cue:'Arm straight, palm down, gently press the back of the hand toward you.' },
   { id:'w_nerve_glide', region:'wrist', type:'mobility', when:'any', name:'Median nerve glide',
@@ -14932,8 +14937,8 @@ const CONDITIONS = [
     redFlagAction:'A finger stuck bent needs a hand specialist rather than more self-management.',
     guidance:[
       'Tendon glides keep it moving without forcing it through the catch.',
-      'Post-injection, mild painless catching is the expected partial response, not a failure.',
-      'The pain signal is muted for weeks after cortisone, so grip load needs judgement rather than feel.',
+      'After a steroid injection, mild painless catching can remain; that is a partial response, not a failure.',
+      'An injection can mute the pain signal for weeks, so grip load needs judgement rather than feel.',
     ],
     helps:['w_cmc_circ','w_flexor','w_extensor'],
     avoid:['w_grip_endur'],
@@ -15001,23 +15006,22 @@ const CONDITIONS = [
 //               manageable with judgement.
 //
 // Blocking everything grip-flagged for trigger finger would remove almost all
-// pulling work, and Craig is post-cortisone and actively rowing. An app that
+// pulling work, from people who are often still rowing fine. An app that
 // hides half the library gets overridden and then ignored — so most of these are
 // cautions, and only the genuinely unsafe pairings are hidden.
 const CONDITION_EX_RULES = {
   sciatica:            { block:['spine'], note:'Loaded spinal flexion is hidden while sciatica is active — it directly provokes the nerve.' },
   lowback_nonspecific: { caution:['spine'], note:'Watch the lower back on this one. Brace before the first rep, and stop the set if form goes rather than grinding it out.' },
   carpal_tunnel:       { caution:['grip'], note:'Grip-heavy. Use straps and keep the wrist neutral — sustained gripping raises pressure inside the carpal tunnel.' },
-  trigger_finger:      { caution:['grip'], note:'Grip-heavy. Post-injection the pain signal is muted, so judge by whether catching increases rather than by how it feels.' },
+  trigger_finger:      { caution:['grip'], note:'Grip-heavy. Judge by whether catching increases rather than by how it feels — after an injection the pain signal can be muted.' },
   lat_epicondylitis:   { caution:['grip'], note:'Grip load provokes this. Straps help; reduce the load before reducing the reps.' },
   shoulder_oa:         { caution:['overhead','shoulder'], note:'Work the pain-free range only. Stop short of the pinch rather than pushing to lockout.' },
 };
 
 // ── What you are ALREADY LOGGING should reach the exercise screen ─────────
-// Craig logged left wrist pain on 2026-09-22 — "suspect repetitive stress from
-// hike" — and three days later the app happily offered him push-ups with no
-// mention of it. The cautions above read USER_PROFILE.conditions, a curated list
-// he ticks in Settings; the episode log is a different store, and nothing joined
+// A sore wrist logged as an episode, and three days later the app happily
+// offered push-ups with no mention of it. The cautions above read
+// USER_PROFILE.conditions, a curated list ticked in Settings; the episode log is a different store, and nothing joined
 // them. Two stores answering one question, with a physio consequence rather than
 // a cosmetic one.
 //
@@ -15319,6 +15323,7 @@ let _stRegion = null;
 
 function openStretch(screen) {
   _stScreen = screen || 'home';
+  if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'stretch', screen: _stScreen });
   const bd = document.getElementById('stretch-backdrop');
   if (bd) bd.classList.add('open');
   renderStretchScreen();
@@ -15378,6 +15383,8 @@ function stretchSessionStart() {
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   renderStretchScreen();
   if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
 }
 // "I wasn't stretching" — the clock was left running and there is nothing true
 // to log. Mirrors gymClockDiscard.
@@ -15387,6 +15394,8 @@ function stretchSessionDiscard() {
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   renderStretchScreen();
   if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
 }
 // mins optional — the correction path when the clock was left running.
 function stretchSessionStop(mins) {
@@ -15406,6 +15415,8 @@ function stretchSessionStop(mins) {
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
   renderStretchScreen();
   if (typeof _stRefreshRoutinePopup === 'function') _stRefreshRoutinePopup();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
   return secs;
 }
 function stretchTimeTodayS() {
@@ -15570,7 +15581,7 @@ function _stCard(s) {
   const typeLabel = { mobility:'Mobility', static:'Hold', strength:'Strength' }[s.type] || s.type;
   const typeColor = { mobility:'var(--cyan)', static:'var(--purple)', strength:'var(--green)' }[s.type] || 'var(--text-muted)';
   const flagNote = (s.flags || []).indexOf('shoulder') !== -1
-    ? '<div style="font-size:11px;color:var(--orange);margin-top:5px;line-height:1.45">Shoulder OA — work the pain-free range only, don\'t chase the end of the arc.</div>' : '';
+    ? '<div style="font-size:11px;color:var(--orange);margin-top:5px;line-height:1.45">Shoulder — work the pain-free range only, don\'t chase the end of the arc.</div>' : '';
   const n = _stCount(s.id);
   const doneLabel = n > 1 ? '\u2713 \u00d7' + n : (n === 1 ? '\u2713 Done' : 'Done');
   const doneCol = n ? 'var(--green)' : 'var(--text-dim)';
@@ -15841,6 +15852,10 @@ const ROUTINE_STRETCH_LIB = {
   // Palm up, fingers pulled back: the WRIST is extended, so it is the FLEXORS that
   // stretch — the palm-side tendons. Easy to name backwards; the movement decides.
   'wrist extension stretch (palm up)': 'w_flexor',
+  // B, C and Quick, rebuilt 2026-10-01.
+  'chin tucks': 'n_retract', 'upper trap stretch': 'n_uppertrap', 'levator scapulae stretch': 'n_levator',
+  'floor angels': 'c_floor_angel', 'band external rotation': 'sc_ext_rot',
+  '90/90 hip switches': 'h_9090', 'ankle rocks': 'cf_ankle_rock', 'bird dog': 'lb_birddog',
   'standing calf stretch': 'cf_wall',
   'open book rotation': 't_rot_open',
 };
@@ -15848,7 +15863,8 @@ const ROUTINE_STRETCH_LIB = {
 // OLD list's item at that index. Those ticks were brought into the log by the
 // sweep before the change; one this device never swept stays out rather than be
 // logged as whatever now sits at that position.
-const ROUTINE_REVISED = { morning: '2026-10-01' };
+const ROUTINE_REVISED = { morning: '2026-10-01',
+  stretch_B: '2026-10-02', stretch_C: '2026-10-02', stretch_quick: '2026-10-02', stretch_deep: '2026-10-02' };
 function _rtNorm(name) { return String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 function routineStretchLibId(name) {
   const id = ROUTINE_STRETCH_LIB[_rtNorm(name)];
@@ -16305,8 +16321,8 @@ function _renderStretchScreenInner() {
 // ══════════════════════════════════════════════════════════════
 // Replaces the part-first body_log model.
 //
-// Craig: "gout -> right foot, onset, pain management, treatment plan. Just like
-// cold -> runny nose, heavy mucus."
+// The ask: "condition -> body part, onset, pain management, treatment plan. Just
+// like cold -> runny nose, heavy mucus."
 //
 // The old model was musculoskeletal — part, pain 0-10, stiffness 0-10, side. It
 // cannot represent a cold. An EPISODE (a named thing with a start, a course and
@@ -16941,16 +16957,13 @@ function epPrintSummary() {
 // on. I'd like more discretion."
 //
 // The kegels are the symptom, not the problem. This app also shows medication
-// names, symptom logs, mood check-ins and a custody calendar — and he uses it in
-// gyms, in coffee shops, around his kids, and around his ex-wife's social circle
-// at dance competitions. The realistic exposure is his kids reading the custody
-// grid or someone glancing at a medication list, not a stranger reading "kegels".
+// names, symptom logs, mood check-ins and a custody calendar — and it gets used in
+// gyms, coffee shops and around family. The realistic exposure is someone
+// glancing at a calendar or a medication list, not a stranger reading "kegels".
 //
 // So this is a MODE covering that whole class, not a rename.
 //
-// NOTE: the kegels stay. Pelvic floor work is genuinely worthwhile for a 44-year-
-// old man — continence, and reasonable evidence for erectile function, relevant
-// given the ED association with daily naproxen already in his notes. The answer
+// NOTE: the kegels stay. Pelvic floor work is genuinely worthwhile. The answer
 // is discretion, not deletion. Never quietly drop a useful exercise because its
 // name is awkward.
 const DISCREET_LABELS = {
@@ -16977,8 +16990,8 @@ function discreetLabel(name) {
   if (!isDiscreet()) return name;
   return DISCREET_LABELS[name] || name;
 }
-// Medication names shortened to an initial in discreet mode — "A." rather than
-// "Allopurinol", which is one search away from a diagnosis.
+// Medication names shortened to an initial in discreet mode — "M." rather than
+// the full name, which is often one search away from a diagnosis.
 function discreetMed(name) {
   if (!isDiscreet() || !name) return name;
   return name.trim().charAt(0).toUpperCase() + '.';
@@ -18081,9 +18094,9 @@ const SESS_GRADUATE_DAYS = 8;
 // the card on a Sunday in his kitchen. The clock is the one thing he taps when
 // he walks in, and it is the honest answer to "where is he right now".
 //
-// Machines lead the tie-break. With shoulder OA, a fixed path is kinder than a
-// free weight — the machine does the stabilising the joint no longer likes
-// doing — and the library's own cues have said so since August.
+// Machines lead the tie-break. For a sore shoulder a fixed path is kinder than a
+// free weight — the machine does the stabilising — and the library's own cues
+// have said so since August.
 const SESS_PLAN_GYM_EQUIP = ['machine', 'cable', 'db', 'bar', 'bw'];
 // Cable movements need a cable station, and the gym-location machine list has
 // no entry called that — it has the three things you do ON one. Any of them
@@ -18872,6 +18885,7 @@ function addSessionSegment(exKey, exName, entry) {
   logActivity(Object.assign({
     name: exName, exercise_key: exKey, set_index: idx,
     flag: e.flag || '', side: e.side || '',
+    notes: entry.note ? String(entry.note) : '',
     variant: v && v.id !== 'std' ? v.label : '',
     variant_mult: v ? v.mult : 1,
   }, stored));
@@ -19090,12 +19104,13 @@ function openSessionScreen() {
   renderSessionScreen();
 }
 function closeSessionScreen() {
-  _holdStop();            // a clock left running would keep writing into a dead field
+  _holdPaintStop();       // the hold keeps running in the dock; only the painting stops
   const bd = document.getElementById('session-backdrop');
   if (bd) bd.classList.remove('open');
   _sessEx = null;
   _sessReturnTo = null;   // stale return target would hijack the next open
   _refreshBehindSession();
+  renderDock();           // the hold chip, and the way back to where he was
 }
 function _sessTogglePlan(mid) {
   const i = _sessPlanDraft.indexOf(mid);
@@ -19197,6 +19212,7 @@ function renderSessionScreen() {
 let _cardioMode = 'row';
 function openCardio(modeId) {
   _cardioMode = modeId || 'row';
+  if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'cardio', mode: _cardioMode });
   _sessEx = '__cardio__';
   document.getElementById('session-backdrop').classList.add('open');
   renderCardioScreen();
@@ -19280,11 +19296,12 @@ function _cardioAdd() {
 
 function openExercise(key, name) {
   _sessEx = key; _sessExName = name;
+  if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'exercise', key: key, name: name });
   document.getElementById('session-backdrop').classList.add('open');
   renderExerciseScreen();
 }
 function backToPlan() {
-  _holdStop();
+  _holdPaintStop();
   _refreshBehindSession();
   if (_sessReturnTo === 'picker') {
     _sessReturnTo = null;
@@ -19309,7 +19326,10 @@ function renderExerciseScreen() {
   const lastW = sets.length ? sets[sets.length - 1].w : '';
   const _trackList = exTrackList(_sessEx, _sessExName);
 
-  const FLAGS = [['', '—', 'var(--text-muted)'], ['S', 'Shoulder', 'var(--orange)'],
+  // No body-part flag (2026-10-25): an ongoing condition the person has chosen
+  // not to track should not be asked about on every set. Form and Pain cover it;
+  // sets flagged 'S' before this still show.
+  const FLAGS = [['', '—', 'var(--text-muted)'],
                  ['F', 'Form', 'var(--orange)'], ['P', 'Pain', 'var(--red)']];
 
   // Segment label follows what the movement tracks. A run's segments are not
@@ -19338,7 +19358,7 @@ function renderExerciseScreen() {
       ${restTxt}
       ${s.flag ? `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:var(--orange-bg);color:var(--orange)">${s.flag}</span>` : ''}
       <button onclick="removeSessionSet('${_sessEx}',${i})" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;padding:0 3px">×</button>
-    </div>`;
+    </div>${a.notes ? `<div style="font-size:10.5px;color:var(--text-dim);padding:0 4px 7px 42px;margin-top:-4px">\ud83d\udcdd ${escapeHtml(a.notes)}</div>` : ''}`;
   }).join('');
 
   body.innerHTML = `
@@ -19372,7 +19392,7 @@ function renderExerciseScreen() {
       return `<div style="font-size:10.5px;color:${c};background:${bg};border-radius:6px;padding:8px 10px;margin:6px 0 10px;line-height:1.5">${g.text}</div>`;
     })()}
 
-    <div style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg)">
+    <div id="sess-entry" style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg)">
       <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${segWord} ${sets.length + 1}</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
         ${(function () {
@@ -19420,15 +19440,21 @@ function renderExerciseScreen() {
         ${FLAGS.map(([v, l, c]) => `<button onclick="window._sessFlag='${v}';renderExerciseScreen()"
           style="flex:1;padding:6px 2px;border-radius:6px;border:1px solid ${(window._sessFlag || '') === v ? c : 'var(--card-border)'};background:${(window._sessFlag || '') === v ? 'var(--input-bg)' : 'transparent'};color:${(window._sessFlag || '') === v ? c : 'var(--text-muted)'};font-size:9.5px;font-weight:700;cursor:pointer;font-family:inherit">${l}</button>`).join('')}
       </div>
+      <input id="sess-note" type="text" maxlength="200" autocomplete="off" placeholder="Note (optional) \u2014 e.g. low row instead of row"
+        style="width:100%;box-sizing:border-box;margin-bottom:9px;padding:9px 10px;border-radius:7px;border:1px solid var(--input-border);background:var(--card-bg,var(--input-bg));color:var(--text);font-size:13px;font-family:inherit">
       <button onclick="_sessAddSet()"
         style="width:100%;padding:13px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
         ${sets.length ? '+ Add another set' : '+ Log set 1'}</button>
+      <div style="font-size:9.5px;color:var(--text-muted);text-align:center;margin-top:5px">Or tap \u2713 on the keyboard after the last number. Logging starts the rest.</div>
     </div>
 
-    <button onclick="startRestTimer(${ex.rest || 120},'${_sessExName.replace(/'/g, "\\'")}')"
+    <button onclick="startRestTimer(${_sessRestS(ex)},'${_sessExName.replace(/'/g, "\\'")}')"
       style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-      ⏱ Start rest — ${ex.rest ? (ex.rest >= 60 ? (ex.rest / 60) + ' min' : ex.rest + 's') : '2 min'}</button>
-    <div style="font-size:9.5px;color:var(--text-muted);text-align:center;margin-top:5px">Tap when you actually start resting.</div>`;
+      ⏱ Restart rest — ${_restLenTxt(_sessRestS(ex))}</button>
+    <div style="font-size:9.5px;color:var(--text-muted);text-align:center;margin-top:5px">Rest starts by itself when a set is logged.</div>`;
+  _sessAutoArm();
+  // A hold left running for this exercise picks up where it is.
+  if (_holdTimer && _holdTimer.exKey === _sessEx) _holdPaintStart();
 }
 
 // ── Day review — the spreadsheet Craig asked to look back on ──
@@ -19502,10 +19528,54 @@ function renderDayReview() {
 // ASKED FOR, which is the exact defect stretchDone() carried until 2026-09-20:
 // the log said "30s each side" whether or not you lasted 30 seconds. You stop
 // when you drop, and what gets logged is what you did.
-let _holdTimer = null;
-
+// Saved and screen-independent since 2026-10-25: closing the exercise screen, or
+// leaving the app, used to stop the clock and throw the time away. Now it keeps
+// running (the dock shows it) and painting resumes when the screen comes back.
+let _holdTimer = null;    // { t0, exKey, name }
+let _holdPaint = null;
+function _holdSave() {
+  try {
+    if (_holdTimer) localStorage.setItem('hold_timer', JSON.stringify(_holdTimer));
+    else localStorage.removeItem('hold_timer');
+  } catch (e) {}
+}
+function _holdLoad() {
+  try {
+    const h = JSON.parse(localStorage.getItem('hold_timer') || 'null');
+    // A "hold" over 15 minutes was left running, not held.
+    if (h && h.t0 && Date.now() - h.t0 < 15 * 60 * 1000) _holdTimer = h;
+    else if (h) localStorage.removeItem('hold_timer');
+  } catch (e) {}
+  return _holdTimer;
+}
+function _holdPaintStop() {
+  if (_holdPaint) { clearInterval(_holdPaint); _holdPaint = null; }
+}
+function _holdPaintStart() {
+  _holdPaintStop();
+  const paint = function () {
+    const f = document.getElementById('sess-t');
+    const b = document.getElementById('sess-hold-btn');
+    if (!_holdTimer) { _holdPaintStop(); return; }
+    if (!f) { _holdPaintStop(); return; }       // the screen went; the clock did not
+    const txt = fmtDurationS(Math.round((Date.now() - _holdTimer.t0) / 1000)) || '0:00';
+    f.value = txt;
+    if (b) b.textContent = '\u23f9 Stop \u2014 ' + txt;
+  };
+  _holdPaint = setInterval(paint, 250);
+  paint();
+}
 function _holdStop() {
-  if (_holdTimer) { clearInterval(_holdTimer.iv); _holdTimer = null; }
+  _holdPaintStop();
+  _holdTimer = null;
+  _holdSave();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
+}
+function dockResumeHold() {
+  if (!_holdTimer) return;
+  if (typeof closeStretch === 'function' && _isOpenBd('stretch-backdrop')) closeStretch();
+  openExercise(_holdTimer.exKey, _holdTimer.name);
 }
 
 function _holdToggle() {
@@ -19515,7 +19585,7 @@ function _holdToggle() {
   // Stopping logs the set only for a pure hold. A walk tracks distance too, so
   // stopping the clock there fills the time and leaves the rest to the person.
   const isHold = list.length === 1 && list[0] === 'duration';
-  if (_holdTimer) {
+  if (_holdTimer && _holdTimer.exKey === _sessEx) {
     const secs = Math.max(1, Math.round((Date.now() - _holdTimer.t0) / 1000));
     _holdStop();
     fld.value = fmtDurationS(secs) || '0:01';
@@ -19524,17 +19594,12 @@ function _holdToggle() {
     else renderExerciseScreen();
     return;
   }
-  _holdTimer = { t0: Date.now(), iv: null };
-  const paint = function () {
-    const f = document.getElementById('sess-t');
-    const b = document.getElementById('sess-hold-btn');
-    if (!f || !_holdTimer) { _holdStop(); return; }
-    const txt = fmtDurationS(Math.round((Date.now() - _holdTimer.t0) / 1000)) || '0:00';
-    f.value = txt;
-    if (b) b.textContent = '⏹ Stop — ' + txt;
-  };
-  _holdTimer.iv = setInterval(paint, 250);
-  paint();
+  // One hold at a time: starting one here ends one left running elsewhere.
+  _holdTimer = { t0: Date.now(), exKey: _sessEx, name: _sessExName };
+  _holdSave();
+  _holdPaintStart();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
 }
 
 function _sessSetVariant(id) {
@@ -19543,7 +19608,8 @@ function _sessSetVariant(id) {
 }
 
 function _sessAddSet() {
-  _holdStop();
+  if (typeof _sessAutoCancel === 'function') _sessAutoCancel();
+  if (_holdTimer && _holdTimer.exKey === _sessEx) _holdStop();
   const list = exTrackList(_sessEx, _sessExName);
   const val = id => (document.getElementById('sess-' + id) || {}).value;
   const entry = { w: 0, r: 0, d: 0, t: 0, flag: window._sessFlag || '' };
@@ -19561,8 +19627,51 @@ function _sessAddSet() {
     if (el) { el.style.borderColor = 'var(--red)'; setTimeout(() => { el.style.borderColor = 'var(--input-border)'; }, 1200); }
     return;
   }
+  // A note rides on this set (Craig, 2026-10-18: "should have notes. Did low row
+  // instead of row").
+  const noteEl = document.getElementById('sess-note');
+  if (noteEl && noteEl.value.trim()) entry.note = noteEl.value.trim().slice(0, 200);
+  const exNow = _sessEx, nameNow = _sessExName;
   addSessionSegment(_sessEx, _sessExName, entry);
   window._sessFlag = '';   // flags are per-set, not sticky
+  // Log the set, and the rest starts (2026-10-25) — Craig's loop is "do my sets,
+  // log it, trigger a cool down timer, start the next set". Strength work only:
+  // a walk's legs and a stretch hold are not followed by a rest to time.
+  try {
+    const meta = exTracksFor(exNow, nameNow) || {};
+    if ((meta.kind || 'strength') === 'strength') {
+      const lib = (typeof EX_LIB !== 'undefined') ? (EX_LIB.find(e => e.name === nameNow) || {}) : {};
+      startRestTimer(lib.rest || _restDefaultSecsFor(nameNow), nameNow);
+    }
+  } catch (e) {}
+}
+// ✓ on the iPhone keyboard logs the set (Craig, 2026-10-18: "when I hit the
+// check on the number of reps should log exercise"). The ✓ only closes the
+// keyboard, so this listens for the last field losing focus with real values in
+// it — unless the next thing touched is still part of this set (the other box, a
+// flag, a variant, the note), in which case nothing is logged until he says so.
+let _sessAutoT = null;
+function _sessAutoCancel() { if (_sessAutoT) { clearTimeout(_sessAutoT); _sessAutoT = null; } }
+function _sessAutoArm() {
+  const card = document.getElementById('sess-entry');
+  if (!card) return;
+  const fields = card.querySelectorAll('input[id^="sess-"]:not(#sess-note)');
+  const last = fields[fields.length - 1];
+  if (!last) return;
+  card.addEventListener('pointerdown', _sessAutoCancel, true);
+  card.addEventListener('focusin', _sessAutoCancel, true);
+  last.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); _sessAddSet(); } });
+  last.addEventListener('change', function () {
+    _sessAutoCancel();
+    _sessAutoT = setTimeout(function () {
+      _sessAutoT = null;
+      const ae = document.activeElement;
+      if (ae && card.contains(ae) && /^(INPUT|TEXTAREA|BUTTON)$/.test(ae.tagName)) return;
+      const before = getSessionSets(_sessEx).length;
+      _sessAddSet();
+      if (getSessionSets(_sessEx).length > before && typeof toast === 'function') toast('Set ' + (before + 1) + ' logged');
+    }, 350);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -19594,8 +19703,11 @@ const REST_PRESETS = [
 // new machines with these words inherit sensible behaviour without extra config.
 const REST_COMPOUND_HINTS = ['press', 'squat', 'row', 'pulldown', 'deadlift', 'lunge', 'leg press'];
 
-let _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false };
+let _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false, startedAt: 0, endsAt: 0, cued: false };
 
+// The one rest length for an exercise: the button and the automatic start agree.
+function _sessRestS(ex) { return (ex && ex.rest) || _restDefaultSecsFor(_sessExName); }
+function _restLenTxt(s) { return s >= 60 ? (s % 60 ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : (s / 60) + ' min') : s + 's'; }
 function _restDefaultSecsFor(label) {
   const l = (label || '').toLowerCase();
   return REST_COMPOUND_HINTS.some(h => l.indexOf(h) !== -1) ? 180 : 120;
@@ -19607,10 +19719,12 @@ function _restDefaultSecsFor(label) {
 // didn't — the timer was a countdown and nothing else, while activity_log.rest_s
 // sat unwritten.
 //
-// What actually gets recorded is the time from starting the rest to LOGGING THE
-// NEXT SET, not the time until the timer is dismissed. Tapping stop means he
-// stopped watching the clock; it doesn't mean he started lifting. If he stops at
-// 30s and goes again three minutes later, the honest number is three minutes.
+// Ending the rest is the end of the rest (2026-10-24). Craig: "if I end the rest
+// early, I need that to be saved as a detail. 1:30 rest or 1:00 rest or 4:00
+// rest." "End rest" in the dock writes the time on the set the rest followed,
+// there and then. It is also the better number: the old rule (start of rest to
+// the NEXT SET BEING LOGGED) counted the working set itself as rest, ~30-60 s
+// on every row. That rule is now only the fallback, for a rest he never ended.
 //
 // Both values are kept: `target` (what he intended) and the measured actual. The
 // gap between them is the interesting bit — the evidence says rest length is a
@@ -19618,29 +19732,93 @@ function _restDefaultSecsFor(label) {
 // rest matches what he meant to take, rather than me guessing.
 let _restPending = null;   // { exKey, startedAt, target }
 
+// The countdown is a stored END TIME, not a counter (2026-10-25). Craig: "I
+// might flip out of the app to watch a video or message someone. Because of how
+// we did the timer, it will always reset the cool down timer." It counted ticks
+// in memory — iOS pauses a backgrounded web app (the count froze) and evicts it
+// under memory pressure (the count vanished). Now the remaining time is always
+// endsAt − now, and the timer is saved, so leaving the app or a reload costs
+// nothing.
+function _restSave() {
+  try {
+    if (_restTimer.running) {
+      localStorage.setItem('rest_timer', JSON.stringify({ target: _restTimer.target, label: _restTimer.label,
+        startedAt: _restTimer.startedAt, endsAt: _restTimer.endsAt, cued: !!_restTimer.cued }));
+    } else localStorage.removeItem('rest_timer');
+    if (_restPending) localStorage.setItem('rest_pending', JSON.stringify(_restPending));
+    else localStorage.removeItem('rest_pending');
+  } catch (e) {}
+}
+function _restLoad() {
+  try {
+    const r = JSON.parse(localStorage.getItem('rest_timer') || 'null');
+    // Over an hour past its end, it was abandoned, not rested through.
+    if (r && r.endsAt && Date.now() - r.endsAt < 3600 * 1000) {
+      Object.assign(_restTimer, r, { running: true });
+      _restTimer.remaining = Math.round((_restTimer.endsAt - Date.now()) / 1000);
+      _dockOpen = 'rest';   // back in the app mid-rest: the big countdown, not a chip
+    } else if (r) localStorage.removeItem('rest_timer');
+    const p = JSON.parse(localStorage.getItem('rest_pending') || 'null');
+    if (p && p.startedAt && Date.now() - p.startedAt < 1200 * 1000) _restPending = p;
+  } catch (e) {}
+  return _restTimer.running;
+}
 function startRestTimer(secs, label) {
   secs = secs || _restDefaultSecsFor(label);
+  const now = Date.now();
   _restTimer.target = secs;
   _restTimer.remaining = secs;
   _restTimer.label = label || '';
   _restTimer.running = true;
-  _restTimer.startedAt = Date.now();
+  _restTimer.startedAt = now;
+  _restTimer.endsAt = now + secs * 1000;
+  _restTimer.cued = false;
   // Attach the rest to whatever exercise is open, so the next set can claim it.
   _restPending = { exKey: (typeof _sessEx !== 'undefined' && _sessEx) || null,
-                   startedAt: Date.now(), target: secs };
-  if (_restTimer.id) clearInterval(_restTimer.id);
-  _restTimer.id = setInterval(_restTick, 1000);
+                   startedAt: now, target: secs, date: ds(new Date(now)) };
+  if (_restTimer.id) { clearInterval(_restTimer.id); _restTimer.id = null; }
+  if (typeof _dockOpen !== 'undefined') _dockOpen = 'rest';   // a new rest opens big, to be read from the bench
+  _restSave();
+  if (typeof wakeSync === 'function') wakeSync();
   renderRestTimer();
 }
 function stopRestTimer() {
   if (_restTimer.id) clearInterval(_restTimer.id);
-  _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false, startedAt: 0 };
+  _restTimer = { id: null, remaining: 0, target: 0, label: '', running: false, startedAt: 0, endsAt: 0, cued: false };
+  if (typeof _dockOpen !== 'undefined' && _dockOpen === 'rest') _dockOpen = null;
+  _restSave();
+  if (typeof wakeSync === 'function') wakeSync();
   renderRestTimer();
   // _restPending deliberately survives: dismissing the countdown isn't the end
   // of resting. It's cleared when the next set is logged, or on leaving.
 }
 
-// Seconds of rest actually taken before the set being logged now.
+// "End rest": the rest is over now. Its length goes on the set it followed —
+// the last one logged for that exercise — and the next set has nothing to claim.
+function endRestNow() {
+  const p = _restPending;
+  _restPending = null;
+  let saved = 0;
+  try {
+    const secs = p ? Math.round((Date.now() - p.startedAt) / 1000) : 0;
+    if (p && p.exKey && secs >= 2 && secs <= 1200 && typeof getActivity === 'function') {
+      const rows = getActivity(p.date || ds(new Date())).filter(r => r.exercise_key === p.exKey);
+      const last = rows.reduce((a, r) => (!a || r.set_index > a.set_index) ? r : a, null);
+      if (last) {
+        logActivity(Object.assign({}, last, { name: last.exercise_name, set_index: last.set_index, rest_s: secs }));
+        saved = secs;
+      }
+    }
+  } catch (e) {}
+  stopRestTimer();
+  if (saved && typeof toast === 'function') toast('Rest ' + _restFmt(saved) + ' saved', 'ok', 1800);
+  if (saved && typeof _sessEx !== 'undefined' && _sessEx === (p && p.exKey) && typeof renderExerciseScreen === 'function') {
+    try { renderExerciseScreen(); } catch (e) {}
+  }
+  return saved;
+}
+// Seconds of rest before the set being logged now — only for a rest that was
+// never ended with the button (see above).
 function _claimRest(exKey) {
   if (!_restPending) return null;
   if (_restPending.exKey && exKey && _restPending.exKey !== exKey) { _restPending = null; return null; }
@@ -19652,16 +19830,25 @@ function _claimRest(exKey) {
 }
 function adjustRestTimer(delta) {
   if (!_restTimer.running) return;
-  _restTimer.remaining = Math.max(0, _restTimer.remaining + delta);
+  const now = Date.now();
+  _restTimer.endsAt = Math.max(now, _restTimer.endsAt + delta * 1000);
+  if (_restTimer.endsAt > now) _restTimer.cued = false;
+  _restSave();
+  _restTick(true);
   renderRestTimer();
 }
-function _restTick() {
+// Derived, never decremented. `quiet` recomputes without painting.
+function _restTick(quiet) {
   if (!_restTimer.running) return;
-  _restTimer.remaining--;
+  _restTimer.remaining = Math.round((_restTimer.endsAt - Date.now()) / 1000);
   // Keep counting into negative so overrun is visible rather than the timer
   // just vanishing — knowing you rested 4:30 instead of 3:00 is useful data.
-  if (_restTimer.remaining === 0) _restRestCue();
-  renderRestTimer();
+  if (_restTimer.remaining <= 0 && !_restTimer.cued) {
+    _restTimer.cued = true;
+    _restSave();
+    if (!document.hidden) _restRestCue();
+  }
+  if (!quiet && typeof _dockPaint === 'function') _dockPaint();
 }
 // Short beep + haptic. Generated via Web Audio so there's no asset to ship and
 // nothing to fail on a cold cache.
@@ -19685,48 +19872,238 @@ function _restFmt(s) {
   const neg = s < 0; s = Math.abs(s);
   return (neg ? '+' : '') + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
 }
-function renderRestTimer() {
+// ══════════════════════════════════════════════════════════════
+// THE DOCK — every running timer, and the way back  (2026-10-25)
+// ══════════════════════════════════════════════════════════════
+// Craig: "I don't want the gym timer to go away … I need to press something
+// (compressed drawer?) to re-open the exercise and resume it. Without losing my
+// place." And: "persistent drawer on the bottom for each timer, click on the
+// timer to resume your workout."
+//
+// One bar, fixed to the bottom, above every screen. A chip per running timer —
+// gym clock, stretch clock, rest, a hold — plus where you were. Tap a chip and
+// you are back in the workout, on the exercise you left. Tap its ⌃ and that
+// timer's drawer opens with its controls. A new rest opens its drawer big, to be
+// read from a bench; ▾ tucks it away and the chip keeps counting.
+//
+// Every timer here is a stored timestamp, so the dock survives leaving the app,
+// the phone locking and the page being evicted — and on the way back it says
+// what actually happened rather than what a paused counter thinks.
+//
+// What a web app cannot do, and the native iPhone app should (see
+// WorkoutApp-Native-iPhone.md): a lock-screen / Dynamic Island timer, and an
+// alert when rest ends while you are in another app.
+let _dockOpen = null;            // the drawer that is open: 'rest' | 'gym' | 'stretch' | null
+let _dockTimer = null;
+
+// ── Where you were ────────────────────────────────────────────
+function setWorkoutContext(ctx) {
+  try {
+    if (!ctx) { localStorage.removeItem('workout_ctx'); return; }
+    localStorage.setItem('workout_ctx', JSON.stringify(Object.assign({}, ctx, { at: Date.now() })));
+  } catch (e) {}
+}
+function getWorkoutContext() {
+  try {
+    const c = JSON.parse(localStorage.getItem('workout_ctx') || 'null');
+    if (!c || !c.kind) return null;
+    if (Date.now() - (c.at || 0) > 6 * 3600 * 1000) return null;   // that was another day's place
+    return c;
+  } catch (e) { return null; }
+}
+function _isOpenBd(id) { const b = document.getElementById(id); return !!(b && b.classList.contains('open')); }
+function workoutContextLabel(c) {
+  c = c || getWorkoutContext();
+  if (!c) return '';
+  if (c.kind === 'exercise') return c.name || 'Exercise';
+  if (c.kind === 'routine') {
+    const r = (typeof ROUTINES !== 'undefined' && ROUTINES[c.key]) || null;
+    return r && r.title ? String(r.title).split(' — ')[0] : 'Routine';
+  }
+  if (c.kind === 'stretch') return 'Stretch & mobility';
+  if (c.kind === 'cardio') return 'Cardio';
+  if (c.kind === 'picker') return 'Pick an exercise';
+  return 'Workout';
+}
+function resumeWorkout() {
+  const c = getWorkoutContext();
+  _dockOpen = null;
+  if (c) {
+    try {
+      if (c.kind !== 'stretch' && _isOpenBd('stretch-backdrop') && typeof closeStretch === 'function') closeStretch();
+      if (c.kind !== 'picker' && _isOpenBd('muscle-picker-backdrop') && typeof closeMusclePicker === 'function') closeMusclePicker();
+      if (c.kind === 'exercise') openExercise(c.key, c.name);
+      else if (c.kind === 'routine') openRoutinePopup(c.key, c.date || ds(new Date()));
+      else if (c.kind === 'stretch') openStretch(c.screen || 'home');
+      else if (c.kind === 'cardio') openCardio(c.mode);
+      else if (c.kind === 'picker') openMusclePicker(c.muscle || null);
+    } catch (e) { console.warn('resume failed', e); }
+  }
+  renderDock();
+}
+
+// ── Keeping the phone awake ───────────────────────────────────
+// Craig: "During machine 1, I start the machine, don't want my phone to sleep."
+// Held while any timer here runs; the browser drops it whenever the page is
+// hidden, so it is asked for again on the way back. Home Screen web apps on iOS
+// honour it from 18.4.
+// The routine/stretch timer overlay uses the same lock (2026-10-25): it used to
+// ask for its own and, for a whole routine, never let it go.
+let _wakeSentinel = null, _wakeBusy = false, _wakeAgain = false;
+function dockTimersRunning() {
+  let overlay = false;
+  try { overlay = !!(_timerQueue || _activeTimer); } catch (e) {}
+  let on = false;
+  try { on = !!(GYMCLOCK || STRETCH_SESSION || _holdTimer); } catch (e) {}
+  return !!(on || overlay || _restTimer.running);
+}
+async function wakeSync() {
+  if (_wakeBusy) { _wakeAgain = true; return; }
+  _wakeBusy = true;
+  try {
+    if (!('wakeLock' in navigator)) return;
+    const want = dockTimersRunning() && document.visibilityState === 'visible';
+    if (want && !_wakeSentinel) {
+      const s = await navigator.wakeLock.request('screen');
+      _wakeSentinel = s;
+      s.addEventListener('release', () => { if (_wakeSentinel === s) _wakeSentinel = null; });
+    } else if (!want && _wakeSentinel) {
+      const sn = _wakeSentinel; _wakeSentinel = null;
+      await sn.release();
+    }
+  } catch (e) { _wakeSentinel = null; }
+  finally {
+    _wakeBusy = false;
+    if (_wakeAgain) { _wakeAgain = false; wakeSync(); }
+  }
+}
+
+// ── Painting ──────────────────────────────────────────────────
+function _dockChip(kind, icon, timeTxt, label, extraCls) {
+  const exp = (kind === 'rest' || kind === 'gym' || kind === 'stretch')
+    ? `<button class="dk-exp" onclick="event.stopPropagation();dockToggle('${kind}')" aria-label="Timer controls">${_dockOpen === kind ? '▾' : '⌃'}</button>` : '';
+  const go = kind === 'hold' ? `dockResumeHold()` : `resumeWorkout()`;
+  return `<div class="dk-chip ${kind} ${extraCls || ''}" data-dk="${kind}">
+    <button class="dk-main" onclick="${go}"><span class="dk-t" data-dk-t="${kind}">${icon} ${timeTxt}</span><span class="dk-l">${escapeHtml(label || '')}</span></button>${exp}</div>`;
+}
+function _dockRestCls() {
+  return _restTimer.remaining <= 0 ? 'over' : (_restTimer.remaining <= 10 ? 'soon' : '');
+}
+function _dockHoldS() { return _holdTimer ? Math.max(0, Math.round((Date.now() - _holdTimer.t0) / 1000)) : 0; }
+function _dockDrawerHtml() {
+  if (_dockOpen === 'rest' && _restTimer.running) {
+    const over = _restTimer.remaining <= 0;
+    const tone = over ? 'green' : (_restTimer.remaining <= 10 ? 'orange' : 'cyan');
+    const pct = _restTimer.target > 0 ? Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) : 100;
+    // Sized to be read at arm's length, from a bench, mid-set. Buttons are 46px —
+    // Apple's minimum touch target is 44px, and hands are sweaty.
+    return `<div style="height:6px;background:var(--divider);overflow:hidden">
+        <div id="dk-rest-bar" style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
+      </div>
+      <div class="dk-drawer" style="display:flex;align-items:center;gap:12px">
+        <div style="min-width:0;flex:1">
+          <div id="dk-rest-big" style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:var(--${tone})">${_restFmt(_restTimer.remaining)}</div>
+          <div style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px">${escapeHtml(_restTimer.label || 'Rest')}</div>
+          <div id="dk-rest-state" style="font-size:11px;color:${over ? 'var(--green)' : 'var(--text-muted)'};font-weight:${over ? '700' : '400'};margin-top:1px">${over ? 'Ready — go' : 'Resting'}</div>
+          <button class="dk-min" onclick="dockToggle(null)">▾ Tuck it away — it keeps counting</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
+          <div style="display:flex;gap:6px">
+            <button class="dk-btn" onclick="adjustRestTimer(-15)">−15s</button>
+            <button class="dk-btn" onclick="adjustRestTimer(30)">+30s</button>
+          </div>
+          <button class="dk-btn ${over ? 'go' : ''}" onclick="endRestNow()">${over ? 'Done' : 'End rest'}</button>
+        </div>
+      </div>`;
+  }
+  if (_dockOpen === 'gym' && typeof GYMCLOCK !== 'undefined' && GYMCLOCK) {
+    const s = gymClockElapsedS();
+    const over = s > GYMCLOCK_SANE_H * 3600;
+    return `<div class="dk-drawer">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green)">${gymClockFmt(s)}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${over ? 'longer than a session — how long were you actually training?' : 'at the gym'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px">
+        ${over ? [45, 60, 75, 90, 120].map(m => `<button class="dk-btn" onclick="gymClockStop(${m});dockToggle(null)">${m}m</button>`).join('')
+               : `<button class="dk-btn go" style="flex:1" onclick="gymClockStop();dockToggle(null)">Done — log ${gymClockFmt(s)}</button>`}
+        <button class="dk-btn" onclick="gymClockDiscard();dockToggle(null)">Discard</button>
+      </div>
+      <button class="dk-min" onclick="dockToggle(null)">▾ Close</button>
+    </div>`;
+  }
+  if (_dockOpen === 'stretch' && typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) {
+    const s = stretchSessionElapsedS();
+    const over = s > STRETCH_SESSION_SANE_H * 3600;
+    return `<div class="dk-drawer">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div style="font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--green)">${fmtDurationS(s) || '0:00'}</div>
+        <div style="font-size:11px;color:var(--text-muted)">${over ? 'probably left running — how long were you stretching?' : 'stretching'}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 2px">
+        ${over ? [10, 15, 20, 30, 45].map(m => `<button class="dk-btn" onclick="stretchSessionStop(${m});dockToggle(null)">${m}m</button>`).join('')
+                 + `<button class="dk-btn" onclick="stretchSessionDiscard();dockToggle(null)">Discard</button>`
+               : `<button class="dk-btn go" style="flex:1" onclick="stretchSessionStop();dockToggle(null)">Finish — log ${fmtDurationS(s) || '0:00'}</button>`}
+      </div>
+      <button class="dk-min" onclick="dockToggle(null)">▾ Close</button>
+    </div>`;
+  }
+  return '';
+}
+function renderDock() {
   const el = document.getElementById('rest-timer-bar');
   if (!el) return;
-  if (!_restTimer.running) {
+  if (_restTimer.running) _restTick(true);
+  const ctx = getWorkoutContext();
+  const chips = [];
+  if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK) chips.push(_dockChip('gym', '📍', _dockClock(gymClockElapsedS()), 'At the gym'));
+  if (typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) chips.push(_dockChip('stretch', '🧘', _dockClock(stretchSessionElapsedS()), 'Stretching'));
+  if (typeof _holdTimer !== 'undefined' && _holdTimer) chips.push(_dockChip('hold', '⏳', _dockClock(_dockHoldS()), _holdTimer.name || 'Hold'));
+  if (_restTimer.running) chips.push(_dockChip('rest', '⏱', _restFmt(_restTimer.remaining), _restTimer.label || 'Rest', _dockRestCls()));
+  if (!chips.length) {
     el.style.display = 'none'; el.innerHTML = '';
     document.body.classList.remove('rest-active');
+    if (_dockTimer) { clearInterval(_dockTimer); _dockTimer = null; }
     return;
   }
-  const over = _restTimer.remaining < 0;
-  const tone = over ? 'green' : (_restTimer.remaining <= 10 ? 'orange' : 'cyan');
-  const pct = _restTimer.target > 0
-    ? Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) : 100;
+  if (ctx) chips.push(`<div class="dk-chip resume" data-dk="resume"><button class="dk-main" onclick="resumeWorkout()"><span class="dk-t">▶ Back</span><span class="dk-l">${escapeHtml(workoutContextLabel(ctx))}</span></button></div>`);
   el.style.display = 'block';
-  // Sized to be read at arm's length, from a bench, mid-set. The clock is the
-  // only thing that matters at a glance, so it gets the space; the label and
-  // status drop to secondary. clamp() keeps it large on a phone without it
-  // becoming absurd on a desktop window.
-  //
-  // Buttons are 46px tall — Apple's minimum touch target is 44px and the old
-  // 24px ones were genuinely hard to hit with sweaty hands. Progress moved to a
-  // full-bleed bar across the top edge so it reads peripherally, without having
-  // to focus on it.
-  el.innerHTML = `
-    <div style="height:6px;background:var(--divider);overflow:hidden">
-      <div style="height:100%;width:${pct}%;background:var(--${tone});transition:width 1s linear"></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px 14px">
-      <div style="min-width:0;flex:1">
-        <div style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:var(--${tone})">${_restFmt(_restTimer.remaining)}</div>
-        <div style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px">${_restTimer.label || 'Rest'}</div>
-        <div style="font-size:11px;color:${over ? 'var(--green)' : 'var(--text-muted)'};font-weight:${over ? '700' : '400'};margin-top:1px">${over ? 'Ready — go' : 'Resting'}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
-        <button onclick="adjustRestTimer(30)" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">+30s</button>
-        <button onclick="stopRestTimer()" style="min-width:72px;height:46px;border-radius:9px;border:1px solid var(--${tone}-border, var(--card-border));background:${over ? 'var(--green-bg)' : 'var(--input-bg)'};color:${over ? 'var(--green)' : 'var(--text-dim)'};font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">${over ? 'Done' : 'Skip'}</button>
-      </div>
-    </div>`;
-  // Measured, not guessed — the clock uses clamp() so the height varies with
-  // viewport width. Read after innerHTML so offsetHeight reflects this render.
+  el.innerHTML = _dockDrawerHtml() + `<div class="dk-row">${chips.join('')}</div>`;
   document.body.classList.add('rest-active');
   document.documentElement.style.setProperty('--rest-bar-h', el.offsetHeight + 'px');
+  if (!_dockTimer) _dockTimer = setInterval(_dockPaint, 1000);
 }
+// The once-a-second update touches text only. Rebuilding the buttons under a
+// finger every second is how a tap gets lost.
+function _dockPaint() {
+  const el = document.getElementById('rest-timer-bar');
+  if (!el || el.style.display === 'none') { renderDock(); return; }
+  if (!dockTimersRunning()) { renderDock(); return; }
+  const wasOver = el.querySelector('.dk-chip.rest.over');
+  if (_restTimer.running) _restTick(true);
+  const set = (k, txt) => { const n = el.querySelector('[data-dk-t="' + k + '"]'); if (n) n.textContent = txt; };
+  if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK) set('gym', '📍 ' + _dockClock(gymClockElapsedS()));
+  if (typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) set('stretch', '🧘 ' + _dockClock(stretchSessionElapsedS()));
+  if (typeof _holdTimer !== 'undefined' && _holdTimer) set('hold', '⏳ ' + _dockClock(_dockHoldS()));
+  if (_restTimer.running) {
+    set('rest', '⏱ ' + _restFmt(_restTimer.remaining));
+    const chip = el.querySelector('.dk-chip.rest');
+    if (chip) { chip.classList.toggle('over', _restTimer.remaining <= 0); chip.classList.toggle('soon', _restTimer.remaining > 0 && _restTimer.remaining <= 10); }
+    const big = document.getElementById('dk-rest-big');
+    if (big) {
+      // Crossing zero changes the drawer's colour and its button: rebuild once.
+      if (!wasOver && _restTimer.remaining <= 0) { renderDock(); return; }
+      big.textContent = _restFmt(_restTimer.remaining);
+      const bar = document.getElementById('dk-rest-bar');
+      if (bar && _restTimer.target > 0) bar.style.width = Math.max(0, Math.min(100, (1 - _restTimer.remaining / _restTimer.target) * 100)) + '%';
+    }
+  }
+}
+function dockToggle(kind) {
+  _dockOpen = (kind && _dockOpen !== kind) ? kind : null;
+  renderDock();
+}
+function renderRestTimer() { renderDock(); }   // the old name, kept for its callers
 
 // ══════════════════════════════════════════════════════
 // "I'M AT THE GYM" CLOCK  (task #30, 2026-09-07)
@@ -19768,6 +20145,11 @@ function gymClockElapsedS() {
   if (!GYMCLOCK) return 0;
   return Math.max(0, Math.round((Date.now() - GYMCLOCK.startedAt) / 1000));
 }
+function _dockClock(s) {
+  s = Math.max(0, Math.round(s || 0));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), x = String(s % 60).padStart(2, '0');
+  return h ? h + ':' + String(m).padStart(2, '0') + ':' + x : m + ':' + x;
+}
 function gymClockFmt(s) {
   const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
   return h ? h + 'h ' + String(m).padStart(2, '0') + 'm'
@@ -19788,6 +20170,8 @@ function gymClockStart() {
   _gymClockSave();
   _gymClockStartTicking();
   renderGymClock();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
 }
 
@@ -19809,6 +20193,8 @@ function gymClockStop(mins) {
     });
   }
   renderGymClock();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
 }
 
@@ -19817,6 +20203,8 @@ function gymClockDiscard() {
   _gymClockSave();
   _gymClockStopTicking();
   renderGymClock();
+  if (typeof wakeSync === 'function') wakeSync();
+  if (typeof renderDock === 'function') renderDock();
   if (typeof scheduleRender === 'function') scheduleRender(renderDaily);
 }
 
@@ -20144,7 +20532,7 @@ const EXERCISE_BANK = {
     { name: "Chest-Supported Row", sets: "3×12", link: "https://www.youtube.com/watch?v=H75im9fAUMc", detail: "Removes lower-back load — safe back option" },
   ],
   shoulders: [
-    { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load to protect right shoulder" },
+    { name: "Shoulder Press (DB)", sets: "3×10", link: "https://www.youtube.com/watch?v=qEwKCR5JCog", detail: "Light load, pain-free range" },
     { name: "Lateral Raise", sets: "3×12", link: "https://www.youtube.com/watch?v=3VcKaXpzqRo", detail: "Light weight, lead with elbows, no swing" },
     { name: "Face Pull", sets: "3×15", link: "https://www.youtube.com/watch?v=rep-qVOkqgk", detail: "Rear delt + posture work — high reps" },
     { name: "Arnold Press", sets: "3×10", link: "https://www.youtube.com/watch?v=6Z15_WdXmVw", detail: "Rotate palms in→out — full shoulder ROM" },
@@ -20276,7 +20664,7 @@ const STRETCH_TIERS = [
   { id: 'quick', icon: '⚡', label: 'Quick Stretch', time: '~10 min', routineKey: 'stretch_quick' },
   { id: 'standard', icon: '🧘', label: 'Standard', time: '~20 min', routineKey: null }, // uses A/B/C rotation
   { id: 'yoga_stretch', icon: '🧘‍♂️', label: 'Yoga Flow', time: '20-30 min', routineKey: 'yoga' },
-  { id: 'deep', icon: '🔥', label: 'Deep Session', time: '45-60 min', routineKey: 'stretch_deep' },
+  { id: 'deep', icon: '⏳', label: 'Long Session', time: '~30 min', routineKey: 'stretch_deep' },   // A then B (2026-10-01)
 ];
 
 // ──────────────────────────────────────────────
@@ -21195,7 +21583,7 @@ function _findMedByNameDose(name, dose) {
 // later.
 // Collapse a burst of taps on the same medication into one dose.
 //
-// Saturday's 19 Allopurinol doses were deduped server-side and CAME BACK — the
+// One Saturday's 19 duplicate doses were deduped server-side and CAME BACK — the
 // phone still held its local copies and re-pushed them. Third time this lesson
 // has arrived: a server-side delete does not hold while clients carry copies.
 // So the repair lives here, runs on the startup path, and is idempotent.
@@ -23868,7 +24256,7 @@ function _mpSubmit() {
   }
   // 7. Symptom check-in. One event per ongoing episode he rated this morning —
   // which is the whole point of the episodes model: a condition gets a daily
-  // severity against it, so "gout flare, 7 -> 4 -> 2 over five days" exists as a
+  // severity against it, so "flare, 7 -> 4 -> 2 over five days" exists as a
   // shape instead of three unrelated rows.
   if (s.symptomChecks && typeof epLog === 'function') {
     Object.keys(s.symptomChecks).forEach(cid => {
@@ -24389,7 +24777,7 @@ const LEGACY_SUPPLEMENTS = [
 
 // Fold every historical supps_<date> entry into the medications system.
 //
-// NO LATCHING FLAG. _migrateAllopurinolToMedTracker above uses one, and that is
+// NO LATCHING FLAG. The old medication-chiclet migration used one, and that is
 // the exact pattern that made the Body module lose data: a one-shot flag set on
 // an empty list never retries, so anything arriving later is stranded. This is
 // idempotent instead — it re-derives what is missing every run and does nothing
@@ -25149,7 +25537,7 @@ function syncCardioAggToActivity(dateStr, exKey) {
 //                                           //   stats readers, prevExData, cardio
 //     entries: [                            // NEW: per-set for strength lifts
 //       { w: 130, r: 9,  flag: '' },
-//       { w: 120, r: 10, flag: 'S' },      // S=shoulder, F=form, P=pain, ''=std
+//       { w: 120, r: 10, flag: 'F' },      // F=form, P=pain, ''=std
 //       { w: 130, r: 8,  flag: '' },
 //     ]
 //   }
@@ -25243,12 +25631,11 @@ function removeExSetRow(dateStr, exKey, idx) {
   }
 }
 
-// Cycle a set's flag: '' → 'S' → 'F' → 'P' → ''.
-// S=shoulder (form-protective load drop, per user_training_pattern memory),
-// F=form (technique breakdown), P=pain (unrelated pain flare).
+// Cycle a set's flag: '' → 'F' → 'P' → ''. F=form (technique breakdown),
+// P=pain. An old 'S' moves on to F.
 function cycleExSetFlag(dateStr, exKey, idx) {
   const cur = (getExSetEntries(dateStr, exKey)[idx] || {}).flag || '';
-  const next = cur === '' ? 'S' : cur === 'S' ? 'F' : cur === 'F' ? 'P' : '';
+  const next = cur === '' ? 'F' : (cur === 'S' ? 'F' : cur === 'F' ? 'P' : '');
   setExSetEntry(dateStr, exKey, idx, 'flag', next);
   if (typeof _lastPopupKey === 'string' && _lastPopupKey) {
     scheduleRender(() => openRoutinePopup(_lastPopupKey, dateStr));
@@ -25706,7 +26093,40 @@ let _timerPausedSideLabel = '';
 function handleTimerTap(e) {
   if (_timerPaused) { _resumeTimer(); return; }
   if (!_activeTimer) return;
-  if (_timerQueue) { _advanceQueue(); } else { stopExTimer(); }
+  if (_timerQueue) { _endQueueItem(); } else { _endSoloTimer(); }
+}
+// Craig, 2026-10-18: "Skip timer should also be 'end' as in log." Tapping the
+// ring used to throw the hold away. Now it ends the hold where it is and logs
+// the seconds actually held; "Next →" is the skip.
+function _timerHeldS() {
+  if (!_activeTimer || _activeTimer.isLeadIn) return 0;
+  const left = _timerPaused ? _timerPausedRemaining : Math.ceil((_activeTimer.endTime - Date.now()) / 1000);
+  return Math.max(0, Math.round((_activeTimer.total || 0) - left));
+}
+function _timerSidesSoFar() { return /right/i.test((_timerSide() || {}).textContent || '') ? 2 : 1; }
+function _endQueueItem() {
+  const q = _timerQueue;
+  if (!q) return;
+  const ex = q.exercises[q.idx];
+  const held = _timerHeldS();
+  if (ex && held >= 3) {
+    setChecked(q.dateStr, ex.checkKey, true);
+    if (typeof routineItemDone === 'function') {
+      try { routineItemDone(q.dateStr, ex.checkKey, { t: held, sides: _timerSidesSoFar() }); } catch (e) {}
+    }
+  }
+  _advanceQueue();
+}
+function _endSoloTimer() {
+  const a = _activeTimer;
+  if (!a) return;
+  const held = _timerHeldS();
+  if (held >= 3 && a.btnEl) {
+    clearInterval(a.interval);
+    _timerFinishSolo(a.btnEl, a.wakeLock, held, _timerSidesSoFar());
+    return;
+  }
+  stopExTimer();
 }
 
 function toggleTimerPause() {
@@ -25846,8 +26266,7 @@ function startExTimer(seconds, btnEl) {
   _showPauseControls(false);
   _timerOverlay().classList.add('open');
 
-  let wakeLock = null;
-  if (navigator.wakeLock) navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
+  const wakeLock = null;   // the shared lock: wakeSync()
 
   function runPhase(sideLabel, onPhaseDone) {
     const iv = _startLeadIn(seconds, exName, sideLabel, () => {
@@ -25869,6 +26288,7 @@ function startExTimer(seconds, btnEl) {
   } else {
     runPhase('', () => _timerFinishSolo(btnEl, wakeLock, seconds, 1));
   }
+  wakeSync();
 }
 
 function _timerFinishSolo(btnEl, wakeLock, secs, sides) {
@@ -25895,7 +26315,7 @@ function _timerFinishSolo(btnEl, wakeLock, secs, sides) {
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
   _beep([[880,0],[880,0.3],[880,0.6]]);
   setTimeout(() => { _timerOverlay().classList.remove('open'); }, 2000);
-  setTimeout(() => { btnEl.textContent = '⏱'; if (wakeLock) try { wakeLock.release(); } catch(e) {} }, 3000);
+  setTimeout(() => { btnEl.textContent = '⏱'; wakeSync(); }, 3000);
 }
 
 function _showDone() {
@@ -25911,11 +26331,11 @@ function stopExTimer() {
   if (_timerQueue) { _stopQueue(); return; }
   if (!_activeTimer) return;
   clearInterval(_activeTimer.interval);
-  if (_activeTimer.wakeLock) try { _activeTimer.wakeLock.release(); } catch(e) {}
   if (_activeTimer.btnEl) { _activeTimer.btnEl.classList.remove('running'); _activeTimer.btnEl.textContent = '⏱'; }
   _timerPaused = false;
   _timerOverlay().classList.remove('open');
   _activeTimer = null;
+  wakeSync();
 }
 
 // ── Full-routine timer queue mode ──
@@ -25937,17 +26357,15 @@ function startRoutineTimer(routineKey, dateStr) {
 
   if (exercises.length === 0) return;
 
-  let wakeLock = null;
-  if (navigator.wakeLock) navigator.wakeLock.request('screen').then(wl => { wakeLock = wl; }).catch(() => {});
-
   // Close any open popup so the timer overlay gets full screen
   closePopup();
 
   _timerPaused = false;
-  _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock };
+  _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock: null };
   _timerOverlay().classList.add('open');
   _showPauseControls(false);
   _runQueueStep();
+  wakeSync();
 }
 
 function _runQueueStep() {
@@ -26014,10 +26432,10 @@ function _advanceQueue() {
 
 function _stopQueue() {
   if (_activeTimer) { clearInterval(_activeTimer.interval); _activeTimer = null; }
-  if (_timerQueue && _timerQueue.wakeLock) try { _timerQueue.wakeLock.release(); } catch(e) {}
   _timerQueue = null;
   _timerPaused = false;
   _timerOverlay().classList.remove('open');
+  wakeSync();
 }
 
 function _queueComplete() {
@@ -26028,9 +26446,9 @@ function _queueComplete() {
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
   _beep([[880,0],[1100,0.3],[1320,0.6]]);
   setTimeout(() => {
-    if (_timerQueue && _timerQueue.wakeLock) try { _timerQueue.wakeLock.release(); } catch(e) {}
     _timerQueue = null;
     _timerOverlay().classList.remove('open');
+    wakeSync();
   }, 3000);
 }
 
@@ -26267,6 +26685,11 @@ function gymUsualHtml(dateStr, idx) {
 }
 
 function openRoutinePopup(routineKey, dateStr) {
+  // Remember it as where he is — unless this is a refresh behind the exercise
+  // screen, which must not move "where you were" off the exercise.
+  if (typeof setWorkoutContext === 'function' && !_isOpenBd('session-backdrop')) {
+    setWorkoutContext({ kind: 'routine', key: routineKey, date: dateStr });
+  }
   // Handle combined stretch + bodyweight days
   if (routineKey === 'stretch_bodyweight' || routineKey === 'stretch_day') {
     const strR = getStretchRotation(dateStr);
@@ -27194,7 +27617,7 @@ function renderDaily() {
   const dow = now.getDay(); // 0=Sun ... 6=Sat
 
   let items = [];
-  // Task #31 — allopurinol moved to medications table; chiclet rendered separately above the items list
+  // Task #31 — the built-in medication chiclet moved to the medications table; chiclets render separately above the items list
   items.push({k:"morning",t:"AM",txt:"☀️ Morning stretch (~10 min)",sub:""});
   if (wo && wo.timing==="morning") items.push({k:"workout",t:"AM",txt:wIcon(wo.type)+" "+wo.label,sub:wo.target});
   // Events/holidays now shown on the workout card instead
@@ -27210,13 +27633,10 @@ function renderDaily() {
   if (canSee('custody') && todayC === 'C' && nextC === 'L') items.push({k:"kids_leave",t:"5P",txt:"👋 Kids Leave",sub:""});
   if (wo && wo.timing==="evening") items.push({k:"workout",t:"PM",txt:"🌙 "+wo.label,sub:wo.target});
   items.push({k:"stretch",t:"PM",txt:"🧘 Stretch Session",sub:"Any tier — quick, standard, yoga, or deep"});
-  // Kegels — daily-floor pelvic floor training. Added 2026-05-10 from
-  // Craig-Health-Profile.md ("Pelvic floor training" section). Protocol per
-  // Dorey et al. 2004 (BJU Int) RCT: 40% regained normal erectile function
-  // after 3 months. Two rep schemes matter: long holds (slow-twitch) +
-  // quick flicks (fast-twitch endurance).
-  // Owner-gated 2026-09-12. This is Craig's protocol out of Craig-Health-Profile.md,
-  // and it was rendering as a prescribed daily task in every other user's app.
+  // Kegels — daily-floor pelvic floor training. Added 2026-05-10. Two rep
+  // schemes: long holds (slow-twitch) + quick flicks (fast-twitch endurance).
+  // Owner-gated 2026-09-12. It is one person's protocol, and it was rendering
+  // as a prescribed daily task in every other user's app.
   // DISCREET_LABELS only renames it for him — it does nothing about who sees it.
   // Any hardcoded health element needs isContentOwner(); see its comment block.
   if (isContentOwner()) items.push({k:"kegels",t:"🔁",txt:"💪 Kegels",sub:"10s hold × 10 × 3/day + quick flicks × 10 × 2/day — internal 'lift', no glutes/abs"});
@@ -27415,7 +27835,7 @@ function getDayProgress(dateStr) {
   // Kegels — daily-floor. Not in pct (pelvic floor training is additive, not a
   // core-3 workout). Not shown in week view (`show:false`) to keep the strip tight.
   if (isContentOwner()) tasks.push({k:'kegels', label:'💪 Kegels', show:false, pct:false});
-  // Task #31 — allopurinol moved to medications table (driven by med tracker, not hardcoded)
+  // Task #31 — the built-in medication chiclet moved to the medications table (driven by the med tracker, not hardcoded)
   if (wo) tasks.push({k:'workout', label: wIcon(wo.type) + ' ' + wo.label, show:true, pct:true});
   const noteForDay = CSV_NOTES[dateStr] || '';
   const schoolOff = NO_SCHOOL.has(dateStr) || /break|holiday|no school|PD day/i.test(noteForDay);
@@ -28056,7 +28476,7 @@ async function _refreshDataInner(btn) {
     try { recoverExSetAggregates(); } catch (e) { console.warn('exsets recovery skipped', e); }
   } finally { _flushActBatch(); }
   // A stretch session survives a reload the same way the gym clock does.
-  try { _stSessLoad(); } catch (e) {}
+  try { _stSessLoad(); renderDock(); wakeSync(); } catch (e) {}
   try { _glLoadLocal(); refreshGymLocations(); } catch (e) {}
   // Record what's cached so the stats view knows when it must widen the range.
   _trackingLoaded = { start: ds(start), end: ds(end) };
@@ -28187,6 +28607,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Restore a gym clock left running through a reload, phone lock, or PWA
   // eviction. Elapsed is derived from the stored timestamp, so nothing is lost.
   if (typeof _gymClockLoad === 'function') _gymClockLoad();
+  // And a rest or a hold, the same way (2026-10-25). The dock shows them all.
+  try { _restLoad(); _holdLoad(); renderDock(); wakeSync(); } catch (e) {}
 
   // Check for existing session
   const loggedIn = await checkAuth();
@@ -28222,7 +28644,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('week-time-display').textContent = t;
     document.getElementById('month-time-display').textContent = t;
   }
-  setInterval(() => { updateAllClocks(); renderDaily(); }, 60000);
+  setInterval(() => {
+    updateAllClocks();
+    // Not while a screen is open or a box is being typed in: this redraw used to
+    // land in the middle of logging a set (2026-10-25).
+    const ae = document.activeElement;
+    const typing = !!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+    const screenOpen = !!document.querySelector('.popup-backdrop.open');
+    if (!typing && !screenOpen) renderDaily();
+  }, 60000);
+  // Back from another app: the dock reads its timers off the clock, and asks for
+  // the screen to stay awake again (the browser drops that whenever it hides).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    try { if (typeof renderDock === 'function') renderDock(); } catch (e) {}
+    try { if (typeof wakeSync === 'function') wakeSync(); } catch (e) {}
+  });
 
   // Allow Enter key to submit login
   document.getElementById('login-password').addEventListener('keyup', (e) => {
