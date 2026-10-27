@@ -589,6 +589,26 @@
   }
 
   .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-shrink: 0; }
+  .zone-sum { margin-left: auto; min-width: 0; font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+  .zone-sum.quiet { opacity: .6; }
+  #today-cards { grid-column: 1 / -1; }
+  .tc-wrap { margin-bottom: 4px; }
+  .tc-card.stack { flex-wrap: wrap; row-gap: 8px; }
+  .tc-card.stack .tc-x { order: 2; }
+  .tc-card.stack .tc-acts { order: 3; flex-basis: 100%; max-width: none; justify-content: flex-start; padding-left: 30px; }
+  .tc-h { display: flex; align-items: baseline; gap: 8px; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin: 2px 2px 6px; }
+  .tc-h span { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--green); }
+  .tc-card { display: flex; align-items: center; gap: 10px; padding: 11px 10px 11px 12px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--card-bg, var(--input-bg)); margin-bottom: 6px; touch-action: pan-y; }
+  .tc-ic { font-size: 20px; flex-shrink: 0; }
+  .tc-main { flex: 1; min-width: 0; }
+  .tc-t { font-size: 13.5px; font-weight: 700; color: var(--text); }
+  .tc-s { font-size: 11px; color: var(--text-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tc-acts { display: flex; gap: 5px; flex-shrink: 0; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 55%; }
+  .tc-btn { min-height: 38px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--green-border, var(--green)); background: var(--green-bg); color: var(--green); font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .tc-in { width: 64px; min-height: 38px; box-sizing: border-box; padding: 0 8px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); font-size: 14px; font-family: inherit; }
+  .tc-x { width: 28px; height: 32px; border: none; background: none; color: var(--text-muted); font-size: 15px; cursor: pointer; flex-shrink: 0; padding: 0; }
+  .tc-empty { font-size: 12px; color: var(--text-muted); padding: 4px 2px 8px; }
+  .tc-more { font-size: 11px; color: var(--text-muted); background: none; border: none; padding: 2px 2px 8px; cursor: pointer; font-family: inherit; }
 
   .card-icon {
     font-size: 14px; width: 28px; height: 28px;
@@ -3510,6 +3530,12 @@
     .zone .card-body { display: none; }
     .zone.zone-active .card-body { display: block; }
     .zone .card-header { cursor: pointer; user-select: none; }
+    .zone .card-header::after { content: '▸'; color: var(--text-muted); font-size: 13px; margin-left: 6px; flex-shrink: 0; }
+    .zone.zone-active .card-header::after { content: '▾'; }
+    /* The grid used to stretch every row to fill the screen, so a closed bar
+       was as tall as an open one. Rows now take their content's height. */
+    .main-content { align-content: start; }
+    .zone:not(.zone-active) #day-notes-host { display: none; }
     .zone:not(.zone-active) { padding: 10px 12px; }
     .zone:not(.zone-active) .card-header { margin: 0; }
     .card-title { font-size: 12px; }
@@ -3676,20 +3702,24 @@
   </div>
 
   <div class="main-content">
+    <!-- Today: only what is due now and not done (2026-10-27) -->
+    <div id="today-cards"></div>
     <!-- Workout Card -->
-    <div class="card zone zone-active" data-zone="workout">
+    <div class="card zone" data-zone="workout">
       <div class="card-header" onclick="toggleZone(this)">
         <div class="card-icon workout" id="workout-icon">💪</div>
-        <div class="card-title" id="workout-title">Today's Workout</div>
+        <div class="card-title" id="workout-title">Workout</div>
+        <div class="zone-sum" id="zsum-workout"></div>
       </div>
       <div class="card-body" id="workout-card"></div>
     </div>
 
     <!-- Meals Card -->
     <div class="card zone" data-zone="meals" data-module="meals">
-      <div class="card-header" onclick="toggleZone(this, openRecipeLibrary)" style="cursor:pointer" title="Open recipe library">
-        <div class="card-icon meals">🥗</div>
-        <div class="card-title">Meals & Supplements <span style="font-size:9px;color:var(--purple);font-weight:400">› recipes</span></div>
+      <div class="card-header" onclick="toggleZone(this, openRecipeLibrary)" style="cursor:pointer">
+        <div class="card-icon meals">🍽</div>
+        <div class="card-title">Food</div>
+        <div class="zone-sum" id="zsum-food"></div>
       </div>
       <div class="card-body" id="meals-card"></div>
     </div>
@@ -3697,8 +3727,9 @@
     <!-- Schedule Card -->
     <div class="card zone" id="schedule-card-wrapper" data-zone="tasks">
       <div class="card-header" onclick="toggleZone(this)">
-        <div class="card-icon schedule">✅</div>
-        <div class="card-title">Tasks</div>
+        <div class="card-icon schedule">📝</div>
+        <div class="card-title">Notes</div>
+        <div class="zone-sum" id="zsum-notes"></div>
       </div>
       <div class="card-body" id="schedule-card"></div>
       <!-- Day notes (2026-08-14). Lives at the bottom of the Tasks card so it's
@@ -3712,8 +3743,9 @@
     <!-- Body Card (task #30, 2026-06-16) — promoted from bottom-bar pill to a daily-view section -->
     <div class="card zone" id="body-card-wrapper" data-zone="body" data-module="body">
       <div class="card-header" onclick="toggleZone(this, openSymptomEntry)">
-        <div class="card-icon body" style="background:var(--red-bg);color:var(--red)">🩹</div>
+        <div class="card-icon body" style="background:var(--red-bg);color:var(--red)">🩺</div>
         <div class="card-title">Body</div>
+        <div class="zone-sum" id="zsum-body"></div>
       </div>
       <div class="card-body" id="body-card"></div>
     </div>
@@ -4258,7 +4290,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.10.25.05';
+const APP_VERSION = '2026.10.27.01';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11756,6 +11788,9 @@ ${Object.keys(grouped).length === 0 ? '<p class="empty-msg">No symptom entries l
 /* Mobile-portrait three-zone facelift. On screens ≤600px, only one .zone card body
    is expanded at a time; tapping a collapsed zone header swaps active state.
    On desktop (>600px) all zones stay visible and the callback (if any) runs as usual. */
+// 2026-10-27: every bar starts closed and a tap on an open bar closes it again —
+// Craig: "when I load it up, there is just too much stuff and its overwhelming."
+// What the second tap used to open (recipes, report a symptom) is inside the bar.
 function toggleZone(headerEl, callback) {
   if (window.innerWidth > 600) {
     if (typeof callback === 'function') callback();
@@ -11763,12 +11798,9 @@ function toggleZone(headerEl, callback) {
   }
   var card = headerEl.closest('.zone');
   if (!card) return;
-  if (card.classList.contains('zone-active')) {
-    if (typeof callback === 'function') callback();
-    return;
-  }
+  var wasOpen = card.classList.contains('zone-active');
   document.querySelectorAll('.zone').forEach(function (z) { z.classList.remove('zone-active'); });
-  card.classList.add('zone-active');
+  if (!wasOpen) card.classList.add('zone-active');
 }
 
 function openRecipeLibrary() {
@@ -12584,8 +12616,8 @@ function showUpdateBanner(reg) {
 // ══════════════════════════════════════════════════════════════
 // USER PROFILES + MODULE PERMISSIONS  (Phase 1, 2026-08-18)
 // ══════════════════════════════════════════════════════════════
-// Craig grants individual modules to individual people. First real case: Sary,
-// who wants workout tracking only and should see nothing else.
+// Craig grants individual modules to individual people. First real case: a user
+// who wanted workout tracking only and should see nothing else.
 //
 // Two axes:
 //   modules[]      — WHAT you can see
@@ -12596,8 +12628,8 @@ function showUpdateBanner(reg) {
 //
 // SECURITY NOTE, important: this gate is a UI convenience, NOT a security
 // boundary. Anyone can edit client-side JS. What actually protects data is RLS
-// on each table. Hiding the Body card from Sary is a courtesy; the reason he
-// can't READ Craig's body_log is the auth.uid() policy on that table. Never move
+// on each table. Hiding the Body card from that user is a courtesy; the reason
+// they can't READ Craig's body_log is the auth.uid() policy on that table. Never move
 // a genuine access decision into this layer.
 const APP_MODULES = [
   { id:'exercise', icon:'💪', label:'Exercise',   desc:'Workout card, logging, muscle picker, rest timer' },
@@ -27997,7 +28029,7 @@ function renderDaily() {
   const evForCard = getEvents(dateStr);
   const noteForCard = CSV_NOTES[dateStr] || '';
   const hasEvent = !!(evForCard || noteForCard);
-  document.getElementById('workout-title').textContent = hasEvent ? 'Today' : "Today's Workout";
+  document.getElementById('workout-title').textContent = 'Workout';
   document.getElementById('workout-icon').textContent = hasEvent ? '📋' : '💪';
 
   // Event/holiday banner — injected into the card itself (before card-body) for full-width
@@ -28296,33 +28328,19 @@ function renderDaily() {
   // buildSuppPills() row rendered five hardcoded supplements into
   // daily_log.supps, which nothing else on earth read — not the meds tab, not
   // the doctor-visit summary.
-  document.getElementById('meals-card').innerHTML = buildMealSuggestionsHeader(dateStr) + `
+  // Meds and weight belong to Body (2026-10-27) — unless Body is not on for
+  // this person, in which case they stay here rather than vanish.
+  const _bodyOn = (typeof canSee !== 'function') || canSee('body');
+  document.getElementById('meals-card').innerHTML = `
+    <details class="home-more" ${discAttr('meal-ideas')} style="margin:0 0 6px;border-top:none;padding-top:0">
+      <summary>Meal ideas &amp; recipes</summary>
+      ${buildMealSuggestionsHeader(dateStr)}
+      <button class="home-more-btn" style="margin-top:8px" onclick="openRecipeLibrary()">📖 Recipe library</button>
+    </details>
     <div class="card-footer">
-      ${(typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : ''}
+      ${(!_bodyOn && typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : ''}
       <div style="display:flex;align-items:center;justify-content:space-between;gap:4px">
-        ${(() => {
-          const weight = getWeight(dateStr);
-          let prevWeight = 0;
-          for (let i = 1; i <= 30; i++) {
-            const d = new Date(dateStr + 'T12:00:00');
-            d.setDate(d.getDate() - i);
-            const pw = getWeight(ds(d));
-            if (pw > 0) { prevWeight = pw; break; }
-          }
-          const isCarryover = !weight && prevWeight > 0;
-          const weightDelta = weight > 0 && prevWeight > 0 ? (weight - prevWeight).toFixed(1) : '';
-          const weightColor = weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--text-dim)';
-          // Carryover → show as placeholder (field empty, greyed hint); today's entry → auto-select on focus
-          return `<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
-            <span style="font-size:8px">⚖️</span>
-            <input type="number" class="track-input" style="width:58px;font-size:11px;padding:2px 4px" step="0.5" min="150" max="350"
-              placeholder="${isCarryover ? prevWeight : 'lbs'}"
-              value="${weight || ''}"
-              onfocus="this.select()"
-              onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
-            ${weightDelta ? `<span style="font-size:9px;font-weight:700;color:${weightColor}">${weightDelta > 0 ? '+' : ''}${weightDelta}</span>` : ''}
-          </div>`;
-        })()}
+        ${_bodyOn ? '' : _weightInputHtml(dateStr)}
       </div>
       <div class="water-tracker">
         ${[0,1,2,3,4,5,6,7].map(i => `<span class="water-drop ${i < waterCount ? 'filled' : ''}" onclick="toggleWater('${dateStr}',${i})">💧</span>`).join('')}
@@ -28494,14 +28512,17 @@ function renderDaily() {
   // Task #30 — Body card render
   if (typeof buildBodyCardHtml === 'function') {
     const bodyCardEl = document.getElementById('body-card');
-    if (bodyCardEl) bodyCardEl.innerHTML = buildBodyCardHtml();
+    if (bodyCardEl) bodyCardEl.innerHTML =
+      ((typeof buildTodaysMedChiclets === 'function') ? buildTodaysMedChiclets(dateStr) : '') +
+      `<div style="display:flex;align-items:center;gap:8px;margin:2px 0 8px"><span style="font-size:11px;color:var(--text-muted)">Weight</span>${_weightInputHtml(dateStr)}</div>` +
+      buildBodyCardHtml();
   }
 
   // Custody strip — 14 days, today is day 3 (index 2)
   //
-  // PRIVACY FIX 2026-08-19: this rendered for EVERY user, so Sary — who only has
+  // PRIVACY FIX 2026-08-19: this rendered for EVERY user, so a user who only has
   // the Exercise module — could see which nights Craig's children are with which
-  // parent. Reported independently by Craig and by Sary himself.
+  // parent. Reported independently by Craig and by that user.
   // Now gated on the 'schedule' module. Belt and braces: also hidden for anyone
   // who isn't the data owner, so a future module misconfiguration can't re-leak
   // it. Custody is the most sensitive thing in this app; it fails closed.
@@ -28554,36 +28575,16 @@ function renderDaily() {
   // Bottom bar — custody strip + month summary link
   document.getElementById('bottom-bar').innerHTML = `
     <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
-      <div class="pill">☕ Cutoff: <span class="pill-val cyan">10 AM</span></div>
-      <!-- Task #31 — hardcoded allo pill removed; aggregate Meds X/Y pill below covers all meds dynamically -->
 
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
       ${currentDayOffset === 0 ? `<div class="pill" style="cursor:pointer;border-color:var(--orange-border);background:var(--orange-bg)" onclick="enterBackfillMode()" title="Fill in yesterday's gaps">📝 <span class="pill-val" style="color:var(--orange)">Catch up</span></div>` : ''}
-      ${(() => {
-        // Body log pill — always available. Red count badge when there are active items
-        // in the last 14 days (task #12, 2026-05-24).
-        const _bn = (typeof getActiveBodyItems === 'function') ? getActiveBodyItems(14).length : 0;
-        const _badge = _bn > 0 ? ` <span style="color:var(--red);font-weight:800">${_bn}</span>` : '';
-        return `<div class="pill" style="cursor:pointer" onclick="openBodyLog()" title="Body log — pain, stiffness, injury tracking">🩹 <span class="pill-val" style="color:var(--text-muted)">Body</span>${_badge}</div>`;
-      })()}
+
       ${(() => {
         // Task #23 — Follow-up pill: shows when today's date matches any appointment follow_up_date.
         // Click opens body log on Summary tab where follow-ups list lives.
         const _todayFollowUps = (typeof getTodaysFollowUps === 'function') ? getTodaysFollowUps() : [];
         if (_todayFollowUps.length === 0) return '';
         return `<div class="pill" style="cursor:pointer;border-color:var(--orange);background:var(--orange-bg);animation:pulse 2s infinite" onclick="openBodyLog('summary')" title="Follow-up appointment due today">⏰ <span class="pill-val" style="color:var(--orange);font-weight:800">Follow-up today</span></div>`;
-      })()}
-      ${(() => {
-        // Task #26 — Meds pill: shows today's scheduled-med status (taken / expected).
-        // Only displays if at least one scheduled med exists. Click opens Meds tab.
-        if (typeof getTodaysMedStatus !== 'function') return '';
-        const ms = getTodaysMedStatus();
-        if (ms.expected === 0) return '';
-        const isComplete = ms.pending === 0;
-        const borderC = isComplete ? 'var(--green)' : 'var(--cyan)';
-        const bgC = isComplete ? 'var(--green-bg)' : 'var(--cyan-bg, rgba(34,211,238,0.10))';
-        const fontC = isComplete ? 'var(--green)' : 'var(--cyan)';
-        return `<div class="pill" style="cursor:pointer;border-color:${borderC};background:${bgC}" onclick="openBodyLog('meds')" title="Today's medications: ${ms.taken}/${ms.expected} taken, ${ms.pending} pending">💊 <span class="pill-val" style="color:${fontC};font-weight:800">Meds ${ms.taken}/${ms.expected}</span></div>`;
       })()}
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
@@ -28595,6 +28596,12 @@ function renderDaily() {
     </div>
   `;
   restoreOpenSections(dateStr);
+  // The four bars' one-line summaries, and today's cards (2026-10-27).
+  try {
+    const _tasks = items.filter(i => !i.divider && !i._qolQuiet);
+    renderHomeSummaries(dateStr, { tasksDone: _tasks.filter(i => checked['s_' + i.k]).length, tasksAll: _tasks.length });
+    renderTodayCards(dateStr);
+  } catch (e) { console.warn('home summaries failed', e); }
   // The gym clock's host div is written by buildActivityDecisionTree above, so
   // it can only be filled once wc.innerHTML has landed.
   if (typeof renderGymClock === 'function') renderGymClock();
@@ -29071,6 +29078,160 @@ function mpickHomeOpen() {
   openMusclePicker(null);
 }
 
+function _weightInputHtml(dateStr) {
+          const weight = getWeight(dateStr);
+          let prevWeight = 0;
+          for (let i = 1; i <= 30; i++) {
+            const d = new Date(dateStr + 'T12:00:00');
+            d.setDate(d.getDate() - i);
+            const pw = getWeight(ds(d));
+            if (pw > 0) { prevWeight = pw; break; }
+          }
+          const isCarryover = !weight && prevWeight > 0;
+          const weightDelta = weight > 0 && prevWeight > 0 ? (weight - prevWeight).toFixed(1) : '';
+          const weightColor = weightDelta < 0 ? 'var(--green)' : weightDelta > 0 ? 'var(--red)' : 'var(--text-dim)';
+          // Carryover → show as placeholder (field empty, greyed hint); today's entry → auto-select on focus
+          return `<div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
+            <span style="font-size:8px">⚖️</span>
+            <input type="number" class="track-input" style="width:58px;font-size:11px;padding:2px 4px" step="0.5" min="150" max="350"
+              placeholder="${isCarryover ? prevWeight : 'lbs'}"
+              value="${weight || ''}"
+              onfocus="this.select()"
+              onchange="setWeight('${dateStr}',parseFloat(this.value)||0)">
+            ${weightDelta ? `<span style="font-size:9px;font-weight:700;color:${weightColor}">${weightDelta > 0 ? '+' : ''}${weightDelta}</span>` : ''}
+          </div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// HOME: TODAY CARDS + FOUR CLOSED BARS  (2026-10-27)
+// ══════════════════════════════════════════════════════════════
+// Craig: "the app needs to be more simple, when I load it up, there is just too
+// much stuff and its overwhelming. Maybe should be 4 closed bars … then have a
+// few cards or boxes on things I should do today. helpful reminders. 'take
+// meds' etc." The day screen is now: what is due (at most three, one tap each),
+// then Workout / Food / Body / Notes closed, each with one line of what has
+// happened. Everything that was on the screen is still inside a bar.
+//
+// The cards are offers, not obligations (the psychologist's point, with a lot
+// going on): nothing counts down, nothing turns red, a card can be put away for
+// today with ✕ or a swipe, and when nothing is due it says so and stays quiet.
+function renderHomeSummaries(dateStr, ctx) {
+  const set = (id, txt) => { const el = document.getElementById(id); if (!el) return; el.textContent = txt || ''; };
+  let rows = [];
+  try { rows = getActivity(dateStr) || []; } catch (e) {}
+  // Workout
+  const w = [];
+  if (dateStr === ds(new Date()) && typeof GYMCLOCK !== 'undefined' && GYMCLOCK) w.push('📍 at the gym');
+  const sets = rows.filter(r => r.kind === 'strength').length;
+  if (sets) w.push('🏋️ ' + sets + ' set' + (sets === 1 ? '' : 's'));
+  DAY_ACTS.filter(a => ['hike', 'walk', 'run', 'row', 'swim', 'bike'].indexOf(a.id) !== -1).forEach(a => {
+    const rs = rows.filter(a.test); if (!rs.length) return;
+    const m = Math.round(rs.reduce((x, r) => x + (Number(r.duration_s) || 0), 0) / 60);
+    w.push(a.icon + ' ' + (m ? m + ' min' : a.label.toLowerCase()) + (rs.some(r => r.source === 'apple_health') ? ' ⌚' : ''));
+  });
+  const st = rows.filter(r => r.kind === 'stretch_time' || /^st_/.test(r.exercise_key || ''));
+  if (st.length) { const m = Math.round(st.filter(r => r.kind === 'stretch_time').reduce((x, r) => x + (Number(r.duration_s) || 0), 0) / 60); w.push('🧘 ' + (m ? m + ' min' : st.length + ' holds')); }
+  set('zsum-workout', w.join(' · '));
+  // Food
+  const wa = getWater(dateStr) || 0, co = getCoffee(dateStr) || 0;
+  set('zsum-food', (wa || co) ? '💧 ' + wa + ' · ☕ ' + co : '');
+  // Body
+  const b = [];
+  if (dateStr === ds(new Date()) && typeof getTodaysMedStatus === 'function') {
+    // "2 due" rather than "0 of 2": a count of what is left, not a score.
+    const ms = getTodaysMedStatus(); if (ms && ms.expected) b.push(ms.pending > 0 ? '💊 ' + ms.pending + ' due' : '💊 ✓');
+  }
+  const wt = getWeight(dateStr); if (wt) b.push('⚖️ ' + wt);
+  const eps = (typeof epOpenEpisodes === 'function') ? epOpenEpisodes().length : 0;
+  if (eps) b.push('🩹 ' + eps + ' ongoing');
+  set('zsum-body', b.join(' · '));
+  // Notes
+  const n = [];
+  if (ctx && ctx.tasksDone) n.push('✅ ' + ctx.tasksDone + ' done');
+  const notes = (typeof getDayNotes === 'function') ? getDayNotes(dateStr).length : 0;
+  if (notes) n.push('📝 ' + notes);
+  set('zsum-notes', n.join(' · '));
+}
+
+const TC_DISMISS_KEY = 'tc_dismissed';
+function _tcDismissed(dateStr) {
+  try { const all = JSON.parse(localStorage.getItem(TC_DISMISS_KEY) || '{}'); return all[dateStr] || []; } catch (e) { return []; }
+}
+function tcDismiss(id) {
+  const T = ds(new Date());
+  let all = {};
+  try { all = JSON.parse(localStorage.getItem(TC_DISMISS_KEY) || '{}') || {}; } catch (e) {}
+  Object.keys(all).forEach(k => { if (k !== T) delete all[k]; });   // only today matters
+  all[T] = (all[T] || []).concat([id]);
+  try { localStorage.setItem(TC_DISMISS_KEY, JSON.stringify(all)); } catch (e) {}
+  renderTodayCards(T);
+}
+let _tcShowAll = false;
+// What is due today, with whether it is already done. `due` decides if a card
+// can show at all (time of day, does this person do this); `done` moves it to
+// the "done today" count.
+function todayReminders(dateStr) {
+  const now = new Date(), h = now.getHours();
+  const out = [];
+  // Meds that are scheduled today and not all taken.
+  if (typeof getActiveMedications === 'function' && typeof medScheduledToday === 'function') {
+    const meds = getActiveMedications().filter(m => m.frequency_type !== 'as_needed' && m.frequency_type !== 'one_time' && medScheduledToday(m) && medExpectedTodayCount(m) > 0);
+    if (meds.length && h >= 5) {
+      const pend = meds.filter(m => medDosesTodayCount(m.id) < medExpectedTodayCount(m));
+      const name = m => (typeof discreetMed === 'function' ? discreetMed(m.name) : m.name);
+      out.push({ id: 'meds', icon: '💊', title: pend.length === 1 ? 'Take ' + name(pend[0]) : 'Take your meds',
+        sub: pend.length > 1 ? '' : (pend.length ? (pend[0].dose || 'due today') : ''),
+        done: pend.length === 0,
+        acts: pend.slice(0, 3).map(m => ({ label: pend.length === 1 ? 'Taken' : '✓ ' + name(m), on: `quickLogMedDose('${m.id}');renderDaily()` })) });
+    }
+  }
+  // Morning stretch, in the morning.
+  if (typeof ROUTINES !== 'undefined' && ROUTINES.morning) {
+    const cb = getChecked(dateStr) || {};
+    const total = (ROUTINES.morning.exercises || []).filter(e => !e._divider).length || 1;
+    const ticked = Object.keys(cb).filter(k => cb[k] && /^r_morning_\d+$/.test(k)).length;
+    const done = !!cb.s_morning || ticked >= Math.ceil(total / 2);
+    if (h >= 5 && h < 12 || done) out.push({ id: 'morning', icon: '☀️', title: 'Morning stretch', sub: ticked ? ticked + ' of ' + total + ' done' : 'about 5 minutes', done: done,
+      acts: [{ label: ticked ? 'Carry on' : 'Start', on: `openRoutinePopup('morning','${dateStr}')` }] });
+  }
+  // Weigh-in, in the morning — only for someone who weighs in.
+  let weighs = false;
+  for (let i = 1; i <= 30 && !weighs; i++) { try { if (getWeight(_isoAddDays(dateStr, -i)) > 0) weighs = true; } catch (e) {} }
+  const wt = getWeight(dateStr);
+  if (weighs && (wt || (h >= 5 && h < 11))) out.push({ id: 'weigh', icon: '⚖️', title: 'Weigh in', sub: 'before food or coffee', done: !!wt,
+    input: { ph: 'lbs', on: `setWeight('${dateStr}', parseFloat(document.getElementById('tc-weigh').value) || 0)` } });
+  // The evening check-in, after 8.
+  const d = (typeof DB_CACHE !== 'undefined' && DB_CACHE.daily && DB_CACHE.daily[dateStr]) || {};
+  const eveDone = !!d.actual_load || Number(d.energy_pm) > 0;
+  if (h >= 20 || eveDone) out.push({ id: 'evening', icon: '🌙', title: 'Evening check-in', sub: 'one minute — how was today', done: eveDone,
+    acts: [{ label: 'Open', on: `openEveningPrompt()` }] });
+  return out;
+}
+function renderTodayCards(dateStr) {
+  const host = document.getElementById('today-cards');
+  if (!host) return;
+  if (dateStr !== ds(new Date())) { host.innerHTML = ''; return; }
+  const all = todayReminders(dateStr);
+  const gone = _tcDismissed(dateStr);
+  const done = all.filter(r => r.done);
+  const due = all.filter(r => !r.done && gone.indexOf(r.id) === -1);
+  const shown = _tcShowAll ? due : due.slice(0, 3);
+  const card = r => `<div class="tc-card ${(r.acts || []).length > 1 ? 'stack' : ''}" data-tc="${r.id}">
+      <span class="tc-ic">${r.icon}</span>
+      <div class="tc-main"><div class="tc-t">${escapeHtml(r.title)}</div>${r.sub ? `<div class="tc-s">${escapeHtml(r.sub)}</div>` : ''}</div>
+      <div class="tc-acts">
+        ${r.input ? `<input id="tc-${r.id}" class="tc-in" type="number" step="0.1" inputmode="decimal" placeholder="${r.input.ph}"><button class="tc-btn" onclick="${r.input.on}">Log</button>` : ''}
+        ${(r.acts || []).map(a => `<button class="tc-btn" onclick="${a.on}">${escapeHtml(a.label)}</button>`).join('')}
+      </div>
+      <button class="tc-x" title="Not today" aria-label="Not today" onclick="tcDismiss('${r.id}')">✕</button>
+    </div>`;
+  host.innerHTML = `<div class="tc-wrap">
+      <div class="tc-h">Today${done.length ? `<span title="${done.map(r => r.title).join(', ')}">✓ ${done.length} done</span>` : ''}</div>
+      ${shown.length ? shown.map(card).join('') : `<div class="tc-empty">${done.length ? 'That is everything due for now.' : 'Nothing due right now.'}</div>`}
+      ${due.length > shown.length ? `<button class="tc-more" onclick="_tcShowAll=true;renderTodayCards('${dateStr}')">+ ${due.length - shown.length} more</button>` : ''}
+    </div>`;
+}
+
 // ── What was done on a day, as icons (2026-10-25) ─────────────────────
 // Craig: "emojis on the calendar" — hike, row, swim, gym, walk, stretch. Read
 // from the one log, so a typed walk, an Apple Health hike and a Concept2 row
@@ -29109,7 +29270,10 @@ function _monthActEnsure(first, last) {
 function _swipeBlocked(el) {
   for (let n = el; n && n !== document.body && n.nodeType === 1; n = n.parentElement) {
     if (n.matches('input,textarea,select,[contenteditable="true"],.no-swipe,#rest-timer-bar,.popup-backdrop')) return true;
-    if (n.scrollWidth > n.clientWidth + 4) {
+    // A real sideways scroller, not a column that is a pixel or two wide on a
+    // phone whose fonts render wider (overflow-y:auto makes overflow-x auto too,
+    // so on a phone every card and the page column are candidates).
+    if (n.scrollWidth > n.clientWidth + 16) {
       const ox = getComputedStyle(n).overflowX;
       if (ox === 'auto' || ox === 'scroll') return true;
     }
@@ -29128,7 +29292,7 @@ function _swipeStart(e) {
   if (document.querySelector('.popup-backdrop.open')) return;
   if (_swipeBlocked(e.target)) return;
   const se = document.scrollingElement || document.documentElement;
-  _sw = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(),
+  _sw = { card: (e.target.closest && e.target.closest('.tc-card')) || null, x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(),
           top: se.scrollTop <= 1, bottom: se.scrollTop + window.innerHeight >= se.scrollHeight - 2 };
 }
 function _swipeEnd(e) {
@@ -29138,6 +29302,7 @@ function _swipeEnd(e) {
   if (Date.now() - s0.t > 1200) return;
   const horiz = Math.abs(dx) > 70 && Math.abs(dx) > 2 * Math.abs(dy);
   const vert = Math.abs(dy) > 90 && Math.abs(dy) > 2 * Math.abs(dx);
+  if (s0.card && horiz) { tcDismiss(s0.card.getAttribute('data-tc')); return; }
   if (currentView === 'daily' && horiz) { changeDay(dx < 0 ? 1 : -1); _swipeFlash(dx < 0 ? 'l' : 'r'); }
   else if (currentView === 'week' && horiz) { changeWeek(dx < 0 ? 1 : -1); _swipeFlash(dx < 0 ? 'l' : 'r'); }
   else if (currentView === 'month') {
