@@ -2694,6 +2694,9 @@
   .week-badge { margin-left: auto; font-size: 10.5px; color: var(--text-muted); font-weight: 500; }
   .week-badge span { color: var(--purple); font-weight: 800; }
   .custody-strip { display: flex; gap: 3px; align-items: center; padding-bottom: 6px; }
+  .bb-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+  .bb-pills { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .bb-row .custody-strip { margin-left: auto; padding-bottom: 0; }
   .cs-box {
     width: 24px; height: 20px; border-radius: 3px; display: flex; align-items: center; justify-content: center;
     font-size: 10px; font-weight: 800; letter-spacing: 0.3px; opacity: 0.6;
@@ -3607,6 +3610,15 @@
     .custody-strip > div { width: 100%; }
     .cs-dow { font-size: 10px; }
     .pill { font-size: 10px; padding: 5px 10px; }
+    /* One row on a phone (2026-10-27): pills stacked on the left, the week
+       filling the rest — seven columns, one row, nothing below the fold. */
+    .bottom-bar { padding: 6px 10px 10px; }
+    .bottom-bar > .bb-row { flex-wrap: nowrap; justify-content: flex-start; gap: 8px; }
+    .bb-pills { flex-direction: column; align-items: stretch; gap: 4px; flex-shrink: 0; }
+    .bb-pills .pill { font-size: 10px; padding: 4px 8px; justify-content: center; }
+    .bb-row .custody-strip { flex: 1; min-width: 0; margin-left: 0; gap: 0 3px; }
+    .bb-row .cs-box { height: 26px; font-size: 11px; }
+    .bb-row .cs-dow { font-size: 9.5px; }
 
     .login-box { width: 290px; padding: 24px; }
   }
@@ -4290,7 +4302,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.10.27.01';
+const APP_VERSION = '2026.10.27.02';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -28534,9 +28546,11 @@ function renderDaily() {
   // children's schedule is on screen before we know who's looking.
   const _canSeeCustody = !!(typeof USER_PROFILE !== 'undefined' && USER_PROFILE) &&
                          ((typeof canSee !== 'function') || canSee('schedule'));
-  let csHtml = '<div class="custody-strip" data-module="schedule">';
+  const _csTitle = 'Underline: cyan = no school, red = stat holiday';
+  let csHtml = `<div class="custody-strip" data-module="schedule" title="${_csTitle}">`;
   if (!_canSeeCustody) csHtml = '<div class="custody-strip" data-module="schedule" style="display:none">';
-  for (let ci = -2; ci <= 11; ci++) {
+  // One week from yesterday, on one row (2026-10-27; was two weeks on two rows).
+  for (let ci = -1; ci <= 5; ci++) {
     const cd = new Date(now);
     cd.setDate(cd.getDate() + ci);
     const cdStr = ds(cd);
@@ -28573,9 +28587,9 @@ function renderDaily() {
   }
 
   // Bottom bar — custody strip + month summary link
-  document.getElementById('bottom-bar').innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px;white-space:nowrap">
-
+  // One row (2026-10-27): the pills stacked on the left, the week beside them.
+  document.getElementById('bottom-bar').innerHTML = `<div class="bb-row">
+    <div class="bb-pills">
       <div class="pill" style="cursor:pointer;border-color:var(--purple-border);background:var(--purple-bg)" onclick="openStats()">📊 <span class="pill-val" style="color:var(--purple)">Summary</span></div>
       ${currentDayOffset === 0 ? `<div class="pill" style="cursor:pointer;border-color:var(--orange-border);background:var(--orange-bg)" onclick="enterBackfillMode()" title="Fill in yesterday's gaps">📝 <span class="pill-val" style="color:var(--orange)">Catch up</span></div>` : ''}
 
@@ -28587,14 +28601,8 @@ function renderDaily() {
         return `<div class="pill" style="cursor:pointer;border-color:var(--orange);background:var(--orange-bg);animation:pulse 2s infinite" onclick="openBodyLog('summary')" title="Follow-up appointment due today">⏰ <span class="pill-val" style="color:var(--orange);font-weight:800">Follow-up today</span></div>`;
       })()}
     </div>
-    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
-      <div style="display:flex;flex-direction:column;gap:2px;margin-right:4px;white-space:nowrap">
-        <span style="font-size:7px;color:var(--cyan)">▂ No school</span>
-        <span style="font-size:7px;color:#ff4444">▂ Stat holiday</span>
-      </div>
-      ${csHtml}
-    </div>
-  `;
+    ${csHtml}
+  </div>`;
   restoreOpenSections(dateStr);
   // The four bars' one-line summaries, and today's cards (2026-10-27).
   try {
