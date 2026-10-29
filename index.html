@@ -2861,6 +2861,20 @@
   .dt-wrap { margin-bottom: 10px; }
   .dt-h { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
   .dt-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .dt-grid.dt-grid4 { grid-template-columns: repeat(4, 1fr); }
+  /* Home sheet, one-tap treadmill, voice (2026-10-29) */
+  .hs-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--divider); }
+  .hs-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .hs-chips button { padding: 8px 12px; border-radius: 16px; border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg); color: var(--cyan); font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .tm-quick { margin: 0 0 10px; }
+  .tm-go { display: block; width: 100%; padding: 16px; border-radius: 10px; border: 1px solid var(--green-border, var(--green)); background: var(--green-bg); color: var(--green); font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; }
+  .tm-alt { display: block; width: 100%; margin-top: 6px; padding: 10px; border-radius: 8px; border: 1px solid var(--card-border); background: transparent; color: var(--text-dim); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .tm-sub { font-size: 11px; color: var(--text-muted); margin: 6px 2px 0; line-height: 1.4; }
+  details.tm-hand > summary { cursor: pointer; font-size: 12px; font-weight: 700; color: var(--text-dim); padding: 8px 2px; }
+  .grip-note { margin: 0 0 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--orange-border, var(--orange)); background: var(--orange-bg, transparent); color: var(--text); font-size: 12px; line-height: 1.45; }
+  .rt-voice-hint { font-size: 10.5px; color: var(--text-muted); margin-top: 5px; text-align: center; }
+  .timer-voice-btn { position: absolute; top: max(16px, env(safe-area-inset-top, 12px)); left: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.1); font-size: 17px; cursor: pointer; z-index: 2; }
+  .timer-voice-btn.off { opacity: 0.55; }
   .dt-tile { position: relative; padding: 12px 4px 10px; border-radius: 10px; border: 1px solid var(--card-border); background: var(--input-bg); color: var(--text); font-family: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; }
   .dt-tile .dt-i { font-size: 22px; line-height: 1; }
   .dt-tile .dt-l { font-size: 11.5px; font-weight: 800; }
@@ -2871,12 +2885,12 @@
   .dt-tile.live .dt-s { color: var(--cyan); font-weight: 700; }
   .dt-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
   .dt-links button { flex: 1; min-width: 0; padding: 9px 6px; border-radius: 8px; border: 1px solid var(--card-border); background: transparent; color: var(--text-dim); font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  details.home-more { margin-top: 10px; border-top: 1px solid var(--divider); padding-top: 4px; }
-  details.home-more summary { font-size: 12px; font-weight: 800; color: var(--text-dim); padding: 9px 2px; cursor: pointer; list-style: none; }
-  details.home-more summary::-webkit-details-marker { display: none; }
-  details.home-more summary::before { content: '▸ '; }
-  details.home-more[open] summary::before { content: '▾ '; }
-  details.home-more summary span { font-weight: 400; font-size: 10.5px; color: var(--text-muted); margin-left: 4px; }
+  details.home-more, details.home-plan { margin-top: 10px; border-top: 1px solid var(--divider); padding-top: 4px; }
+  details.home-more summary, details.home-plan summary { font-size: 12px; font-weight: 800; color: var(--text-dim); padding: 9px 2px; cursor: pointer; list-style: none; }
+  details.home-more summary::-webkit-details-marker, details.home-plan summary::-webkit-details-marker { display: none; }
+  details.home-more summary::before, details.home-plan summary::before { content: '▸ '; }
+  details.home-more[open] summary::before, details.home-plan[open] summary::before { content: '▾ '; }
+  details.home-more summary span, details.home-plan summary span { font-weight: 400; font-size: 10.5px; color: var(--text-muted); margin-left: 4px; }
   .home-more-btn { width: 100%; margin: 4px 0 10px; padding: 11px; border-radius: 8px; border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg); color: var(--cyan); font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
 
   .mc-progress { display: flex; align-items: center; gap: 3px; margin-top: auto; }
@@ -3818,6 +3832,7 @@
 
 <!-- ═══════════════ POPUP OVERLAY ═══════════════ -->
 <div class="timer-overlay" id="timer-overlay">
+  <div id="timer-voice-btn" class="timer-voice-btn" onclick="event.stopPropagation();voiceToggle()" title="Voice cues">🔊</div>
   <div onclick="stopExTimer()" style="position:absolute;top:max(16px,env(safe-area-inset-top,12px));right:20px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,255,255,0.1);font-size:18px;color:rgba(255,255,255,0.7);cursor:pointer;z-index:1;font-weight:700">✕</div>
   <div id="timer-position" class="timer-pos-badge"></div>
   <div class="timer-exercise-name" id="timer-ex-name"></div>
@@ -4304,7 +4319,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.10.28.02';
+const APP_VERSION = '2026.10.28.03';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -11946,15 +11961,12 @@ const ROUTINES = {
       { name: "⚠ DO NOT squeeze a stress ball or grip strengthener", sets: "", detail: "Common bad advice. Repetitive forceful gripping is what aggravates trigger finger — it's the cause, not the cure. Strength work waits until catching has resolved.", _divider: true },
     ]
   },
-  // Rebuilt 2026-09-30 (Craig): everything above the divider is done standing,
-  // so it works at the office — he skips floor work there, and cat-cow was the
-  // item that went undone. The floor block is for mornings at home. No chair
-  // stretches (his call). Prayer, the interlaced palm press (his "reverse"), the
-  // palm-up wrist extension stretch his physio gave him and a finger stretch are
-  // what he does every morning. Kept in step with the database copy
-  // (routine_exercises, routine_id 'morning') — names unchanged where the
-  // movement is unchanged, because the name is the movement's key in the log.
-  // Generic wording only: this list is shown to every user.
+  // Rebuilt 2026-09-30: everything above the divider is done standing, so it
+  // works at a desk; the floor block is for home. No chair stretches. Kept in
+  // step with the database copy (routine_exercises, routine_id 'morning') —
+  // names unchanged where the movement is unchanged, because the name is the
+  // movement's key in the log. Generic wording only: this list is shown to
+  // every user.
   morning: {
     title: "Morning Stretch — ~10 min standing (+ floor at home)",
     exercises: [
@@ -11963,7 +11975,7 @@ const ROUTINES = {
       { name: "Shoulder Rolls", sets: "10 forward + 10 back", link: "https://www.youtube.com/watch?v=IKJZL4hvppw", detail: "Stand tall, slow and full range. Then arm circles out to the sides — small, building to as large as stays comfortable, both directions. Stop where it pinches." },
       { name: "Elbow Curls (Egoscue)", sets: "15 reps", link: "https://www.youtube.com/watch?v=fUaR8MyK0BU", detail: "Fists at temples, bring the elbows together in front, then open wide. Slow." },
       { name: "Overhead Extension", sets: "1 min hold", link: "https://www.youtube.com/watch?v=1tzvgbW6DQo", detail: "Interlace the fingers, palms up, reach tall and breathe. Stop below any pinch in the shoulders — reach, don't force." },
-      { name: "Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "A few wrist circles each way first. Then palms together at the chest, fingers up, and slowly lower the hands toward the waist until the forearms stretch." },
+      { name: "Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "A few wrist circles each way first. Then palms together at the chest, fingers up, and slowly lower the hands toward the waist until the forearms stretch. Stop before any tingling or numbness in the fingers." },
       { name: "Interlaced Palm Press", sets: "20s hold", link: "", detail: "Interlace the fingers with the hands pointing down, then turn the hands over so the palms face the floor. Straighten the arms and press the palms down until the palm side of the forearms and fingers stretches." },
       { name: "Wrist Extension Stretch (palm up)", sets: "20s each arm", link: "https://www.youtube.com/watch?v=QiMiia4F7Xg", detail: "Arm straight out in front, palm up, fingers straight. With the other hand, gently pull the fingers down and back toward the floor until the palm side of the forearm and fingers stretches." },
       { name: "Finger Extension Stretch", sets: "10s each finger", link: "", detail: "Palm up. With the other hand, gently ease one finger at a time back toward the back of the hand. Stop at the first resistance — a stretch, never a catch or a click." },
@@ -11984,14 +11996,14 @@ const ROUTINES = {
     exercises: [
       { name: "Seated Forward Fold", sets: "45s hold", link: "https://www.youtube.com/watch?v=1E-84p0itDs", detail: "Legs straight, reach for toes" },
       { name: "Pigeon Pose (each side)", sets: "45s hold", link: "https://www.youtube.com/watch?v=1o7awuDGzag", detail: "Front leg 90°, back leg extended" },
+      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently. The routine timer pairs it with pigeon on the same side: pigeon left, twist left, then pigeon right, twist right." },
       { name: "Lying Hamstring Stretch", sets: "30s each leg", link: "https://www.youtube.com/watch?v=Il1L75v6gq0", detail: "Use towel/strap if needed" },
       { name: "Hip Flexor Stretch (half-kneel)", sets: "30s each", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Squeeze glute on back leg" },
       { name: "Figure-4 Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=Xb5gHdYtHnk", detail: "Lying on back, ankle on knee" },
-      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
       { name: "Cat-Cow on Floor", sets: "10 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, breathe with movement" },
       { name: "Child's Pose", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, forehead to floor" },
       { name: "── Optional ──", sets: "", detail: "", _divider: true },
-      { name: "Wrist Circles + Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Rotate wrists both ways, then palms together prayer position, lower toward waist", _optional: true },
+      { name: "Wrist Circles + Prayer Stretch", sets: "20s hold", link: "https://www.youtube.com/watch?v=GkDeFSfcekU", detail: "Rotate wrists both ways, then palms together prayer position, lower toward waist Stop before any tingling or numbness in the fingers.", _optional: true },
       { name: "Cross-Body Shoulder Stretch", sets: "20s each arm", link: "https://www.youtube.com/watch?v=aIq0fLi8iak", detail: "Pull arm across chest — opens up after floor work", _optional: true },
       { name: "Ankle Circles", sets: "10 each way", link: "https://www.youtube.com/watch?v=mzTQGYGI0Ng", detail: "Standing, hand on wall — good for rehab", _optional: true },
     ]
@@ -12345,10 +12357,10 @@ const ROUTINES = {
     exercises: [
       { name: "Seated Forward Fold", sets: "45s hold", link: "https://www.youtube.com/watch?v=1E-84p0itDs", detail: "Legs straight, reach for toes" },
       { name: "Pigeon Pose (each side)", sets: "45s hold", link: "https://www.youtube.com/watch?v=1o7awuDGzag", detail: "Front leg 90°, back leg extended" },
+      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently. The routine timer pairs it with pigeon on the same side: pigeon left, twist left, then pigeon right, twist right." },
       { name: "Lying Hamstring Stretch", sets: "30s each leg", link: "https://www.youtube.com/watch?v=Il1L75v6gq0", detail: "Use towel/strap if needed" },
       { name: "Hip Flexor Stretch (half-kneel)", sets: "30s each", link: "https://www.youtube.com/watch?v=YQmpO9VT2X4", detail: "Squeeze glute on back leg" },
       { name: "Figure-4 Stretch", sets: "30s each side", link: "https://www.youtube.com/watch?v=Xb5gHdYtHnk", detail: "Lying on back, ankle on knee" },
-      { name: "Seated Spinal Twist", sets: "30s each side", link: "https://www.youtube.com/watch?v=qEVNj4tcr0Y", detail: "Sit tall, rotate gently" },
       { name: "Cat-Cow on Floor", sets: "10 reps", link: "https://www.youtube.com/watch?v=kqnua4rHVVA", detail: "Slow, breathe with movement" },
       { name: "Child's Pose", sets: "45s hold", link: "https://www.youtube.com/watch?v=2MJGg-dUKh0", detail: "Arms extended, forehead to floor" },
       { name: "── Then Routine B ──", sets: "", detail: "", _divider: true },
@@ -15228,7 +15240,7 @@ const CONDITION_EX_RULES = {
 const EPISODE_EX_RULES = [
   { match: /wrist|hand|thumb|finger/i, flags: ['grip'],
     names: /push-?up|plank|dip|burpee|farmer|clean|front squat/i,
-    note: 'Loads the wrist. Fists, handles or dumbbells keep it neutral; drop the movement rather than work through it.' },
+    note: 'Loads the wrist. Keep it straight — handles or dumbbells, forearms for a plank. Stop 2–3 reps short of failure, and keep it to about 3/10 that is gone by the next morning; worse the next day means drop it for now.' },
   { match: /shoulder|rotator|ac joint|clavicle/i, flags: ['overhead', 'shoulder'],
     names: /overhead|press|dip|pull-?up|lateral raise/i,
     note: 'Pain-free range only. Stop short of the pinch rather than pushing to lockout.' },
@@ -16055,8 +16067,10 @@ const ROUTINE_STRETCH_LIB = {
 // OLD list's item at that index. Those ticks were brought into the log by the
 // sweep before the change; one this device never swept stays out rather than be
 // logged as whatever now sits at that position.
+// A and the long session: the twist moved up beside pigeon (2026-10-29).
 const ROUTINE_REVISED = { morning: '2026-10-01',
-  stretch_B: '2026-10-02', stretch_C: '2026-10-02', stretch_quick: '2026-10-02', stretch_deep: '2026-10-02' };
+  stretch_B: '2026-10-02', stretch_C: '2026-10-02', stretch_quick: '2026-10-02',
+  stretch_A: '2026-10-29', stretch_deep: '2026-10-29' };
 function _rtNorm(name) { return String(name || '').trim().toLowerCase().replace(/\s+/g, ' '); }
 function routineStretchLibId(name) {
   const id = ROUTINE_STRETCH_LIB[_rtNorm(name)];
@@ -19578,6 +19592,7 @@ function renderCardioScreen() {
   if (!body) return;
   const mode = CARDIO_MODES.find(m => m.id === _cardioMode) || CARDIO_MODES[0];
   if (title) title.textContent = mode.label;
+  try { localStorage.setItem('cardio_last', mode.id); } catch (e) {}
 
   const dateStr = ds(new Date());
   const rows = getActivity(dateStr).filter(r => r.exercise_key === mode.key);
@@ -19614,12 +19629,14 @@ function renderCardioScreen() {
   body.innerHTML = `
     <button onclick="backToPlan()" style="background:none;border:none;color:var(--cyan);font-size:12px;cursor:pointer;padding:0 0 10px;font-family:inherit">${_sessReturnTo === 'picker' ? '‹ Exercises' : '‹ Session'}</button>
     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">
-      ${CARDIO_MODES.map(m => `<button onclick="_cardioMode='${m.id}';renderCardioScreen()"
+      ${_cardioChipOrder().map(m => `<button onclick="_cardioMode='${m.id}';renderCardioScreen()"
         style="padding:5px 9px;border-radius:14px;border:1px solid ${m.id === mode.id ? 'var(--cyan-border, var(--cyan))' : 'var(--card-border)'};background:${m.id === mode.id ? 'var(--cyan-bg)' : 'var(--input-bg)'};color:${m.id === mode.id ? 'var(--cyan)' : 'var(--text-muted)'};font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">${m.icon} ${m.label}</button>`).join('')}
     </div>
+    ${_cardioTopHtml(mode)}
     ${list}
     ${rows.length ? `<div style="font-size:10.5px;color:var(--green);padding:8px 0;line-height:1.5">${rows.length} interval${rows.length > 1 ? 's' : ''} · ${mode.unit === 'km' ? (totalM / 1000).toFixed(2) + ' km' : Math.round(totalM) + ' m'} · ${fmt(totalS)} total</div>` : ''}
 
+    ${mode.id === 'treadmill' ? `<details class="tm-hand" ${discAttr('tm-hand')}><summary>Enter it by hand instead</summary>` : ''}
     <div style="padding:12px;border-radius:9px;border:1px solid var(--card-border);background:var(--input-bg);margin-top:6px">
       <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Interval ${rows.length + 1}</div>
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:9px">
@@ -19634,12 +19651,55 @@ function renderCardioScreen() {
         style="width:100%;padding:13px;border-radius:8px;border:1px solid var(--green-border);background:var(--green-bg);color:var(--green);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
         ${rows.length ? '+ Add another interval' : '+ Log interval 1'}</button>
     </div>
+    ${mode.id === 'treadmill' ? '</details>' : ''}
     <button onclick="startRestTimer(120,'${mode.label} — recovery')"
       style="width:100%;margin-top:8px;padding:11px;border-radius:8px;border:1px solid var(--cyan-border, var(--cyan));background:var(--cyan-bg);color:var(--cyan);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">⏱ Start recovery</button>
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
       Intervals are logged separately from a continuous piece — 4 × 1km and one 4km row train different things, so they're kept apart.
     </div>`;
 }
+// Treadmill in one tap (2026-10-29). Craig: "when I log my treadmill, distance
+// vs. time vs. … calories? (something to track angle?) I just want to hit go and
+// … go … not think too hard about logging." Time is the number that matters for
+// what he is doing, and it counts itself; distance is one optional box at the
+// end. No calories: machine and watch figures are estimates that run high, and
+// logging them invites "I earned that" eating. Incline lives in a saved interval
+// plan, set once — if there is one, Start runs it.
+const CARDIO_CHIP_ORDER = ['treadmill', 'walk', 'run', 'bike', 'row', 'swim', 'elliptical', 'stairs'];
+function _cardioChipOrder() {
+  return CARDIO_MODES.slice().sort((a, b) => CARDIO_CHIP_ORDER.indexOf(a.id) - CARDIO_CHIP_ORDER.indexOf(b.id));
+}
+function _tmSavedPlan() {
+  try { const p = JSON.parse(localStorage.getItem(TM_KEY) || 'null'); return (p && p.a && p.b) ? p : null; } catch (e) { return null; }
+}
+function tmQuickStart(withPlan) {
+  if (withPlan && _tmSavedPlan()) ivStart(tmSegments(_tmSavedPlan()));
+  else ivStartFree('Treadmill');
+  if (_isOpenBd('session-backdrop') && _sessEx === '__cardio__') renderCardioScreen();
+}
+function _cardioTopHtml(mode) {
+  if (mode.id === 'row' && _handFlagged()) {
+    return `<div class="grip-note">✋ <b>Grip-heavy.</b> Every stroke is a pull on the handle — about 25 a minute.
+      With a sore finger, hand or wrist, hold it in a loose hook (fingers, not a squeeze) and judge it by whether it is
+      worse the next day. Treadmill, walking and the bike need no grip.</div>`;
+  }
+  if (mode.id !== 'treadmill') return '';
+  if (typeof _ivTimer !== 'undefined' && _ivTimer) {
+    return `<div class="tm-quick"><div class="tm-sub" style="margin:0 0 8px">🏃 Running now — the timer is in the bar at the bottom.</div>
+      <button class="tm-alt" onclick="dockToggle('iv')">Show it</button></div>`;
+  }
+  if (typeof _ivDone !== 'undefined' && _ivDone) {
+    return `<div class="tm-quick"><div class="tm-sub" style="margin:0 0 8px">✓ ${_dockClock(_ivDone.secs)} done — save it from the bar at the bottom.</div>
+      <button class="tm-alt" onclick="dockToggle('iv')">Save it</button></div>`;
+  }
+  const plan = _tmSavedPlan();
+  return `<div class="tm-quick">
+      <button class="tm-go" onclick="tmQuickStart(${plan ? 'true' : 'false'})">▶ Start${plan ? ' · ' + escapeHtml(tmSummary(plan)) : ''}</button>
+      <div class="tm-sub">The time counts itself. Tap Done when you step off; distance is optional.</div>
+      ${plan ? `<button class="tm-alt" onclick="tmQuickStart(false)">Just a timer</button>` : ''}
+    </div>`;
+}
+
 function _cardioAdd() {
   const d = parseFloat((document.getElementById('cd-dist') || {}).value) || 0;
   const m = (document.getElementById('cd-min') || {}).value;
@@ -20561,7 +20621,7 @@ function _dockPaint() {
       const p = ivPosition();
       set('iv', (_ivTimer.pausedAt ? '⏸ ' : '🏃 ') + _dockClock(p.left));
       const big = document.getElementById('dk-iv-big'); if (big) big.textContent = _dockClock(p.left);
-      const tot = document.getElementById('dk-iv-tot'); if (tot) tot.textContent = _dockClock(ivElapsedS()) + ' of ' + _dockClock(ivTotalS(_ivTimer.segs));
+      const tot = document.getElementById('dk-iv-tot'); if (tot && !_ivTimer.free) tot.textContent = _dockClock(ivElapsedS()) + ' of ' + _dockClock(ivTotalS(_ivTimer.segs));
     }
   }
   if (_restTimer.running) {
@@ -20871,6 +20931,9 @@ function ivElapsedS() {
   return Math.max(0, Math.floor((now - _ivTimer.startedAt - (_ivTimer.pausedMs || 0)) / 1000));
 }
 function ivPosition() {
+  // A plain timer counts up; "left" is what every display prints, so it carries
+  // the elapsed time there.
+  if (_ivTimer && _ivTimer.free) return { i: 0, left: ivElapsedS(), seg: { label: _ivTimer.label || 'Treadmill' }, next: null, free: true };
   const e = ivElapsedS(), segs = (_ivTimer && _ivTimer.segs) || [];
   let acc = 0;
   for (let i = 0; i < segs.length; i++) {
@@ -20885,6 +20948,15 @@ function ivStart(segs) {
   _ivTimer = { segs: segs, startedAt: Date.now(), pausedAt: 0, pausedMs: 0, cued: 0 };
   _dockOpen = 'iv';
   _ivSave(); wakeSync(); renderDock();
+  // Spoken now, inside the tap: iOS only lets a page speak after one.
+  voiceUnlock(); say(_spokenSeg(segs[0]));
+}
+function ivStartFree(label) {
+  _ivDone = null;
+  _ivTimer = { segs: [], free: true, label: label || 'Treadmill', startedAt: Date.now(), pausedAt: 0, pausedMs: 0, cued: 0 };
+  _dockOpen = 'iv';
+  _ivSave(); wakeSync(); renderDock();
+  voiceUnlock();
 }
 function ivPause() {
   if (!_ivTimer) return;
@@ -20893,7 +20965,7 @@ function ivPause() {
   _ivSave(); wakeSync(); renderDock();
 }
 function ivSkip() {
-  if (!_ivTimer) return;
+  if (!_ivTimer || _ivTimer.free) return;
   const p = ivPosition();
   if (p.done) return;
   _ivTimer.startedAt -= p.left * 1000;          // jump to the next change
@@ -20903,14 +20975,14 @@ function ivSkip() {
 function ivEnd() {
   if (!_ivTimer) return;
   const p = ivPosition();
-  _ivDone = { secs: ivElapsedS(), segs: _ivTimer.segs, reached: p.i, endedAt: Date.now() };
+  _ivDone = { secs: ivElapsedS(), segs: _ivTimer.segs, reached: p.i, endedAt: Date.now(), free: !!_ivTimer.free };
   _ivTimer = null;
   _dockOpen = 'iv';
   _ivSave(); wakeSync(); renderDock();
 }
 // Returns true when it rebuilt the dock (a new segment, or the end).
 function _ivTick() {
-  if (!_ivTimer || _ivTimer.pausedAt) return false;
+  if (!_ivTimer || _ivTimer.pausedAt || _ivTimer.free) return false;
   const p = ivPosition();
   if (p.done) { _ivCue(true); ivEnd(); return true; }
   if (p.i > (_ivTimer.cued || 0)) {
@@ -20924,6 +20996,16 @@ function _ivTick() {
 function _ivCue(final) {
   try { if (navigator.vibrate) navigator.vibrate(final ? [200, 100, 200, 100, 400] : [150, 80, 150]); } catch (e) {}
   try { if (typeof _beep === 'function') _beep(final ? [[880, 0], [1100, 0.3], [1320, 0.6]] : [[660, 0], [880, 0.25]]); } catch (e) {}
+  try {
+    if (final) say('Intervals done.');
+    else { const p = ivPosition(); if (p.seg) say(_spokenSeg(p.seg)); }
+  } catch (e) {}
+}
+// "Run · 6.0 · incline 2 (2/6)", 60 s → "Run. 1 minute."
+function _spokenSeg(seg) {
+  if (!seg) return '';
+  const name = String(seg.label || '').split(' · ')[0].replace(/\s*\(\d+\/\d+\)\s*$/, '');
+  return name + '. ' + _spokenDur(seg.secs) + '.';
 }
 function ivSaveDone(withDistance) {
   const d = _ivDone;
@@ -20936,13 +21018,14 @@ function ivSaveDone(withDistance) {
   const rounds = done.filter(x => /\(\d+\/\d+\)/.test(x.label)).length;
   logActivity(Object.assign({
     name: mode.label, exercise_key: mode.key, movement_id: mode.key,
-    notes: 'Intervals: ' + (rounds ? Math.ceil(rounds / 2) + (Math.ceil(rounds / 2) === 1 ? ' round' : ' rounds') : 'warm-up only') + (d.reached < d.segs.length ? ' (ended early)' : ''),
-    metrics: { intervals: done.map(x => ({ label: x.label, s: x.secs })) },
+    notes: d.free ? '' : 'Intervals: ' + (rounds ? Math.ceil(rounds / 2) + (Math.ceil(rounds / 2) === 1 ? ' round' : ' rounds') : 'warm-up only') + (d.reached < d.segs.length ? ' (ended early)' : ''),
+    metrics: d.free ? null : { intervals: done.map(x => ({ label: x.label, s: x.secs })) },
   }, stored, { kind: 'cardio', equip: 'treadmill' }));
   _ivDone = null; _dockOpen = null;
   _ivSave(); renderDock();
   if (typeof toast === 'function') toast('Treadmill ' + _dockClock(d.secs) + ' logged', 'ok', 2000);
   if (_isOpenBd('session-backdrop') && !_sessEx) renderSessionScreen();
+  if (_isOpenBd('session-backdrop') && _sessEx === '__cardio__') renderCardioScreen();
 }
 function ivDiscard() { _ivDone = null; _ivTimer = null; _dockOpen = null; _ivSave(); wakeSync(); renderDock(); }
 function _ivDrawerHtml() {
@@ -20951,12 +21034,11 @@ function _ivDrawerHtml() {
     return `<div class="dk-drawer">
       <div style="font-size:13px;font-weight:800;color:var(--green)">✓ Treadmill — ${_dockClock(_ivDone.secs)}</div>
       <div style="display:flex;gap:6px;align-items:center;margin:8px 0">
-        <input id="iv-dist" type="number" step="0.01" inputmode="decimal" placeholder="distance on the screen" style="flex:1;min-width:0;padding:10px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;font-family:inherit">
+        <input id="iv-dist" type="number" step="0.01" inputmode="decimal" placeholder="distance (optional)" style="flex:1;min-width:0;padding:10px;border-radius:7px;border:1px solid var(--input-border);background:var(--input-bg);color:var(--text);font-size:14px;font-family:inherit">
         <span style="font-size:12px;color:var(--text-muted)">${unit}</span>
       </div>
       <div style="display:flex;gap:6px">
         <button class="dk-btn go" style="flex:1" onclick="ivSaveDone(true)">Save</button>
-        <button class="dk-btn" onclick="ivSaveDone(false)">No distance</button>
         <button class="dk-btn" onclick="ivDiscard()">Discard</button>
       </div></div>`;
   }
@@ -20966,16 +21048,16 @@ function _ivDrawerHtml() {
       <div style="min-width:0;flex:1">
         <div id="dk-iv-big" style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;color:var(--cyan)">${_dockClock(p.left)}</div>
         <div style="font-size:13px;color:var(--text);font-weight:800;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.seg ? p.seg.label : '')}</div>
-        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.next ? 'Next: ' + escapeHtml(p.next.label) + ' · ' + _dockClock(p.next.secs) : 'Last one'}</div>
-        <div id="dk-iv-tot" style="font-size:10px;color:var(--text-muted);margin-top:2px">${_dockClock(ivElapsedS())} of ${_dockClock(ivTotalS(_ivTimer.segs))}</div>
+        <div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.free ? 'Counting up — Done when you step off' : p.next ? 'Next: ' + escapeHtml(p.next.label) + ' · ' + _dockClock(p.next.secs) : 'Last one'}</div>
+        <div id="dk-iv-tot" style="font-size:10px;color:var(--text-muted);margin-top:2px">${p.free ? '' : _dockClock(ivElapsedS()) + ' of ' + _dockClock(ivTotalS(_ivTimer.segs))}</div>
         <button class="dk-min" onclick="dockToggle(null)">▾ Tuck it away — it keeps counting</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:7px;flex-shrink:0">
         <div style="display:flex;gap:6px">
           <button class="dk-btn" onclick="ivPause()">${_ivTimer.pausedAt ? '▶' : '⏸'}</button>
-          <button class="dk-btn" onclick="ivSkip()">Next ›</button>
+          ${p.free ? '' : `<button class="dk-btn" onclick="ivSkip()">Next ›</button>`}
         </div>
-        <button class="dk-btn go" onclick="ivEnd()">End</button>
+        <button class="dk-btn go" onclick="ivEnd()">${p.free ? 'Done' : 'End'}</button>
       </div>
     </div>`;
 }
@@ -22839,7 +22921,7 @@ async function _refreshMedicationsFromSupabase() {
   } catch (e) { console.warn('medications refresh threw:', e); }
 }
 
-async function _refreshMedDosesFromSupabase() {
+async function _refreshMedDosesFromSupabase(sinceDays) {
   if (typeof sbReady === 'undefined' || !sbReady) return;
   try {
     // Pull medications first to build UUID → client_id map
@@ -22848,7 +22930,11 @@ async function _refreshMedDosesFromSupabase() {
       const { data: meds } = await sb.from('medications').select('id, client_id');
       if (Array.isArray(meds)) meds.forEach(m => { if (m.client_id) medMap[m.id] = m.client_id; });
     } catch (e) {}
-    const { data, error } = await sb.from('medication_doses').select('*').order('taken_at', { ascending: false });
+    // The home-screen refresh asks for the last few days only; the Body screen
+    // still pulls everything.
+    let q = sb.from('medication_doses').select('*');
+    if (sinceDays) q = q.gte('taken_at', new Date(Date.now() - sinceDays * 86400000).toISOString());
+    const { data, error } = await q.order('taken_at', { ascending: false });
     if (error) { console.warn('med_doses fetch failed:', error); return; }
     if (!Array.isArray(data)) return;
     const entries = data.map(r => ({
@@ -22865,6 +22951,19 @@ async function _refreshMedDosesFromSupabase() {
       return srv;
     }) });
   } catch (e) { console.warn('med_doses refresh threw:', e); }
+}
+
+// Doses taken on another device (2026-10-29). Craig: "I took medication today,
+// but in my computer not showing it." Doses were only ever pulled from the server
+// when the Body screen opened, so a dose marked Taken on the phone stayed "due" on
+// the computer — and since 2026-10-27 the Today cards and the Body bar read doses
+// on the home screen. Now every refresh (load, every 5 minutes while visible, and
+// coming back to the tab) pulls the last three days. Pull only: pushing local rows
+// from here would bring back a dose that was undone on the other device.
+async function refreshMedsFromServer() {
+  if (typeof sbReady === 'undefined' || !sbReady) return;
+  if (shouldRefetch('medications')) await _refreshMedicationsFromSupabase();
+  await _refreshMedDosesFromSupabase(3);
 }
 
 async function _migrateLocalMedicationsToSupabase() {
@@ -24567,6 +24666,17 @@ function buildActivityDecisionTree(dateStr, simple) {
         This morning you wanted to: <strong style="color:var(--text)">${it.icon} ${it.label}</strong>
       </div>`;
     }
+  }
+  // Today (the tiles above it), the capacity chips and the suggested plan sit in
+  // a closed fold (2026-10-29): four more "start this" rows on top of the tiles
+  // was the busy screen Craig asked to cut. The level still shows on the fold.
+  if (simple && simple !== 'inner') {
+    const lvlName = id => (ACTIVITY_LEVELS.find(x => x.id === id) || {}).label || '';
+    const tag = chosen ? 'today: ' + lvlName(chosen) : (suggested ? 'suggested: ' + lvlName(suggested) : 'capacity and a plan');
+    return `<details class="home-plan" ${discAttr('home-plan')}>
+      <summary>Not sure what to do? <span>${tag}</span></summary>
+      ${buildActivityDecisionTree(dateStr, 'inner')}
+    </details>`;
   }
   return `
     <div class="adt-wrap">
@@ -27013,14 +27123,13 @@ function _timerSidesSoFar() { return /right/i.test((_timerSide() || {}).textCont
 function _endQueueItem() {
   const q = _timerQueue;
   if (!q) return;
-  const ex = q.exercises[q.idx];
+  const st = q.step;
   const held = _timerHeldS();
-  if (ex && held >= 3) {
-    setChecked(q.dateStr, ex.checkKey, true);
-    if (typeof routineItemDone === 'function') {
-      try { routineItemDone(q.dateStr, ex.checkKey, { t: held, sides: _timerSidesSoFar() }); } catch (e) {}
-    }
+  if (st && st.cur && held >= 3) {
+    const h = st.held[st.cur.checkKey] || (st.held[st.cur.checkKey] = { t: 0, sides: 0 });
+    h.t = h.sides ? Math.max(h.t, held) : held; h.sides++;
   }
+  if (st && st.log) st.log();
   _advanceQueue();
 }
 function _endSoloTimer() {
@@ -27093,9 +27202,76 @@ function prevQueue() {
   _runQueueStep();
 }
 
+// ── Voice cues (2026-10-29) ─────────────────────────────────────────────
+// Craig: "I was listening to music while stretching, but had to watch my phone to
+// see whats up. can I have an audio ping when I'm done, or 'swap sides' verbal
+// instruction? same with 'pigeon stretch left side' so I don't need to look at my
+// phone? countdown from 5 seconds when I'm finished?"
+// Why he had to look: on an iPhone the timer was close to silent. iOS has no
+// Vibration API, so every navigator.vibrate() here did nothing; "flip sides" in
+// the play-all routine had no sound at all; and Web Audio beeps follow the
+// ring/silent switch. Speech is the fix. iOS lowers other audio (his music)
+// while it speaks, which is what a cue should do. Limits that stay: the page has
+// to be on screen (a backgrounded web app's timers stop), and the first thing
+// spoken must come from a tap — every timer here starts from one.
+const VOICE_KEY = 'voice_cues';
+function voiceOn() { try { return localStorage.getItem(VOICE_KEY) !== '0'; } catch (e) { return true; } }
+function voiceToggle() {
+  const on = !voiceOn();
+  try { localStorage.setItem(VOICE_KEY, on ? '1' : '0'); } catch (e) {}
+  if (on) say('Voice on.'); else voiceStop();
+  _voiceBtnPaint();
+}
+function _voiceBtnPaint() {
+  const b = document.getElementById('timer-voice-btn');
+  if (!b) return;
+  const on = voiceOn();
+  b.textContent = on ? '🔊' : '🔇';
+  b.title = on ? 'Voice cues on — tap to mute' : 'Voice cues off — tap to turn on';
+  b.classList.toggle('off', !on);
+}
+function say(text) {
+  if (!text || !voiceOn()) return;
+  try {
+    if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
+    const u = new SpeechSynthesisUtterance(String(text));
+    u.rate = 1; u.pitch = 1; u.volume = 1;
+    window.speechSynthesis.speak(u);
+  } catch (e) {}
+}
+function voiceStop() { try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {} }
+// Call from a tap: wakes the shared audio context so later beeps can sound.
+function voiceUnlock() { _beepCtxGet(); }
+// "Pigeon Pose (each side)" → "Pigeon Pose"
+function _spokenName(name) {
+  return String(name || '').replace(/\s*\([^)]*\)/g, '').replace(/\s*\+\s*/g, ' and ').replace(/\s+/g, ' ').trim();
+}
+function _spokenDur(s) {
+  s = Math.round(s || 0);
+  if (s < 60) return s + ' seconds';
+  const m = Math.floor(s / 60), r = s % 60;
+  return m + (m === 1 ? ' minute' : ' minutes') + (r ? ' ' + r : '');
+}
+function _spokenSide(sideLabel) {
+  const t = String(sideLabel || '').toLowerCase();
+  return /left/.test(t) ? 'left side' : /right/.test(t) ? 'right side' : '';
+}
+
+// One context for every beep. A new one per beep (as before) starts suspended
+// on iOS when it is not created inside a tap, and iOS caps how many a page may
+// open — the beeps went quiet after the first few.
+let _beepCtx = null;
+function _beepCtxGet() {
+  try {
+    if (!_beepCtx) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; _beepCtx = new C(); }
+    if (_beepCtx.state === 'suspended' && _beepCtx.resume) _beepCtx.resume();
+    return _beepCtx;
+  } catch (e) { return null; }
+}
 function _beep(freqs) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _beepCtxGet();
+    if (!ctx) return;
     freqs.forEach(([freq, delay]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -27107,8 +27283,14 @@ function _beep(freqs) {
   } catch(e) {}
 }
 
-function _startLeadIn(seconds, label, sideLabel, onDone) {
+// Five seconds to get into position (three was not enough on the floor), and the
+// hold is named out loud: "Pigeon Pose, left side. 45 seconds." `spoken` replaces
+// that line; '' says nothing.
+const LEAD_IN_S = 5;
+function _startLeadIn(seconds, label, sideLabel, onDone, spoken) {
   const big = _timerBig(), lbl = _timerLabel(), ring = _timerRing(), side = _timerSide();
+  const sd = _spokenSide(sideLabel);
+  say(spoken !== undefined ? spoken : _spokenName(label) + (sd ? ', ' + sd : '') + '. ' + _spokenDur(seconds) + '.');
   big.className = 'timer-big-number leadin';
   lbl.textContent = 'GET READY';
   side.textContent = sideLabel || '';
@@ -27116,7 +27298,7 @@ function _startLeadIn(seconds, label, sideLabel, onDone) {
   ring.style.strokeDashoffset = '0';
   ring.style.stroke = 'rgba(255,255,255,0.2)';
   document.getElementById('timer-ex-name').textContent = label;
-  let leadIn = 3;
+  let leadIn = LEAD_IN_S;
   big.textContent = leadIn;
   const iv = setInterval(() => {
     leadIn--;
@@ -27139,9 +27321,12 @@ function _runCountdown(seconds, sideLabel, onDone, startFromRemaining) {
   side.textContent = sideLabel || '';
   const initialRemaining = startFromRemaining || seconds;
   const endTime = Date.now() + initialRemaining * 1000;
+  let lastSaid = 0;
 
   function tick() {
     const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+    // "5, 4, 3, 2, 1" — only on holds long enough for it not to be the whole hold.
+    if (seconds >= 10 && remaining >= 1 && remaining <= 5 && remaining !== lastSaid) { lastSaid = remaining; say(String(remaining)); }
     const mins = Math.floor(remaining / 60);
     big.textContent = mins > 0 ? mins + ':' + String(remaining % 60).padStart(2, '0') : remaining;
     big.className = 'timer-big-number' + (remaining <= 3 ? ' critical' : remaining <= 10 ? ' warning' : '');
@@ -27171,14 +27356,15 @@ function startExTimer(seconds, btnEl) {
   _timerPaused = false;
   _showPauseControls(false);
   _timerOverlay().classList.add('open');
+  voiceUnlock(); _voiceBtnPaint();
 
   const wakeLock = null;   // the shared lock: wakeSync()
 
-  function runPhase(sideLabel, onPhaseDone) {
+  function runPhase(sideLabel, onPhaseDone, spoken) {
     const iv = _startLeadIn(seconds, exName, sideLabel, () => {
       const result = _runCountdown(seconds, sideLabel, onPhaseDone);
       _activeTimer = { interval: result.interval, endTime: result.endTime, onDone: onPhaseDone, btnEl, total: seconds, isLeadIn: false, wakeLock, videoLink };
-    });
+    }, spoken);
     _activeTimer = { interval: iv, btnEl, total: seconds, isLeadIn: true, wakeLock, videoLink };
   }
 
@@ -27189,7 +27375,8 @@ function startExTimer(seconds, btnEl) {
       _timerLabel().textContent = 'FLIP SIDES';
       if (navigator.vibrate) navigator.vibrate([150, 100, 150]);
       _beep([[660, 0], [880, 0.25]]);
-      setTimeout(() => runPhase('→ Right Side', () => _timerFinishSolo(btnEl, wakeLock, seconds, 2)), 2000);
+      say('Swap sides.');
+      setTimeout(() => runPhase('→ Right Side', () => _timerFinishSolo(btnEl, wakeLock, seconds, 2), 'Right side.'), 2000);
     });
   } else {
     runPhase('', () => _timerFinishSolo(btnEl, wakeLock, seconds, 1));
@@ -27220,6 +27407,7 @@ function _timerFinishSolo(btnEl, wakeLock, secs, sides) {
   btnEl.textContent = '✓';
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 200]);
   _beep([[880,0],[880,0.3],[880,0.6]]);
+  say('Done.');
   setTimeout(() => { _timerOverlay().classList.remove('open'); }, 2000);
   setTimeout(() => { btnEl.textContent = '⏱'; wakeSync(); }, 3000);
 }
@@ -27234,6 +27422,7 @@ function _showDone() {
 }
 
 function stopExTimer() {
+  voiceStop();
   if (_timerQueue) { _stopQueue(); return; }
   if (!_activeTimer) return;
   clearInterval(_activeTimer.interval);
@@ -27250,7 +27439,7 @@ function startRoutineTimer(routineKey, dateStr) {
   if (!routine) return;
   const prefix = 'r_' + routineKey + '_';
 
-  const exercises = routine.exercises
+  const exercises = _pairQueue(routine.exercises
     .map((ex, i) => ({ ex, i }))
     .filter(({ ex }) => !ex._divider && parseTimerSeconds(ex.sets) > 0)
     .map(({ ex, i }) => ({
@@ -27259,7 +27448,7 @@ function startRoutineTimer(routineKey, dateStr) {
       bothSides: exHasBothSides(ex),
       checkKey: prefix + i,
       videoLink: ex.link || ''
-    }));
+    })));
 
   if (exercises.length === 0) return;
 
@@ -27270,8 +27459,30 @@ function startRoutineTimer(routineKey, dateStr) {
   _timerQueue = { exercises, idx: 0, dateStr, routineKey, wakeLock: null };
   _timerOverlay().classList.add('open');
   _showPauseControls(false);
+  voiceUnlock(); _voiceBtnPaint();
   _runQueueStep();
   wakeSync();
+}
+
+// Holds done back to back on the same side (2026-10-29). Craig: "I prefer to do
+// left pigeon stretch, to left seated spinal twist. Then right to right — its a
+// cleaner movement, with less moving." From pigeon the back leg swings round into
+// the twist on the same side. As two separate items it was pigeon L/R, three
+// other stretches, then the twist L/R. Matched by name so it survives the
+// database copy of a routine replacing ROUTINES (that copy keeps only name, sets,
+// detail and link), and the partner is pulled up beside the first even where a
+// list still has them apart.
+const SIDE_PAIRS = [[/^pigeon/i, /^seated spinal twist/i]];
+function _pairQueue(items) {
+  SIDE_PAIRS.forEach(([a, b]) => {
+    const i = items.findIndex(x => a.test(x.name) && x.bothSides && !x.pair);
+    if (i < 0) return;
+    const j = items.findIndex((x, k) => k > i && b.test(x.name) && x.bothSides);
+    if (j < 0) return;
+    items[i].pair = items[j];
+    items.splice(j, 1);
+  });
+  return items;
 }
 
 function _runQueueStep() {
@@ -27282,13 +27493,29 @@ function _runQueueStep() {
   const ex = exercises[idx];
   _timerPos().textContent = (idx + 1) + ' / ' + exercises.length;
 
-  function afterPhases() {
-    // Auto-check the exercise
-    setChecked(dateStr, ex.checkKey, true);
-    // Ran to the end: a measured hold, logged the same way a tick is (2026-09-30).
-    if (typeof routineItemDone === 'function') {
-      try { routineItemDone(dateStr, ex.checkKey, { t: ex.secs, sides: ex.bothSides ? 2 : 1 }); } catch (e) {}
-    }
+  // The holds in this step: one, a left and a right, or a pair done left,
+  // partner left, right, partner right. Each item logs what it actually got.
+  const items = ex.pair ? [ex, ex.pair] : [ex];
+  const phases = ex.pair ? [[ex, 'L'], [ex.pair, 'L'], [ex, 'R'], [ex.pair, 'R']]
+    : ex.bothSides ? [[ex, 'L'], [ex, 'R']] : [[ex, '']];
+  const held = {};
+  const sideLbl = s => s === 'L' ? '← Left Side' : s === 'R' ? '→ Right Side' : '';
+  const step = { items, held, cur: null, log: null };
+  _timerQueue.step = step;
+
+  function logStep() {
+    if (step.logged) return;
+    step.logged = true;
+    items.forEach(it => {
+      const h = held[it.checkKey];
+      if (!h || !h.sides) return;
+      setChecked(dateStr, it.checkKey, true);
+      // A measured hold, logged the same way a tick is (2026-09-30).
+      if (typeof routineItemDone === 'function') {
+        try { routineItemDone(dateStr, it.checkKey, { t: h.t, sides: h.sides }); } catch (e) {}
+      }
+    });
+    if (!_timerQueue) return;
     // Also auto-check morning/stretch task if >50% done
     const routine = ROUTINES[_timerQueue.routineKey];
     if (routine) {
@@ -27299,34 +27526,53 @@ function _runQueueStep() {
         : _timerQueue.routineKey.startsWith('stretch_') ? 's_stretch' : null;
       if (taskKey && doneCount > total / 2) setChecked(dateStr, taskKey, true);
     }
+  }
+  step.log = logStep;
+
+  function afterPhases() {
+    logStep();
     // Short done flash then advance
     _showDone();
     if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
     _beep([[880, 0], [880, 0.25]]);
     setTimeout(() => {
-      if (_timerQueue) { _timerQueue.idx++; _runQueueStep(); }
+      if (_timerQueue && _timerQueue.step === step) { _timerQueue.idx++; _runQueueStep(); }
     }, 1200);
   }
 
-  function runPhase(sideLabel, onPhaseDone) {
-    const iv = _startLeadIn(ex.secs, ex.name, sideLabel, () => {
-      const result = _runCountdown(ex.secs, sideLabel, onPhaseDone);
-      _activeTimer = { interval: result.interval, endTime: result.endTime, onDone: onPhaseDone, btnEl: null, total: ex.secs, isLeadIn: false, wakeLock: _timerQueue.wakeLock, videoLink: ex.videoLink };
-    });
-    _activeTimer = { interval: iv, btnEl: null, total: ex.secs, isLeadIn: true, wakeLock: _timerQueue.wakeLock, videoLink: ex.videoLink };
+  function runPhase(n) {
+    if (!_timerQueue || _timerQueue.step !== step) return;
+    const [it, sd] = phases[n];
+    const prev = phases[n - 1];
+    step.cur = it;
+    // The second side of the same hold was announced by "Swap sides".
+    const spoken = (prev && prev[0] === it) ? 'Right side.' : undefined;
+    function onPhaseDone() {
+      const h = held[it.checkKey] || (held[it.checkKey] = { t: 0, sides: 0 });
+      h.t = Math.max(h.t, it.secs); h.sides++;
+      const nxt = phases[n + 1];
+      if (!nxt) { afterPhases(); return; }
+      if (nxt[0] === it) {
+        _timerBig().textContent = '↔';
+        _timerBig().className = 'timer-big-number leadin';
+        _timerLabel().textContent = 'FLIP SIDES';
+        if (navigator.vibrate) navigator.vibrate([100, 80, 100]);
+        _beep([[660, 0], [880, 0.25]]);
+        say('Swap sides.');
+        setTimeout(() => runPhase(n + 1), 2000);
+      } else {
+        // Straight into the partner, same side: its lead-in names it.
+        _beep([[660, 0], [880, 0.25]]);
+        runPhase(n + 1);
+      }
+    }
+    const iv = _startLeadIn(it.secs, it.name, sideLbl(sd), () => {
+      const result = _runCountdown(it.secs, sideLbl(sd), onPhaseDone);
+      _activeTimer = { interval: result.interval, endTime: result.endTime, onDone: onPhaseDone, btnEl: null, total: it.secs, isLeadIn: false, wakeLock: _timerQueue.wakeLock, videoLink: it.videoLink };
+    }, spoken);
+    _activeTimer = { interval: iv, btnEl: null, total: it.secs, isLeadIn: true, wakeLock: _timerQueue.wakeLock, videoLink: it.videoLink };
   }
-
-  if (ex.bothSides) {
-    runPhase('← Left Side', () => {
-      _timerBig().textContent = '↔';
-      _timerBig().className = 'timer-big-number leadin';
-      _timerLabel().textContent = 'FLIP SIDES';
-      if (navigator.vibrate) navigator.vibrate([100, 80, 100]);
-      setTimeout(() => { if (_timerQueue) runPhase('→ Right Side', afterPhases); }, 2000);
-    });
-  } else {
-    runPhase('', afterPhases);
-  }
+  runPhase(0);
 }
 
 function _advanceQueue() {
@@ -27351,6 +27597,7 @@ function _queueComplete() {
   _timerLabel().textContent = 'ROUTINE DONE';
   if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
   _beep([[880,0],[1100,0.3],[1320,0.6]]);
+  say('Routine done.');
   setTimeout(() => {
     _timerQueue = null;
     _timerOverlay().classList.remove('open');
@@ -27652,7 +27899,7 @@ function openRoutinePopup(routineKey, dateStr) {
     ((typeof stretchPopupHeaderHtml === 'function') ? stretchPopupHeaderHtml(routineKey, dateStr) : '') +
     ((isLiftRoutine && typeof lastSessionBannerHtml === 'function') ? lastSessionBannerHtml(dateStr, routineKey) : '') +
     ((typeof circuitHeaderHtml === 'function') ? circuitHeaderHtml(routineKey, dateStr) : '') +
-    (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button></div>` : '') +
+    (hasTimedExs ? `<div style="padding:4px 0 10px"><button onclick="startRoutineTimer('${routineKey}','${dateStr}')" style="background:var(--green-bg);border:1px solid var(--green-border);color:var(--green);border-radius:8px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:0.5px;width:100%">▶ Start Full Routine Timer</button><div class="rt-voice-hint">🔊 It talks you through it — the hold, the side, the last 5 seconds. Keep the app on screen.</div></div>` : '') +
     '<div class="exercise-list">' +
     effectiveExercises.map((ex, i) => {
       if (ex._divider) {
@@ -28392,7 +28639,7 @@ function renderDaily() {
   // #gym-clock-host lives inside adtHtml, so it only exists after this write —
   // renderGymClock() is called at the end of this function, not here.
   wc.innerHTML = doingHtml + adtHtml + (doingHtml ? '' : morningHtml + recommendedHtml) + ((doingHtml && !isKidDay2) ? '' : quickPickHtml) + todayDoneHtml + `
-    <div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
+    ${doingHtml ? '' : `<div class="wo-section-header" onclick="toggleWoSection('other-wo-${dateStr}')">
       <span>Log Workout</span><span class="chevron">▸</span>
     </div>
     <div id="other-wo-${dateStr}" class="wo-collapsible">
@@ -28405,7 +28652,7 @@ function renderDaily() {
     </div>
     <div id="stretch-tiers-${dateStr}" class="wo-collapsible">
       <div class="stretch-tiers">${stretchTiersHtml}</div>
-    </div>
+    </div>`}
     ${moreHtml}
     ${(() => {
       const hd = getHealthData(dateStr);
@@ -29149,29 +29396,85 @@ function doingTodayHtml(dateStr) {
   const atGym = typeof GYMCLOCK !== 'undefined' && !!GYMCLOCK;
   const st = sum(r => r.kind === 'stretch_time') || sum(r => /^st_/.test(r.exercise_key || ''));
   const stretched = rows.some(r => r.kind === 'stretch_time' || /^st_/.test(r.exercise_key || ''));
-  const walkS = sum(key('wo_walk')), rowS = sum(key('wo_row')), swimS = sum(key('wo_swim'));
+  const cardioS = sum(r => r.kind === 'cardio');
   const m = s => s >= 60 ? Math.round(s / 60) + ' min' : '';
   const tile = (icon, label, sub, cls, onclick) =>
     `<button class="dt-tile ${cls}" onclick="${onclick}"><span class="dt-i">${icon}</span><span class="dt-l">${label}</span><span class="dt-s">${sub}</span></button>`;
   const hike = rows.some(r => r.exercise_key === 'wo_walk' && _isHike(r));
-  return `<div class="dt-wrap"><div class="dt-h">What are you doing?</div><div class="dt-grid">
+  // Four tiles, 2026-10-29. Walk, Row and Swim were three of six, and Row and
+  // Swim had not been used in months; one Cardio tile opens the cardio screen on
+  // the last mode used (treadmill first). The Log Workout list below repeated
+  // all of this and is gone from today — see openHomeSheet.
+  return `<div class="dt-wrap"><div class="dt-h">What are you doing?</div><div class="dt-grid dt-grid4">
     ${atGym ? tile('📍', 'Gym', 'in ' + _dockClock(gymClockElapsedS()), 'live', 'gymCheckIn()')
             : tile('📍', 'Gym', gymS ? '✓ ' + m(gymS) : 'check in', gymS ? 'done' : '', 'gymCheckIn()')}
     ${tile('🧘', 'Stretch', stretched ? '✓ ' + (m(st) || 'done') : 'routines, holds', stretched ? 'done' : '', 'openStretch()')}
-    ${tile(hike ? '🥾' : '🚶', 'Walk / hike', walkS ? '✓ ' + m(walkS) : 'distance + time', walkS ? 'done' : '', "openCardio('walk')")}
-    ${tile('🚣', 'Row', rowS ? '✓ ' + m(rowS) : 'erg', rowS ? 'done' : '', "openCardio('row')")}
-    ${tile('🏊', 'Swim', swimS ? '✓ ' + m(swimS) : 'lengths', swimS ? 'done' : '', "openCardio('swim')")}
-    ${tile('🏠', 'Home', (!gymS && !atGym && strengthN) ? '✓ ' + strengthN + ' movement' + (strengthN === 1 ? '' : 's') : 'bodyweight, bells', (!gymS && !atGym && strengthN) ? 'done' : '', "mpickHomeOpen()")}
+    ${tile('🏠', 'Home', (!gymS && !atGym && strengthN) ? '✓ ' + strengthN + ' movement' + (strengthN === 1 ? '' : 's') : 'circuits, bells', (!gymS && !atGym && strengthN) ? 'done' : '', `openHomeSheet('${dateStr}')`)}
+    ${tile(hike ? '🥾' : '🏃', 'Cardio', cardioS ? '✓ ' + m(cardioS) : 'treadmill, walk', cardioS ? 'done' : '', 'openCardioTile()')}
   </div>
   <div class="dt-links">
     <button onclick="openMusclePicker()">🔍 Find an exercise</button>
-    <button onclick="openRoutinePopup('morning','${dateStr}')">☀️ Morning stretch</button>
     ${(typeof _sessLoad === 'function' && _sessLoad()) ? `<button onclick="openSessionScreen()">▶ Resume session</button>` : ''}
   </div></div>`;
 }
 function mpickHomeOpen() {
   try { localStorage.setItem('mpick_where', 'home'); } catch (e) {}
   openMusclePicker(null);
+}
+
+// ── Home and Cardio (2026-10-29) ─────────────────────────────────────────
+// Craig: "there are now LOTS of 'I'm doing exercises' buttons, can we reduce
+// some?" Opened, the Workout bar had 19 ways to start something and two
+// screens of height. Four months of logs used two of them (gym and stretch) —
+// and the rest went unused because they hurt: push-ups on a sore wrist, the
+// rowing handle on a catching finger. So the at-home options live in one sheet,
+// circuits first, and the circuit with nothing through the hands leads whenever
+// a hand or wrist is flagged (an open episode, or a grip condition in Settings).
+function _handFlagged() {
+  try {
+    if (activeEpisodes().some(e => /wrist|hand|thumb|finger/i.test([e.condition, e.body_part].filter(Boolean).join(' ')))) return true;
+    return getUserConditions().some(c => ['trigger_finger', 'carpal_tunnel', 'lat_epicondylitis'].indexOf(c.id) !== -1);
+  } catch (e) { return false; }
+}
+function homeSheetCircuits() {
+  const hand = _handFlagged();
+  const list = WO_CIRCUITS.slice();
+  if (hand) list.sort((a, b) => (b.key === 'circuit_wrist_friendly') - (a.key === 'circuit_wrist_friendly'));
+  return list;
+}
+function openHomeSheet(dateStr) {
+  dateStr = dateStr || ds(new Date());
+  const hand = _handFlagged();
+  const row = (icon, label, hint, onclick, done) => `<div class="wo-row ${done ? 'done' : ''}" onclick="${onclick}">
+      <span class="wo-icon">${icon}</span>
+      <div class="wo-main"><div class="wo-name">${label}</div>${hint ? `<div class="${done ? 'wo-sum' : 'wo-hint'}">${hint}</div>` : ''}</div>
+      <span class="wo-go">›</span></div>`;
+  const chips = pairs => `<div class="hs-chips">${pairs.map(([lbl, rk]) =>
+      `<button onclick="openRoutinePopup('${rk}','${dateStr}')">${lbl}</button>`).join('')}</div>`;
+  const circ = homeSheetCircuits().map(c => {
+    const r = ROUTINES[c.key] || {}, target = r.rounds || 3;
+    const done = (typeof circuitRoundsDone === 'function') ? circuitRoundsDone(dateStr, c.key) : 0;
+    const hint = done ? done + ' of ' + target + ' rounds'
+      : (r.exercises || []).length + ' stations · ' + target + ' rounds' + (hand && c.key === 'circuit_wrist_friendly' ? ' · nothing through the hands' : '');
+    return row(c.icon, c.label, hint, `openRoutinePopup('${c.key}','${dateStr}')`, done);
+  }).join('');
+  document.getElementById('popup-title').textContent = '🏠 Home';
+  document.getElementById('popup-body').innerHTML = `<div id="home-sheet">
+    <div class="wo-group"><div class="wo-group-label">Circuits</div>${circ}</div>
+    <div class="wo-group"><div class="wo-group-label">Routines</div>
+      <div class="hs-row"><span class="wo-icon">💪</span><div class="wo-main"><div class="wo-name">Body</div>${chips([['full', 'bodyweight'], ['upper', 'bodyweight_upper'], ['lower', 'bodyweight_lower'], ['simple', 'bodyweight_simple']])}</div></div>
+      <div class="hs-row"><span class="wo-icon">🫙</span><div class="wo-main"><div class="wo-name">Kettlebell</div>${chips([['circuits', 'kettlebell_circuits'], ['strength', 'kettlebell_strength']])}</div></div>
+      ${row('🧘', 'Yoga', '', "closePopup();openExercise('wo_yoga_session','Yoga')")}
+    </div>
+    <button class="more-btn" onclick="closePopup();mpickHomeOpen()">🔍 One exercise, by muscle</button>
+  </div>`;
+  document.getElementById('popup-backdrop').classList.add('open');
+}
+function openCardioTile() {
+  let m = 'treadmill';
+  try { m = localStorage.getItem('cardio_last') || 'treadmill'; } catch (e) {}
+  if (!CARDIO_MODES.some(x => x.id === m)) m = 'treadmill';
+  openCardio(m);
 }
 
 function _weightInputHtml(dateStr) {
@@ -29581,7 +29884,8 @@ const REFRESH_TTL_MS = {
   workout_log:      10 * 60000,
   health_sync:      30 * 60000,   // only changes when an Apple Health import runs
   health_workouts:  30 * 60000,
-  // daily_log and checkboxes are deliberately ABSENT: that is today's data,
+  medications:      30 * 60000,   // the list of meds; the DOSES refresh every time
+  // daily_log, checkboxes and medication doses are deliberately ABSENT: that is today's data,
   // possibly edited on another device, and it refreshes on every tick.
 };
 const _refreshFetchedAt = {};
@@ -29641,6 +29945,8 @@ async function _refreshDataInner(btn) {
   const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const end = new Date(now.getFullYear(), now.getMonth() + 2, 0);
   await loadTrackingData(ds(start), ds(end));
+  // Doses taken on the phone show on the computer (2026-10-29) — see refreshMedsFromServer.
+  try { if (typeof refreshMedsFromServer === 'function') await refreshMedsFromServer(); } catch (e) { console.warn('med refresh', e); }
   // Collapse duplicate medications before anything renders them. Cheap (a pass
   // over a handful of rows), idempotent, and on the STARTUP path rather than
   // behind the Body popup — the chiclets on the meals card are where duplicates
