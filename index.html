@@ -2930,7 +2930,9 @@
   .st-rt-last { color: var(--cyan); }
   .st-rt-done { color: var(--green); font-weight: 700; }
   .st-rt-go { color: var(--text-muted); font-size: 16px; }
-  .st-rt-more { width: 100%; padding: 8px; border-radius: 8px; border: 1px dashed var(--card-border); background: transparent; color: var(--text-dim); font-size: 11.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  /* "Show more" buttons look like buttons (2026-10-29) — Craig: "the show more is
+     super muted. Can you make that pop?" It hid the pec fly machine at the gym. */
+  .more-btn, .st-rt-more { display: block; width: 100%; margin-top: 4px; padding: 11px; border-radius: 8px; border: 1px solid var(--cyan-border, var(--cyan)); background: var(--cyan-bg); color: var(--cyan); font-size: 13px; font-weight: 800; cursor: pointer; font-family: inherit; }
   .st-pop { margin-bottom: 6px; }
   .st-pop-back { background: none; border: none; color: var(--cyan); font-size: 12px; cursor: pointer; padding: 0 0 8px; font-family: inherit; }
   /* Stats overview cards (2026-09-27) */
@@ -4302,7 +4304,7 @@ function escapeHtml(v) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-const APP_VERSION = '2026.10.27.02';
+const APP_VERSION = '2026.10.28.02';
 const BUILD_CHANNEL = 'prod';
 function buildMismatch() {
   return (BUILD_CHANNEL === 'dev') !== !!IS_DEV;
@@ -13284,6 +13286,16 @@ const EX_LIB = [
   { m:'core', name:'Oblique crunch', equip:'bw', reps:'10-15 each side', rest:60, cue:'Rotate the ribcage toward the opposite hip, not the elbow toward the knee \u2014 an elbow can travel a long way while the trunk barely turns.', id:'bw_oblique_crunch', pattern:'core', technique:1, link:'https://www.youtube.com/watch?v=QxaKQG-gmPY', linkBy:'ScottHermanFitness' },
   { m:'core', name:'Lying leg raise', equip:'bw', reps:'8-15', rest:60, cue:'Press the lower back into the floor before the legs move, and keep it there. The legs are heavy levers pulling on the pelvis through the hip flexors; the moment the back arches, the set is over. Bend the knees to shorten the lever.', flags:['spine'], id:'bw_leg_raise', pattern:'core', technique:2, teaches:'bw_hollow_hold', link:'https://www.youtube.com/watch?v=3oIpxsn6FxQ', linkBy:'Mobility Doc' },
 
+  // ── Gym-list machines the library was missing (2026-10-29) ──
+  // Craig: "I was looking for machine pec fly … and couldn't find it." Five
+  // machines on the gym list had no library entry, so the muscle lists never
+  // showed them. Each logs under its machine key (gm).
+  { m:'chest', name:'Pec fly (machine)', equip:'machine', reps:'10-15', rest:90, cue:'Elbows slightly bent and fixed; squeeze the handles together in front of the chest. Let them come back only as far as the front of the shoulder stays comfortable — the deep stretch at the back is where shoulders get irritated.', id:'m_pec_fly', pattern:'push', technique:1, gm:'pec_fly', link:'https://www.youtube.com/watch?v=Z57CtFmRMxA', linkBy:'LIVESTRONG' },
+  { m:'chest', name:'Incline press (machine)', equip:'machine', reps:'8-12', rest:180, cue:'Seat so the handles start at upper-chest height. Press up and slightly in, elbows about 45° from the body.', id:'m_incline_press', pattern:'push', technique:1, gm:'incline_press', head:'upper chest (clavicular head)', link:'https://www.youtube.com/watch?v=ig0NyNlSce4', linkBy:'ScottHermanFitness' },
+  { m:'chest', name:'Smith machine bench', equip:'machine', reps:'8-12', rest:180, cue:'Bar to the lower chest, elbows about 45°. Set the safety stops just above chest height so a failed rep has somewhere to land.', id:'m_smith_bench', pattern:'push', technique:2, gm:'smith_bench', link:'https://www.youtube.com/watch?v=z_r6hDOYtO0', linkBy:'ScottHermanFitness' },
+  { m:'shoulders', name:'Lateral raise (machine)', equip:'machine', reps:'12-15', rest:90, cue:'Pads on the outside of the upper arms; lead with the elbows and stop at shoulder height.', flags:['overhead'], id:'m_lateral_raise', pattern:'push', technique:1, gm:'lateral_raise_m', head:'side delt', link:'https://www.youtube.com/watch?v=ogrXWfWbajg', linkBy:'Fitness 19' },
+  { m:'glutes', name:'Hip adductor (machine)', equip:'machine', reps:'15-20', rest:90, cue:'Inner thighs. Squeeze the pads together under control; set the starting width where the stretch is mild, not maximal.', id:'m_hip_adductor', pattern:'hinge', technique:1, gm:'hip_adductor', link:'https://www.youtube.com/watch?v=GmRSV_n2E_0', linkBy:'ScottHermanFitness' },
+
   // ── Back extension (2026-10-25) ──
   // Credited to glutes: the job is hip extension, and the lower back holds the
   // position rather than doing the work — which is also how it should be coached.
@@ -13409,6 +13421,8 @@ function openMusclePicker(muscleId) {
   if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'picker', muscle: _mpickMuscle });
   _mpickShowAll = false;
   try { _mpickWhere = localStorage.getItem('mpick_where') || 'all'; } catch (e) { _mpickWhere = 'all'; }
+  // Checked in at the gym: gym kit, whatever was picked last at home (2026-10-29).
+  if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK) _mpickWhere = 'gym';
   const bd = document.getElementById('muscle-picker-backdrop');
   if (bd) bd.classList.add('open');
   renderMusclePicker();
@@ -13521,6 +13535,16 @@ function mpickSearch(q) {
         <span class="mpk-hit-name">${escapeHtml(c.name)}</span><span class="mpk-hit-tag">${escapeHtml(c.tag)}</span><span class="mpk-hit-go">›</span></div>`).join('')
     : `<div class="mpk-none">Nothing called that. Try one word — "press", "row", "curl".</div>`);
 }
+function _mpickTodayHtml() {
+  let rows = [];
+  try { rows = getActivity(ds(new Date())).filter(r => r.kind === 'strength' && r.exercise_key); } catch (e) {}
+  const by = {};
+  rows.forEach(r => { (by[r.exercise_key] = by[r.exercise_key] || { key: r.exercise_key, name: r.exercise_name || r.exercise_key, n: 0 }).n++; });
+  const list = Object.values(by);
+  if (!list.length) return '';
+  return `<div class="mpk-recent-h">Today — tap to carry on</div><div class="mpk-recent">` +
+    list.map(e => `<button class="mpk-chip" onclick="mpickDoing('${String(e.name).replace(/'/g, "\\'")}',0,'${e.key}')">↩ ${escapeHtml(e.name)} · ${e.n}</button>`).join('') + `</div>`;
+}
 function _mpickRecentHtml() {
   let usual = [];
   try { usual = gymUsualKeys(ds(new Date()), gymLogIndex(ds(new Date()), 90), 8); } catch (e) {}
@@ -13538,7 +13562,9 @@ function mpickDoing(exName, restSecs, key) {
   closeMusclePicker();
   _sessReturnTo = 'picker';
   openExercise(key, exName);
-  startRestTimer(restSecs || 120, exName);
+  // No rest on opening (2026-10-29). It used to start one here — a "rest"
+  // before the first set, which made a second timer for the same exercise as
+  // soon as a set was logged. Logging a set starts the rest.
 }
 
 function renderMusclePicker() {
@@ -13556,7 +13582,7 @@ function renderMusclePicker() {
       `<input id="mpick-q" class="mpk-search" type="search" placeholder="Search — chest press, row, rear delt…" autocomplete="off"
          value="${escapeHtml(_mpickQuery || '')}" oninput="mpickSearch(this.value)">
        <div id="mpick-results"></div>` +
-      _mpickRecentHtml() +
+      _mpickTodayHtml() + _mpickRecentHtml() +
       Object.keys(byPattern).map(p => `
       <div style="margin-bottom:12px">
         <div style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:5px">${patternLabel[p] || p}</div>
@@ -13590,7 +13616,7 @@ function renderMusclePicker() {
   const _sorted = (typeof exSortForPicker === 'function') ? exSortForPicker(all) : all;
   const _tagged = _sorted.filter(e => e.role);
   const _untagged = _sorted.filter(e => !e.role);
-  const shown = (_mpickShowAll || _mpickMuscle === '__iso') ? _sorted
+  const shown = (_mpickShowAll || _mpickMuscle === '__iso' || _mpickWhere === 'gym') ? _sorted
     : _tagged.concat(_untagged.slice(0, Math.max(0, 4 - _tagged.length)));
   let _headExplained = false;
 
@@ -13659,8 +13685,8 @@ function renderMusclePicker() {
     <button onclick="mpickBack()" style="background:none;border:none;color:var(--cyan);font-size:11px;cursor:pointer;padding:0 0 8px;font-family:inherit">‹ All muscles</button>
     ${_mpickWhereChips()}
     ${all.length ? cards : `<div style="padding:14px;border-radius:7px;background:var(--input-bg);border:1px dashed var(--card-border);font-size:11px;color:var(--text-muted);line-height:1.5;text-align:center">Nothing for ${mg.label} with that equipment.<br>Try <b style="color:var(--text)">Anywhere</b>.</div>`}
+    ${(all.length > 4 && _mpickMuscle !== '__iso' && _mpickWhere !== 'gym') ? `<button class="more-btn" onclick="mpickToggleAll()">${_mpickShowAll ? '▴ Show fewer' : `▾ Show ${all.length - 4} more`}</button>` : ''}
     ${MUSCLE_STRETCH_REGION[_mpickMuscle] ? `<button class="mpk-iso" style="margin-top:8px" onclick="mpickStretch('${MUSCLE_STRETCH_REGION[_mpickMuscle]}')">🧘 Stretch it<small>The stretches for this area, on the stretch screen</small></button>` : ''}
-    ${(all.length > 4 && _mpickMuscle !== '__iso') ? `<button onclick="mpickToggleAll()" style="width:100%;padding:7px;border-radius:6px;border:1px dashed var(--card-border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;font-family:inherit">${_mpickShowAll ? 'Show fewer' : `Show ${all.length - 4} more`}</button>` : ''}
     <div style="font-size:9.5px;color:var(--text-muted);line-height:1.5;margin-top:10px;border-top:1px solid var(--divider);padding-top:8px">
       Rep ranges are suggestions, not a program — pick a weight where the top of the range is hard but clean.
       No set count on purpose. Rest matters more than most people think: it preserves the load and reps of your next set,
@@ -13897,12 +13923,12 @@ const EQUIP_COEF = {
 // Only movements that genuinely have variants need grouping. Everything else is
 // its own movement and needs no entry here.
 const MOVEMENT_GROUPS = {
-  chest_press:  ['Chest press (machine)','Dumbbell bench press','Incline dumbbell press','Kettlebell floor press','Smith machine bench','Push-up','Incline push-up','Decline push-up','Band chest press'],
-  chest_fly:    ['Cable chest fly'],
+  chest_press:  ['Chest press (machine)','Incline press (machine)','Dumbbell bench press','Incline dumbbell press','Kettlebell floor press','Smith machine bench','Push-up','Incline push-up','Decline push-up','Band chest press'],
+  chest_fly:    ['Cable chest fly','Pec fly (machine)'],
   row:          ['Seated row (machine)','Cable row','Dumbbell single-arm row','Chest-supported row','Kettlebell bent-over row','Kettlebell renegade row','Inverted row','Band row'],
   pulldown:     ['Lat pulldown','Straight-arm pulldown','Assisted pull-up','Chin-up','Kettlebell pullover'],
   shoulder_press:['Machine shoulder press','Kettlebell strict press','Pike push-up','Band overhead press'],
-  lateral_raise:['Dumbbell lateral raise','Cable lateral raise','Front raise'],
+  lateral_raise:['Dumbbell lateral raise','Cable lateral raise','Lateral raise (machine)','Front raise'],
   rear_delt:    ['Rear delt fly (machine)','Cable face pull','Bent-over dumbbell fly','Kettlebell high pull','Prone Y-T-W raise','Band face pull','Band pull-apart'],
   curl:         ['Dumbbell curl','Cable curl','Hammer curl','Bicep curl (machine)','Kettlebell curl','21s (7-7-7 barbell curl)','21s (dumbbell version)'],
   tricep_ext:   ['Cable rope pushdown','Overhead cable extension','Tricep press (machine)','Dumbbell skull crusher','Kettlebell overhead extension','Close-grip push-up','Bench dip','Diamond push-up'],
@@ -15936,7 +15962,7 @@ function stretchRoutinesHtml() {
   }).join('');
   const more = sorted.length > STRETCH_ROUTINES_SHOWN
     ? '<button class="st-rt-more" onclick="_stAllRoutines=!_stAllRoutines;renderStretchScreen()">' +
-        (_stAllRoutines ? 'Show fewer' : 'All routines (' + sorted.length + ')') + '</button>'
+        (_stAllRoutines ? '▴ Show fewer' : '▾ All routines (' + sorted.length + ')') + '</button>'
     : '';
   const anyUse = sorted.some(function (k) { return use[k].days; });
   return '<div class="st-rt"><div class="st-rt-h">Routines <span>' + (anyUse ? 'most-done first' : 'tap one to start') + '</span></div>' +
@@ -19175,6 +19201,7 @@ function _refreshBehindSession() {
 function addSessionSegment(exKey, exName, entry) {
   const dateStr = ds(new Date());
   _sessFresh = true;   // the boxes start clean for the next set
+  if (typeof setLastExercise === 'function') setLastExercise(exKey, exName);
   _materializeEntries(dateStr, exKey, exName);
   const entries = getSessionSets(exKey).slice();
   const idx = entries.length;
@@ -19428,6 +19455,16 @@ function closeSessionScreen() {
   _refreshBehindSession();
   renderDock();           // the hold chip, and the way back to where he was
 }
+// While a set or two ago is still "now", nothing should pop up over the workout.
+function _trainingNow() {
+  try {
+    if (GYMCLOCK) return true;
+    if (typeof dockTimersRunning === 'function' && dockTimersRunning()) return true;
+    if (_isOpenBd('session-backdrop') || _isOpenBd('muscle-picker-backdrop') || _isOpenBd('stretch-backdrop')) return true;
+    if (typeof getLastExercise === 'function' && getLastExercise(20)) return true;
+  } catch (e) {}
+  return false;
+}
 function _sessTogglePlan(mid) {
   const i = _sessPlanDraft.indexOf(mid);
   if (i >= 0) _sessPlanDraft.splice(i, 1); else _sessPlanDraft.push(mid);
@@ -19614,6 +19651,7 @@ function _cardioAdd() {
 
 function openExercise(key, name) {
   _sessEx = key; _sessExName = name;
+  if (typeof setLastExercise === 'function') setLastExercise(key, name);
   if (typeof _setupEditing !== 'undefined') _setupEditing = false;
   if (typeof setWorkoutContext === 'function') setWorkoutContext({ kind: 'exercise', key: key, name: name });
   document.getElementById('session-backdrop').classList.add('open');
@@ -20108,7 +20146,7 @@ function _restSave() {
   try {
     if (_restTimer.running) {
       localStorage.setItem('rest_timer', JSON.stringify({ target: _restTimer.target, label: _restTimer.label,
-        startedAt: _restTimer.startedAt, endsAt: _restTimer.endsAt, cued: !!_restTimer.cued }));
+        startedAt: _restTimer.startedAt, endsAt: _restTimer.endsAt, cued: !!_restTimer.cued, exKey: _restTimer.exKey || '' }));
     } else localStorage.removeItem('rest_timer');
     if (_restPending) localStorage.setItem('rest_pending', JSON.stringify(_restPending));
     else localStorage.removeItem('rest_pending');
@@ -20141,6 +20179,7 @@ function startRestTimer(secs, label) {
   // Attach the rest to whatever exercise is open, so the next set can claim it.
   _restPending = { exKey: (typeof _sessEx !== 'undefined' && _sessEx) || null,
                    startedAt: now, target: secs, date: ds(new Date(now)) };
+  _restTimer.exKey = (typeof _sessEx !== 'undefined' && _sessEx && !/^__/.test(_sessEx)) ? _sessEx : '';
   if (_restTimer.id) { clearInterval(_restTimer.id); _restTimer.id = null; }
   if (typeof _dockOpen !== 'undefined') _dockOpen = 'rest';   // a new rest opens big, to be read from the bench
   _restSave();
@@ -20291,13 +20330,55 @@ function workoutContextLabel(c) {
   if (c.kind === 'gymvisit') return 'Gym visit';
   return 'Workout';
 }
-function resumeWorkout() {
+// ── The way back (2026-10-29) ─────────────────────────────────────────
+// Craig, at the gym: "selected my lat pull down … did 2 sets, got distracted and
+// pressed buttons on the app; couldn't find the exercise again … clicking on
+// the exercise timer, couldn't get the exercise back … hit 'end rest', and that
+// exercise was just gone."
+// Three causes: the gym visit and the picker overwrote "where you were" every
+// time they were shown; the rest chip went to that overwritten place, not to
+// its own exercise; and the Back chip only existed while a timer ran. Now the
+// last exercise is remembered on its own, Back prefers it over the hubs, the
+// rest chip opens its own exercise, and Back stays for a while after the timers.
+function setLastExercise(key, name) {
+  if (!key || /^__/.test(key)) return;
+  try { localStorage.setItem('workout_last_ex', JSON.stringify({ key: key, name: name || key, at: Date.now() })); } catch (e) {}
+}
+function getLastExercise(maxMin) {
+  try {
+    const x = JSON.parse(localStorage.getItem('workout_last_ex') || 'null');
+    if (x && x.key && Date.now() - (x.at || 0) < (maxMin || 180) * 60000) return x;
+  } catch (e) {}
+  return null;
+}
+const _HUB_KINDS = ['gymvisit', 'picker'];
+function backTarget() {
+  const ex = getLastExercise(180);
   const c = getWorkoutContext();
+  const exC = ex ? { kind: 'exercise', key: ex.key, name: ex.name, at: ex.at } : null;
+  if (c && _HUB_KINDS.indexOf(c.kind) === -1 && (!exC || (c.at || 0) > exC.at)) return c;
+  return exC || c;
+}
+// Anything that could be sitting on top of the screen we are going back to.
+function _clearOverlays(keep) {
+  try {
+    if (keep !== 'stretch' && _isOpenBd('stretch-backdrop') && typeof closeStretch === 'function') closeStretch();
+    if (keep !== 'picker' && _isOpenBd('muscle-picker-backdrop') && typeof closeMusclePicker === 'function') closeMusclePicker();
+    if (_isOpenBd('evening-prompt-backdrop') && typeof closeEveningPrompt === 'function') closeEveningPrompt();
+    if (_isOpenBd('morning-prompt-backdrop') && typeof closeMorningPrompt === 'function') closeMorningPrompt();
+  } catch (e) {}
+}
+function dockOpenRest() {
+  _dockOpen = null;
+  if (_restTimer.exKey) { _clearOverlays(); openExercise(_restTimer.exKey, _restTimer.label); renderDock(); return; }
+  resumeWorkout();
+}
+function resumeWorkout() {
+  const c = backTarget();
   _dockOpen = null;
   if (c) {
     try {
-      if (c.kind !== 'stretch' && _isOpenBd('stretch-backdrop') && typeof closeStretch === 'function') closeStretch();
-      if (c.kind !== 'picker' && _isOpenBd('muscle-picker-backdrop') && typeof closeMusclePicker === 'function') closeMusclePicker();
+      _clearOverlays(c.kind);
       if (c.kind === 'exercise') openExercise(c.key, c.name);
       else if (c.kind === 'routine') openRoutinePopup(c.key, c.date || ds(new Date()));
       else if (c.kind === 'stretch') openStretch(c.screen || 'home');
@@ -20349,7 +20430,7 @@ async function wakeSync() {
 function _dockChip(kind, icon, timeTxt, label, extraCls) {
   const exp = (kind === 'rest' || kind === 'gym' || kind === 'stretch' || kind === 'iv')
     ? `<button class="dk-exp" onclick="event.stopPropagation();dockToggle('${kind}')" aria-label="Timer controls">${_dockOpen === kind ? '▾' : '⌃'}</button>` : '';
-  const go = kind === 'hold' ? `dockResumeHold()` : (kind === 'iv' ? `dockToggle('iv')` : `resumeWorkout()`);
+  const go = kind === 'hold' ? `dockResumeHold()` : (kind === 'iv' ? `dockToggle('iv')` : (kind === 'rest' ? `dockOpenRest()` : `resumeWorkout()`));
   return `<div class="dk-chip ${kind} ${extraCls || ''}" data-dk="${kind}">
     <button class="dk-main" onclick="${go}"><span class="dk-t" data-dk-t="${kind}">${icon} ${timeTxt}</span><span class="dk-l">${escapeHtml(label || '')}</span></button>${exp}</div>`;
 }
@@ -20370,7 +20451,7 @@ function _dockDrawerHtml() {
       <div class="dk-drawer" style="display:flex;align-items:center;gap:12px">
         <div style="min-width:0;flex:1">
           <div id="dk-rest-big" style="font-size:clamp(40px,13vw,58px);line-height:1;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-1px;color:var(--${tone})">${_restFmt(_restTimer.remaining)}</div>
-          <div style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px">${escapeHtml(_restTimer.label || 'Rest')}</div>
+          <div onclick="dockOpenRest()" style="font-size:12px;color:var(--text);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:5px;cursor:pointer">${escapeHtml(_restTimer.label || 'Rest')}${_restTimer.exKey ? ' <span style="color:var(--cyan)">›</span>' : ''}</div>
           <div id="dk-rest-state" style="font-size:11px;color:${over ? 'var(--green)' : 'var(--text-muted)'};font-weight:${over ? '700' : '400'};margin-top:1px">${over ? 'Ready — go' : 'Resting'}</div>
           <button class="dk-min" onclick="dockToggle(null)">▾ Tuck it away — it keeps counting</button>
         </div>
@@ -20425,7 +20506,7 @@ function renderDock() {
   const el = document.getElementById('rest-timer-bar');
   if (!el) return;
   if (_restTimer.running) _restTick(true);
-  const ctx = getWorkoutContext();
+  const ctx = backTarget();
   const chips = [];
   if (typeof GYMCLOCK !== 'undefined' && GYMCLOCK) chips.push(_dockChip('gym', '📍', _dockClock(gymClockElapsedS()), 'At the gym'));
   if (typeof STRETCH_SESSION !== 'undefined' && STRETCH_SESSION) chips.push(_dockChip('stretch', '🧘', _dockClock(stretchSessionElapsedS()), 'Stretching'));
@@ -20437,18 +20518,25 @@ function renderDock() {
   } else if (typeof _ivDone !== 'undefined' && _ivDone) {
     chips.push(_dockChip('iv', '✓', _dockClock(_ivDone.secs), 'Treadmill — save it'));
   }
-  if (!chips.length) {
+  // The exercise on screen already is not somewhere to go back to.
+  const onScreen = ctx && ctx.kind === 'exercise' && _isOpenBd('session-backdrop') && typeof _sessEx !== 'undefined' && _sessEx === ctx.key;
+  const timers = chips.length;
+  // With no timer running, Back stays for 45 minutes after the last exercise.
+  const lastEx = getLastExercise(45);
+  const showBack = ctx && !onScreen && (timers || (lastEx && ctx.kind === 'exercise'));
+  if (!timers && !showBack) {
     el.style.display = 'none'; el.innerHTML = '';
     document.body.classList.remove('rest-active');
     if (_dockTimer) { clearInterval(_dockTimer); _dockTimer = null; }
     return;
   }
-  if (ctx) chips.push(`<div class="dk-chip resume" data-dk="resume"><button class="dk-main" onclick="resumeWorkout()"><span class="dk-t">▶ Back</span><span class="dk-l">${escapeHtml(workoutContextLabel(ctx))}</span></button></div>`);
+  if (showBack) chips.push(`<div class="dk-chip resume" data-dk="resume"><button class="dk-main" onclick="resumeWorkout()"><span class="dk-t">▶ Back</span><span class="dk-l">${escapeHtml(workoutContextLabel(ctx))}</span></button></div>`);
   el.style.display = 'block';
   el.innerHTML = _dockDrawerHtml() + `<div class="dk-row">${chips.join('')}</div>`;
   document.body.classList.add('rest-active');
   document.documentElement.style.setProperty('--rest-bar-h', el.offsetHeight + 'px');
-  if (!_dockTimer) _dockTimer = setInterval(_dockPaint, 1000);
+  if (timers && !_dockTimer) _dockTimer = setInterval(_dockPaint, 1000);
+  if (!timers && _dockTimer) { clearInterval(_dockTimer); _dockTimer = null; }
 }
 // The once-a-second update touches text only. Rebuilding the buttons under a
 // finger every second is how a tap gets lost.
@@ -28615,11 +28703,11 @@ function renderDaily() {
   if (typeof renderGymClock === 'function') renderGymClock();
   // Auto-fire check-in prompts on today's view only, with a slight delay so the
   // dashboard paints first. Morning takes priority over evening if both eligible.
-  if (currentDayOffset === 0) {
+  if (currentDayOffset === 0 && !_trainingNow()) {
     if (_shouldAutoFireMorningPrompt()) {
-      setTimeout(() => { if (_shouldAutoFireMorningPrompt()) openMorningPrompt(); }, 600);
+      setTimeout(() => { if (_shouldAutoFireMorningPrompt() && !_trainingNow()) openMorningPrompt(); }, 600);
     } else if (typeof _shouldAutoFireEveningPrompt === 'function' && _shouldAutoFireEveningPrompt()) {
-      setTimeout(() => { if (_shouldAutoFireEveningPrompt()) openEveningPrompt(); }, 600);
+      setTimeout(() => { if (_shouldAutoFireEveningPrompt() && !_trainingNow()) openEveningPrompt(); }, 600);
     }
   }
 }
@@ -29236,7 +29324,7 @@ function renderTodayCards(dateStr) {
   host.innerHTML = `<div class="tc-wrap">
       <div class="tc-h">Today${done.length ? `<span title="${done.map(r => r.title).join(', ')}">✓ ${done.length} done</span>` : ''}</div>
       ${shown.length ? shown.map(card).join('') : `<div class="tc-empty">${done.length ? 'That is everything due for now.' : 'Nothing due right now.'}</div>`}
-      ${due.length > shown.length ? `<button class="tc-more" onclick="_tcShowAll=true;renderTodayCards('${dateStr}')">+ ${due.length - shown.length} more</button>` : ''}
+      ${due.length > shown.length ? `<button class="more-btn" onclick="_tcShowAll=true;renderTodayCards('${dateStr}')">▾ ${due.length - shown.length} more due</button>` : ''}
     </div>`;
 }
 
